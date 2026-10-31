@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://open-contracts.dev/schemas/predicate-language.schema.json",
+  "title": "Open Contracts predicate expression",
+  "description": "A predicate is a single string expression. Field paths are relative to the complete input JSON value; no fixed root property is reserved.",
+  "type": "string",
+  "examples": [
+    ".stored_timestamp == .deferred_call_timestamp",
+    ".payload.items.0.name == \"expected\"",
+    "exists(.events.2.name)",
+    ".payload.items.0[\"a/b\"] == \"expected\""
+  ],
+  "$comment": "Readable grammar: expression := or-expression; or-expression := and-expression (OR and-expression)*; and-expression := not-expression (AND not-expression)*; not-expression := NOT not-expression | comparison; comparison := primary (comparison-operator primary)?; primary := field-reference | JSON-scalar | TRUE | FALSE | NULL | exists-call | '(' expression ')'; field-reference is a chain of .name segments and [JSON-string] selectors. Numeric segments such as .items.0 address array indexes and numeric object keys. Use a bracketed JSON string for object keys containing dots, slashes, or other punctuation. JSON Schema validates the string wire type; the evaluator validates grammar and semantics."
+}

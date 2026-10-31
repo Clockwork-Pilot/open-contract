@@ -1,0 +1,742 @@
+{
+  "cases": [
+    {
+      "id": "literal-true",
+      "json": {},
+      "path": "",
+      "predicate": "true",
+      "expected": true
+    },
+    {
+      "id": "literal-false",
+      "json": {},
+      "path": "",
+      "predicate": "false",
+      "expected": false
+    },
+    {
+      "id": "empty-expression",
+      "json": {},
+      "path": "",
+      "predicate": "",
+      "expected": false
+    },
+    {
+      "id": "equal-number",
+      "json": {
+        "n": 5
+      },
+      "path": "/n",
+      "predicate": ".n == 5",
+      "expected": true
+    },
+    {
+      "id": "not-equal",
+      "json": {
+        "n": 5
+      },
+      "path": "/n",
+      "predicate": ".n != 4",
+      "expected": true
+    },
+    {
+      "id": "greater",
+      "json": {
+        "n": 5
+      },
+      "path": "/n",
+      "predicate": ".n > 4",
+      "expected": true
+    },
+    {
+      "id": "greater-equal",
+      "json": {
+        "n": 5
+      },
+      "path": "/n",
+      "predicate": ".n >= 5",
+      "expected": true
+    },
+    {
+      "id": "less",
+      "json": {
+        "n": 5
+      },
+      "path": "/n",
+      "predicate": ".n < 6",
+      "expected": true
+    },
+    {
+      "id": "less-equal",
+      "json": {
+        "n": 5
+      },
+      "path": "/n",
+      "predicate": ".n <= 5",
+      "expected": true
+    },
+    {
+      "id": "field-comparison",
+      "json": {
+        "n": 5,
+        "same": 5
+      },
+      "path": "/n",
+      "predicate": ".n == .same",
+      "expected": true
+    },
+    {
+      "id": "missing-field",
+      "json": {},
+      "path": "/missing",
+      "predicate": ".missing == 5",
+      "expected": false
+    },
+    {
+      "id": "missing-not-equal",
+      "json": {},
+      "path": "/missing",
+      "predicate": ".missing != 5",
+      "expected": true
+    },
+    {
+      "id": "null-exists",
+      "json": {
+        "value": null
+      },
+      "path": "/value",
+      "predicate": "exists(.value)",
+      "expected": false
+    },
+    {
+      "id": "absent-exists",
+      "json": {},
+      "path": "/value",
+      "predicate": "exists(.value)",
+      "expected": false
+    },
+    {
+      "id": "empty-object-exists",
+      "json": {
+        "value": {}
+      },
+      "path": "/value",
+      "predicate": "exists(.value)",
+      "expected": false
+    },
+    {
+      "id": "empty-list-exists",
+      "json": {
+        "value": []
+      },
+      "path": "/value",
+      "predicate": "exists(.value)",
+      "expected": false
+    },
+    {
+      "id": "not-and-parentheses",
+      "json": {
+        "n": 5,
+        "active": true
+      },
+      "path": "/n",
+      "predicate": "NOT (.n < 3 OR .active == false)",
+      "expected": true
+    },
+    {
+      "id": "or-and-precedence",
+      "json": {
+        "n": 1,
+        "active": true
+      },
+      "path": "/n",
+      "predicate": ".n == 1 OR .active == false AND .n == 9",
+      "expected": true
+    },
+    {
+      "id": "invalid-left-field",
+      "json": {
+        "n": 1
+      },
+      "path": "",
+      "predicate": "name == 1",
+      "expected": false
+    },
+    {
+      "id": "unparseable-right",
+      "json": {
+        "n": 1
+      },
+      "path": "/n",
+      "predicate": ".n == nope",
+      "expected": false
+    },
+    {
+      "id": "unsupported-expression",
+      "json": {
+        "n": 1
+      },
+      "path": "",
+      "predicate": "unknown",
+      "expected": false
+    },
+    {
+      "id": "unsupported-playbook-only-function",
+      "json": {
+        "tests": []
+      },
+      "path": "/tests",
+      "predicate": "all_tests_passed(.tests)",
+      "expected": false
+    },
+    {
+      "id": "fully-wrapped-expression",
+      "json": {
+        "n": 1
+      },
+      "path": "/n",
+      "predicate": "(.n == 1)",
+      "expected": true
+    },
+    {
+      "id": "partially-wrapped-expression",
+      "json": {
+        "n": 1
+      },
+      "path": "/n",
+      "predicate": "(.n == 1) AND (.n == 1)",
+      "expected": true
+    },
+    {
+      "id": "parentheses-inside-string",
+      "json": {
+        "text": "a(b"
+      },
+      "path": "/text",
+      "predicate": "(.text == 'a(b')",
+      "expected": true
+    },
+    {
+      "id": "dotted-path-quoted-object-keys",
+      "json": {
+        "a": {
+          "b": {
+            "c/d": {
+              "~key": "found"
+            }
+          }
+        }
+      },
+      "path": "/a/b/c~1d/~0key",
+      "predicate": ".a.b[\"c/d\"][\"~key\"] == \"found\"",
+      "expected": true
+    },
+    {
+      "id": "dotted-path-array-index",
+      "json": {
+        "payload": {
+          "items": [
+            "first",
+            "second"
+          ]
+        }
+      },
+      "path": "/payload/items/1",
+      "predicate": ".payload.items.1 == \"second\"",
+      "expected": true
+    },
+    {
+      "id": "exists-dotted-path-quoted-key",
+      "json": {
+        "payload": {
+          "a/b": 1
+        }
+      },
+      "path": "/payload/a~1b",
+      "predicate": "exists(.payload[\"a/b\"])",
+      "expected": true
+    },
+    {
+      "id": "exists-dotted-path-missing-key",
+      "json": {
+        "payload": {}
+      },
+      "path": "/payload/missing",
+      "predicate": "exists(.payload.missing)",
+      "expected": false
+    },
+    {
+      "id": "malformed-bracketed-object-key",
+      "json": {
+        "payload": {
+          "bad~2key": 1
+        }
+      },
+      "path": "/payload",
+      "predicate": ".payload[\"bad~2key\" == 1",
+      "expected": false
+    },
+    {
+      "id": "invalid-unqualified-field-path",
+      "json": {
+        "payload": 1
+      },
+      "path": "",
+      "predicate": "payload == 1",
+      "expected": false
+    },
+    {
+      "id": "coverage-invalid-token",
+      "json": {
+        "value": 1
+      },
+      "path": "/value",
+      "predicate": ".value == 1 @",
+      "expected": false
+    },
+    {
+      "id": "coverage-invalid-string-escape",
+      "json": {
+        "value": "x"
+      },
+      "path": "/value",
+      "predicate": ".value == '\\xZZ'",
+      "expected": false
+    },
+    {
+      "id": "coverage-unexpected-expression-end",
+      "json": {
+        "value": 1
+      },
+      "path": "/value",
+      "predicate": ".value ==",
+      "expected": false
+    },
+    {
+      "id": "coverage-unclosed-expression-parenthesis",
+      "json": {
+        "value": 1
+      },
+      "path": "/value",
+      "predicate": "(.value == 1 true)",
+      "expected": false
+    },
+    {
+      "id": "coverage-exists-missing-parentheses",
+      "json": {
+        "value": 1
+      },
+      "path": "/value",
+      "predicate": "exists .value",
+      "expected": false
+    },
+    {
+      "id": "coverage-exists-non-field-argument",
+      "json": {
+        "value": 1
+      },
+      "path": "",
+      "predicate": "exists(1)",
+      "expected": false
+    },
+    {
+      "id": "coverage-exists-extra-argument",
+      "json": {
+        "value": 1,
+        "other": 2
+      },
+      "path": "/value",
+      "predicate": "exists(.value .other)",
+      "expected": false
+    },
+    {
+      "id": "coverage-null-literal",
+      "json": {
+        "value": null
+      },
+      "path": "/value",
+      "predicate": ".value == null",
+      "expected": true
+    },
+    {
+      "id": "coverage-right-missing-field",
+      "json": {
+        "value": 1
+      },
+      "path": "/value",
+      "predicate": ".value == .missing",
+      "expected": false
+    },
+    {
+      "id": "coverage-path-missing-parentheses",
+      "json": {},
+      "path": "",
+      "predicate": "path == true",
+      "expected": false
+    },
+    {
+      "id": "coverage-path-non-string-argument",
+      "json": {},
+      "path": "/items",
+      "predicate": ".items[true] == 3",
+      "expected": false
+    },
+    {
+      "id": "coverage-path-extra-argument",
+      "json": {},
+      "path": "/a",
+      "predicate": "exists(.a .b)",
+      "expected": false
+    },
+    {
+      "id": "root-field-path",
+      "json": {
+        "root": true
+      },
+      "path": "/root",
+      "predicate": ".root == true",
+      "expected": true
+    },
+    {
+      "id": "dotted-array-index-out-of-range",
+      "json": {
+        "items": [
+          1
+        ]
+      },
+      "path": "/items/3",
+      "predicate": "exists(.items.3)",
+      "expected": false
+    },
+    {
+      "id": "dotted-scalar-traversal",
+      "json": {
+        "value": 1
+      },
+      "path": "/value/child",
+      "predicate": "exists(.value.child)",
+      "expected": false
+    },
+    {
+      "id": "malformed-bracketed-key-in-exists",
+      "json": {
+        "bad~2key": 1
+      },
+      "path": "",
+      "predicate": "exists(. [\"bad~2key\")",
+      "expected": false
+    },
+    {
+      "id": "missing-exists-close-parenthesis",
+      "json": {
+        "field": 1
+      },
+      "path": "/field",
+      "predicate": "exists(.field",
+      "expected": false
+    },
+    {
+      "id": "query-graph-row-metadata-key",
+      "json": {
+        "item": {
+          "id": "keep",
+          "@key": "keep"
+        }
+      },
+      "path": "/item/@key",
+      "predicate": ".item.@key == \"keep\"",
+      "expected": true
+    },
+    {
+      "id": "query-graph-row-metadata-value-fallback",
+      "json": {
+        "item": {
+          "@key": "fallback"
+        }
+      },
+      "path": "/item/@key",
+      "predicate": ".item.@key == \"fallback\"",
+      "expected": true
+    },
+    {
+      "id": "query-graph-row-direct-alias-value",
+      "json": {
+        "item": {
+          "id": "keep"
+        }
+      },
+      "path": "/item/id",
+      "predicate": ".item.id == \"keep\"",
+      "expected": true
+    },
+    {
+      "id": "query-graph-row-expression-merges-metadata",
+      "json": {
+        "item": {
+          "id": "keep",
+          "@key": "keep",
+          "@path": "/items/keep"
+        }
+      },
+      "path": "/item/@key",
+      "predicate": ".item.@key == 'keep'",
+      "expected": true
+    },
+    {
+      "id": "query-graph-row-expression-without-metadata",
+      "json": {
+        "item": {
+          "id": "keep"
+        }
+      },
+      "path": "/item/id",
+      "predicate": ".item.id == 'keep'",
+      "expected": true
+    },
+    {
+      "id": "coverage-scalar-primary-row",
+      "json": {
+        "item": 4
+      },
+      "path": "/item",
+      "predicate": ".item == 4",
+      "expected": true
+    },
+    {
+      "id": "query-graph-native-ast",
+      "json": {
+        "count": 3,
+        "state": "ready"
+      },
+      "path": "/count",
+      "predicate": ".count >= 3 AND (.state == \"ready\" OR .state == \"failed\")",
+      "expected": true
+    },
+    {
+      "id": "query-graph-alias-nested-path-and-key-keep",
+      "json": {
+        "item": {
+          "id": "keep",
+          "facts": {
+            "score": 4
+          },
+          "@key": "keep"
+        }
+      },
+      "path": "/item/facts/score",
+      "predicate": ".item.facts.score >= 4 AND .item.@key == 'keep' AND exists(.item)",
+      "expected": true
+    },
+    {
+      "id": "query-graph-alias-nested-path-and-key-skip",
+      "json": {
+        "item": {
+          "id": "skip",
+          "facts": {
+            "score": 2
+          },
+          "@key": "skip"
+        }
+      },
+      "path": "/item/facts/score",
+      "predicate": ".item.facts.score >= 4 AND .item.@key == 'keep' AND exists(.item)",
+      "expected": false
+    },
+    {
+      "id": "query-graph-legacy-object-where-keep",
+      "json": {
+        "item": {
+          "id": "keep",
+          "score": 5,
+          "@key": "keep"
+        }
+      },
+      "path": "/item/score",
+      "predicate": ".item.score >= 3",
+      "expected": true
+    },
+    {
+      "id": "query-graph-legacy-object-where-skip",
+      "json": {
+        "item": {
+          "id": "skip",
+          "score": 1,
+          "@key": "skip"
+        }
+      },
+      "path": "/item/score",
+      "predicate": ".item.score >= 3",
+      "expected": false
+    },
+    {
+      "id": "query-graph-view-f64-comparison-fraction",
+      "json": {
+        "item": {
+          "id": "fraction",
+          "score": 1.25,
+          "@key": "fraction"
+        }
+      },
+      "path": "/item/score",
+      "predicate": ".item.score > 1.2",
+      "expected": true
+    },
+    {
+      "id": "query-graph-json-text-predicate-keep",
+      "json": {
+        "item": {
+          "id": "keep",
+          "score": 4,
+          "@key": "keep"
+        }
+      },
+      "path": "/item/score",
+      "predicate": ".item.score >= 4",
+      "expected": true
+    },
+    {
+      "id": "query-graph-json-text-predicate-skip",
+      "json": {
+        "item": {
+          "id": "skip",
+          "score": 2,
+          "@key": "skip"
+        }
+      },
+      "path": "/item/score",
+      "predicate": ".item.score >= 4",
+      "expected": false
+    },
+    {
+      "id": "signed-integer-comparison",
+      "json": {
+        "left": -1,
+        "right": 2
+      },
+      "path": "/left",
+      "predicate": ".left < .right",
+      "expected": true
+    },
+    {
+      "id": "unsigned-integer-comparison",
+      "json": {
+        "left": 18446744073709551614,
+        "right": 18446744073709551613
+      },
+      "path": "/left",
+      "predicate": ".left > .right",
+      "expected": true
+    },
+    {
+      "id": "floating-point-comparison",
+      "json": {
+        "left": 1.25,
+        "right": 1.2
+      },
+      "path": "/left",
+      "predicate": ".left > .right",
+      "expected": true
+    },
+    {
+      "id": "boolean-number-type-mismatch",
+      "json": {
+        "value": true
+      },
+      "path": "/value",
+      "predicate": ".value == 1",
+      "expected": false
+    },
+    {
+      "id": "digest-equality-case-insensitive",
+      "json": {
+        "hash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "path": "/hash",
+      "predicate": ".hash == \"sha256:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\"",
+      "expected": true
+    },
+    {
+      "id": "boolean-ordering",
+      "json": {
+        "enabled": true
+      },
+      "path": "/enabled",
+      "predicate": ".enabled > false",
+      "expected": true
+    },
+    {
+      "id": "string-ordering",
+      "json": {
+        "value": "beta"
+      },
+      "path": "/value",
+      "predicate": ".value > \"alpha\"",
+      "expected": true
+    },
+    {
+      "id": "digest-ordering",
+      "json": {
+        "hash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "path": "/hash",
+      "predicate": ".hash < \"sha256:BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB\"",
+      "expected": true
+    },
+    {
+      "id": "object-ordering-rejected",
+      "json": {
+        "value": {}
+      },
+      "path": "/value",
+      "predicate": ".value > 1",
+      "expected": false
+    },
+    {
+      "id": "different-type-ordering-rejected",
+      "json": {
+        "value": "1"
+      },
+      "path": "/value",
+      "predicate": ".value > 1",
+      "expected": false
+    },
+    {
+      "id": "malformed-empty-field-path",
+      "json": {},
+      "path": "",
+      "predicate": ". == 1",
+      "expected": false
+    },
+    {
+      "id": "malformed-empty-dot-segment",
+      "json": {
+        "value": {
+          "other": 1
+        }
+      },
+      "path": "/value",
+      "predicate": ".value..other == 1",
+      "expected": false
+    },
+    {
+      "id": "quoted-key-with-escaped-quote",
+      "json": {
+        "obj": {
+          "a\"b": 1
+        }
+      },
+      "path": "/obj/a\"b",
+      "predicate": ".obj[\"a\\\"b\"] == 1",
+      "expected": true
+    },
+    {
+      "id": "malformed-open-key-selector",
+      "json": {
+        "obj": {}
+      },
+      "path": "/obj",
+      "predicate": ".obj[ == 1",
+      "expected": false
+    }
+  ]
+}

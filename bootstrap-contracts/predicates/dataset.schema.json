@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://open-contracts.dev/schemas/predicate-dataset.schema.json",
+  "title": "Predicate evaluation dataset",
+  "type": "object",
+  "required": ["cases"],
+  "additionalProperties": false,
+  "properties": {
+    "cases": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "json", "path", "predicate", "expected"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "json": {},
+          "path": {"type": "string"},
+          "predicate": {"$ref": "https://open-contracts.dev/schemas/predicate-language.schema.json"},
+          "expected": {"type": "boolean"}
+        }
+      }
+    }
+  }
+}
