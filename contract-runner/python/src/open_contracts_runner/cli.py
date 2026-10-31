@@ -92,7 +92,7 @@ def _run_with_coverage(args: argparse.Namespace) -> int:
         print("open-contracts: coverage requires --coverage-source or a custom reader/executor", file=sys.stderr)
         return 2
     try:
-        coverage = Coverage(data_file=str(args.coverage_file), source=sources, branch=True)
+        coverage = Coverage(data_file=str(args.coverage_file), source=sources)
         if args.coverage_append and args.coverage_file.exists():
             coverage.load()
         coverage.start()
@@ -119,7 +119,7 @@ def _coverage_report(data_file: Path, sources: list[str], threshold: float | Non
         from coverage import Coverage
         from coverage.exceptions import CoverageException
 
-        coverage = Coverage(data_file=str(data_file), source=sources or None, branch=True)
+        coverage = Coverage(data_file=str(data_file), source=sources or None)
         coverage.load()
         percentage = coverage.report(file=sys.stderr)
     except (OSError, CoverageException) as exc:

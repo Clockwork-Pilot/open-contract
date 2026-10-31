@@ -11,7 +11,8 @@ check-contracts: check-bootstrap-contracts check-runner-examples
 check-bootstrap-contracts:
 	$(MAKE) -C bootstrap-contracts/predicates check-predicate-contract
 
-check-runner-examples: examples
+check-runner-examples:
+	$(MAKE) -C contract-runner/python check-examples-coverage PYTHON="$(PYTHON)"
 
 examples: example-raw-dataset example-ingested-dataset
 

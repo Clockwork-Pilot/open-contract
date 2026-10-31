@@ -1,8 +1,10 @@
 # Ingested dataset
 
-This example starts with profile source data in `input.json`. `ingestor.py`
-transforms each profile into normalized runner cases with exact-match and
-predicate expectations. `evaluator.py` processes each normalized case.
+This example starts with native check records in `input.json`. `ingestor.py`
+maps `case` to `id`, `request` to `input`, `result` to `expected`, and
+`satisfies` to `predicate`. It preserves the authored exact result and
+predicate; it does not create either one. `evaluator.py` processes each
+normalized case.
 
 From the repository root, run the source data through its reader and evaluator:
 
