@@ -4,15 +4,17 @@ from __future__ import annotations
 
 import argparse
 import importlib
+import importlib.util
 import json
 import sys
+import tempfile
 from pathlib import Path
 from typing import Sequence
 
 import yaml
 
 from .executors import ExecutorRegistry, FunctionExecutor
-from .reader import JsonYamlReader
+from .reader import JsonYamlReader, load_bundle
 from .runner import ContractRunner
 
 
@@ -23,7 +25,11 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("dataset", type=Path, help="path to a normalized dataset")
     run.add_argument("--reader", metavar="MODULE:CALLABLE", help="pure adapter accepting parsed JSON/YAML data and returning a normalized dataset")
     run.add_argument("--executor", metavar="MODULE:CALLABLE", help="evaluator called once per case with its normalized dataset entry")
-    run.add_argument("--quiet", action="store_true", help="print a concise result summary instead of the JSON report")
+    run.add_argument(
+        "--quiet",
+        action="store_true",
+        help="print a concise summary and expected/actual values for failed cases",
+    )
     run.add_argument("--coverage", action="store_true", help="collect Python coverage while running this dataset")
     run.add_argument("--coverage-source", action="append", default=[], metavar="MODULE_OR_PATH", help="source module or path to measure; may be repeated")
     run.add_argument("--coverage-file", type=Path, default=Path(".coverage"), help="coverage data file (default: .coverage)")
@@ -56,19 +62,36 @@ def _run_dataset(args: argparse.Namespace) -> int:
         runner = ContractRunner(executors=executors)
         if reader:
             source_data = JsonYamlReader().read(args.dataset)
-            report = runner.run(reader(source_data))
+            bundle_source = reader(source_data)
         else:
-            report = runner.run(args.dataset)
+            bundle_source = args.dataset
+        bundle = load_bundle(bundle_source)
+        report = runner.run(bundle_source)
     except (OSError, ValueError, ImportError, AttributeError, yaml.YAMLError) as exc:
         print(f"open-contracts: {exc}", file=sys.stderr)
         return 2
 
     if args.quiet:
         print(f"Cases passed: {report.passed}/{report.total}")
+        cases = {
+            (target.id, case.id): case
+            for target in bundle.targets
+            for case in target.cases
+        }
         for result in report.results:
             if not result.passed:
-                detail = result.error or "case did not match expected or predicate"
-                print(f"FAIL {result.target_id}/{result.case_id}: {detail}", file=sys.stderr)
+                print(f"FAIL {result.target_id}/{result.case_id}", file=sys.stderr)
+                if result.error:
+                    print(f"  error: {result.error}", file=sys.stderr)
+                    continue
+                case = cases[(result.target_id, result.case_id)]
+                if case.predicate is not None:
+                    print(f"  predicate: {case.predicate}", file=sys.stderr)
+                else:
+                    expected = json.dumps(case.expected, ensure_ascii=False, sort_keys=True)
+                    print(f"  expected: {expected}", file=sys.stderr)
+                actual = json.dumps(result.actual, ensure_ascii=False, sort_keys=True)
+                print(f"  actual:   {actual}", file=sys.stderr)
     else:
         print(json.dumps(report.to_dict(), indent=2, ensure_ascii=False))
     return 0 if report.passed == report.total else 1
@@ -83,25 +106,43 @@ def _run_with_coverage(args: argparse.Namespace) -> int:
         return 2
 
     sources = list(args.coverage_source)
-    for plugin_spec in (args.reader, args.executor):
-        if plugin_spec:
-            module_name = plugin_spec.partition(":")[0]
-            if module_name not in sources:
-                sources.append(module_name)
+    if not sources:
+        for plugin_spec in (args.reader, args.executor):
+            if plugin_spec:
+                sources.append(plugin_spec.partition(":")[0])
     if not sources:
         print("open-contracts: coverage requires --coverage-source or a custom reader/executor", file=sys.stderr)
         return 2
     try:
-        coverage = Coverage(data_file=str(args.coverage_file), source=sources)
-        if args.coverage_append and args.coverage_file.exists():
-            coverage.load()
-        coverage.start()
-        try:
-            result = _run_dataset(args)
-        finally:
-            coverage.stop()
-            coverage.save()
-        percentage = coverage.report(file=sys.stderr)
+        args.coverage_file.parent.mkdir(parents=True, exist_ok=True)
+        with tempfile.NamedTemporaryFile(
+            mode="w", encoding="utf-8", suffix=".ini", prefix="open-contract-coverage-",
+        ) as config_file:
+            config_file.write("[run]\n")
+            config_file.flush()
+            coverage = Coverage(
+                data_file=str(args.coverage_file), source=sources, branch=True,
+                config_file=config_file.name,
+            )
+            coverage.set_option("run:patch", ["subprocess"])
+            coverage.set_option("run:parallel", True)
+            if args.coverage_append:
+                # Fold subprocess data from earlier dataset runs into the base
+                # file before this run starts collecting with parallel data files.
+                coverage.load()
+                coverage.combine()
+            else:
+                coverage.erase()
+            coverage.start()
+            try:
+                result = _run_dataset(args)
+            finally:
+                coverage.stop()
+                coverage.save()
+            # Native subprocess collection writes parallel files. Consolidate them
+            # so --coverage-append and coverage-report see the full dataset run.
+            coverage.combine()
+            percentage = coverage.report(file=sys.stderr)
     except (OSError, CoverageException) as exc:
         print(f"open-contracts: coverage error: {exc}", file=sys.stderr)
         return 2
@@ -119,9 +160,17 @@ def _coverage_report(data_file: Path, sources: list[str], threshold: float | Non
         from coverage import Coverage
         from coverage.exceptions import CoverageException
 
-        coverage = Coverage(data_file=str(data_file), source=sources or None)
+        coverage = Coverage(
+            data_file=str(data_file), source=sources or None, branch=True,
+            config_file=False,
+        )
+        coverage.set_option("run:parallel", True)
         coverage.load()
-        percentage = coverage.report(file=sys.stderr)
+        coverage.combine()
+        percentage = coverage.report(
+            include=_coverage_include_patterns(sources) or None,
+            file=sys.stderr,
+        )
     except (OSError, CoverageException) as exc:
         print(f"open-contracts: coverage error: {exc}", file=sys.stderr)
         return 2
@@ -131,6 +180,31 @@ def _coverage_report(data_file: Path, sources: list[str], threshold: float | Non
     if threshold is not None:
         print(f"Coverage threshold passed: {percentage:.2f}% >= {threshold:.2f}%", file=sys.stderr)
     return 0
+
+
+def _coverage_include_patterns(sources: list[str]) -> list[str]:
+    """Translate report source paths or module names into file include patterns."""
+    patterns: list[str] = []
+    for source in sources:
+        path = Path(source).expanduser()
+        if path.exists():
+            path = path.resolve()
+            patterns.append(str(path / "*") if path.is_dir() else str(path))
+            continue
+        try:
+            module = importlib.util.find_spec(source)
+        except (ImportError, ValueError):
+            module = None
+        if module is not None and module.submodule_search_locations:
+            patterns.extend(
+                str(Path(location).resolve() / "*")
+                for location in module.submodule_search_locations
+            )
+        elif module is not None and module.origin:
+            patterns.append(str(Path(module.origin).resolve()))
+        else:
+            patterns.append(source)
+    return patterns
 
 
 def _percentage(value: str) -> float:
