@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "open-contracts-runner"
+version = "1.0.0"
+description = "Reusable v1 contract bundle runner"
+requires-python = ">=3.10"
+dependencies = [
+  "open-contracts-predicates>=1.0.0",
+  "PyYAML>=6.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "jsonschema>=4.20"]
+
+[tool.setuptools.packages.find]
+where = ["src"]

@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://open-contracts.dev/schemas/contract-bundle.v1.schema.json",
+  "title": "Open Contracts v1 bundle",
+  "type": "object",
+  "required": ["version"],
+  "additionalProperties": false,
+  "properties": {
+    "version": {"const": 1},
+    "kind": {"type": "string", "minLength": 1},
+    "config": {"type": "object"},
+    "cases": {"type": "array", "items": {"$ref": "#/$defs/case"}},
+    "targets": {"type": "array", "items": {"$ref": "#/$defs/target"}}
+  },
+  "oneOf": [
+    {"required": ["cases"], "not": {"required": ["targets"]}},
+    {"required": ["targets"], "not": {"required": ["cases"]}}
+  ],
+  "$defs": {
+    "case": {
+      "type": "object",
+      "required": ["id", "input", "expected"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "input": {},
+        "expected": {},
+        "predicates": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/predicate"},
+          "default": []
+        }
+      }
+    },
+    "predicate": {
+      "type": "object",
+      "required": ["id", "expression"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "expression": {
+          "$ref": "https://open-contracts.dev/schemas/predicate-language.schema.json"
+        }
+      }
+    },
+    "target": {
+      "type": "object",
+      "required": ["id", "kind", "cases"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "kind": {"type": "string", "minLength": 1},
+        "config": {"type": "object", "default": {}},
+        "cases": {"type": "array", "items": {"$ref": "#/$defs/case"}}
+      }
+    }
+  }
+}
