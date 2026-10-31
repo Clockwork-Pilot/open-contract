@@ -3,10 +3,10 @@
 from typing import Any
 
 
-def evaluate(entry: dict[str, Any]) -> dict[str, Any]:
-    """Evaluate one normalized dataset entry and return its observation."""
-    name = entry["input"]["name"]
-    member = entry["input"]["member"]
+def evaluate(input_data: dict[str, Any]) -> dict[str, Any]:
+    """Return the observed greeting for one case input."""
+    name = input_data["name"]
+    member = input_data["member"]
     return {
         "greeting": f"Hello, {name}!",
         "recipient": {

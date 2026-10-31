@@ -14,6 +14,33 @@ enforce. Coverage measures custom reader and executor modules automatically;
 `--coverage-source` adds other source modules or paths. For runs without custom
 Python adapters, provide at least one `--coverage-source` explicitly.
 
+## Execution flow
+
+```text
+  JSON/YAML dataset -> built-in reader --+
+                                         +--> schema validation -> normalized bundle
+  native input -> project reader --------+                              |
+                                                                        v
+                                                               iterate each case
+                                                                        |
+                            +-------------------------------------------+----------------+
+                            |                                                            |
+                            v                                                            v
+                 evaluator receives case.input                     expected or predicate
+                            |                                                            |
+                          actual ---------------------> exact compare / predicate eval --+
+                                                                                         |
+                                                                                         v
+                                                                                case and target report
+
+  optional coverage collection surrounds a run; the caller can combine
+  multiple run files and enforce a threshold in coverage-report.
+```
+
+The evaluator receives only the case's `input` and returns the observed value.
+The runner compares that value with `expected` or evaluates the case's
+`predicate`; the evaluator does not receive either comparison rule.
+
 For example, collect the two examples into one coverage file and enforce a
 caller-selected 80% threshold after both have run:
 
@@ -44,17 +71,16 @@ teaching this package provider-specific formats.
 
 ## Focused examples
 
-Each example has its own `evaluator.py`. It receives the complete normalized
-entry (`id`, `input`, and either `expected` or `predicate`) and returns a
-greeting with nested recipient details. The nested result makes path and
-existence checks meaningful in the predicates.
+Each example has its own `evaluator.py`. Its function takes the case input and
+returns the observed greeting. Open Contracts performs the expected-value or
+predicate comparison. The nested result makes path and existence checks
+meaningful in the predicates.
 
 ### Raw dataset
 
-`examples/raw-dataset/dataset.json` is already in runner format. The
-`example-raw-dataset` Make target first validates it against
-`schemas/bundle.v1.schema.json`, including the referenced predicate-language
-schema, then runs it. It contains
+`examples/raw-dataset/dataset.json` is already in runner format. Open Contracts
+validates it against `schemas/bundle.v1.schema.json`, including the referenced
+predicate-language schema, before executing it. It contains
 exact-match and predicate cases, for example:
 
 ```json

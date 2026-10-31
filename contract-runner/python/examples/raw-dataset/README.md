@@ -4,8 +4,8 @@ This example starts with cases already in the runner's normalized dataset
 format. Each case has an `id`, `input`, and either an `expected` result or a
 `predicate` evaluated against the observation.
 
-`evaluator.py` processes one complete case. `validate_schema.py` checks the
-dataset against the bundle schema.
+`evaluator.py` processes one complete case. Open Contracts validates the
+dataset against its bundle and predicate schemas before executing its cases.
 
 From the repository root, run the raw dataset directly with:
 

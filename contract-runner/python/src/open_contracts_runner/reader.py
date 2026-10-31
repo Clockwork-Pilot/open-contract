@@ -11,6 +11,7 @@ from typing import Any, Protocol
 import yaml
 
 from .model import Bundle, Case, Target
+from .validation import validate_bundle_data
 
 
 class BundleReader(Protocol):
@@ -37,12 +38,24 @@ class JsonYamlReader:
 
 def load_bundle(source: Any, reader: Reader | None = None) -> Bundle:
     if isinstance(source, Bundle):
-        return source
-    if isinstance(source, Mapping):
+        value = {
+            "version": source.version,
+            "targets": [
+                {
+                    "id": target.id,
+                    "kind": target.kind,
+                    "config": target.config,
+                    "cases": [case.to_dict() for case in target.cases],
+                }
+                for target in source.targets
+            ],
+        }
+    elif isinstance(source, Mapping):
         value = source
     else:
         active_reader = reader or JsonYamlReader()
         value = active_reader(source) if callable(active_reader) else active_reader.read(source)
+    validate_bundle_data(value)
     return normalize_bundle(value)
 
 

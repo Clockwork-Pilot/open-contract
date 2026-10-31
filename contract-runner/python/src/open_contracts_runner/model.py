@@ -13,18 +13,6 @@ class Case:
     expected: Any = None
     predicate: str | None = None
 
-    def to_dict(self) -> dict[str, Any]:
-        entry = {
-            "id": self.id,
-            "input": self.input,
-        }
-        if self.predicate is not None:
-            entry["predicate"] = self.predicate
-        else:
-            entry["expected"] = self.expected
-        return entry
-
-
 @dataclass(frozen=True)
 class Target:
     id: str
