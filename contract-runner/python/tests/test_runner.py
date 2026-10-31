@@ -191,7 +191,6 @@ def test_custom_executor_observation_is_normalized_to_json_data() -> None:
         "cases": [{
             "id": "normalized-observation",
             "input": {},
-            "expected": {},
             "predicate": ".result.ok == true",
         }],
     })
