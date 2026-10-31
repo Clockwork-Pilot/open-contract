@@ -1,33 +1,128 @@
 # Open Contracts Python runner
 
-This package reads a v1 bundle from JSON or YAML, or accepts a consumer reader
-that returns the same normalized mapping. Bundles can put cases at the top level
-or group them under targets. Each case has `id`, `input`, `expected`, and optional
-string-expression `predicates`.
+The runner reads a normalized dataset from JSON or YAML, or accepts a custom
+reader that returns the same structure. Cases can be listed at the top level or
+grouped under targets. Every case has an `id`, an `input`, and exactly one of
+`expected` or a complete string-expression `predicate`.
 
-The runner invokes an executor for every target case and records its observation
-as `actual`. It evaluates each predicate against that observation first; any
-passing predicate accepts the case. If none passes, it compares `actual` exactly
-with `expected`. Reports include every target and case. `CoverageAggregator`
-pools outcomes by case count across compound runs and enforces a percentage
-threshold on the combined result.
+The runner executes once per case and records the observation as `actual`. An
+`expected` case passes when `actual` matches it exactly. A `predicate` case
+passes when its one complete expression evaluates to true against `actual`.
+Reports contain each target and case result. Coverage is opt-in: a caller can
+collect it during a run, append data across runs, and choose a threshold to
+enforce. Coverage measures custom reader and executor modules automatically;
+`--coverage-source` adds other source modules or paths. For runs without custom
+Python adapters, provide at least one `--coverage-source` explicitly.
 
-The default registry provides `command` and `hooks` targets, each launched as a
-separate process per case with `input` JSON on stdin, and generic `http` targets
-that POST case input and normalize status and response body. Projects can register
-their own target executors and implement `BundleReader` for native manifests;
-provider-specific configuration stays outside this package.
-
-## Development
-
-Install the bootstrap predicate package from this repository, then this package:
+For example, collect the two examples into one coverage file and enforce a
+caller-selected 80% threshold after both have run:
 
 ```sh
-python3 -m pip install -e ../../bootstrap-contracts/predicates/python
-python3 -m pip install -e '.[dev]'
-python3 -m pytest
+PYTHONPATH=contract-runner/python/src:bootstrap-contracts/predicates/python/src \
+python3 -m open_contracts_runner run \
+  contract-runner/python/examples/raw-dataset/dataset.json \
+  --executor evaluator:evaluate --coverage --coverage-file /tmp/open-contracts.coverage
+PYTHONPATH=contract-runner/python/src:bootstrap-contracts/predicates/python/src \
+python3 -m open_contracts_runner run \
+  contract-runner/python/examples/ingested-dataset/input.json \
+  --reader ingestor:read_dataset --executor evaluator:evaluate \
+  --coverage --coverage-append --coverage-file /tmp/open-contracts.coverage
+PYTHONPATH=contract-runner/python/src:bootstrap-contracts/predicates/python/src \
+python3 -m open_contracts_runner coverage-report \
+  --coverage-file /tmp/open-contracts.coverage --coverage-threshold 80
 ```
 
-The v1 JSON Schema is `schemas/bundle.v1.schema.json`. Its predicate field
-references the standalone string language schema from the bootstrap predicate
-package.
+Use `--coverage` without a threshold to collect and report without enforcing a
+minimum. Add `--coverage-threshold N` to a run to enforce immediately, or use
+`coverage-report` to enforce after accumulating multiple runs.
+
+The built-in registry provides `command` and `hooks` targets, each launched as a
+separate process per case with `input` JSON on stdin, and generic `http` targets
+that POST case input and normalize status and response body. Projects can
+register custom executors and provide readers for native manifests without
+teaching this package provider-specific formats.
+
+## Focused examples
+
+Each example has its own `evaluator.py`. It receives the complete normalized
+entry (`id`, `input`, and either `expected` or `predicate`) and returns a
+greeting with nested recipient details. The nested result makes path and
+existence checks meaningful in the predicates.
+
+### Raw dataset
+
+`examples/raw-dataset/dataset.json` is already in runner format. The
+`example-raw-dataset` Make target first validates it against
+`schemas/bundle.v1.schema.json`, including the referenced predicate-language
+schema, then runs it. It contains
+exact-match and predicate cases, for example:
+
+```json
+{
+  "id": "greets-valid-name-exact",
+  "input": { "name": "Ada" },
+  "expected": { "greeting": "Hello, Ada!" }
+}
+```
+
+```json
+{
+  "id": "greets-grace-compound-predicate",
+  "input": {
+    "name": "Grace",
+    "member": { "active": true, "tier": "silver" }
+  },
+  "predicate": "exists(.recipient.name) AND .recipient.name == \"Grace\" AND (.recipient.active == true OR .recipient.tier == \"silver\") AND NOT (.recipient.tier == \"blocked\") AND .greeting == \"Hello, Grace!\""
+}
+```
+
+This single expression demonstrates dotted paths, `exists()`, comparisons,
+parentheses, and the `AND`, `OR`, and `NOT` operators.
+
+Run it from the repository root:
+
+```sh
+make example-raw-dataset
+```
+
+### Ingested dataset
+
+`examples/ingested-dataset/input.json` is source data, not a runner dataset.
+`examples/ingested-dataset/ingestor.py` transforms it into normalized case
+entries on the fly. For each profile it returns an exact-match case and a
+compound-predicate case with the same `input` and either `expected` or
+`predicate` shape consumed by the evaluator.
+
+```sh
+make example-ingested-dataset
+```
+
+`make examples` runs both focused examples with `python -m
+open_contracts_runner`. The root Makefile exposes the runner and predicate
+source directories to Python, so no package installation or command on `PATH`
+is needed. The Make targets request a concise pass count; direct CLI runs print
+the full JSON report by default.
+
+For other JSON or YAML source formats, pass a pure adapter with
+`--reader MODULE:CALLABLE`; it receives the decoded value and returns the
+normalized dataset. `--executor MODULE:CALLABLE` selects an evaluator called
+once with each complete normalized case entry.
+
+## Predicate language
+
+The bundle schema is `schemas/bundle.v1.schema.json`. Its `predicate` field
+references the standalone schema at
+`bootstrap-contracts/predicates/predicate-language.schema.json`. That schema
+describes the complete string language supported by the bootstrap evaluator:
+field paths, string and scalar literals, all comparison and logical operators,
+parentheses, `exists()`, precedence, and evaluation rules.
+
+The predicate language schema declares supported operations and data-type
+samples. The separate `bootstrap-contracts/predicates/dataset-cases.json` holds
+authored cases to exercise; the generator combines those with schema-derived
+type/operator combinations. The `generate-dataset` Make goal builds the
+complete dataset. Run it through the coverage-driven evaluator sandbox with:
+
+```sh
+make -C bootstrap-contracts/predicates check-predicate-contract
+```

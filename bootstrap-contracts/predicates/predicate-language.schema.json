@@ -2,13 +2,286 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://open-contracts.dev/schemas/predicate-language.schema.json",
   "title": "Open Contracts predicate expression",
-  "description": "A predicate is a single string expression. Field paths are relative to the complete input JSON value; no fixed root property is reserved.",
   "type": "string",
-  "examples": [
-    ".stored_timestamp == .deferred_call_timestamp",
-    ".payload.items.0.name == \"expected\"",
-    "exists(.events.2.name)",
-    ".payload.items.0[\"a/b\"] == \"expected\""
-  ],
-  "$comment": "Readable grammar: expression := or-expression; or-expression := and-expression (OR and-expression)*; and-expression := not-expression (AND not-expression)*; not-expression := NOT not-expression | comparison; comparison := primary (comparison-operator primary)?; primary := field-reference | JSON-scalar | TRUE | FALSE | NULL | exists-call | '(' expression ')'; field-reference is a chain of .name segments and [JSON-string] selectors. Numeric segments such as .items.0 address array indexes and numeric object keys. Use a bracketed JSON string for object keys containing dots, slashes, or other punctuation. JSON Schema validates the string wire type; the evaluator validates grammar and semantics."
+  "minLength": 1,
+  "x-open-contracts-language": {
+    "wireType": "string",
+    "grammar": {
+      "expression": "or-expression",
+      "or-expression": "and-expression (OR and-expression)*",
+      "and-expression": "not-expression (AND not-expression)*",
+      "not-expression": "NOT not-expression | comparison",
+      "comparison": "primary (comparison-operator primary)?",
+      "comparison-operator": "== | != | > | >= | < | <=",
+      "primary": "field-reference | scalar-literal | exists-call | '(' expression ')'",
+      "exists-call": "exists '(' field-reference ')'",
+      "field-reference": "dot-field-reference | bracket-field-reference",
+      "dot-field-reference": "'.' dot-segment ('.' dot-segment | '[' JSON-string ']')*",
+      "bracket-field-reference": "'[' JSON-string ']' ('.' dot-segment | '[' JSON-string ']')*",
+      "dot-segment": "[A-Za-z0-9_@-]+",
+      "scalar-literal": "string-literal | JSON number | TRUE | FALSE | NULL",
+      "string-literal": "single-quoted-string | double-quoted-string",
+      "single-quoted-string": "' (escaped-character | non-single-quote-character)* '",
+      "double-quoted-string": "\" (escaped-character | non-double-quote-character)* \"",
+      "escaped-character": "'\\' any-character",
+      "non-single-quote-character": "any-character-except-single-quote-or-backslash",
+      "non-double-quote-character": "any-character-except-double-quote-or-backslash"
+    },
+    "operators": {
+      "logical": [
+        {
+          "token": "NOT",
+          "arity": "unary",
+          "associativity": "right"
+        },
+        {
+          "token": "AND",
+          "arity": "binary",
+          "associativity": "left"
+        },
+        {
+          "token": "OR",
+          "arity": "binary",
+          "associativity": "left"
+        }
+      ],
+      "comparison": [
+        {
+          "token": "==",
+          "operation": "equal"
+        },
+        {
+          "token": "!=",
+          "operation": "notEqual"
+        },
+        {
+          "token": ">",
+          "operation": "greaterThan"
+        },
+        {
+          "token": ">=",
+          "operation": "greaterThanOrEqual"
+        },
+        {
+          "token": "<",
+          "operation": "lessThan"
+        },
+        {
+          "token": "<=",
+          "operation": "lessThanOrEqual"
+        }
+      ],
+      "functions": [
+        {
+          "name": "exists",
+          "arity": 1,
+          "argument": "field-reference",
+          "resultType": "boolean",
+          "falseFor": [
+            "missing",
+            "null",
+            "emptyObject",
+            "emptyArray"
+          ],
+          "trueFor": "otherwisePresent"
+        }
+      ]
+    },
+    "dataTypes": [
+      {
+        "id": "missing",
+        "category": "missing",
+        "comparisonSample": {
+          "present": false
+        },
+        "existenceSamples": [
+          {
+            "present": false
+          }
+        ]
+      },
+      {
+        "id": "null",
+        "category": "null",
+        "comparisonSample": {
+          "present": true,
+          "value": null
+        },
+        "existenceSamples": [
+          {
+            "present": true,
+            "value": null
+          }
+        ]
+      },
+      {
+        "id": "boolean",
+        "category": "boolean",
+        "comparisonSample": {
+          "present": true,
+          "value": true
+        },
+        "existenceSamples": [
+          {
+            "present": true,
+            "value": false
+          },
+          {
+            "present": true,
+            "value": true
+          }
+        ]
+      },
+      {
+        "id": "integer",
+        "category": "number",
+        "comparisonSample": {
+          "present": true,
+          "value": 2
+        },
+        "existenceSamples": [
+          {
+            "present": true,
+            "value": 0
+          }
+        ]
+      },
+      {
+        "id": "decimal",
+        "category": "number",
+        "comparisonSample": {
+          "present": true,
+          "value": 2.0
+        },
+        "existenceSamples": [
+          {
+            "present": true,
+            "value": 1.5
+          }
+        ]
+      },
+      {
+        "id": "string",
+        "category": "string",
+        "comparisonSample": {
+          "present": true,
+          "value": "alpha"
+        },
+        "existenceSamples": [
+          {
+            "present": true,
+            "value": ""
+          },
+          {
+            "present": true,
+            "value": "text"
+          }
+        ]
+      },
+      {
+        "id": "array",
+        "category": "array",
+        "comparisonSample": {
+          "present": true,
+          "value": [
+            1
+          ]
+        },
+        "existenceSamples": [
+          {
+            "present": true,
+            "value": []
+          },
+          {
+            "present": true,
+            "value": [
+              1
+            ]
+          }
+        ]
+      },
+      {
+        "id": "object",
+        "category": "object",
+        "comparisonSample": {
+          "present": true,
+          "value": {
+            "key": "value"
+          }
+        },
+        "existenceSamples": [
+          {
+            "present": true,
+            "value": {}
+          },
+          {
+            "present": true,
+            "value": {
+              "key": "value"
+            }
+          }
+        ]
+      }
+    ],
+    "comparisonRules": {
+      "missingEquivalentCategory": "null",
+      "numericCategory": "number",
+      "booleanDistinctFromNumber": true,
+      "sameCategoryEquality": "jsonValue",
+      "inequality": "inverseOfEquality",
+      "orderingCategories": [
+        "boolean",
+        "number",
+        "string"
+      ],
+      "unsupportedOrderingResult": false,
+      "sha256StringComparison": {
+        "hexLength": 64,
+        "optionalPrefix": "sha256:",
+        "hexCaseSensitive": false
+      }
+    },
+    "precedence": [
+      {
+        "level": 1,
+        "operator": "parentheses"
+      },
+      {
+        "level": 2,
+        "operator": "comparison"
+      },
+      {
+        "level": 3,
+        "operator": "NOT"
+      },
+      {
+        "level": 4,
+        "operator": "AND"
+      },
+      {
+        "level": 5,
+        "operator": "OR"
+      }
+    ],
+    "pathSemantics": {
+      "root": "completeJsonValue",
+      "implicitRootName": false,
+      "reservedProperties": [],
+      "rootSelectors": [
+        "dotSegment",
+        "bracketJsonString"
+      ],
+      "numericDotSegmentTargets": [
+        "arrayIndex",
+        "objectKey"
+      ],
+      "bracketSelectorValue": "jsonString"
+    },
+    "evaluationSemantics": {
+      "resultType": "boolean",
+      "invalidExpressionResult": false,
+      "bareFieldReferenceResult": false,
+      "truthinessCoercion": false
+    }
+  }
 }

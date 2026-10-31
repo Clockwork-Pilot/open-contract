@@ -1,0 +1,6 @@
+{
+  "profiles": [
+    { "display_name": "Ada", "active": true, "tier": "gold" },
+    { "display_name": "hello", "active": false, "tier": "standard" }
+  ]
+}

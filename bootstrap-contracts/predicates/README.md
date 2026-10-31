@@ -1,11 +1,17 @@
 # Bootstrap predicate datasets
 
-`generation-rules.json` is the source for `dataset.json`. Its case rules provide
-the input JSON, string predicate, and expected boolean result. The generator
-derives each output case's `path` from the first predicate reference, then emits
-one uniform list of cases. The dataset contains no AST predicate objects and no
-JSON-encoded predicate expressions. The predicate schema is in
-`predicate-language.schema.json`; the generated dataset shape is in
+`predicate-language.schema.json` is the single source for the supported
+predicate operations, JSON data types, comparison and existence rules, and
+representative type samples. `dataset-cases.json` separately holds authored
+predicate cases for syntax, path, and evaluator behavior. The generator reads
+the schema to build the type/operator matrix (including equality, ordering,
+and `exists()` cases), combines it with `dataset-cases.json`, and writes
+`dataset.json`. It also derives each case's `path` metadata from the first
+predicate field reference. The sandboxes evaluate each case using its `json`
+and `predicate` fields and compare the result to `expected`.
+
+The generated dataset contains no AST predicate objects and no JSON-encoded
+predicate expressions. The dataset shape is defined by
 `dataset.schema.json`.
 
 Generate or verify the checked-in dataset with:
@@ -41,10 +47,6 @@ The implementations are standalone and have no runtime dependency on `/a2a` or
 `knowledge_tool`. Python and Rust remain grouped under this dataset so their
 string-language behavior stays synchronized.
 
-## Python package
-
-Build the package with:
-
-```sh
-python3 -m pip wheel --no-deps bootstrap-contracts/predicates/python
-```
+The Python evaluator is imported directly from its source tree by the local
+runner and coverage checks; this repository does not build or install a Python
+distribution.

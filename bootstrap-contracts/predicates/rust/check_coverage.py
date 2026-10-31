@@ -14,24 +14,41 @@ CRATE = Path(__file__).resolve().parent
 
 
 def main() -> int:
-    if shutil.which("cargo") is None or shutil.which("rustup") is None:
+    environment = {**os.environ}
+    cargo_bin = Path.home() / ".cargo" / "bin"
+    if cargo_bin.is_dir():
+        environment["PATH"] = os.pathsep.join(
+            [str(cargo_bin), environment.get("PATH", "")]
+        )
+
+    if (
+        shutil.which("cargo", path=environment["PATH"]) is None
+        or shutil.which("rustup", path=environment["PATH"]) is None
+    ):
         print("rust dataset coverage requires cargo, rustup, and cargo-llvm-cov", file=sys.stderr)
         return 2
     available = subprocess.run(
-        ["cargo", "llvm-cov", "--version"], capture_output=True, check=False
+        ["cargo", "llvm-cov", "--version"],
+        capture_output=True,
+        check=False,
+        env=environment,
     )
     if available.returncode:
         print("cargo-llvm-cov is required (install with: cargo install cargo-llvm-cov --locked)", file=sys.stderr)
         return 2
     components = subprocess.run(
-        ["rustup", "component", "list", "--installed"], capture_output=True, text=True, check=False
+        ["rustup", "component", "list", "--installed"],
+        capture_output=True,
+        text=True,
+        check=False,
+        env=environment,
     )
     if components.returncode or not any(line.startswith("llvm-tools-") for line in components.stdout.splitlines()):
         print("LLVM coverage tools are required (install with: rustup component add llvm-tools-preview)", file=sys.stderr)
         return 2
 
     target_dir = Path(__file__).resolve().parent / "target" / "coverage"
-    environment = {**os.environ, "CARGO_TARGET_DIR": str(target_dir)}
+    environment["CARGO_TARGET_DIR"] = str(target_dir)
     clean = subprocess.run(
         ["cargo", "llvm-cov", "clean", "--profraw-only", "--manifest-path", str(CRATE / "Cargo.toml")],
         cwd=CRATE,

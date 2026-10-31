@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import os
 import subprocess
-from typing import Any, Protocol
+from typing import Any, Callable, Protocol
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
@@ -75,6 +75,18 @@ class CommandExecutor:
             return json.loads(completed.stdout)
         except json.JSONDecodeError:
             return completed.stdout
+
+
+class FunctionExecutor:
+    """Call a Python evaluator once per case with its normalized dataset entry."""
+
+    def __init__(self, evaluator: Callable[[Any], Any]) -> None:
+        if not callable(evaluator):
+            raise TypeError("evaluator must be callable")
+        self.evaluator = evaluator
+
+    def execute(self, target: Target, case: Case) -> Any:
+        return self.evaluator(case.to_dict())
 
 
 class HttpExecutor:

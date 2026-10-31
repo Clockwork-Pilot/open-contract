@@ -1,14 +1,14 @@
 """Reusable v1 contract bundle reader and runner."""
 
-from .executors import CommandExecutor, ExecutorRegistry, HttpExecutor, TargetExecutor
-from .model import Bundle, Case, CaseResult, Predicate, RunReport, Target
+from .executors import CommandExecutor, ExecutorRegistry, FunctionExecutor, HttpExecutor, TargetExecutor
+from .model import Bundle, Case, CaseResult, RunReport, Target
 from .reader import BundleReader, CustomReader, JsonYamlReader, Reader, load_bundle, normalize_bundle
-from .runner import ContractRunner, CoverageAggregator, CoverageThresholdError
+from .runner import ContractRunner
 
 __all__ = [
     "Bundle", "BundleReader", "Case", "CaseResult", "CommandExecutor",
-    "ContractRunner", "CoverageAggregator", "CoverageThresholdError",
+    "ContractRunner", "FunctionExecutor",
     "CustomReader", "ExecutorRegistry", "HttpExecutor", "JsonYamlReader",
-    "Predicate", "Reader", "RunReport", "Target", "TargetExecutor", "load_bundle",
+    "Reader", "RunReport", "Target", "TargetExecutor", "load_bundle",
     "normalize_bundle",
 ]

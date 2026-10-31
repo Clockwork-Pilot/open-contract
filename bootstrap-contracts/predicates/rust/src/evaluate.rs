@@ -35,6 +35,9 @@ fn value_equal(left: &Value, right: &Value) -> bool {
         (Value::String(_), Value::String(_)) => {
             compare_values(left, right) == Some(Ordering::Equal)
         }
+        (Value::Number(left), Value::Number(right)) => {
+            number_cmp(left, right) == Some(Ordering::Equal)
+        }
         _ => left == right,
     }
 }
@@ -286,7 +289,16 @@ fn compare_optional(
     operand: &Value,
     accepts: impl FnOnce(Ordering) -> bool,
 ) -> bool {
-    value.and_then(|value| compare_values(value, operand)).is_some_and(accepts)
+    let is_orderable = |value: &Value| {
+        matches!(value, Value::Bool(_) | Value::Number(_) | Value::String(_))
+    };
+    let Some(value) = value.filter(|value| is_orderable(value)) else {
+        return false;
+    };
+    if !is_orderable(operand) {
+        return false;
+    }
+    compare_values(value, operand).is_some_and(accepts)
 }
 
 pub fn evaluate_predicate(record: &Value, predicate: &str) -> bool {

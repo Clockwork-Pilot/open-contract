@@ -19,29 +19,18 @@
   "$defs": {
     "case": {
       "type": "object",
-      "required": ["id", "input", "expected"],
+      "required": ["id", "input"],
       "additionalProperties": false,
       "properties": {
         "id": {"type": "string", "minLength": 1},
         "input": {},
         "expected": {},
-        "predicates": {
-          "type": "array",
-          "items": {"$ref": "#/$defs/predicate"},
-          "default": []
-        }
-      }
-    },
-    "predicate": {
-      "type": "object",
-      "required": ["id", "expression"],
-      "additionalProperties": false,
-      "properties": {
-        "id": {"type": "string", "minLength": 1},
-        "expression": {
-          "$ref": "https://open-contracts.dev/schemas/predicate-language.schema.json"
-        }
-      }
+        "predicate": {"$ref": "https://open-contracts.dev/schemas/predicate-language.schema.json"}
+      },
+      "oneOf": [
+        {"required": ["expected"], "not": {"required": ["predicate"]}},
+        {"required": ["predicate"], "not": {"required": ["expected"]}}
+      ]
     },
     "target": {
       "type": "object",

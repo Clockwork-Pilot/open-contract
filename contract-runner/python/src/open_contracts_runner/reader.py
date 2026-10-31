@@ -10,7 +10,7 @@ from typing import Any, Protocol
 
 import yaml
 
-from .model import Bundle, Case, Predicate, Target
+from .model import Bundle, Case, Target
 
 
 class BundleReader(Protocol):
@@ -90,32 +90,24 @@ def normalize_bundle(value: Any) -> Bundle:
         for raw_case in cases_value:
             if not isinstance(raw_case, Mapping):
                 raise ValueError(f"target {target_id} case must be an object")
-            if set(raw_case) - {"id", "input", "expected", "predicates"}:
+            if set(raw_case) - {"id", "input", "expected", "predicate"}:
                 raise ValueError(f"case {target_id} contains unknown fields")
             case_id = _required_string(raw_case, "id", f"target {target_id} case")
             if case_id in case_ids:
                 raise ValueError(f"duplicate case id {case_id} in target {target_id}")
             case_ids.add(case_id)
-            for key in ("input", "expected"):
-                if key not in raw_case:
-                    raise ValueError(f"case {target_id}/{case_id} is missing {key}")
-            raw_predicates = raw_case.get("predicates", [])
-            if not isinstance(raw_predicates, list):
-                raise ValueError(f"case {target_id}/{case_id} predicates must be an array")
-            predicates: list[Predicate] = []
-            predicate_ids: set[str] = set()
-            for raw_predicate in raw_predicates:
-                if not isinstance(raw_predicate, Mapping):
-                    raise ValueError(f"case {target_id}/{case_id} predicate must be an object")
-                if set(raw_predicate) - {"id", "expression"}:
-                    raise ValueError(f"predicate in case {target_id}/{case_id} contains unknown fields")
-                predicate_id = _required_string(raw_predicate, "id", "predicate")
-                expression = _required_string(raw_predicate, "expression", f"predicate {predicate_id}")
-                if predicate_id in predicate_ids:
-                    raise ValueError(f"duplicate predicate id {predicate_id} in case {target_id}/{case_id}")
-                predicate_ids.add(predicate_id)
-                predicates.append(Predicate(predicate_id, expression))
-            cases.append(Case(case_id, raw_case["input"], raw_case["expected"], tuple(predicates)))
+            if "input" not in raw_case:
+                raise ValueError(f"case {target_id}/{case_id} is missing input")
+            has_expected = "expected" in raw_case
+            has_predicate = "predicate" in raw_case
+            if has_expected == has_predicate:
+                raise ValueError(
+                    f"case {target_id}/{case_id} must contain exactly one of expected or predicate"
+                )
+            predicate = raw_case.get("predicate")
+            if has_predicate and (not isinstance(predicate, str) or not predicate):
+                raise ValueError(f"case {target_id}/{case_id} predicate must be a non-empty string")
+            cases.append(Case(case_id, raw_case["input"], raw_case.get("expected"), predicate))
         targets.append(Target(target_id, kind, tuple(cases), dict(config)))
     return Bundle(1, tuple(targets))
 

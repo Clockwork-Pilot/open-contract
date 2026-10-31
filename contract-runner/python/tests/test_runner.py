@@ -15,8 +15,6 @@ from referencing import Registry, Resource
 from open_contracts_runner import (
     Case,
     ContractRunner,
-    CoverageAggregator,
-    CoverageThresholdError,
     ExecutorRegistry,
     HttpExecutor,
     Target,
@@ -95,27 +93,23 @@ def test_grouped_targets_execute_every_case_and_report_per_target() -> None:
     assert report.to_dict()["targets"]["second"]["cases"][0]["actual"] == {"n": 3}
 
 
-def test_predicates_run_first_and_any_passing_predicate_accepts() -> None:
+def test_single_predicate_supports_logical_operators() -> None:
     runner = ContractRunner(executors=registry_for(EchoExecutor()))
     report = runner.run({"version": 1, "kind": "echo", "cases": [{
         "id": "predicate-match",
         "input": {"status": "ready", "count": 3},
-        "expected": {"status": "different"},
-        "predicates": [
-            {"id": "nope", "expression": ".count > 8"},
-            {"id": "ready", "expression": ".status == \"ready\" AND .count >= 3"},
-        ],
+        "predicate": "NOT (.count < 3) AND (.status == \"ready\" OR .status == \"warm\")",
     }]})
 
     assert report.results[0].passed
-    assert report.results[0].matched_by == "predicate:ready"
+    assert report.results[0].matched_by == "predicate"
 
 
 def test_exact_match_fallback_and_json_type_sensitivity() -> None:
     runner = ContractRunner(executors=registry_for(EchoExecutor()))
     report = runner.run({"version": 1, "kind": "echo", "cases": [
         {"id": "exact", "input": {"ok": True}, "expected": {"ok": True},
-         "predicates": [{"id": "miss", "expression": ".ok == false"}]},
+        },
         {"id": "bool-is-not-number", "input": True, "expected": 1},
     ]})
 
@@ -198,7 +192,7 @@ def test_custom_executor_observation_is_normalized_to_json_data() -> None:
             "id": "normalized-observation",
             "input": {},
             "expected": {},
-            "predicates": [{"id": "observed", "expression": ".result.ok == true"}],
+            "predicate": ".result.ok == true",
         }],
     })
 
@@ -223,21 +217,16 @@ def test_non_json_custom_observation_becomes_case_error() -> None:
     assert report.results[0].error == "ValueError: actual contains non-JSON value date"
 
 
-def test_coverage_aggregates_case_counts_and_enforces_threshold() -> None:
+def test_report_counts_case_outcomes_without_claiming_code_coverage() -> None:
     runner = ContractRunner(executors=registry_for(EchoExecutor()))
-    aggregator = CoverageAggregator()
-    aggregator.add(runner.run({"version": 1, "kind": "echo", "cases": [
+    report = runner.run({"version": 1, "kind": "echo", "cases": [
         {"id": "pass", "input": 1, "expected": 1},
-    ]}))
-    aggregator.add(runner.run({"version": 1, "kind": "echo", "cases": [
         {"id": "fail", "input": 1, "expected": 2},
-    ]}))
+    ]})
 
-    with pytest.raises(CoverageThresholdError) as error:
-        aggregator.enforce(75)
-    assert error.value.report.passed == 1
-    assert error.value.report.total == 2
-    assert error.value.report.coverage == 50
+    assert report.passed == 1
+    assert report.total == 2
+    assert "coverage" not in report.to_dict()
 
 
 @pytest.mark.parametrize("bad", [
@@ -245,6 +234,8 @@ def test_coverage_aggregates_case_counts_and_enforces_threshold() -> None:
     {"version": 2, "cases": []},
     {"version": 1, "cases": [], "targets": []},
     {"version": 1, "cases": [{"id": "missing-input", "expected": None}]},
+    {"version": 1, "cases": [{"id": "missing-matcher", "input": None}]},
+    {"version": 1, "cases": [{"id": "both-matchers", "input": None, "expected": None, "predicate": "true"}]},
 ])
 def test_rejects_invalid_bundle_shapes(bad: dict[str, Any]) -> None:
     with pytest.raises(ValueError):
@@ -268,12 +259,11 @@ def test_v1_schema_accepts_grouped_bundle_and_string_predicates() -> None:
             "cases": [{
                 "id": "event",
                 "input": {"event": {"name": "start"}},
-                "expected": {"event": {"name": "different"}},
-                "predicates": [{"id": "started", "expression": ".event.name == \"start\""}],
+                "predicate": ".event.name == \"start\"",
             }],
         }],
     }
     jsonschema.Draft202012Validator(bundle_schema, registry=registry).validate(instance)
-    instance["targets"][0]["cases"][0]["predicates"][0]["expression"] = {"event": "start"}
+    instance["targets"][0]["cases"][0]["predicate"] = {"event": "start"}
     with pytest.raises(jsonschema.ValidationError):
         jsonschema.Draft202012Validator(bundle_schema, registry=registry).validate(instance)

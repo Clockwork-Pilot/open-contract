@@ -7,17 +7,22 @@ from typing import Any
 
 
 @dataclass(frozen=True)
-class Predicate:
-    id: str
-    expression: str
-
-
-@dataclass(frozen=True)
 class Case:
     id: str
     input: Any
-    expected: Any
-    predicates: tuple[Predicate, ...] = ()
+    expected: Any = None
+    predicate: str | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        entry = {
+            "id": self.id,
+            "input": self.input,
+        }
+        if self.predicate is not None:
+            entry["predicate"] = self.predicate
+        else:
+            entry["expected"] = self.expected
+        return entry
 
 
 @dataclass(frozen=True)
@@ -67,10 +72,6 @@ class RunReport:
         return len(self.results)
 
     @property
-    def coverage(self) -> float:
-        return (100.0 * self.passed / self.total) if self.total else 0.0
-
-    @property
     def by_target(self) -> dict[str, tuple[CaseResult, ...]]:
         grouped: dict[str, list[CaseResult]] = {}
         for result in self.results:
@@ -81,7 +82,6 @@ class RunReport:
         return {
             "passed": self.passed,
             "total": self.total,
-            "coverage": self.coverage,
             "targets": {
                 target: {
                     "passed": sum(result.passed for result in results),
