@@ -1,5 +1,8 @@
 # Open Contracts Python runner
 
+For native JavaScript execution with Node coverage, see the [JavaScript
+runner](../javascript/README.md).
+
 The runner reads a normalized dataset from JSON or YAML, or accepts a custom
 reader that returns the same structure. Cases can be listed at the top level or
 grouped under targets. Every case has an `id`, an `input`, and exactly one of
