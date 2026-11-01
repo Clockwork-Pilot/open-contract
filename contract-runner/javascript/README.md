@@ -41,3 +41,8 @@ Use `--coverage-source` once per file or directory to include. The command is
 resolved from `PATH` or from the supplied path; `c8` must be installed in the
 runner package or otherwise available. Coverage failures make the runner exit
 with status 1, just like failed contract cases.
+
+When a measured source is outside the current working directory, add
+`--coverage-allow-external`; this passes c8's external-source option through to
+the report step. The source must still be selected explicitly with
+`--coverage-source`.

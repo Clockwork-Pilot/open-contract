@@ -1,0 +1,10 @@
+version: 1
+targets:
+  - id: external-coverage-fixture
+    kind: command
+    config:
+      command: [node, ../coverage-fixtures/evaluator.mjs]
+    cases:
+      - id: increments-value
+        input: {value: 4}
+        expected: {answer: 5}

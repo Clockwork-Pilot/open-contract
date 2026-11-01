@@ -39,6 +39,7 @@ function parseArgs(argv) {
 		coverageSources: [],
 		coverageThreshold: undefined,
 		coverageCommand: 'c8',
+		coverageAllowExternal: false,
 		reader: undefined,
 		executor: undefined,
 	};
@@ -48,6 +49,7 @@ function parseArgs(argv) {
 		else if (arg === '--coverage-source') options.coverageSources.push(argv[++index]);
 		else if (arg === '--coverage-threshold') options.coverageThreshold = percentage(argv[++index]);
 		else if (arg === '--coverage-command') options.coverageCommand = argv[++index];
+		else if (arg === '--coverage-allow-external') options.coverageAllowExternal = true;
 		else if (arg === '--reader') options.reader = argv[++index];
 		else if (arg === '--executor') options.executor = argv[++index];
 		else throw new Error(`unknown option: ${arg}`);
@@ -106,7 +108,9 @@ async function runWithCoverage(bundle, options, executor) {
 		const sourceStat = await stat(source).catch(() => null);
 		if (!sourceStat) throw new Error(`coverage source does not exist: ${source}`);
 		const relative = path.relative(process.cwd(), source).split(path.sep).join('/');
-		includes.push(sourceStat.isDirectory() ? `${relative}/**` : relative);
+		const external = relative === '..' || relative.startsWith('../');
+		const include = options.coverageAllowExternal && external ? source : relative;
+		includes.push(sourceStat.isDirectory() ? `${include}/**` : include);
 	}
 	const tempRoot = await mkdtemp(path.join(os.tmpdir(), 'open-contract-js-'));
 	const rawDirectory = path.join(tempRoot, 'v8');
@@ -117,6 +121,7 @@ async function runWithCoverage(bundle, options, executor) {
 	try {
 		report = await runBundle(bundle, { coverageDirectory: rawDirectory, executor });
 		const reportArgs = ['report', '--temp-directory', rawDirectory, '--reports-dir', reportsDirectory, '--reporter', 'json-summary', '--all'];
+		if (options.coverageAllowExternal) reportArgs.push('--allowExternal');
 		for (const include of includes) reportArgs.push('--include', include);
 		await execFileAsync(await resolveCommand(options.coverageCommand), reportArgs, {
 			cwd: process.cwd(), env: withoutNodeCoverage(), maxBuffer: 8 * 1024 * 1024,
