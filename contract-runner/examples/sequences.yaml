@@ -1,0 +1,23 @@
+version: 1
+targets:
+  - id: sequences
+    kind: custom
+    cases:
+      - id: create-read-and-inspect
+        input: {requested_id: 17}
+        steps:
+          - id: create
+            input: {operation: create, id: {$input: /requested_id}}
+            capture: {saved_id: /id}
+            expected: {id: 17}
+          - id: read
+            input: {operation: read, id: {$capture: saved_id}}
+            predicate: '.found == true'
+          - parallel:
+              - id: status
+                input: {operation: status, id: {$capture: saved_id}}
+                expected: {active: true}
+              - id: metadata
+                input: {operation: metadata, id: {$capture: saved_id}}
+                expected: {id: 17, label: sample}
+        predicate: '.steps.read.found == true AND .steps.status.active == true AND .steps.metadata.id == 17 AND .captures.saved_id == 17'

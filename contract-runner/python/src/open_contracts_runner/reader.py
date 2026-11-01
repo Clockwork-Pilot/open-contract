@@ -45,7 +45,15 @@ def load_bundle(source: Any, reader: Reader | None = None) -> Bundle:
                     "id": target.id,
                     "kind": target.kind,
                     "config": target.config,
-                    "cases": [case.to_dict() for case in target.cases],
+                    "cases": [
+                        {
+                            "id": case.id,
+                            "input": case.input,
+                            **({"expected": case.expected} if case.predicate is None else {"predicate": case.predicate}),
+                            **({"steps": list(case.steps)} if case.steps else {}),
+                        }
+                        for case in target.cases
+                    ],
                 }
                 for target in source.targets
             ],
@@ -103,7 +111,7 @@ def normalize_bundle(value: Any) -> Bundle:
         for raw_case in cases_value:
             if not isinstance(raw_case, Mapping):
                 raise ValueError(f"target {target_id} case must be an object")
-            if set(raw_case) - {"id", "input", "expected", "predicate"}:
+            if set(raw_case) - {"id", "input", "expected", "predicate", "steps"}:
                 raise ValueError(f"case {target_id} contains unknown fields")
             case_id = _required_string(raw_case, "id", f"target {target_id} case")
             if case_id in case_ids:
@@ -120,7 +128,15 @@ def normalize_bundle(value: Any) -> Bundle:
             predicate = raw_case.get("predicate")
             if has_predicate and (not isinstance(predicate, str) or not predicate):
                 raise ValueError(f"case {target_id}/{case_id} predicate must be a non-empty string")
-            cases.append(Case(case_id, raw_case["input"], raw_case.get("expected"), predicate))
+            cases.append(
+                Case(
+                    case_id,
+                    raw_case["input"],
+                    raw_case.get("expected"),
+                    predicate,
+                    tuple(raw_case.get("steps", ())),
+                )
+            )
         targets.append(Target(target_id, kind, tuple(cases), dict(config)))
     return Bundle(1, tuple(targets))
 

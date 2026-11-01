@@ -39,3 +39,36 @@ test('supports the same optional reader and custom executor adapters as Python',
 	const report = await runBundle(adapted, { executor: (input) => ({ doubled: input.value * 2 }) });
 	assert.equal(report.passed, 1);
 });
+
+test('executes generic ordered and parallel steps, checks outcomes, and passes typed captures forward', async () => {
+	const bundle = await readBundle(new URL('../../examples/sequences.yaml', import.meta.url));
+	const calls = [];
+	const contexts = [];
+	const report = await runBundle(bundle, { executor: async (input, context) => {
+		calls.push(input);
+		contexts.push(context);
+		if (input.operation === 'create') return { id: input.id };
+		if (input.operation === 'read') return { id: input.id, found: true };
+		if (input.operation === 'status') return { active: true };
+		if (input.operation === 'metadata') return { id: input.id, label: 'sample' };
+		throw new Error(`unexpected operation: ${input.operation}`);
+	} });
+	assert.equal(report.passed, 1);
+	assert.deepEqual(calls.slice(0, 2), [
+		{ operation: 'create', id: 17 },
+		{ operation: 'read', id: 17 },
+	]);
+	assert.deepEqual(calls.slice(2).map(({ operation }) => operation).sort(), ['metadata', 'status']);
+	assert.deepEqual(contexts.slice(0, 2).map(({ case_id, step_id, step_index }) => ({ case_id, step_id, step_index })), [
+		{ case_id: 'create-read-and-inspect', step_id: 'create', step_index: 0 },
+		{ case_id: 'create-read-and-inspect', step_id: 'read', step_index: 1 },
+	]);
+	assert.deepEqual({ ...contexts[1].captures }, { saved_id: 17 });
+	assert.deepEqual({ ...report.targets.sequences.cases[0].actual.captures }, { saved_id: 17 });
+	assert.deepEqual(report.targets.sequences.cases[0].actual.checks, [
+		{ id: 'create', passed: true, matched_by: 'exact' },
+		{ id: 'read', passed: true, matched_by: 'predicate' },
+		{ id: 'status', passed: true, matched_by: 'exact' },
+		{ id: 'metadata', passed: true, matched_by: 'exact' },
+	]);
+});

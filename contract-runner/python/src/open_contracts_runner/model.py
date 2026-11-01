@@ -12,6 +12,8 @@ class Case:
     input: Any
     expected: Any = None
     predicate: str | None = None
+    steps: tuple[dict[str, Any], ...] = ()
+    context: dict[str, Any] | None = None
 
 @dataclass(frozen=True)
 class Target:

@@ -24,12 +24,54 @@
       "properties": {
         "id": {"type": "string", "minLength": 1},
         "input": {},
+        "steps": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/sequenceStep"}
+        },
         "expected": {},
         "predicate": {"$ref": "https://open-contracts.dev/schemas/predicate-language.schema.json"}
       },
       "oneOf": [
         {"required": ["expected"], "not": {"required": ["predicate"]}},
         {"required": ["predicate"], "not": {"required": ["expected"]}}
+      ]
+    },
+    "sequenceStep": {
+      "oneOf": [
+        {"$ref": "#/$defs/actionStep"},
+        {
+          "type": "object",
+          "required": ["parallel"],
+          "additionalProperties": false,
+          "properties": {
+            "parallel": {
+              "type": "array",
+              "minItems": 1,
+              "items": {"$ref": "#/$defs/actionStep"}
+            }
+          }
+        }
+      ]
+    },
+    "actionStep": {
+      "type": "object",
+      "required": ["id", "input"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "input": {},
+        "capture": {
+          "type": "object",
+          "additionalProperties": {"type": "string", "pattern": "^(?:/(?:[^~/]|~[01])*)*$"}
+        },
+        "expected": {},
+        "predicate": {"$ref": "https://open-contracts.dev/schemas/predicate-language.schema.json"}
+      },
+      "oneOf": [
+        {"required": ["expected"], "not": {"required": ["predicate"]}},
+        {"required": ["predicate"], "not": {"required": ["expected"]}},
+        {"not": {"anyOf": [{"required": ["expected"]}, {"required": ["predicate"]}]}}
       ]
     },
     "target": {

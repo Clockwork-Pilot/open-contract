@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import inspect
 import json
 import os
 import subprocess
@@ -79,14 +80,21 @@ class CommandExecutor:
 
 
 class FunctionExecutor:
-    """Call a Python evaluator once per case with the case input."""
+    """Call a Python evaluator with case input or each resolved sequence-step input."""
 
-    def __init__(self, evaluator: Callable[[Any], Any]) -> None:
+    def __init__(self, evaluator: Callable[..., Any]) -> None:
         if not callable(evaluator):
             raise TypeError("evaluator must be callable")
         self.evaluator = evaluator
+        try:
+            inspect.signature(evaluator).bind(None, None)
+            self.accepts_context = True
+        except (TypeError, ValueError):
+            self.accepts_context = False
 
     def execute(self, target: Target, case: Case) -> Any:
+        if self.accepts_context:
+            return self.evaluator(case.input, case.context)
         return self.evaluator(case.input)
 
 

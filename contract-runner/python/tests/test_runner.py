@@ -16,6 +16,7 @@ from open_contracts_runner import (
     Case,
     ContractRunner,
     ExecutorRegistry,
+    FunctionExecutor,
     HttpExecutor,
     Target,
     load_bundle,
@@ -197,6 +198,49 @@ def test_custom_executor_observation_is_normalized_to_json_data() -> None:
 
     assert report.results[0].actual == {"result": {"ok": True}}
     assert report.results[0].passed
+
+
+def test_executes_generic_ordered_and_parallel_steps_with_typed_captures() -> None:
+    calls: list[dict[str, Any]] = []
+
+    contexts: list[dict[str, Any]] = []
+
+    def evaluate(input_value: Any, context: dict[str, Any] | None) -> Any:
+        calls.append(input_value)
+        assert context is not None
+        contexts.append(context)
+        if input_value["operation"] == "create":
+            return {"id": input_value["id"]}
+        if input_value["operation"] == "read":
+            return {"id": input_value["id"], "found": True}
+        if input_value["operation"] == "status":
+            return {"active": True}
+        if input_value["operation"] == "metadata":
+            return {"id": input_value["id"], "label": "sample"}
+        raise AssertionError(f"unexpected operation: {input_value['operation']}")
+
+    registry = registry_for(FunctionExecutor(evaluate), "custom")
+    example = Path(__file__).resolve().parents[2] / "examples" / "sequences.yaml"
+    report = ContractRunner(executors=registry).run(example)
+
+    assert report.passed == 1
+    assert calls[:2] == [
+        {"operation": "create", "id": 17},
+        {"operation": "read", "id": 17},
+    ]
+    assert sorted(call["operation"] for call in calls[2:]) == ["metadata", "status"]
+    assert [(context["case_id"], context["step_id"], context["step_index"]) for context in contexts[:2]] == [
+        ("create-read-and-inspect", "create", 0),
+        ("create-read-and-inspect", "read", 1),
+    ]
+    assert contexts[1]["captures"] == {"saved_id": 17}
+    assert report.results[0].actual["captures"] == {"saved_id": 17}
+    assert report.results[0].actual["checks"] == [
+        {"id": "create", "passed": True, "matched_by": "exact"},
+        {"id": "read", "passed": True, "matched_by": "predicate"},
+        {"id": "status", "passed": True, "matched_by": "exact"},
+        {"id": "metadata", "passed": True, "matched_by": "exact"},
+    ]
 
 
 def test_non_json_custom_observation_becomes_case_error() -> None:

@@ -46,3 +46,30 @@ When a measured source is outside the current working directory, add
 `--coverage-allow-external`; this passes c8's external-source option through to
 the report step. The source must still be selected explicitly with
 `--coverage-source`.
+
+## Ordered sequences
+
+A case may contain `steps` as well as its usual `input` and final matcher. Each
+step has an `id` and an `input`; the runner sends that input to the same target
+executor, records the returned value under `actual.steps`, and can check the
+step with its own `expected` or `predicate`. A step's `capture` maps names to
+JSON Pointers in its result. Later inputs can use `{"$capture": "name"}` to
+reuse a captured value or `{"$input": "/path"}` to select from the case input.
+References substitute JSON values, so numbers, booleans, arrays, and objects
+keep their types.
+
+Use a `{parallel: [...]}` item when steps are independent and may run
+concurrently. Values captured by a parallel group become available after the
+whole group finishes. Step expectations contribute to the case result, and the
+case's final matcher can inspect `actual.steps`, `actual.captures`, and
+`actual.checks`. The runner only sequences executor calls; each executor still
+defines what its input means. See the shared
+[`sequences.yaml`](../examples/sequences.yaml) example.
+
+For `custom` targets, the supplied executor function is called once per case
+input or once per sequence step input. Built-in `command` and `hooks` targets
+start a new process for each case or step; `http` targets send a separate
+request for each. A custom in-process executor can preserve state across its
+calls. On sequence calls it also receives `{case_id, step_id, step_index,
+captures}` as a second argument, which lets an executor isolate scenario state.
+Command-based sequences need their own persistence mechanism.
