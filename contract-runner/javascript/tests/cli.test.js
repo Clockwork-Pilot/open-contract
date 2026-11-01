@@ -20,6 +20,7 @@ test('CLI can enforce coverage for production sources outside the runner package
 	const { stdout, stderr } = await execFileAsync(process.execPath, [
 		'src/cli.js', 'run', 'tests/fixtures/external-coverage-dataset.yaml',
 		'--coverage-source', '../coverage-fixtures/evaluator.mjs',
+		'--coverage-source', 'tests/fixtures/internal-coverage-helper.mjs',
 		'--coverage-threshold', '100',
 		'--coverage-command', './node_modules/.bin/c8',
 		'--coverage-allow-external',

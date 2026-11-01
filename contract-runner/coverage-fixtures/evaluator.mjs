@@ -1,5 +1,7 @@
+import { increment } from '../javascript/tests/fixtures/internal-coverage-helper.mjs';
+
 export function evaluate(input) {
-	return { answer: input.value + 1 };
+	return { answer: increment(input.value) };
 }
 
 let source = '';

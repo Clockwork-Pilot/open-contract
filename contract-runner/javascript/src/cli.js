@@ -109,7 +109,7 @@ async function runWithCoverage(bundle, options, executor) {
 		if (!sourceStat) throw new Error(`coverage source does not exist: ${source}`);
 		const relative = path.relative(process.cwd(), source).split(path.sep).join('/');
 		const external = relative === '..' || relative.startsWith('../');
-		const include = options.coverageAllowExternal && external ? source : relative;
+		const include = options.coverageAllowExternal ? source : relative;
 		includes.push(sourceStat.isDirectory() ? `${include}/**` : include);
 	}
 	const tempRoot = await mkdtemp(path.join(os.tmpdir(), 'open-contract-js-'));
