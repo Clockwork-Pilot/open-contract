@@ -14,7 +14,6 @@ from typing import Sequence
 import yaml
 
 from .executors import ExecutorRegistry, FunctionExecutor
-from .isolation import BubblewrapIsolationError, run_with_bubblewrap
 from .reader import JsonYamlReader, load_bundle
 from .runner import ContractRunner
 
@@ -36,19 +35,6 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--coverage-file", type=Path, default=Path(".coverage"), help="coverage data file (default: .coverage)")
     run.add_argument("--coverage-append", action="store_true", help="include coverage data already in --coverage-file")
     run.add_argument("--coverage-threshold", type=_percentage, help="fail when collected coverage is below this percentage")
-    run.add_argument(
-        "--isolation", choices=("none", "bubblewrap"), default="none",
-        help="run this contract dataset in the selected filesystem sandbox",
-    )
-    run.add_argument(
-        "--contract-root", type=Path,
-        help="contracts directory to expose in the Bubblewrap sandbox (required with --isolation bubblewrap)",
-    )
-    run.add_argument(
-        "--sandbox-dependency", action="append", default=[], type=Path, metavar="PATH",
-        help="read-only dependency directory to expose in the Bubblewrap sandbox; may be repeated",
-    )
-
     coverage_report = commands.add_parser("coverage-report", help="report or enforce a saved coverage data file")
     coverage_report.add_argument("--coverage-file", type=Path, default=Path(".coverage"), help="coverage data file (default: .coverage)")
     coverage_report.add_argument("--coverage-source", action="append", default=[], metavar="MODULE_OR_PATH", help="limit report to these sources; may be repeated")
@@ -60,37 +46,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     if args.command == "coverage-report":
         return _coverage_report(args.coverage_file, args.coverage_source, args.coverage_threshold)
-    if args.isolation == "bubblewrap":
-        try:
-            return run_with_bubblewrap(args, _run_arguments(args))
-        except BubblewrapIsolationError as exc:
-            print(f"open-contracts: Bubblewrap isolation error: {exc}", file=sys.stderr)
-            return 2
     if args.coverage or args.coverage_threshold is not None:
         return _run_with_coverage(args)
     return _run_dataset(args)
-
-
-def _run_arguments(args: argparse.Namespace) -> list[str]:
-    """Build the ordinary child CLI invocation for an isolated run."""
-    command = ["run", str(args.dataset)]
-    if args.reader:
-        command.extend(("--reader", args.reader))
-    if args.executor:
-        command.extend(("--executor", args.executor))
-    if args.quiet:
-        command.append("--quiet")
-    if args.coverage or args.coverage_threshold is not None:
-        command.append("--coverage")
-    for source in args.coverage_source:
-        command.extend(("--coverage-source", source))
-    if args.coverage or args.coverage_threshold is not None:
-        command.extend(("--coverage-file", str(args.coverage_file)))
-    if args.coverage_append:
-        command.append("--coverage-append")
-    if args.coverage_threshold is not None:
-        command.extend(("--coverage-threshold", str(args.coverage_threshold)))
-    return command
 
 
 def _run_dataset(args: argparse.Namespace) -> int:

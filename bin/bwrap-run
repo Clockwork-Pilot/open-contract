@@ -1,0 +1,30 @@
+#!/bin/sh
+set -eu
+
+if [ "${1-}" = "--isolation" ]; then
+	if [ "${2-}" != "none" ] || [ "${3-}" != "--" ] || [ -z "${4-}" ]; then
+		echo "usage: bwrap-run [--isolation none] -- <command> [args...]" >&2
+		exit 2
+	fi
+	shift 3
+	exec "$@"
+fi
+
+has_separator=false
+for argument do
+	if [ "$argument" = "--" ]; then
+		has_separator=true
+		break
+	fi
+done
+if [ "$has_separator" != true ]; then
+	echo "usage: bwrap-run [Bubblewrap options...] -- <command> [args...]" >&2
+	exit 2
+fi
+
+if ! command -v bwrap >/dev/null 2>&1; then
+	echo "bwrap-run: isolation error: bwrap is not installed or not on PATH" >&2
+	exit 2
+fi
+
+exec bwrap --die-with-parent --new-session --unshare-all --clearenv "$@"

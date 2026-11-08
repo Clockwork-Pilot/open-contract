@@ -1,39 +1,31 @@
 # Open Contract
 
 Open Contract provides dataset-driven tools for testing portable API contracts.
-The repository includes the Python contract runner, JavaScript runner, and
-bootstrap predicate contract.
+The repository includes Python and JavaScript contract runners and bootstrap
+predicate contracts.
 
-## Running contract checks in Bubblewrap
+## Bubblewrap helper
 
-The Python runner can execute a dataset with Bubblewrap isolation. Mount the
-repository's executable `contracts/` directory as the contract root; the runner
-mounts its own checkout separately and exposes any additional dependencies only
-when they are declared. Contract sources and dependencies are read-only inside
-the sandbox. The contract source directory and working directory use a fresh
-randomized mount root; the runner and output mount have stable internal paths.
-Coverage data is copied through the output mount to the caller's requested path.
+`bin/bwrap-run` is a runner-agnostic process wrapper. It adds fail-closed Bubblewrap
+startup flags and passes every Bubblewrap option and the child command through
+unchanged. The caller declares runtime and filesystem mounts before `--`, then
+supplies any command after it. The helper does not inspect datasets, select a
+language, or infer dependencies.
 
 ```sh
-PYTHONPATH="/path/to:/path/to/open-contract/contract-runner/python/src:/path/to/open-contract/bootstrap-contracts/predicates/python/src" \
-  python -m open_contracts_runner run \
-  /path/to/contracts/example/datasets/dataset.json \
-  --executor contracts.example.runner:evaluate \
-  --isolation bubblewrap \
-  --contract-root /path/to/contracts \
-  --coverage --coverage-file /tmp/example.coverage --quiet
+sh open-contract/bin/bwrap-run \
+  --ro-bind /usr /usr \
+  --ro-bind /usr/lib /usr/lib \
+  --tmpfs /tmp \
+  --setenv PATH /usr/bin:/bin \
+  -- /usr/bin/sh
 ```
 
-Use `--sandbox-dependency PATH` for each external source dependency that the
-contract must import. Dependencies are mounted read-only and added to
-`PYTHONPATH`. The runner's Python environment and standard runtime libraries
-are also mounted read-only. The sandbox clears inherited environment variables,
-disables network access, and exposes no other project or home-directory paths.
+Bubblewrap must be installed and support the requested namespaces. Missing
+Bubblewrap or a namespace failure returns an error; the helper never retries the
+command outside the sandbox. `--isolation none -- <command> [args...]` is the
+explicit trusted-debug opt-out.
 
-The host needs Bubblewrap with namespace support. If `bwrap` is missing or the
-kernel blocks namespace creation, the runner reports an isolation error and
-does not fall back to an unsandboxed run.
-
-The CWPilot Playbook contracts Makefile enables this runner mode by default;
-`CONTRACT_SANDBOX_DEPENDENCIES` accepts a space-separated list of read-only
-dependency roots.
+Applications should keep their mount policy in a shell script and pass their
+existing runner command as the opaque child command. The license-server repository
+contains one such policy for its contract datasets.
