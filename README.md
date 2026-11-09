@@ -23,8 +23,10 @@ sh open-contract/bin/bwrap-run \
 
 Bubblewrap must be installed and support the requested namespaces. Missing
 Bubblewrap or a namespace failure returns an error; the helper never retries the
-command outside the sandbox. `--isolation none -- <command> [args...]` is the
-explicit trusted-debug opt-out.
+command outside the sandbox. `--probe [Bubblewrap options...]` starts a minimal
+Bubblewrap process and exits with its startup status without running a contract
+command. Callers can use this to select a fallback before starting the workload.
+`--isolation none -- <command> [args...]` is the explicit trusted-debug opt-out.
 
 ## Landlock filesystem helper
 
@@ -44,8 +46,10 @@ installed or an allowlisted path is missing. Read paths can also be executed;
 write paths permit reads, execution, and filesystem mutations. This mode applies
 filesystem restrictions only: paths remain visible, it does not create a mount
 view, restrict networking, or revoke file descriptors opened before confinement.
-The license-server repository opts into this mode with
-`CONTRACT_ISOLATION=landlock`; Bubblewrap remains the default.
+The license-server dataset runner uses Bubblewrap when its isolation mode is
+unspecified and falls back to Landlock if Bubblewrap cannot start. Set
+`CONTRACT_ISOLATION=bubblewrap`, `landlock`, or `none` to explicitly select a
+mode; an explicitly selected mode fails closed and never falls back.
 
 Applications should keep their mount policy in a shell script and pass their
 existing runner command as the opaque child command. The license-server repository

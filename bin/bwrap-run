@@ -10,6 +10,21 @@ if [ "${1-}" = "--isolation" ]; then
 	exec "$@"
 fi
 
+if [ "${1-}" = "--probe" ]; then
+	shift
+	for argument do
+		if [ "$argument" = "--" ]; then
+			echo "usage: bwrap-run --probe [Bubblewrap options...]" >&2
+			exit 2
+		fi
+	done
+	if ! command -v bwrap >/dev/null 2>&1; then
+		echo "bwrap-run: isolation error: bwrap is not installed or not on PATH" >&2
+		exit 2
+	fi
+	exec bwrap --die-with-parent --new-session --unshare-all --clearenv --ro-bind / / "$@" -- /bin/true
+fi
+
 has_separator=false
 for argument do
 	if [ "$argument" = "--" ]; then
