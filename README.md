@@ -26,6 +26,27 @@ Bubblewrap or a namespace failure returns an error; the helper never retries the
 command outside the sandbox. `--isolation none -- <command> [args...]` is the
 explicit trusted-debug opt-out.
 
+## Landlock filesystem helper
+
+`bin/landlock-run` applies Linux Landlock filesystem rules before starting a
+command. Invoke it with Python 3, one or more `--read PATH` / `--write PATH`
+allowlists, and the child command after `--`:
+
+```sh
+python3 open-contract/bin/landlock-run \
+  --read /usr --read /lib --read ./contracts \
+  --write /tmp/contract-output \
+  -- node contract-runner.js
+```
+
+It requires Linux Landlock ABI 1 through 4 and fails closed if rules cannot be
+installed or an allowlisted path is missing. Read paths can also be executed;
+write paths permit reads, execution, and filesystem mutations. This mode applies
+filesystem restrictions only: paths remain visible, it does not create a mount
+view, restrict networking, or revoke file descriptors opened before confinement.
+The license-server repository opts into this mode with
+`CONTRACT_ISOLATION=landlock`; Bubblewrap remains the default.
+
 Applications should keep their mount policy in a shell script and pass their
 existing runner command as the opaque child command. The license-server repository
 contains one such policy for its contract datasets.
