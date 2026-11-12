@@ -1,0 +1,9 @@
+version: "1"
+name: batch-execution-bootstrap
+files:
+  dataset: dataset.json
+  validator: validator.py
+  nested_contracts: [child/contract.yaml]
+filesystem:
+  read: [dataset.json, validator.py, child/contract.yaml]
+  write: [reports]

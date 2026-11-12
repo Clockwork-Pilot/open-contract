@@ -4,12 +4,16 @@ PREDICATE_SRC := $(CURDIR)/bootstrap-contracts/predicates/python/src
 export PYTHONPATH := $(RUNNER_SRC):$(PREDICATE_SRC)$(if $(PYTHONPATH),:$(PYTHONPATH))
 
 .DEFAULT_GOAL := check-contracts
-.PHONY: check-contracts check-bootstrap-contracts check-runner-examples examples example-raw-dataset example-ingested-dataset
+.PHONY: check-contracts check-bootstrap-contracts check-rust-core-contracts check-runner-examples examples example-raw-dataset example-ingested-dataset
 
 check-contracts: check-bootstrap-contracts check-runner-examples
 
 check-bootstrap-contracts:
 	$(MAKE) -C bootstrap-contracts/predicates check-predicate-contract
+	$(MAKE) check-rust-core-contracts
+
+check-rust-core-contracts:
+	cargo test --manifest-path contract-runner/rust/Cargo.toml
 
 check-runner-examples:
 	$(MAKE) -C contract-runner/python check-examples-coverage PYTHON="$(PYTHON)"

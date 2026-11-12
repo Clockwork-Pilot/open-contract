@@ -1,0 +1,8 @@
+version: "1"
+name: verification-bootstrap
+files:
+  dataset: dataset.json
+  validator: validator.mjs
+filesystem:
+  read: [dataset.json, validator.mjs]
+  write: [reports]

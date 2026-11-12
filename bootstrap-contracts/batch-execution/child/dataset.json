@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "cases": [
+    {"id": "nested-case", "input": {"value": "child"}, "expected": {"value": "child"}}
+  ]
+}

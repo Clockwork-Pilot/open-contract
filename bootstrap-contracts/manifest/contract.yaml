@@ -1,0 +1,8 @@
+version: "1"
+name: manifest-bootstrap
+files:
+  dataset: dataset.yaml
+  validator: validator.py
+filesystem:
+  read: [dataset.yaml, validator.py]
+  write: [reports]

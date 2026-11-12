@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "cases": [
+    {"id": "case-one", "input": {"value": 1}, "expected": {"value": 1}},
+    {"id": "ordered-steps", "input": {"value": 0}, "predicate": ".steps.step-two.value == 2", "steps": [
+      {"id": "step-one", "input": {"value": 1}, "expected": {"value": 1}},
+      {"id": "step-two", "input": {"value": 2}, "expected": {"value": 2}}
+    ]}
+  ]
+}

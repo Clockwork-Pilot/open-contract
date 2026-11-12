@@ -21,7 +21,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--package-root", required=True, type=Path)
     parser.add_argument("--read", action="append", default=[], metavar="PATH")
     parser.add_argument("--write", action="append", default=[], metavar="PATH")
-    parser.add_argument("--runtime-profile", choices=("python", "javascript"))
+    parser.add_argument("--runtime-profile", choices=("python", "javascript", "all"))
     parser.add_argument("--guest-root")
     parser.add_argument("command", nargs=argparse.REMAINDER)
     args = parser.parse_args(argv)
@@ -81,21 +81,24 @@ def _runtime_paths(command: list[str]) -> list[Path]:
     executable = Path(command[0])
     if executable.is_absolute() and executable.exists() and not any(executable.is_relative_to(path) for path in paths):
         paths.append(executable.parent.resolve())
+    if executable.is_absolute() and executable.name.startswith("python") and executable.parent.name == "bin":
+        # A selected Python runtime may be a virtual environment outside the
+        # launcher interpreter's own sys.prefix.
+        paths.append(executable.parent.parent.resolve())
     return list(dict.fromkeys(paths))
 
 
 def _runtime_profile(name: str | None) -> list[tuple[Path, str]]:
     if name is None:
         return []
-    if name == "python":
-        return [
+    python_roots = [
             (Path(sys.prefix).resolve(), "python"),
             (ROOT / "contract-runner/python/src", "contract-runner/python/src"),
             (ROOT / "contract-runner/python/schemas", "contract-runner/python/schemas"),
             (ROOT / "bootstrap-contracts/predicates/predicate-language.schema.json", "bootstrap-contracts/predicates/predicate-language.schema.json"),
             (ROOT / "bootstrap-contracts/predicates/python/src", "bootstrap-contracts/predicates/python/src"),
-        ]
-    roots = [
+    ]
+    javascript_roots = [
         (ROOT / "contract-runner/javascript/src", "contract-runner/javascript/src"),
         (ROOT / "contract-runner/javascript/node_modules", "contract-runner/javascript/node_modules"),
         (ROOT / "contract-runner/python/schemas", "contract-runner/python/schemas"),
@@ -103,17 +106,26 @@ def _runtime_profile(name: str | None) -> list[tuple[Path, str]]:
     ]
     openssl_config = Path("/etc/ssl/openssl.cnf")
     if openssl_config.is_file():
-        roots.append((openssl_config, "system/openssl.cnf"))
-    return roots
+        javascript_roots.append((openssl_config, "system/openssl.cnf"))
+    if name == "python":
+        return python_roots
+    if name == "javascript":
+        return javascript_roots
+    return list(dict.fromkeys(python_roots + javascript_roots))
 
 
 def _runtime_environment(name: str | None, roots: list[tuple[Path, str]]) -> dict[str, str]:
-    if name == "python":
-        return {"PYTHONPATH": os.pathsep.join((str(roots[1][0]), str(roots[4][0])))}
+    environment = {}
+    if name in {"python", "all"}:
+        python_roots = _runtime_profile("python")
+        environment["PYTHONPATH"] = os.pathsep.join((str(python_roots[1][0]), str(python_roots[4][0])))
+    if name == "all":
+        environment["OPEN_CONTRACT_JS_ADAPTER"] = str(ROOT / "contract-runner/javascript/src/batch-adapter.js")
+        environment["OPEN_CONTRACT_PYTHON_ADAPTER"] = str(ROOT / "contract-runner/python/src/open_contracts_runner/batch_adapter.py")
     openssl_config = next((str(source) for source, guest in roots if guest == "system/openssl.cnf"), None)
     if openssl_config:
-        return {"OPENSSL_CONF": openssl_config}
-    return {}
+        environment["OPENSSL_CONF"] = openssl_config
+    return environment
 
 
 def _bubblewrap(root: Path, reads: list[Path], writes: list[Path], command: list[str], runtime_roots: list[tuple[Path, str]], runtime_environment: dict[str, str], guest: str) -> int:
@@ -164,7 +176,7 @@ def _bubblewrap(root: Path, reads: list[Path], writes: list[Path], command: list
         )
     args += ["--chdir", guest, "--setenv", "PATH", "/usr/local/bin:/usr/bin:/bin"]
     for key, value in environment.items():
-        if key in {"PATH", "HOME", "LANG", "PYTHONPATH", "OPENSSL_CONF", "COVERAGE_PROCESS_START", "COVERAGE_FILE", "NODE_V8_COVERAGE"}:
+        if key in {"PATH", "HOME", "LANG", "PYTHONPATH", "OPENSSL_CONF", "OPEN_CONTRACT_JS_ADAPTER", "OPEN_CONTRACT_PYTHON_ADAPTER", "COVERAGE_PROCESS_START", "COVERAGE_FILE", "NODE_V8_COVERAGE"}:
             args += ["--setenv", key, value]
     mapped_command = [_map_package_path(item, root, guest) for item in command]
     mapped_command = [_map_runtime_path(item, mappings) for item in mapped_command]
@@ -190,6 +202,9 @@ def _contract_environment(source: dict[str, str]) -> dict[str, str]:
         result["PYTHONPATH"] = source["PYTHONPATH"]
     if "OPENSSL_CONF" in source:
         result["OPENSSL_CONF"] = source["OPENSSL_CONF"]
+    for key in ("OPEN_CONTRACT_JS_ADAPTER", "OPEN_CONTRACT_PYTHON_ADAPTER"):
+        if key in source:
+            result[key] = source[key]
     for key in ("COVERAGE_PROCESS_START", "COVERAGE_FILE", "NODE_V8_COVERAGE"):
         if key in source:
             result[key] = source[key]

@@ -23,6 +23,11 @@ not consumer-specific contracts.
   evaluation belongs to Open Contract, not to contract languages or individual
   validator runtimes. Do not assume contracts are network services or require
   a network-style protocol.
+- Keep the Rust core in four layers: manifest planning, isolation, batch
+  execution, and output verification. The root executor starts isolation once;
+  its coordinator runs language adapters and listed nested contracts inside
+  that same boundary. Verify outputs and evaluate predicates after the batch
+  returns, outside isolation.
 - Isolate each contract to its own data and source, plus the runner resources it
   needs. Keep other access explicit.
 - Keep manifests isolation-backend agnostic: describe logical read and write
@@ -36,6 +41,11 @@ not consumer-specific contracts.
 - Keep bootstrap predicate contracts as the dataset predicate semantics and
   conformance source, not as a runtime dependency of contract execution. Rust
   implementations may reuse their evaluator as a separately tested component.
+- Treat the Rust core's prerequisite contracts as bootstrap contracts under
+  `bootstrap-contracts`: one each for manifest parsing and planning, filesystem
+  isolation, batch dataset and step execution with coverage collection, and
+  post-batch expected-output and predicate verification. Use these to exercise
+  the corresponding Rust layers as the core develops.
 - Dogfood Open Contract when its Rust core can run and verify a repository
   contract through the same manifest, isolation, and verification path offered
   to consumers. Keep only the minimal bootstrap needed to reach that point.

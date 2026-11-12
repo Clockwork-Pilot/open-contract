@@ -1,0 +1,7 @@
+version: 1
+cases:
+  - id: declared-path
+    input:
+      value: validator.py
+    expected:
+      value: validator.py
