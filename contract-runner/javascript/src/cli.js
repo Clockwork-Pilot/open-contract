@@ -1,12 +1,16 @@
 #!/usr/bin/env node
 import Ajv2020 from 'ajv/dist/2020.js';
-import { execFile } from 'node:child_process';
+import { execFile, spawn } from 'node:child_process';
 import { accessSync } from 'node:fs';
-import { mkdir, mkdtemp, readFile, rm, stat } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { randomBytes } from 'node:crypto';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { createInterface } from 'node:readline';
 import YAML from 'yaml';
+import { readManifest, stageContractTree } from './manifest.js';
+import { contractLauncherCommand } from './contract-launcher.js';
 import { runBundle } from './runner.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -16,11 +20,22 @@ const predicateSchemaPath = path.resolve(here, '../../../bootstrap-contracts/pre
 export async function main(argv = process.argv.slice(2)) {
 	try {
 		const options = parseArgs(argv);
+		if (options.manifest) {
+			if ((options.coverageSources.length || options.coverageThreshold !== undefined) && options.coverageSources.length === 0) {
+				options.coverageSources = await collectManifestSources(options.manifest);
+			}
+			const execute = (coverageDirectory) => runManifest(options.manifest, options.isolation, coverageDirectory);
+			const result = options.coverageSources.length || options.coverageThreshold !== undefined
+				? await runWithCoverage(options, execute)
+				: { report: await execute(), coveragePassed: true };
+			printReport(result.report, options.quiet);
+			return result.coveragePassed && result.report.passed === result.report.total ? 0 : 1;
+		}
 		const reader = options.reader ? await loadCallable(options.reader) : undefined;
 		const executor = options.executor ? await loadCallable(options.executor) : undefined;
 		const bundle = await readBundle(options.dataset, { reader });
 		const result = options.coverageSources.length || options.coverageThreshold !== undefined
-			? await runWithCoverage(bundle, options, executor)
+			? await runWithCoverage(options, (coverageDirectory) => runBundle(bundle, { coverageDirectory, executor }))
 			: { report: await runBundle(bundle, { executor }), coveragePassed: true };
 		const { report, coveragePassed } = result;
 		printReport(report, options.quiet);
@@ -32,9 +47,10 @@ export async function main(argv = process.argv.slice(2)) {
 }
 
 function parseArgs(argv) {
-	if (argv[0] !== 'run' || !argv[1]) throw new Error('usage: open-contracts-js run <dataset.json|dataset.yaml> [options]');
+	const isManifest = argv[0] === 'run-manifest';
+	if ((!isManifest && argv[0] !== 'run') || !argv[1]) throw new Error('usage: open-contracts-js run <dataset.json|dataset.yaml> [options] | run-manifest <contract.yaml> [options]');
 	const options = {
-		dataset: path.resolve(argv[1]),
+		...(isManifest ? { manifest: path.resolve(argv[1]), isolation: undefined } : { dataset: path.resolve(argv[1]) }),
 		quiet: false,
 		coverageSources: [],
 		coverageThreshold: undefined,
@@ -50,10 +66,12 @@ function parseArgs(argv) {
 		else if (arg === '--coverage-threshold') options.coverageThreshold = percentage(argv[++index]);
 		else if (arg === '--coverage-command') options.coverageCommand = argv[++index];
 		else if (arg === '--coverage-allow-external') options.coverageAllowExternal = true;
+		else if (arg === '--isolation' && isManifest) options.isolation = argv[++index];
 		else if (arg === '--reader') options.reader = argv[++index];
 		else if (arg === '--executor') options.executor = argv[++index];
 		else throw new Error(`unknown option: ${arg}`);
 	}
+	if (isManifest && !options.isolation) throw new Error('run-manifest requires --isolation <none|bwrap|landlock>');
 	return options;
 }
 
@@ -99,7 +117,7 @@ async function loadCallable(spec) {
 	return callable;
 }
 
-async function runWithCoverage(bundle, options, executor) {
+async function runWithCoverage(options, execute) {
 	if (options.coverageSources.length === 0) throw new Error('coverage requires at least one --coverage-source');
 	if (options.coverageThreshold === undefined) options.coverageThreshold = 100;
 	const sourcePaths = options.coverageSources.map((source) => path.resolve(source));
@@ -119,7 +137,7 @@ async function runWithCoverage(bundle, options, executor) {
 	let report;
 	let coveragePassed = false;
 	try {
-		report = await runBundle(bundle, { coverageDirectory: rawDirectory, executor });
+		report = await execute(rawDirectory);
 		const reportArgs = ['report', '--temp-directory', rawDirectory, '--reports-dir', reportsDirectory, '--reporter', 'json-summary', '--all'];
 		if (options.coverageAllowExternal) reportArgs.push('--allowExternal');
 		for (const include of includes) reportArgs.push('--include', include);
@@ -154,6 +172,122 @@ async function runWithCoverage(bundle, options, executor) {
 		await rm(tempRoot, { recursive: true, force: true });
 	}
 	return { report, coveragePassed };
+}
+
+async function runManifest(manifestPath, isolation, coverageDirectory) {
+	const manifestReal = await import('node:fs/promises').then(({ realpath }) => realpath(manifestPath));
+	const { manifest, root: sourceRoot } = await readManifest(manifestReal);
+	const staged = await stageContractTree(manifest, sourceRoot, manifestReal);
+	try {
+		const command = [process.execPath, path.join(here, 'execution-adapter.js'), staged.root];
+		const guestRoot = isolation === 'bwrap' ? `/contract/${randomBytes(12).toString('hex')}` : undefined;
+		const launcher = contractLauncherCommand(isolation, staged.root, manifest, command, {
+			read: staged.read, write: staged.write, runtimeProfile: 'javascript', guestRoot,
+		});
+		const env = { ...process.env };
+		if (coverageDirectory) env.NODE_V8_COVERAGE = coverageDirectory;
+		const processHandle = spawn(launcher[0], launcher.slice(1), { env, stdio: ['pipe', 'pipe', 'pipe'] });
+		const closed = new Promise((resolve, reject) => {
+			processHandle.once('error', reject);
+			processHandle.once('close', (code, signal) => resolve({ code, signal }));
+		});
+		const lines = createInterface({ input: processHandle.stdout })[Symbol.asyncIterator]();
+		let stderr = '';
+		processHandle.stderr.setEncoding('utf8').on('data', (chunk) => { stderr += chunk; });
+		const serial = { pending: Promise.resolve() };
+		const executor = (validator, input) => {
+			const operation = serial.pending.then(async () => {
+				processHandle.stdin.write(`${JSON.stringify({ validator, input })}\n`);
+				const next = await lines.next();
+				if (next.done) throw new Error('isolated executor stopped without returning output');
+				const response = JSON.parse(next.value);
+				if (Object.hasOwn(response, 'error')) throw new Error(response.error);
+				return response.output;
+			});
+			serial.pending = operation.catch(() => {});
+			return operation;
+		};
+		const contracts = [];
+		const collect = async (current, prefix, parents) => {
+			const real = await import('node:fs/promises').then(({ realpath }) => realpath(current));
+			if (parents.has(real)) throw new Error(`nested contract cycle detected at ${real}`);
+			const { manifest, root } = await readManifest(real);
+			contracts.push({ manifest, root, prefix });
+			for (const child of manifest.files.nested_contracts ?? []) {
+				const childPrefix = `${manifest.name}/${path.basename(path.dirname(child)) || path.basename(child, path.extname(child))}`;
+				await collect(path.join(root, child), [prefix, childPrefix].filter(Boolean).join('/'), new Set([...parents, real]));
+			}
+		};
+		await collect(manifestReal, '', new Set());
+		const allCases = [];
+		try {
+			for (const contract of contracts) {
+				const validatorSource = path.resolve(contract.root, contract.manifest.files.validator);
+				const stagedValidator = [...staged.sourceMap].find(([, original]) => path.resolve(original) === validatorSource)?.[0];
+				if (!stagedValidator) throw new Error(`validator is not staged: ${validatorSource}`);
+				const bundle = await readBundle(path.join(contract.root, contract.manifest.files.dataset));
+				const report = await runBundle({ ...bundle, targets: bundle.targets.map((target) => ({ ...target, kind: 'custom' })) }, {
+					executor: (input) => executor(path.relative(staged.root, stagedValidator).split(path.sep).join('/'), input),
+				});
+				for (const [targetId, target] of Object.entries(report.targets)) {
+					for (const item of target.cases) allCases.push({ ...item, target_id: contract.prefix ? `${contract.prefix}/${item.target_id || targetId}` : (item.target_id || targetId) });
+				}
+			}
+		} finally {
+			processHandle.stdin.end();
+		}
+		const { code, signal } = await closed;
+		if (code !== 0) throw new Error(`isolated contract executor ${signal ? `signal ${signal}` : `exit ${code}`}: ${stderr.trim()}`);
+		if (coverageDirectory) await rewriteV8Coverage(coverageDirectory, staged.root, staged.sourceMap, guestRoot);
+		return aggregateReport(allCases);
+	} finally {
+		const { rm } = await import('node:fs/promises');
+		await rm(staged.root, { recursive: true, force: true });
+	}
+}
+
+async function rewriteV8Coverage(directory, stagedRoot, sourceMap, guestRoot) {
+	const byStaged = new Map([...sourceMap].map(([staged, original]) => [path.resolve(staged), original]));
+	for (const name of await readdir(directory)) {
+		if (!name.endsWith('.json')) continue;
+		const file = path.join(directory, name);
+		const coverage = JSON.parse(await readFile(file, 'utf8'));
+		let changed = false;
+		for (const script of coverage.result ?? []) {
+			if (!script.url?.startsWith('file:')) continue;
+			let source;
+			try { source = fileURLToPath(script.url); } catch { continue; }
+			let staged = path.resolve(source);
+			if (guestRoot && (staged === guestRoot || staged.startsWith(`${guestRoot}${path.sep}`))) {
+				staged = path.join(stagedRoot, path.relative(guestRoot, staged));
+			}
+			const original = byStaged.get(staged);
+			if (original) { script.url = pathToFileURL(original).href; changed = true; }
+		}
+		if (changed) await writeFile(file, JSON.stringify(coverage));
+	}
+}
+
+async function collectManifestSources(manifestPath, visited = new Set()) {
+	const resolved = await import('node:fs/promises').then(({ realpath }) => realpath(manifestPath));
+	if (visited.has(resolved)) return [];
+	visited.add(resolved);
+	const { manifest, root } = await readManifest(resolved);
+	const sources = [path.join(root, manifest.files.validator), ...(manifest.files.support ?? []).map((name) => path.join(root, name))];
+	for (const child of manifest.files.nested_contracts ?? []) sources.push(...await collectManifestSources(path.join(root, child), visited));
+	return [...new Set(sources)];
+}
+
+function aggregateReport(cases) {
+	const targets = {};
+	for (const item of cases) (targets[item.target_id] ??= []).push(item);
+	return {
+		passed: cases.filter(({ passed }) => passed).length,
+		total: cases.length,
+		targets: Object.fromEntries(Object.entries(targets).map(([id, targetCases]) => [id, {
+			passed: targetCases.filter(({ passed }) => passed).length, total: targetCases.length, cases: targetCases,
+		}])),
+	};
 }
 
 async function resolveCommand(command) {

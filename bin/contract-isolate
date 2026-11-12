@@ -1,0 +1,265 @@
+#!/usr/bin/env python3
+"""Launch a contract command inside the selected filesystem isolation backend."""
+
+from __future__ import annotations
+
+import argparse
+import os
+import re
+import secrets
+import subprocess
+import sys
+from pathlib import Path, PurePosixPath
+
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--backend", required=True, choices=("none", "bwrap", "landlock"))
+    parser.add_argument("--package-root", required=True, type=Path)
+    parser.add_argument("--read", action="append", default=[], metavar="PATH")
+    parser.add_argument("--write", action="append", default=[], metavar="PATH")
+    parser.add_argument("--runtime-profile", choices=("python", "javascript"))
+    parser.add_argument("--guest-root")
+    parser.add_argument("command", nargs=argparse.REMAINDER)
+    args = parser.parse_args(argv)
+    command = args.command[1:] if args.command[:1] == ["--"] else args.command
+    if not command:
+        parser.error("a command is required after --")
+    try:
+        command = [str(item) for item in command]
+        root = args.package_root.resolve(strict=True)
+        if not root.is_dir():
+            raise ValueError("package root must be a directory")
+        reads = [_package_path(root, name, must_exist=True) for name in args.read]
+        writes = [_package_path(root, name, must_exist=True) for name in args.write]
+        runtime_roots = _runtime_profile(args.runtime_profile)
+        runtime_environment = _runtime_environment(args.runtime_profile, runtime_roots)
+        os.chdir(root)
+        if args.backend == "none":
+            os.chdir(root)
+            os.execvpe(command[0], command, {**os.environ, **runtime_environment})
+        if args.backend == "landlock":
+            launch = [sys.executable, str(ROOT / "bin/landlock-run")]
+            for runtime in _runtime_paths(command):
+                if runtime.exists():
+                    launch += ["--read", str(runtime)]
+            for runtime, _guest_name in runtime_roots:
+                launch += ["--read", str(runtime)]
+            for path in reads:
+                launch += ["--read", str(path)]
+            for path in writes:
+                launch += ["--write", str(path)]
+            launch, environment = _coverage_landlock(launch, os.environ.copy())
+            launch += ["--", *command]
+            clean_env = _contract_environment({**environment, **runtime_environment})
+            os.execvpe(launch[0], launch, clean_env)
+        guest_root = args.guest_root or f"/contract/{secrets.token_hex(12)}"
+        if not re.fullmatch(r"/contract/[0-9a-f]{24}", guest_root):
+            raise ValueError("guest root must use the randomized /contract/<24-hex> shape")
+        return _bubblewrap(root, reads, writes, command, runtime_roots, runtime_environment, guest_root)
+    except (OSError, RuntimeError, ValueError) as exc:
+        print(f"contract-isolate: {exc}", file=sys.stderr)
+        return 2
+
+
+def _package_path(root: Path, raw: str, *, must_exist: bool) -> Path:
+    relative = PurePosixPath(raw)
+    if not raw or relative.is_absolute() or "\\" in raw or any(part in {"", ".", ".."} for part in relative.parts):
+        raise ValueError(f"invalid package-relative policy path: {raw!r}")
+    candidate = root.joinpath(*relative.parts)
+    resolved = candidate.resolve(strict=must_exist)
+    if not resolved.is_relative_to(root):
+        raise ValueError(f"policy path escapes the staged package: {raw}")
+    return resolved
+
+
+def _runtime_paths(command: list[str]) -> list[Path]:
+    paths = [Path("/usr"), Path("/lib"), Path("/lib64")]
+    executable = Path(command[0])
+    if executable.is_absolute() and executable.exists() and not any(executable.is_relative_to(path) for path in paths):
+        paths.append(executable.parent.resolve())
+    return list(dict.fromkeys(paths))
+
+
+def _runtime_profile(name: str | None) -> list[tuple[Path, str]]:
+    if name is None:
+        return []
+    if name == "python":
+        return [
+            (Path(sys.prefix).resolve(), "python"),
+            (ROOT / "contract-runner/python/src", "contract-runner/python/src"),
+            (ROOT / "contract-runner/python/schemas", "contract-runner/python/schemas"),
+            (ROOT / "bootstrap-contracts/predicates/predicate-language.schema.json", "bootstrap-contracts/predicates/predicate-language.schema.json"),
+            (ROOT / "bootstrap-contracts/predicates/python/src", "bootstrap-contracts/predicates/python/src"),
+        ]
+    roots = [
+        (ROOT / "contract-runner/javascript/src", "contract-runner/javascript/src"),
+        (ROOT / "contract-runner/javascript/node_modules", "contract-runner/javascript/node_modules"),
+        (ROOT / "contract-runner/python/schemas", "contract-runner/python/schemas"),
+        (ROOT / "bootstrap-contracts/predicates/predicate-language.schema.json", "bootstrap-contracts/predicates/predicate-language.schema.json"),
+    ]
+    openssl_config = Path("/etc/ssl/openssl.cnf")
+    if openssl_config.is_file():
+        roots.append((openssl_config, "system/openssl.cnf"))
+    return roots
+
+
+def _runtime_environment(name: str | None, roots: list[tuple[Path, str]]) -> dict[str, str]:
+    if name == "python":
+        return {"PYTHONPATH": os.pathsep.join((str(roots[1][0]), str(roots[4][0])))}
+    openssl_config = next((str(source) for source, guest in roots if guest == "system/openssl.cnf"), None)
+    if openssl_config:
+        return {"OPENSSL_CONF": openssl_config}
+    return {}
+
+
+def _bubblewrap(root: Path, reads: list[Path], writes: list[Path], command: list[str], runtime_roots: list[tuple[Path, str]], runtime_environment: dict[str, str], guest: str) -> int:
+    wrapper = ROOT / "bin/bwrap-run"
+    if not wrapper.is_file():
+        raise RuntimeError(f"Bubblewrap launcher not found: {wrapper}")
+    args = ["/bin/sh", str(wrapper)]
+    runtimes = _runtime_paths(command)
+    created = {"/usr", "/lib", "/lib64", "/proc", "/dev", "/tmp", "/contract", "/runner-runtime"}
+    for runtime in runtimes:
+        if runtime.exists():
+            _ensure_absolute_parent(args, runtime, created)
+            args += ["--ro-bind", str(runtime), str(runtime)]
+    runtime_guest = f"/runtime/{secrets.token_hex(12)}"
+    mappings = []
+    for runtime, guest_name in runtime_roots:
+        runtime = runtime.resolve(strict=True)
+        destination = f"{runtime_guest}/{guest_name}"
+        _ensure_absolute_parent(args, Path(destination), created)
+        args += ["--ro-bind", str(runtime), destination]
+        mappings.append((runtime, destination))
+    args += ["--proc", "/proc", "--dev", "/dev", "--tmpfs", "/tmp", "--dir", "/contract"]
+    mounted: set[Path] = set()
+    for source in reads:
+        if source in mounted:
+            continue
+        mounted.add(source)
+        destination = f"{guest}/{source.relative_to(root).as_posix()}"
+        _ensure_guest_parent(args, guest, PurePosixPath(source.relative_to(root).as_posix()).parent, created)
+        args += ["--ro-bind", str(source), destination]
+    for source in writes:
+        destination = f"{guest}/{source.relative_to(root).as_posix()}"
+        _ensure_guest_parent(args, guest, PurePosixPath(source.relative_to(root).as_posix()).parent, created)
+        if source.is_dir() and destination not in created:
+            args += ["--dir", destination]
+            created.add(destination)
+        args += ["--bind", str(source), destination]
+
+    environment = _contract_environment(os.environ.copy())
+    environment, _ = _coverage_bwrap(args, environment, created)
+    environment = {**environment, **{
+        key: _map_runtime_path(value, mappings) if os.path.isabs(value) else value
+        for key, value in runtime_environment.items()
+    }}
+    if runtime_environment.get("PYTHONPATH"):
+        environment["PYTHONPATH"] = os.pathsep.join(
+            _map_runtime_path(part, mappings) for part in runtime_environment["PYTHONPATH"].split(os.pathsep)
+        )
+    args += ["--chdir", guest, "--setenv", "PATH", "/usr/local/bin:/usr/bin:/bin"]
+    for key, value in environment.items():
+        if key in {"PATH", "HOME", "LANG", "PYTHONPATH", "OPENSSL_CONF", "COVERAGE_PROCESS_START", "COVERAGE_FILE", "NODE_V8_COVERAGE"}:
+            args += ["--setenv", key, value]
+    mapped_command = [_map_package_path(item, root, guest) for item in command]
+    mapped_command = [_map_runtime_path(item, mappings) for item in mapped_command]
+    args += ["--", *mapped_command]
+    return subprocess.call(args)
+
+
+def _map_package_path(value: str, root: Path, guest: str) -> str:
+    return value.replace(str(root), guest)
+
+
+def _map_runtime_path(value: str, mappings: list[tuple[Path, str]]) -> str:
+    for source, destination in mappings:
+        source_text = str(source)
+        if value == source_text or value.startswith(source_text + os.sep):
+            return destination + value[len(source_text):]
+    return value
+
+
+def _contract_environment(source: dict[str, str]) -> dict[str, str]:
+    result = {"PATH": "/usr/local/bin:/usr/bin:/bin", "HOME": "/tmp", "LANG": source.get("LANG", "C.UTF-8")}
+    if "PYTHONPATH" in source:
+        result["PYTHONPATH"] = source["PYTHONPATH"]
+    if "OPENSSL_CONF" in source:
+        result["OPENSSL_CONF"] = source["OPENSSL_CONF"]
+    for key in ("COVERAGE_PROCESS_START", "COVERAGE_FILE", "NODE_V8_COVERAGE"):
+        if key in source:
+            result[key] = source[key]
+    if "PYTHONPATH" in source:
+        result["PYTHONPATH"] = source["PYTHONPATH"]
+    return result
+
+
+def _coverage_bwrap(args: list[str], environment: dict[str, str], created: set[str]) -> tuple[dict[str, str], list[str]]:
+    mapped = dict(environment)
+    mounts: list[str] = []
+    runtime_dir = f"/runner-runtime/{secrets.token_hex(8)}"
+    args += ["--dir", "/runner-runtime", "--dir", runtime_dir]
+    created.update({"/runner-runtime", runtime_dir})
+    for key in ("NODE_V8_COVERAGE", "COVERAGE_FILE", "COVERAGE_PROCESS_START"):
+        value = environment.get(key)
+        if not value:
+            continue
+        source = Path(value)
+        if key == "NODE_V8_COVERAGE":
+            source.mkdir(parents=True, exist_ok=True)
+            target = f"{runtime_dir}/node-coverage"
+            args += ["--bind", str(source), target]
+            mapped[key] = target
+        elif key == "COVERAGE_FILE":
+            source.parent.mkdir(parents=True, exist_ok=True)
+            target = f"{runtime_dir}/python-coverage"
+            args += ["--bind", str(source.parent), target]
+            mapped[key] = f"{target}/{source.name}"
+        else:
+            target = f"{runtime_dir}/coverage.ini"
+            args += ["--ro-bind", str(source), target]
+            mapped[key] = target
+    return mapped, mounts
+
+
+def _coverage_landlock(args: list[str], environment: dict[str, str]) -> tuple[list[str], dict[str, str]]:
+    for key in ("NODE_V8_COVERAGE", "COVERAGE_FILE"):
+        value = environment.get(key)
+        if not value:
+            continue
+        path = Path(value)
+        directory = path if key == "NODE_V8_COVERAGE" else path.parent
+        directory.mkdir(parents=True, exist_ok=True)
+        args += ["--write", str(directory)]
+    if environment.get("COVERAGE_PROCESS_START"):
+        args += ["--read", environment["COVERAGE_PROCESS_START"]]
+    return args, environment
+
+
+def _ensure_guest_parent(args: list[str], guest: str, parent: PurePosixPath, created: set[str]) -> None:
+    current = guest
+    for part in parent.parts:
+        current = f"{current}/{part}"
+        if current not in created:
+            args += ["--dir", current]
+            created.add(current)
+
+
+def _ensure_absolute_parent(args: list[str], destination: Path, created: set[str]) -> None:
+    missing = []
+    for parent in reversed(destination.parents):
+        value = str(parent)
+        if value == "/" or value in created:
+            continue
+        missing.append(value)
+    for value in missing:
+        args += ["--dir", value]
+        created.add(value)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
