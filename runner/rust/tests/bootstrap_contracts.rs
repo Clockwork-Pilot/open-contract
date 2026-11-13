@@ -42,7 +42,7 @@ impl BatchAdapter for SupplementalBatch {
                     .collect(),
                 coverage: Some(json!({
                     "format": "fixture",
-                    "sources": [batch.package_prefix.join(&batch.manifest.manifest.files.validator).to_string_lossy()]
+                    "sources": [batch.manifest.manifest.files.validator.clone()]
                 })),
                 coverage_lines: vec![open_contract_core::batch::CoverageLineFile {
                     path: "validator.py".into(),
@@ -94,17 +94,19 @@ impl BatchAdapter for EchoBatch {
                 coverage: Some(json!({
                     "native": "fixture",
                     "contract": batch.manifest.manifest.name,
-                    "sources": [batch.package_prefix.join(&batch.manifest.manifest.files.validator).to_string_lossy()]
+                    "sources": [batch.manifest.manifest.files.validator.clone()]
                 })),
-                coverage_scopes: batch.requests.iter().map(|request| {
-                    open_contract_core::batch::CoverageScope {
+                coverage_scopes: batch
+                    .requests
+                    .iter()
+                    .map(|request| open_contract_core::batch::CoverageScope {
                         key: request.key.clone(),
                         files: vec![open_contract_core::batch::CoverageFile {
                             path: batch.manifest.manifest.files.validator.clone(),
                             lines: vec![1],
                         }],
-                    }
-                }).collect(),
+                    })
+                    .collect(),
                 coverage_lines: std::iter::once(batch.manifest.manifest.files.validator.clone())
                     .chain(batch.manifest.manifest.files.support.iter().cloned())
                     .map(|path| open_contract_core::batch::CoverageLineFile {
@@ -140,6 +142,11 @@ fn write_cross_language_fixture(package: &Path) -> PathBuf {
     )
     .unwrap();
     std::fs::write(
+        package.join("run-contract.py"),
+        "import json, os, sys\nlanguage_path = os.environ['OPEN_CONTRACT_LANGUAGE_PATH']\nsys.path.insert(0, language_path)\nfrom open_contract_language.batch_adapter import run_dataset\ndef load_validator():\n    from validator import validate\n    return validate\nreport = run_dataset(json.load(sys.stdin), validator_loader=load_validator)\nprint(json.dumps(report))\n",
+    )
+    .unwrap();
+    std::fs::write(
         package.join("contract.yaml"),
         r#"
 version: "1"
@@ -149,10 +156,10 @@ files:
   validator: validator.py
   nested_contracts: [child/contract.yaml]
 execution:
-  command: [python3, -m, open_contracts_runner.tree_batch_adapter]
-  runtime_profile: all
+  command: [python3, run-contract.py]
+language_package: python
 filesystem:
-  read: [dataset.json, validator.py, child/contract.yaml]
+  read: [dataset.json, validator.py, run-contract.py, child/contract.yaml]
   write: []
 "#,
     )
@@ -168,12 +175,20 @@ filesystem:
     )
     .unwrap();
     std::fs::write(
+        child.join("run-contract.mjs"),
+        "import path from 'node:path';\nimport { pathToFileURL } from 'node:url';\nconst languagePath = process.env.OPEN_CONTRACT_LANGUAGE_PATH;\nif (!languagePath) throw new Error('missing language support path');\nconst { runDataset } = await import(pathToFileURL(path.join(languagePath, 'batch-adapter.js')).href);\nlet text = '';\nfor await (const chunk of process.stdin) text += chunk;\nconst request = JSON.parse(text);\nconst report = await runDataset(request, () => import('./validator.mjs'));\nprocess.stdout.write(`${JSON.stringify(report)}\\n`);\n",
+    )
+    .unwrap();
+    std::fs::write(
         child.join("contract.yaml"),
         r#"
 version: "1"
 name: javascript-child
 files: {dataset: dataset.yaml, validator: validator.mjs}
-filesystem: {read: [dataset.yaml, validator.mjs], write: []}
+execution:
+  command: [node, run-contract.mjs]
+language_package: javascript
+filesystem: {read: [dataset.yaml, validator.mjs, run-contract.mjs], write: []}
 "#,
     )
     .unwrap();
@@ -365,7 +380,7 @@ filesystem: {read: [dataset.json, validator.py, support.py], write: [reports]}
 }
 
 #[test]
-fn built_in_python_and_javascript_adapters_execute_batches_and_return_coverage() {
+fn manifest_commands_execute_each_contract_batch_and_return_coverage() {
     let package = tempfile::tempdir().unwrap();
     let report = run_contract_tree(
         write_cross_language_fixture(package.path()),
@@ -375,7 +390,11 @@ fn built_in_python_and_javascript_adapters_execute_batches_and_return_coverage()
     .unwrap();
     assert_eq!(report.passed(), report.total());
     assert_eq!(report.coverage.len(), 2);
-    assert!(report.coverage_complete());
+    assert!(
+        report.coverage_complete(),
+        "coverage: {:#?}",
+        report.coverage
+    );
     assert!(report
         .coverage
         .iter()

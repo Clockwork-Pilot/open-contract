@@ -62,9 +62,40 @@ cases:
         version: '1'
         name: sample
         files: {dataset: dataset.json, validator: validator.py}
-        execution: {command: [python3, -m, adapter], runtime_profile: python}
+        execution: {command: [python3, contract_entry.py]}
         filesystem: {read: [dataset.json, validator.py], write: []}
     expected: {valid: true}
+  - id: accepts-logical-language-package-reference
+    input:
+      operation: manifest
+      yaml: |
+        version: '1'
+        name: sample
+        language_package: python
+        files: {dataset: dataset.json, validator: validator.py}
+        execution: {command: [python3, contract_entry.py]}
+        filesystem: {read: [dataset.json, validator.py], write: []}
+    expected: {valid: true}
+  - id: rejects-empty-language-package-reference
+    input:
+      operation: manifest
+      yaml: |
+        version: '1'
+        name: sample
+        language_package: '  '
+        files: {dataset: dataset.json, validator: validator.py}
+        filesystem: {read: [dataset.json, validator.py], write: []}
+    expected: {valid: false}
+  - id: rejects-path-as-language-package-reference
+    input:
+      operation: manifest
+      yaml: |
+        version: '1'
+        name: sample
+        language_package: /opt/open-contract/languages/python
+        files: {dataset: dataset.json, validator: validator.py}
+        filesystem: {read: [dataset.json, validator.py], write: []}
+    expected: {valid: false}
   - id: empty-execution-command
     input:
       operation: manifest
@@ -83,16 +114,6 @@ cases:
         name: sample
         files: {dataset: dataset.json, validator: validator.py}
         execution: {command: ['  ']}
-        filesystem: {read: [dataset.json, validator.py], write: []}
-    expected: {valid: false}
-  - id: blank-execution-runtime-profile
-    input:
-      operation: manifest
-      yaml: |
-        version: '1'
-        name: sample
-        files: {dataset: dataset.json, validator: validator.py}
-        execution: {command: [python3], runtime_profile: '  '}
         filesystem: {read: [dataset.json, validator.py], write: []}
     expected: {valid: false}
   - id: unsupported-manifest-version

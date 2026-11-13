@@ -135,9 +135,9 @@ pub struct ContractBatch {
     pub requests: Vec<ExecutionRequest>,
 }
 
-/// Language adapter contract: Rust supplies flattened validator requests.
-/// Adapters invoke validators and return raw outputs/errors and native coverage;
-/// they do not read datasets, define steps, compare expectations, or evaluate predicates.
+/// Contract command contract: each command receives one complete flattened
+/// dataset batch and returns raw outputs/errors and coverage. Rust owns matching
+/// and predicate verification after the batch.
 pub trait BatchAdapter {
     fn execute_tree(
         &self,
@@ -147,8 +147,8 @@ pub trait BatchAdapter {
     ) -> Result<Vec<AdapterBatch>, String>;
 }
 
-/// Executes Rust's flattened tree requests inside the established isolation
-/// boundary. The adapter does not receive expected outputs or predicates.
+/// Executes each contract's declared command once inside the established
+/// isolation boundary. Nested contracts share the same boundary.
 pub struct ManifestBatchAdapter;
 
 impl BatchAdapter for ManifestBatchAdapter {
@@ -158,78 +158,45 @@ impl BatchAdapter for ManifestBatchAdapter {
         backend: Backend,
         batches: &[ContractBatch],
     ) -> Result<Vec<AdapterBatch>, String> {
-        let root_manifest = &tree.root_plan;
-        let execution = root_manifest
-            .manifest
-            .execution
-            .as_ref()
-            .ok_or_else(|| "root manifest is missing execution.command".to_string())?;
-        let input = tree_batch_input(batches).to_string().into_bytes();
-        let output = tree.run_command(
-            backend,
-            &tree.root,
-            &execution.command,
-            &input,
-            execution.runtime_profile.as_deref(),
-        )?;
-        if !output.status.success() {
-            return Err(format!(
-                "manifest execution command failed ({}): {}",
-                output.status,
-                String::from_utf8_lossy(&output.stderr).trim()
-            ));
-        }
-        decode_tree_output(&output.stdout, batches)
+        batches
+            .iter()
+            .map(|batch| {
+                let manifest = &batch.manifest.manifest;
+                let execution = manifest.execution.as_ref().ok_or_else(|| {
+                    format!("contract {} is missing execution.command", manifest.name)
+                })?;
+                let package_root = tree.root.join(&batch.package_prefix);
+                let input = batch_input(manifest, &batch.requests)
+                    .to_string()
+                    .into_bytes();
+                let output = tree.run_command_at(
+                    backend,
+                    &package_root,
+                    &execution.command,
+                    &input,
+                    manifest.language_package.as_deref(),
+                )?;
+                if !output.status.success() {
+                    return Err(format!(
+                        "contract {} execution.command failed ({}): {}",
+                        manifest.name,
+                        output.status,
+                        String::from_utf8_lossy(&output.stderr).trim()
+                    ));
+                }
+                decode_batch_output(&output.stdout, &manifest.name)
+            })
+            .collect()
     }
 }
 
-#[derive(Deserialize)]
-struct NamedBatch {
-    contract: String,
-    #[serde(flatten)]
-    batch: AdapterBatch,
-}
-
-#[derive(Deserialize)]
-struct TreeBatchOutput {
-    contracts: Vec<NamedBatch>,
-}
-
-fn decode_tree_output(
-    bytes: &[u8],
-    batches: &[ContractBatch],
-) -> Result<Vec<AdapterBatch>, String> {
-    let response: TreeBatchOutput = serde_json::from_slice(bytes)
+fn decode_batch_output(bytes: &[u8], contract: &str) -> Result<AdapterBatch, String> {
+    let response: AdapterBatch = serde_json::from_slice(bytes)
         .map_err(|e| format!("language adapter returned invalid batch JSON: {e}"))?;
-    let mut by_name = std::collections::HashMap::new();
-    for item in response.contracts {
-        if by_name.insert(item.contract.clone(), item.batch).is_some() {
-            return Err(format!(
-                "language adapter returned duplicate contract batch: {}",
-                item.contract
-            ));
-        }
+    if response.results.is_empty() {
+        return Err(format!("contract {contract} returned no batch results"));
     }
-    batches
-        .iter()
-        .map(|batch| {
-            by_name
-                .remove(&batch.manifest.manifest.name)
-                .ok_or_else(|| {
-                    format!(
-                        "language adapter omitted contract batch: {}",
-                        batch.manifest.manifest.name
-                    )
-                })
-        })
-        .collect::<Result<Vec<_>, _>>()
-        .and_then(|ordered| {
-            if by_name.is_empty() {
-                Ok(ordered)
-            } else {
-                Err("language adapter returned an unknown contract batch".into())
-            }
-        })
+    Ok(response)
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -349,6 +316,7 @@ pub fn run_contract_tree(
             &batch.package_prefix,
             &mut adapter_batch.additional_coverage_lines,
         );
+        prefix_native_coverage_sources(&batch.package_prefix, &mut adapter_batch.coverage);
         let (dataset_covered_lines, dataset_executable_lines) =
             line_coverage_totals(&adapter_batch.coverage_lines);
         let combined_lines = merge_line_coverage(
@@ -415,6 +383,24 @@ fn prefix_line_coverage_paths(prefix: &Path, files: &mut [CoverageLineFile]) {
     }
     for file in files {
         file.path = prefix.join(&file.path).to_string_lossy().replace('\\', "/");
+    }
+}
+
+fn prefix_native_coverage_sources(prefix: &Path, coverage: &mut Option<Value>) {
+    if prefix.as_os_str().is_empty() || prefix == Path::new(".") {
+        return;
+    }
+    let Some(sources) = coverage
+        .as_mut()
+        .and_then(|report| report.get_mut("sources"))
+        .and_then(Value::as_array_mut)
+    else {
+        return;
+    };
+    for source in sources {
+        if let Some(path) = source.as_str().map(str::to_owned) {
+            *source = Value::String(prefix.join(path).to_string_lossy().replace('\\', "/"));
+        }
     }
 }
 
@@ -1182,10 +1168,9 @@ fn displayed_result(result: &AdapterResult) -> Option<Value> {
         .or_else(|| result.error.as_ref().map(|error| json!({"error": error})))
 }
 
-/// Small JSON-lines-free standard batch envelope for language adapters.
+/// Contract-local JSON batch envelope. Paths remain relative to that contract.
 pub fn batch_input(
     manifest: &Manifest,
-    package_prefix: &Path,
     requests: &[ExecutionRequest],
 ) -> Value {
     let mut coverage_sources = vec![manifest.files.validator.clone()];
@@ -1193,18 +1178,10 @@ pub fn batch_input(
     coverage_sources.retain(|source| is_source_file(source));
     json!({
         "contract": manifest.name,
-        "package": package_prefix.to_string_lossy().replace('\\', "/"),
-        "validator": package_prefix.join(&manifest.files.validator).to_string_lossy().replace('\\', "/"),
-        "supplemental_tests": manifest.files.supplemental_tests.iter().map(|path| package_prefix.join(path).to_string_lossy().replace('\\', "/")).collect::<Vec<_>>(),
+        "package": ".",
+        "validator": manifest.files.validator,
+        "supplemental_tests": manifest.files.supplemental_tests,
         "coverage_sources": coverage_sources,
         "requests": requests,
-    })
-}
-
-pub fn tree_batch_input(batches: &[ContractBatch]) -> Value {
-    json!({
-        "contracts": batches.iter().map(|batch| {
-            batch_input(&batch.manifest.manifest, &batch.package_prefix, &batch.requests)
-        }).collect::<Vec<_>>()
     })
 }

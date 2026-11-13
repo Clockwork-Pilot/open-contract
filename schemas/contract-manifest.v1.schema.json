@@ -8,6 +8,11 @@
   "properties": {
     "version": {"const": "1"},
     "name": {"type": "string", "minLength": 1},
+    "language_package": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$",
+      "description": "Logical support package identifier resolved by runner configuration."
+    },
     "files": {
       "type": "object",
       "required": ["dataset", "validator"],
@@ -32,8 +37,7 @@
       "required": ["command"],
       "additionalProperties": false,
       "properties": {
-        "command": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
-        "runtime_profile": {"type": "string", "minLength": 1}
+        "command": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}
       }
     },
     "filesystem": {

@@ -1,4 +1,4 @@
-use open_contract_isolation::validate_runtime_profile;
+use open_contract_isolation::validate_language_package;
 use open_contract_isolation::{Backend, StagedTree};
 use open_contract_manifest::ManifestPlan;
 use serde_json::Value;
@@ -33,6 +33,16 @@ fn run() -> Result<(), String> {
             return Ok(());
         }
         Some("--exit-before-stdin") => return Ok(()),
+        Some("--print-cwd-name") => {
+            let current = std::env::current_dir()
+                .map_err(|error| format!("cannot read command working directory: {error}"))?;
+            let name = current
+                .file_name()
+                .and_then(|value| value.to_str())
+                .ok_or_else(|| "command working directory has no usable name".to_string())?;
+            println!("{name}");
+            return Ok(());
+        }
         Some("--read-file") => {
             let path = arguments
                 .get(2)
@@ -80,13 +90,14 @@ fn run() -> Result<(), String> {
             "reject-cycle-and-package-escape" => check_cycle_and_escape(expected),
             "reject-invalid-staged-paths" => check_invalid_paths(tree, expected),
             "command" => check_command(&tree, input, expected),
-            "unknown-runtime-profile" => check_unknown_profile(&tree, expected),
+            "command-at" => check_command_at(&tree, expected),
+            "unknown-language-package" => check_unknown_package(&tree, expected),
             "command-not-found" => check_missing_command(&tree, expected),
             "broken-stdin-pipe" => check_broken_pipe(&tree, expected),
             "missing-bubblewrap" => check_missing_bubblewrap(&tree, expected),
             "mocked-bubblewrap" => check_mocked_bubblewrap(&tree, expected),
             "runtime-mounts-only-adapters" => check_runtime_mounts_only_adapters(&tree, expected),
-            "runtime-profile" => check_runtime_profile(case),
+            "language-package" => check_language_package(case),
             "bubblewrap-invalid-root" => check_bubblewrap_invalid_root(tree, expected),
             "deny-private-read" => check_private_read(&tree, &package, expected),
             "bwrap-command" => check_bubblewrap_command(&tree, expected),
@@ -101,14 +112,18 @@ fn run() -> Result<(), String> {
     Ok(())
 }
 
-fn check_runtime_profile(case: &Value) -> Result<(), String> {
+fn check_language_package(case: &Value) -> Result<(), String> {
     let id = case["id"].as_str().unwrap_or("unknown");
     let input = &case["input"];
-    let language = input["language"]
+    let language = input["language_package"]
         .as_str()
-        .ok_or_else(|| format!("cases/{id}: language must be a string"))?;
+        .ok_or_else(|| format!("cases/{id}: language_package must be a string"))?;
     let temp = tempfile::tempdir().map_err(|error| error.to_string())?;
-    let package = temp.path().join("contract-languages").join(language);
+    let package = if input["external_package_mapping"] == true {
+        temp.path().join("external-language-package")
+    } else {
+        temp.path().join("contract-languages").join(language)
+    };
     std::fs::create_dir_all(&package).map_err(|error| error.to_string())?;
     std::fs::create_dir_all(package.join("src")).map_err(|error| error.to_string())?;
     if input["create_outside_resource"] == true {
@@ -137,16 +152,42 @@ fn check_runtime_profile(case: &Value) -> Result<(), String> {
         }
         std::fs::write(path, "# runtime entrypoint\n").map_err(|error| error.to_string())?;
     }
-    let result = validate_runtime_profile(temp.path(), language);
+    let previous_mapping = std::env::var_os("OPEN_CONTRACT_LANGUAGE_PACKAGES");
+    if input["external_package_mapping"] == true {
+        let mut mapping = serde_json::Map::new();
+        let mapped_path = if input["missing_mapping_target"] == true {
+            package.with_file_name("missing-language-package")
+        } else {
+            package.clone()
+        };
+        mapping.insert(
+            language.to_owned(),
+            Value::String(mapped_path.to_string_lossy().into_owned()),
+        );
+        std::env::set_var(
+            "OPEN_CONTRACT_LANGUAGE_PACKAGES",
+            Value::Object(mapping).to_string(),
+        );
+    } else if input["invalid_package_mapping"] == true {
+        std::env::set_var("OPEN_CONTRACT_LANGUAGE_PACKAGES", "{");
+    } else {
+        std::env::remove_var("OPEN_CONTRACT_LANGUAGE_PACKAGES");
+    }
+    let result = validate_language_package(temp.path(), language);
+    if let Some(previous) = previous_mapping {
+        std::env::set_var("OPEN_CONTRACT_LANGUAGE_PACKAGES", previous);
+    } else {
+        std::env::remove_var("OPEN_CONTRACT_LANGUAGE_PACKAGES");
+    }
     let expected = &case["expected"];
     match (result, expected["error_contains"].as_str()) {
         (Ok(()), None) if expected["valid"] == true => Ok(()),
         (Err(error), Some(needle)) if error.contains(needle) => Ok(()),
         (Ok(()), _) => Err(format!(
-            "cases/{id}: runtime profile unexpectedly validated"
+            "cases/{id}: language package unexpectedly validated"
         )),
         (Err(error), _) => Err(format!(
-            "cases/{id}: unexpected runtime profile error: {error}"
+            "cases/{id}: unexpected language package error: {error}"
         )),
     }
 }
@@ -360,7 +401,7 @@ fn check_command(tree: &StagedTree, input: &Value, expected: &Value) -> Result<(
             "--echo-stdin".into(),
         ],
         value.as_bytes(),
-        input["runtime_profile"].as_str(),
+        input["language_package"].as_str(),
     )?;
     ensure!(output.status.success(), "command failed: {}", output.status);
     ensure!(
@@ -371,7 +412,41 @@ fn check_command(tree: &StagedTree, input: &Value, expected: &Value) -> Result<(
     Ok(())
 }
 
-fn check_unknown_profile(tree: &StagedTree, expected: &Value) -> Result<(), String> {
+fn check_command_at(tree: &StagedTree, expected: &Value) -> Result<(), String> {
+    let expected_name = expected["working_directory"]
+        .as_str()
+        .ok_or_else(|| "working directory expectation must be a string".to_string())?;
+    let working_directory = tree.root.join("nested");
+    let executable = std::env::current_exe().map_err(|error| error.to_string())?;
+    let output = tree.run_command_at(
+        Backend::None,
+        &working_directory,
+        &[
+            executable.to_string_lossy().into_owned(),
+            "--print-cwd-name".into(),
+        ],
+        b"",
+        None,
+    )?;
+    ensure!(output.status.success(), "command failed: {}", output.status);
+    ensure!(
+        String::from_utf8_lossy(&output.stdout).trim() == expected_name,
+        "contract command ran from the wrong package directory"
+    );
+    let outside = tree.root.parent().ok_or_else(|| "staged root has no parent".to_string())?;
+    let error = tree
+        .run_command_at(Backend::None, outside, &["true".into()], b"", None)
+        .err()
+        .ok_or_else(|| "outside working directory was accepted".to_string())?;
+    ensure!(
+        error.contains("inside the staged contract tree"),
+        "unexpected outside working directory error: {error}"
+    );
+    ensure!(expected["outside_rejected"] == true, "outside rejection expectation is false");
+    Ok(())
+}
+
+fn check_unknown_package(tree: &StagedTree, expected: &Value) -> Result<(), String> {
     let error = tree
         .run_command(
             Backend::None,
@@ -381,10 +456,10 @@ fn check_unknown_profile(tree: &StagedTree, expected: &Value) -> Result<(), Stri
             Some("unsupported"),
         )
         .err()
-        .ok_or_else(|| "unknown runtime profile was unexpectedly accepted".to_string())?;
+        .ok_or_else(|| "unknown language package was unexpectedly accepted".to_string())?;
     ensure!(
-        error.contains("unknown runtime profile"),
-        "unexpected profile error: {error}"
+        error.contains("language package"),
+        "unexpected package error: {error}"
     );
     ensure!(expected["rejected"] == true, "expected.rejected is false");
     Ok(())
@@ -508,32 +583,33 @@ fn check_runtime_mounts_only_adapters(tree: &StagedTree, expected: &Value) -> Re
         None => fake_bin.path().display().to_string(),
     };
     std::env::set_var("PATH", path);
-    let result = tree.run_command(
-        Backend::Bubblewrap,
-        &tree.root,
-        &["true".into()],
-        b"",
-        Some("all"),
-    );
+    let results = ["python", "javascript"]
+        .iter()
+        .map(|package| {
+            tree.run_command(
+                Backend::Bubblewrap,
+                &tree.root,
+                &["true".into()],
+                b"",
+                Some(package),
+            )
+            .map(|output| output.stdout)
+        })
+        .collect::<Result<Vec<_>, _>>();
     if let Some(path) = previous {
         std::env::set_var("PATH", path);
     } else {
         std::env::remove_var("PATH");
     }
-    let output = result?;
-    ensure!(
-        output.status.success(),
-        "mock Bubblewrap failed: {}",
-        output.status
-    );
-    let arguments = String::from_utf8_lossy(&output.stdout);
+    let output = results?;
+    let arguments = String::from_utf8_lossy(&output.concat()).into_owned();
     ensure!(
         arguments.contains("contract-languages/python/src"),
-        "Python adapter source was not mounted"
+        "Python language support was not mounted"
     );
     ensure!(
         arguments.contains("contract-languages/javascript/src"),
-        "JavaScript adapter source was not mounted"
+        "JavaScript language support was not mounted"
     );
     let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../../..")
@@ -678,7 +754,22 @@ fn check_empty_command(tree: &StagedTree, expected: &Value) -> Result<(), String
         error.contains("cannot be empty"),
         "unexpected empty-command error: {error}"
     );
+    let package_command_error = tree
+        .run_command_at(
+            Backend::None,
+            &tree.root.join("nested"),
+            &[],
+            b"",
+            None,
+        )
+        .err()
+        .ok_or_else(|| "empty package command was unexpectedly accepted".to_string())?;
+    ensure!(
+        package_command_error.contains("cannot be empty"),
+        "unexpected package-command error: {package_command_error}"
+    );
     ensure!(expected["rejected"] == true, "expected.rejected is false");
+    ensure!(expected["package_command_rejected"] == true, "expected.package_command_rejected is false");
     Ok(())
 }
 

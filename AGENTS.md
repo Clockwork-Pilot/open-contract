@@ -25,9 +25,22 @@ not consumer-specific contracts.
   a network-style protocol.
 - Keep the Rust core in four layers: manifest planning, isolation, batch
   execution, and output verification. The root executor starts isolation once;
-  its coordinator runs language adapters and listed nested contracts inside
-  that same boundary. Verify outputs and evaluate predicates after the batch
-  returns, outside isolation.
+  its coordinator invokes each contract's declared command once with that
+  contract's complete batch, including nested contracts, inside the same
+  boundary. Verify outputs and evaluate predicates after the batch returns,
+  outside isolation.
+- Keep the contract manifest's language support reference minimal: one logical
+  package identifier alongside the contract-owned `execution.command`. Resolve
+  the package's host location from runner configuration. Do not add host paths,
+  per-file package lists, mount locations, or environment-variable names to the
+  portable manifest. The runner makes support available read-only inside
+  isolation and provides its location through a runtime environment convention.
+- A language support package is an importable interface used by the
+  contract-owned command. It iterates the supplied batch and invokes the
+  contract validator, returning raw outputs/errors and coverage data. It does
+  not parse manifests, isolate processes, compare expected values, or evaluate
+  predicates. Rust treats each command as opaque and performs verification
+  after all batch commands finish.
 - Isolate each contract to its own data and source, plus the runner resources it
   needs. Keep other access explicit.
 - Keep manifests isolation-backend agnostic: describe logical read and write
@@ -69,7 +82,8 @@ not consumer-specific contracts.
   that datasets cannot reach. Run dataset cases first; run those files only
   after dataset-only line coverage reaches 90%. Report their coverage separately
   and never let it change dataset coverage, fingerprints, or dataset coverage
-  percentages.
+  percentages. Every supplemental or mock test must document why dataset cases
+  cannot exercise it and identify the exact behavior or branches it checks.
 - Rust runtime code must return actionable errors instead of panicking. Do not
   use `assert!`, `panic!`, `unwrap`, `expect`, `todo!`, `unimplemented!`, or
   `unreachable!` in production paths; use `Result`, `?`, and explicit error

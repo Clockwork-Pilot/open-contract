@@ -1,12 +1,10 @@
 PYTHON ?= python3
+CARGO ?= cargo
 CARGO_TARGET_DIR ?= $(HOME)/.cache/open-contract-target
-RUNNER_SRC := $(CURDIR)/contract-languages/python/src
-PREDICATE_SRC := $(CURDIR)/examples/python
-export PYTHONPATH := $(RUNNER_SRC):$(PREDICATE_SRC)$(if $(PYTHONPATH),:$(PYTHONPATH))
 export CARGO_TARGET_DIR
 
 .DEFAULT_GOAL := check-contracts
-.PHONY: check-contracts check-bootstrap-contracts check-rust-core-contracts check-rust-runtime-safety check-runner-examples check-python-predicate-example examples example-raw-dataset example-ingested-dataset
+.PHONY: check-contracts check-bootstrap-contracts check-rust-core-contracts check-rust-runtime-safety check-runner-examples check-python-predicate-example examples
 
 check-contracts: check-bootstrap-contracts check-runner-examples check-python-predicate-example
 
@@ -25,15 +23,10 @@ check-rust-runtime-safety:
 	$(PYTHON) runner/tools/check_rust_runtime_safety.py
 
 check-runner-examples:
-	$(MAKE) -C contract-languages/python check-examples-coverage PYTHON="$(PYTHON)"
+	$(MAKE) -C contract-languages/python test PYTHON="$(PYTHON)"
+	cd contract-languages/javascript && npm test
 
 check-python-predicate-example:
 	$(MAKE) -C examples/python check PYTHON="$(PYTHON)"
 
-examples: example-raw-dataset example-ingested-dataset check-python-predicate-example
-
-example-raw-dataset:
-	$(MAKE) -C contract-languages/python example-raw-dataset PYTHON="$(PYTHON)"
-
-example-ingested-dataset:
-	$(MAKE) -C contract-languages/python example-ingested-dataset PYTHON="$(PYTHON)"
+examples: check-python-predicate-example

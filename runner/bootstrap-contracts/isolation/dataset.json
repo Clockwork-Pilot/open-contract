@@ -46,10 +46,20 @@
       }
     },
     {
+      "id": "contract-command-runs-from-its-package-directory",
+      "input": {
+        "operation": "command-at"
+      },
+      "expected": {
+        "working_directory": "nested",
+        "outside_rejected": true
+      }
+    },
+    {
       "id": "python-runtime-command",
       "input": {
         "operation": "command",
-        "runtime_profile": "python",
+        "language_package": "python",
         "value": "python runtime"
       },
       "expected": {
@@ -61,7 +71,7 @@
       "id": "javascript-runtime-command",
       "input": {
         "operation": "command",
-        "runtime_profile": "javascript",
+        "language_package": "javascript",
         "value": "javascript runtime"
       },
       "expected": {
@@ -70,21 +80,9 @@
       }
     },
     {
-      "id": "all-runtimes-command",
+      "id": "unknown-language-package",
       "input": {
-        "operation": "command",
-        "runtime_profile": "all",
-        "value": "all runtimes"
-      },
-      "expected": {
-        "stdout": "all runtimes",
-        "success": true
-      }
-    },
-    {
-      "id": "unknown-runtime-profile",
-      "input": {
-        "operation": "unknown-runtime-profile"
+        "operation": "unknown-language-package"
       },
       "expected": {
         "rejected": true
@@ -113,7 +111,7 @@
       "input": {
         "operation": "command",
         "backend": "landlock",
-        "runtime_profile": "python",
+        "language_package": "python",
         "value": "restricted command"
       },
       "expected": {
@@ -189,14 +187,15 @@
         "operation": "empty-command"
       },
       "expected": {
-        "rejected": true
+        "rejected": true,
+        "package_command_rejected": true
       }
     },
     {
-      "id": "runtime-profile-valid-resources",
+      "id": "language-package-valid-resources",
       "input": {
-        "operation": "runtime-profile",
-        "language": "python",
+        "operation": "language-package",
+        "language_package": "python",
         "runtime_yaml": "version: 1\nprofiles:\n  production:\n    entrypoint: src/runner.py\n    files: [src]\n    environment: {MODE: production}\n    environment_paths: {ADAPTER: src/runner.py}\n"
       },
       "expected": {
@@ -204,10 +203,58 @@
       }
     },
     {
-      "id": "runtime-profile-missing-manifest",
+      "id": "language-package-resolves-from-runner-configuration",
       "input": {
-        "operation": "runtime-profile",
-        "language": "python",
+        "operation": "language-package",
+        "language_package": "custom-python-support",
+        "external_package_mapping": true,
+        "runtime_yaml": "version: 1\nprofiles:\n  production:\n    entrypoint: src/runner.py\n    files: [src]\n    environment_paths: {OPEN_CONTRACT_LANGUAGE_PATH: src}\n"
+      },
+      "expected": {
+        "valid": true
+      }
+    },
+    {
+      "id": "language-package-rejects-invalid-runner-configuration",
+      "input": {
+        "operation": "language-package",
+        "language_package": "python",
+        "invalid_package_mapping": true,
+        "runtime_yaml": "version: 1\nprofiles:\n  production:\n    entrypoint: src/runner.py\n    files: [src]\n"
+      },
+      "expected": {
+        "error_contains": "invalid OPEN_CONTRACT_LANGUAGE_PACKAGES JSON"
+      }
+    },
+    {
+      "id": "language-package-reference-must-be-logical",
+      "input": {
+        "operation": "language-package",
+        "language_package": "bad/id",
+        "create_runtime_manifest": false
+      },
+      "expected": {
+        "error_contains": "invalid logical language package identifier"
+      }
+    },
+    {
+      "id": "language-package-reports-missing-configured-root",
+      "input": {
+        "operation": "language-package",
+        "language_package": "custom-python-support",
+        "external_package_mapping": true,
+        "missing_mapping_target": true,
+        "runtime_yaml": "version: 1\nprofiles:\n  production:\n    entrypoint: src/runner.py\n    files: [src]\n"
+      },
+      "expected": {
+        "error_contains": "is unavailable at"
+      }
+    },
+    {
+      "id": "language-package-missing-manifest",
+      "input": {
+        "operation": "language-package",
+        "language_package": "python",
         "create_runtime_manifest": false
       },
       "expected": {
@@ -215,10 +262,10 @@
       }
     },
     {
-      "id": "runtime-profile-invalid-yaml",
+      "id": "language-package-invalid-yaml",
       "input": {
-        "operation": "runtime-profile",
-        "language": "python",
+        "operation": "language-package",
+        "language_package": "python",
         "runtime_yaml": "version: [invalid\n"
       },
       "expected": {
@@ -226,10 +273,10 @@
       }
     },
     {
-      "id": "runtime-profile-unsupported-version",
+      "id": "language-package-unsupported-version",
       "input": {
-        "operation": "runtime-profile",
-        "language": "python",
+        "operation": "language-package",
+        "language_package": "python",
         "runtime_yaml": "version: 2\nprofiles:\n  production:\n    entrypoint: src/runner.py\n    files: [src]\n    environment: {MODE: production}\n    environment_paths: {ADAPTER: src/runner.py}\n"
       },
       "expected": {
@@ -237,10 +284,10 @@
       }
     },
     {
-      "id": "runtime-profile-missing-production",
+      "id": "language-package-missing-production",
       "input": {
-        "operation": "runtime-profile",
-        "language": "python",
+        "operation": "language-package",
+        "language_package": "python",
         "runtime_yaml": "version: 1\nprofiles:\n  development:\n    entrypoint: src/runner.py\n    files: [src]\n    environment: {MODE: production}\n    environment_paths: {ADAPTER: src/runner.py}\n"
       },
       "expected": {
@@ -248,10 +295,10 @@
       }
     },
     {
-      "id": "runtime-profile-empty-files",
+      "id": "language-package-empty-files",
       "input": {
-        "operation": "runtime-profile",
-        "language": "python",
+        "operation": "language-package",
+        "language_package": "python",
         "runtime_yaml": "version: 1\nprofiles:\n  production:\n    entrypoint: src/runner.py\n    files: []\n    environment: {MODE: production}\n    environment_paths: {ADAPTER: src/runner.py}\n"
       },
       "expected": {
@@ -259,10 +306,10 @@
       }
     },
     {
-      "id": "runtime-profile-invalid-resource-path",
+      "id": "language-package-invalid-resource-path",
       "input": {
-        "operation": "runtime-profile",
-        "language": "python",
+        "operation": "language-package",
+        "language_package": "python",
         "runtime_yaml": "version: 1\nprofiles:\n  production:\n    entrypoint: src/runner.py\n    files: [../outside]\n    environment: {MODE: production}\n    environment_paths: {ADAPTER: src/runner.py}\n"
       },
       "expected": {
@@ -270,10 +317,10 @@
       }
     },
     {
-      "id": "runtime-profile-missing-resource",
+      "id": "language-package-missing-resource",
       "input": {
-        "operation": "runtime-profile",
-        "language": "python",
+        "operation": "language-package",
+        "language_package": "python",
         "runtime_yaml": "version: 1\nprofiles:\n  production:\n    entrypoint: src/runner.py\n    files: [src/missing.py]\n    environment: {MODE: production}\n    environment_paths: {ADAPTER: src/runner.py}\n"
       },
       "expected": {
@@ -281,10 +328,10 @@
       }
     },
     {
-      "id": "runtime-profile-entrypoint-outside-resources",
+      "id": "language-package-entrypoint-outside-resources",
       "input": {
-        "operation": "runtime-profile",
-        "language": "python",
+        "operation": "language-package",
+        "language_package": "python",
         "runtime_yaml": "version: 1\nprofiles:\n  production:\n    entrypoint: outside.py\n    files: [src]\n    environment: {MODE: production}\n    environment_paths: {ADAPTER: src/runner.py}\n",
         "entrypoint_path": "outside.py"
       },
@@ -293,10 +340,10 @@
       }
     },
     {
-      "id": "runtime-profile-environment-path-outside-resources",
+      "id": "language-package-environment-path-outside-resources",
       "input": {
-        "operation": "runtime-profile",
-        "language": "python",
+        "operation": "language-package",
+        "language_package": "python",
         "runtime_yaml": "version: 1\nprofiles:\n  production:\n    entrypoint: src/runner.py\n    files: [src]\n    environment: {MODE: production}\n    environment_paths: {ADAPTER: outside.py}\n",
         "create_outside_resource": true
       },
@@ -305,10 +352,10 @@
       }
     },
     {
-      "id": "runtime-profile-symlink-escape",
+      "id": "language-package-symlink-escape",
       "input": {
-        "operation": "runtime-profile",
-        "language": "python",
+        "operation": "language-package",
+        "language_package": "python",
         "runtime_yaml": "version: 1\nprofiles:\n  production:\n    entrypoint: escape\n    files: [escape]\n    environment: {MODE: production}\n    environment_paths: {ADAPTER: src/runner.py}\n",
         "create_entrypoint": false,
         "create_symlink_escape": true

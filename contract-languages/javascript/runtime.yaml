@@ -10,4 +10,4 @@ profiles:
       - node_modules/@jridgewell/sourcemap-codec
       - node_modules/convert-source-map
     environment_paths:
-      OPEN_CONTRACT_JS_ADAPTER: src/batch-adapter.js
+      OPEN_CONTRACT_LANGUAGE_PATH: src

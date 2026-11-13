@@ -1,5 +1,6 @@
 version: "1"
 name: python-predicates-example
+language_package: python
 coverage:
   minimum_line_percent: 100
 files:
@@ -8,11 +9,11 @@ files:
   support:
     - predicate.py
 execution:
-  command: [python3, -m, open_contracts_runner.tree_batch_adapter]
-  runtime_profile: python
+  command: [python3, run_contract.py]
 filesystem:
   read:
     - dataset.json
+    - run_contract.py
     - validator.py
     - predicate.py
   write: []

@@ -7,6 +7,10 @@ use std::path::{Component, Path, PathBuf};
 pub struct Manifest {
     pub version: String,
     pub name: String,
+    /// Logical language-support package identifier. Host paths and runtime
+    /// mount details are resolved by runner configuration, not the manifest.
+    #[serde(default)]
+    pub language_package: Option<String>,
     pub files: Files,
     #[serde(default)]
     pub coverage: Coverage,
@@ -40,8 +44,6 @@ fn default_minimum_line_percent() -> f64 {
 #[serde(deny_unknown_fields)]
 pub struct ExecutionCommand {
     pub command: Vec<String>,
-    #[serde(default)]
-    pub runtime_profile: Option<String>,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -89,6 +91,9 @@ impl ManifestPlan {
         if manifest.name.trim().is_empty() {
             return Err("manifest name must be non-empty".into());
         }
+        if let Some(package) = manifest.language_package.as_deref() {
+            validate_language_package(package)?;
+        }
         if !manifest.coverage.minimum_line_percent.is_finite()
             || !(0.0..=100.0).contains(&manifest.coverage.minimum_line_percent)
         {
@@ -97,13 +102,6 @@ impl ManifestPlan {
         if let Some(execution) = &manifest.execution {
             if execution.command.is_empty() || execution.command[0].trim().is_empty() {
                 return Err("manifest execution command must not be empty".into());
-            }
-            if execution
-                .runtime_profile
-                .as_ref()
-                .is_some_and(|profile| profile.trim().is_empty())
-            {
-                return Err("manifest execution runtime profile must not be empty".into());
             }
         }
         let mut declared_files = vec![
@@ -136,6 +134,21 @@ impl ManifestPlan {
             manifest_path,
             package_root,
         })
+    }
+}
+
+fn validate_language_package(package: &str) -> Result<(), String> {
+    let mut characters = package.chars();
+    let valid = characters
+        .next()
+        .is_some_and(|first| first.is_ascii_alphanumeric())
+        && characters.all(|character| {
+            character.is_ascii_alphanumeric() || matches!(character, '-' | '_' | '.')
+        });
+    if valid {
+        Ok(())
+    } else {
+        Err("manifest language_package must be a logical identifier, not a path".into())
     }
 }
 

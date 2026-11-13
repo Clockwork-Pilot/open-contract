@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 
-ADAPTER = Path(__file__).parents[1] / "src/open_contracts_runner/batch_adapter.py"
+LANGUAGE_PACKAGE = Path(__file__).parents[1] / "src"
 
 
 def run_adapter(tmp_path, supplemental_tests, validator_source=None):
@@ -19,8 +19,20 @@ def run_adapter(tmp_path, supplemental_tests, validator_source=None):
         "supplemental_tests": supplemental_tests,
         "requests": [{"key": {"case": "one"}, "input": 3}],
     }
+    entrypoint = tmp_path / "contract_entry.py"
+    entrypoint.write_text(
+        "import json, sys\n"
+        f"sys.path.insert(0, {str(LANGUAGE_PACKAGE)!r})\n"
+        "from open_contract_language.batch_adapter import run_dataset\n"
+        "def load_validator():\n"
+        "    from validator import validate\n"
+        "    return validate\n"
+        "report = run_dataset(json.load(sys.stdin), validator_loader=load_validator)\n"
+        "print(json.dumps(report))\n",
+        encoding="utf-8",
+    )
     return subprocess.run(
-        [sys.executable, str(ADAPTER)],
+        [sys.executable, str(entrypoint)],
         input=json.dumps(request),
         text=True,
         capture_output=True,
@@ -42,7 +54,8 @@ def test_supplemental_tests_report_separately_from_dataset_coverage(tmp_path):
     report = json.loads(result.stdout)
     assert report["additional_test_coverage"]["status"] == "passed"
     assert report["additional_test_coverage"]["executed"] is True
-    assert report["coverage_lines"] == report["additional_coverage_lines"]
+    assert report["coverage_lines"][0]["covered_lines"] == [1, 2]
+    assert report["additional_coverage_lines"][0]["covered_lines"] == [2]
     assert report["coverage_lines"][0]["path"] == "validator.py"
 
 

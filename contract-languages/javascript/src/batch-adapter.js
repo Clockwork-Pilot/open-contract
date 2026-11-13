@@ -8,15 +8,7 @@ import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 const v8ToIstanbul = require('v8-to-istanbul');
 
-const inputText = await new Promise((resolve, reject) => {
-	let text = '';
-	process.stdin.setEncoding('utf8');
-	process.stdin.on('data', (chunk) => { text += chunk; });
-	process.stdin.on('end', () => resolve(text));
-	process.stdin.on('error', reject);
-});
-
-const request = JSON.parse(inputText);
+export async function runDataset(request, validatorLoader = null) {
 const root = process.cwd();
 const validator = path.resolve(root, request.validator);
 if (validator !== root && !validator.startsWith(`${root}${path.sep}`)) {
@@ -24,6 +16,7 @@ if (validator !== root && !validator.startsWith(`${root}${path.sep}`)) {
 }
 
 const originalStdoutWrite = process.stdout.write.bind(process.stdout);
+const originalConsoleLog = console.log;
 process.stdout.write = (chunk, ...args) => process.stderr.write(chunk, ...args);
 console.log = (...args) => console.error(...args);
 
@@ -46,8 +39,10 @@ try {
 	}
 	await post('Profiler.enable');
 	await post('Profiler.startPreciseCoverage', { callCount: true, detailed: true });
-	const loaded = await import(pathToFileURL(validator).href);
-	const validate = loaded.validate ?? loaded.default;
+	const loaded = validatorLoader
+		? await validatorLoader()
+		: await import(pathToFileURL(validator).href);
+	const validate = typeof loaded === 'function' ? loaded : loaded.validate ?? loaded.default;
 	if (typeof validate !== 'function') throw new Error('validator must export validate(input) or a default function');
 	const setupCoverage = await post('Profiler.takePreciseCoverage');
 	coverageSnapshots.push(setupCoverage);
@@ -138,6 +133,7 @@ try {
 }
 
 process.stdout.write = originalStdoutWrite;
+console.log = originalConsoleLog;
 const files = coverageSnapshots.flatMap((snapshot) => (snapshot.result ?? []).flatMap((item) => {
 	if (!item.url.startsWith('file:')) return [];
 	const source = fileURLToPath(item.url);
@@ -156,14 +152,15 @@ const coverageLines = await normalizedLineCoverage(
 const additionalCoverageLines = supplementalTests.length && additionalTestCoverage?.executed
 	? await normalizedLineCoverage(additionalCoverageSnapshots, packageRoot, request.coverage_sources ?? [])
 	: [];
-originalStdoutWrite(`${JSON.stringify({
+return {
 	results,
 	coverage,
 	coverage_scopes: scopes,
 	coverage_lines: coverageLines,
 	additional_test_coverage: additionalTestCoverage,
 	additional_coverage_lines: additionalCoverageLines,
-})}\n`);
+};
+}
 
 async function normalizedLineCoverage(snapshots, sourceRoot, declaredSources) {
 	const profiles = new Map();

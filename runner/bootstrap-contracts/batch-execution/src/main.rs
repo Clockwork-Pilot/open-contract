@@ -285,13 +285,17 @@ impl BatchAdapter for FixtureAdapter {
             .iter()
             .map(|batch| AdapterBatch {
                 results: self.results(batch),
-                coverage: Some(json!({
-                    "format": "fixture",
-                    "sources": std::iter::once(&batch.manifest.manifest.files.validator)
-                        .chain(&batch.manifest.manifest.files.support)
-                        .map(|source| batch.package_prefix.join(source).to_string_lossy().replace('\\', "/"))
-                        .collect::<Vec<_>>(),
-                })),
+                coverage: if self.mode == "coverage-without-sources" {
+                    Some(json!({"format": "fixture"}))
+                } else {
+                    Some(json!({
+                        "format": "fixture",
+                        "sources": std::iter::once(&batch.manifest.manifest.files.validator)
+                            .chain(&batch.manifest.manifest.files.support)
+                            .cloned()
+                            .collect::<Vec<_>>(),
+                    }))
+                },
                 coverage_scopes: self.coverage(batch),
                 coverage_lines: self.line_coverage(batch),
                 additional_test_coverage: self.supplemental_report(),

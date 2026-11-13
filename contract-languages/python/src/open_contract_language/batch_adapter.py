@@ -11,9 +11,13 @@ import sys
 from pathlib import Path
 
 
-def main() -> int:
+def run_dataset(request, validator_loader=None):
+    """Run one batch with the supplied contract validator and return raw data.
+
+    A contract entrypoint may pass a loader that imports its validator. The
+    loader runs after coverage starts so validator module execution is measured.
+    """
     try:
-        request = json.load(sys.stdin)
         validator = Path(request["validator"]).resolve(strict=True)
         root = Path.cwd().resolve(strict=True)
         if not validator.is_relative_to(root):
@@ -22,14 +26,12 @@ def main() -> int:
         if not package_root.is_relative_to(root):
             raise ValueError("contract package path escaped staged root")
     except Exception as exc:
-        print(json.dumps({"results": [], "coverage": None, "error": f"{type(exc).__name__}: {exc}"}))
-        return 2
+        return {"results": [], "coverage": None, "error": f"{type(exc).__name__}: {exc}"}
 
     try:
         from coverage import Coverage
     except ImportError as exc:
-        print(json.dumps({"results": [], "coverage": None, "error": f"coverage unavailable: {exc}"}))
-        return 2
+        return {"results": [], "coverage": None, "error": f"coverage unavailable: {exc}"}
 
     coverage = Coverage(data_file=None, branch=True, config_file=False)
     results = []
@@ -40,7 +42,12 @@ def main() -> int:
         with contextlib.redirect_stdout(sys.stderr):
             coverage.switch_context(setup_context)
             try:
-                executor = _load_validator(validator, root)
+                sys.path.insert(0, str(root))
+                sys.path.insert(0, str(validator.parent))
+                loaded = validator_loader() if validator_loader else _load_validator(validator, root)
+                executor = loaded if callable(loaded) else getattr(loaded, "validate", None)
+                if not callable(executor):
+                    raise TypeError("validator loader must return validate(input)")
             except Exception as exc:
                 for item in request.get("requests", []):
                     results.append({"key": item["key"], "error": f"{type(exc).__name__}: {exc}"})
@@ -109,15 +116,14 @@ def main() -> int:
                 "reason": f"dataset-only line coverage {dataset_percent:.1f}% is below the 90% threshold",
                 "test_files": supplemental_tests,
             }
-    print(json.dumps({
+    return {
         "results": results,
         "coverage": native,
         "coverage_scopes": scopes,
         "coverage_lines": sorted(coverage_lines, key=lambda item: item["path"]),
         "additional_test_coverage": additional_report,
         "additional_coverage_lines": additional_coverage_lines,
-    }, ensure_ascii=False))
-    return 0
+    }
 
 
 def _coverage_context(key):
@@ -241,7 +247,3 @@ def _load_validator(path: Path, root: Path):
     if not callable(function):
         raise ValueError("validator module must export validate(input)")
     return function
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())

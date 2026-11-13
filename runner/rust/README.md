@@ -9,24 +9,33 @@ The crate keeps four responsibilities separate:
 
 Nested manifests listed by a parent are staged under the same randomized root. The Rust core starts one isolation session for the complete tree and invokes each listed contract's cases in that session. Child execution therefore inherits the parent's boundary. Child and parent coverage reports are combined in the root report, while their case results remain separate.
 
-The adapter protocol is one JSON document on stdin. Rust provides each contract's flattened case and step requests, with no expected outputs or predicates:
+The Rust coordinator invokes each contract's declared `execution.command` once
+with the complete flattened batch for that contract. The command receives one
+contract-local JSON document on stdin, with case and step identities and no
+expected outputs or predicates:
 
 ```json
-{"contracts":[{"contract":"example","package":"","validator":"src/validator.py","requests":[{"key":{"target_id":"default","case_id":"case-1","step_id":null},"kind":"custom","config":{},"input":{"value":1}}]}]}
+{"contract":"example","package":".","validator":"src/validator.py","coverage_sources":["src/validator.py"],"requests":[{"key":{"target_id":"default","case_id":"case-1","step_id":null},"kind":"custom","config":{},"input":{"value":1}}]}
 ```
 
-The language adapter returns one JSON document on stdout with a `contracts` array. Its `results` fields have request keys and either `output` or `error`; `coverage` carries the native report and exercised source paths. Stdout is reserved for this response. The adapter does not read datasets, define steps, compare expectations, or evaluate predicates.
+The contract-owned command imports its language support package and validator,
+then returns one JSON document on stdout. Its `results` preserve request keys
+and contain either `output` or `error`; `coverage` carries the native report
+and exercised source paths. The support package is an importable interface, not
+a second CLI or runner. Rust owns dataset and step traversal, expected-output
+matching, predicate evaluation, coverage enforcement, and reporting.
 
-The root manifest declares the execution command and optional runtime profile.
-Rust traverses the dataset and sends its flattened input requests to that
-command in one batch. Rust itself owns dataset semantics and output verification.
+The manifest declares the contract command and, when needed, one logical
+`language_package` identifier. Runner configuration resolves that identifier
+and provides the support package location through `OPEN_CONTRACT_LANGUAGE_PATH`.
+The manifest contains no host paths or language-specific dependency file lists.
 
 For example:
 
 ```yaml
 execution:
-  command: [python3, -m, open_contracts_runner.tree_batch_adapter]
-  runtime_profile: all
+  command: [python3, run_contract.py]
+language_package: python
 ```
 
 Run the Rust executor with runtime-selected isolation:
@@ -38,7 +47,11 @@ cargo run --manifest-path runner/rust/Cargo.toml -- run-manifest contract.yaml \
 ```
 
 `none`, `bwrap`, and `landlock` are runtime isolation choices. Contract paths
-remain package-relative, and each run uses a fresh staged root.
+remain package-relative, and each run uses a fresh staged root. Rust invokes
+each contract's declared command once for its full batch, including nested
+contracts, while keeping all commands inside the root isolation boundary. The
+logical `language_package` identifier is resolved by runner configuration; it
+does not contain a host path or a list of support files.
 
 `--coverage-report <path>` is optional. It writes each executed contract's raw
 native report, declared and covered source paths, and missing source paths to a

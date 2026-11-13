@@ -1187,7 +1187,7 @@
         ]
       },
       "expected": {
-        "error_contains": "manifest execution command failed"
+        "error_contains": "execution.command failed"
       }
     },
     {
@@ -1215,7 +1215,7 @@
       }
     },
     {
-      "id": "manifest-duplicate-batch",
+      "id": "manifest-duplicate-result-key",
       "input": {
         "dataset": {
           "version": 1,
@@ -1231,11 +1231,11 @@
         "command": [
           "python3",
           "-c",
-          "import json,sys; n=json.load(sys.stdin)['contracts'][0]['contract']; print(json.dumps({'contracts':[{'contract':n,'results':[]},{'contract':n,'results':[]}]}))"
+          "import json,sys; r=json.load(sys.stdin)['requests'][0]; print(json.dumps({'results':[{'key':r['key'],'output':{}},{'key':r['key'],'output':{}}]}))"
         ]
       },
       "expected": {
-        "error_contains": "duplicate contract batch"
+        "error_contains": "duplicate result keys"
       }
     },
     {
@@ -1255,15 +1255,15 @@
         "command": [
           "sh",
           "-c",
-          "printf '{\"contracts\":[]}'"
+          "printf '{\"results\":[]}'"
         ]
       },
       "expected": {
-        "error_contains": "omitted contract batch"
+        "error_contains": "returned no batch results"
       }
     },
     {
-      "id": "manifest-unknown-batch",
+      "id": "manifest-rejects-tree-envelope",
       "input": {
         "dataset": {
           "version": 1,
@@ -1277,13 +1277,13 @@
         },
         "adapter": "manifest",
         "command": [
-          "python3",
+          "sh",
           "-c",
-          "import json,sys; c=json.load(sys.stdin)['contracts'][0]; print(json.dumps({'contracts':[{'contract':c['contract'],'results':[{'key':r['key'],'output':r['input']} for r in c['requests']],'coverage':{'sources':[c['validator'].split('/')[-1]]}},{'contract':'extra','results':[]}]}))"
+          "printf '{\"contracts\":[]}'"
         ]
       },
       "expected": {
-        "error_contains": "unknown contract batch"
+        "error_contains": "invalid batch JSON"
       }
     },
     {
@@ -1329,7 +1329,7 @@
         "command": [
           "python3",
           "-c",
-            "import json,sys; x=json.load(sys.stdin); out=[]; exec(\"for c in x['contracts']:\\n out.append({'contract':c['contract'],'results':[{'key':r['key'],'output':r['input']} for r in c['requests']],'coverage':{'sources':[c['validator'].split('/')[-1]]},'coverage_scopes':[{'key':r['key'],'files':[{'path':c['validator'].split('/')[-1],'lines':[1,2]}]} for r in c['requests']],'coverage_lines':[{'path':c['validator'].split('/')[-1],'executable_lines':[1,2],'covered_lines':[1,2]}]})\"); print(json.dumps({'contracts':out}))"
+            "import json,sys; x=json.load(sys.stdin); r=x['requests'][0]; p=x['validator']; print(json.dumps({'results':[{'key':r['key'],'output':r['input']}], 'coverage':{'sources':[p]}, 'coverage_scopes':[{'key':r['key'],'files':[{'path':p,'lines':[1,2]}]}], 'coverage_lines':[{'path':p,'executable_lines':[1,2],'covered_lines':[1,2]}]}))"
         ]
       },
       "expected": {
@@ -1685,6 +1685,28 @@
       "expected": {
         "passed": true,
         "coverage_complete": true,
+        "total": 2
+      }
+    },
+    {
+      "id": "nested-command-without-native-source-list",
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "one",
+              "input": {"value": 1},
+              "expected": {"value": 1}
+            }
+          ]
+        },
+        "nested_contract": true,
+        "adapter_mode": "coverage-without-sources"
+      },
+      "expected": {
+        "passed": true,
+        "coverage_complete": false,
         "total": 2
       }
     },

@@ -12,10 +12,10 @@ pub enum Backend {
     Landlock,
 }
 
-/// Validate a language runtime profile using the same loader used to stage
-/// runtime resources for commands.
-pub fn validate_runtime_profile(repository: &Path, language: &str) -> Result<(), String> {
-    backend::validate_runtime_profile(repository, language)
+/// Validate a language support package using the same loader used to stage
+/// its runtime resources for commands.
+pub fn validate_language_package(repository: &Path, language: &str) -> Result<(), String> {
+    backend::validate_language_package(repository, language)
 }
 
 impl Backend {
@@ -123,7 +123,7 @@ impl StagedTree {
         package_root: &Path,
         command: &[String],
         input: &[u8],
-        runtime_profile: Option<&str>,
+        language_package: Option<&str>,
     ) -> Result<Output, String> {
         if command.is_empty() {
             return Err("isolation command cannot be empty".into());
@@ -131,11 +131,37 @@ impl StagedTree {
         backend::run(
             backend,
             package_root,
+            package_root,
             &self.read,
             &self.write,
             command,
             input,
-            runtime_profile,
+            language_package,
+        )
+    }
+
+    /// Run a command from a contract package directory while enforcing the
+    /// shared staged tree's read and write policy.
+    pub fn run_command_at(
+        &self,
+        backend: Backend,
+        working_directory: &Path,
+        command: &[String],
+        input: &[u8],
+        language_package: Option<&str>,
+    ) -> Result<Output, String> {
+        if command.is_empty() {
+            return Err("isolation command cannot be empty".into());
+        }
+        backend::run(
+            backend,
+            &self.root,
+            working_directory,
+            &self.read,
+            &self.write,
+            command,
+            input,
+            language_package,
         )
     }
 

@@ -13,20 +13,41 @@ use std::process::{Command, Output, Stdio};
 pub(super) fn run(
     backend: Backend,
     package_root: &Path,
+    working_directory: &Path,
     read: &[String],
     write: &[String],
     argv: &[String],
     input: &[u8],
-    runtime_profile: Option<&str>,
+    language_package: Option<&str>,
 ) -> Result<Output, String> {
-    let runtime = runtime(runtime_profile)?;
+    let runtime = runtime(language_package)?;
     match backend {
         Backend::None => {
-            let mut command = command(argv, package_root, &runtime.environment);
+            let root = package_root
+                .canonicalize()
+                .map_err(|error| error.to_string())?;
+            let cwd = checked_working_directory(&root, working_directory)?;
+            let mut command = command(argv, &cwd, &runtime.environment);
             collect_output(&mut command, input)
         }
-        Backend::Bubblewrap => run_bubblewrap(package_root, read, write, argv, input, &runtime),
-        Backend::Landlock => run_landlock(package_root, read, write, argv, input, &runtime),
+        Backend::Bubblewrap => run_bubblewrap(
+            package_root,
+            working_directory,
+            read,
+            write,
+            argv,
+            input,
+            &runtime,
+        ),
+        Backend::Landlock => run_landlock(
+            package_root,
+            working_directory,
+            read,
+            write,
+            argv,
+            input,
+            &runtime,
+        ),
     }
 }
 
@@ -51,12 +72,12 @@ struct RuntimeProfile {
     environment_paths: BTreeMap<String, String>,
 }
 
-pub(super) fn validate_runtime_profile(repository: &Path, language: &str) -> Result<(), String> {
+pub(super) fn validate_language_package(repository: &Path, language: &str) -> Result<(), String> {
     let mut runtime = Runtime {
         roots: Vec::new(),
         environment: BTreeMap::new(),
     };
-    add_runtime_profile(&mut runtime, repository, language)
+    add_language_package(&mut runtime, repository, language)
 }
 
 fn runtime(profile: Option<&str>) -> Result<Runtime, String> {
@@ -70,14 +91,7 @@ fn runtime(profile: Option<&str>) -> Result<Runtime, String> {
     };
     match profile {
         None => {}
-        Some(language @ ("python" | "javascript")) => {
-            add_runtime_profile(&mut runtime, &repository, language)?;
-        }
-        Some("all") => {
-            add_runtime_profile(&mut runtime, &repository, "python")?;
-            add_runtime_profile(&mut runtime, &repository, "javascript")?;
-        }
-        Some(other) => return Err(format!("unknown runtime profile: {other}")),
+        Some(package) => add_language_package(&mut runtime, &repository, package)?,
     }
     runtime.roots.sort();
     runtime.roots.dedup();
@@ -90,12 +104,12 @@ fn runtime(profile: Option<&str>) -> Result<Runtime, String> {
     Ok(runtime)
 }
 
-fn add_runtime_profile(
+fn add_language_package(
     runtime: &mut Runtime,
     repository: &Path,
     language: &str,
 ) -> Result<(), String> {
-    let package = repository.join("contract-languages").join(language);
+    let package = language_package_root(repository, language)?;
     let manifest_path = package.join("runtime.yaml");
     let bytes = fs::read(&manifest_path).map_err(|error| {
         format!(
@@ -152,6 +166,33 @@ fn add_runtime_profile(
     }
     runtime.roots.extend(resources);
     Ok(())
+}
+
+fn language_package_root(repository: &Path, package_id: &str) -> Result<PathBuf, String> {
+    let mut characters = package_id.chars();
+    let valid_id = characters
+        .next()
+        .is_some_and(|character| character.is_ascii_alphanumeric())
+        && characters.all(|character| {
+            character.is_ascii_alphanumeric() || matches!(character, '-' | '_' | '.')
+        });
+    if !valid_id {
+        return Err(format!("invalid logical language package identifier: {package_id:?}"));
+    }
+    if let Some(config) = std::env::var_os("OPEN_CONTRACT_LANGUAGE_PACKAGES") {
+        let mappings: BTreeMap<String, String> = serde_json::from_str(&config.to_string_lossy())
+            .map_err(|error| format!("invalid OPEN_CONTRACT_LANGUAGE_PACKAGES JSON: {error}"))?;
+        if let Some(root) = mappings.get(package_id) {
+            return PathBuf::from(root).canonicalize().map_err(|error| {
+                format!("language package {package_id:?} is unavailable at {root:?}: {error}")
+            });
+        }
+    }
+    repository
+        .join("contract-languages")
+        .join(package_id)
+        .canonicalize()
+        .map_err(|error| format!("language package {package_id:?} is unavailable: {error}"))
 }
 
 fn checked_runtime_path(package: &Path, relative: &str) -> Result<PathBuf, String> {
@@ -213,6 +254,7 @@ fn collect_output(command: &mut Command, input: &[u8]) -> Result<Output, String>
 
 fn run_bubblewrap(
     package_root: &Path,
+    working_directory: &Path,
     read: &[String],
     write: &[String],
     argv: &[String],
@@ -224,6 +266,7 @@ fn run_bubblewrap(
     let root = package_root
         .canonicalize()
         .map_err(|error| error.to_string())?;
+    let cwd = checked_working_directory(&root, working_directory)?;
     let guest = guest_root(package_root)?;
     let mut args = vec![
         "--die-with-parent".into(),
@@ -283,8 +326,9 @@ fn run_bubblewrap(
         );
     }
 
+    let guest_cwd = guest_path(&guest, &root, &cwd)?;
     let mut child = Command::new(bwrap);
-    child.args(args).arg("--chdir").arg(&guest);
+    child.args(args).arg("--chdir").arg(guest_cwd);
     let safe_env = safe_environment(&runtime.environment);
     for (key, value) in &safe_env {
         child.arg("--setenv").arg(key).arg(value);
@@ -304,6 +348,7 @@ fn run_bubblewrap(
 
 fn run_landlock(
     package_root: &Path,
+    working_directory: &Path,
     read: &[String],
     write: &[String],
     argv: &[String],
@@ -313,6 +358,7 @@ fn run_landlock(
     let root = package_root
         .canonicalize()
         .map_err(|error| error.to_string())?;
+    let cwd = checked_working_directory(&root, working_directory)?;
     let mut allowed = Vec::new();
     for path in read {
         allowed.push((checked_path(&root, path)?, false));
@@ -334,11 +380,21 @@ fn run_landlock(
     }
     let rules = landlock_rules(&allowed)?;
     let ruleset = create_landlock_ruleset(&rules).map_err(|error| error.to_string())?;
-    let mut child = command(argv, &root, &safe_environment(&runtime.environment));
+    let mut child = command(argv, &cwd, &safe_environment(&runtime.environment));
     unsafe {
         child.pre_exec(move || install_landlock(&ruleset));
     }
     collect_output(&mut child, input)
+}
+
+fn checked_working_directory(root: &Path, working_directory: &Path) -> Result<PathBuf, String> {
+    let cwd = working_directory
+        .canonicalize()
+        .map_err(|error| format!("command working directory is unavailable: {error}"))?;
+    if !cwd.starts_with(root) || !cwd.is_dir() {
+        return Err("command working directory must be inside the staged contract tree".into());
+    }
+    Ok(cwd)
 }
 
 fn checked_path(root: &Path, relative: &str) -> Result<PathBuf, String> {

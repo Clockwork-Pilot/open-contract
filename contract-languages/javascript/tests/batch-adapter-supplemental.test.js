@@ -6,7 +6,7 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 
-const adapter = fileURLToPath(new URL('../src/batch-adapter.js', import.meta.url));
+const languagePath = fileURLToPath(new URL('../src', import.meta.url));
 
 async function runAdapter(root, supplementalTests) {
 	const request = {
@@ -16,11 +16,12 @@ async function runAdapter(root, supplementalTests) {
 		supplemental_tests: supplementalTests,
 		requests: [{ key: { case: 'one' }, input: 3 }],
 	};
-	return spawnSync(process.execPath, [adapter], {
-		cwd: root,
-		input: JSON.stringify(request),
-		encoding: 'utf8',
-	});
+    return spawnSync(process.execPath, [path.join(root, 'run-contract.mjs')], {
+      cwd: root,
+      input: JSON.stringify(request),
+      encoding: 'utf8',
+      env: { ...process.env, OPEN_CONTRACT_LANGUAGE_PATH: languagePath },
+    });
 }
 
 async function fixture(t, validatorSource = 'export function validate(value) { return { value }; }\n') {
@@ -28,6 +29,15 @@ async function fixture(t, validatorSource = 'export function validate(value) { r
 	t.after(() => rm(root, { recursive: true, force: true }));
 	await writeFile(path.join(root, 'package.json'), '{"type":"module"}');
 	await writeFile(path.join(root, 'validator.mjs'), validatorSource);
+	await writeFile(path.join(root, 'run-contract.mjs'), `
+import path from 'node:path';
+import { pathToFileURL } from 'node:url';
+const { runDataset } = await import(pathToFileURL(path.join(process.env.OPEN_CONTRACT_LANGUAGE_PATH, 'batch-adapter.js')).href);
+let text = '';
+for await (const chunk of process.stdin) text += chunk;
+const report = await runDataset(JSON.parse(text), () => import('./validator.mjs'));
+process.stdout.write(JSON.stringify(report));
+`);
 	return root;
 }
 

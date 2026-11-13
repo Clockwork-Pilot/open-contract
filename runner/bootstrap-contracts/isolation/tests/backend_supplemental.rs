@@ -12,6 +12,9 @@ fn fixture_fd() -> libc::c_long {
 }
 
 #[test]
+// Dataset cases cannot inject an OS-level failure while opening a Landlock
+// rule path. This checks that both the injected open error and a missing path
+// are returned as actionable errors.
 fn landlock_rule_path_open_errors_are_reported() {
     let directory = tempfile::tempdir().expect("temporary directory");
     let error = landlock_rules_with_open(&[(directory.path().to_path_buf(), false)], |_| {
@@ -29,6 +32,9 @@ fn landlock_rule_path_open_errors_are_reported() {
 }
 
 #[test]
+// Dataset inputs cannot force individual Landlock syscalls to fail
+// deterministically. This checks error propagation from ABI query, ruleset
+// creation, and adding a path rule.
 fn landlock_ruleset_reports_abi_creation_and_path_rule_failures() {
     let directory = tempfile::tempdir().expect("temporary directory");
     let rules = landlock_rules(&[(directory.path().to_path_buf(), false)])
@@ -56,6 +62,9 @@ fn landlock_ruleset_reports_abi_creation_and_path_rule_failures() {
 }
 
 #[test]
+// Dataset cases cannot reliably control kernel ABI support or syscall results.
+// This checks successful ruleset installation plus failures from setting
+// no_new_privs and restricting the calling thread.
 fn landlock_ruleset_and_restriction_success_paths_are_handled() {
     let directory = tempfile::tempdir().expect("temporary directory");
     let rules = landlock_rules(&[(directory.path().to_path_buf(), false)])
@@ -83,6 +92,9 @@ fn landlock_ruleset_and_restriction_success_paths_are_handled() {
 }
 
 #[test]
+// Dataset cases do not control the host executable's location. This checks
+// that an executable outside the standard system roots contributes its parent
+// directory to the runtime access roots.
 fn executable_paths_outside_system_roots_are_added() {
     let directory = tempfile::tempdir().expect("temporary directory");
     let executable = directory.path().join("contract-command");
