@@ -49,6 +49,17 @@ impl BatchAdapter for SupplementalBatch {
                     executable_lines: vec![1],
                     covered_lines: vec![1],
                 }],
+                coverage_scopes: batch
+                    .requests
+                    .iter()
+                    .map(|request| open_contract_core::batch::CoverageScope {
+                        key: request.key.clone(),
+                        files: vec![open_contract_core::batch::CoverageFile {
+                            path: batch.manifest.manifest.files.validator.clone(),
+                            lines: vec![1],
+                        }],
+                    })
+                    .collect(),
                 additional_test_coverage: Some(json!({
                     "executed": true,
                     "passed": self.passed,
@@ -420,7 +431,7 @@ fn cli_writes_optional_file_and_line_coverage_report_for_contract_users() {
         String::from_utf8_lossy(&result.stderr)
     );
     let stdout = String::from_utf8_lossy(&result.stdout);
-    assert!(stdout.contains("Cases:"));
+    assert!(stdout.contains("Dataset cases:"));
     assert!(stdout.contains("Coverage report:"));
     assert!(!stdout.trim_start().starts_with('{'));
     let report: Value = serde_json::from_slice(&std::fs::read(report_path).unwrap()).unwrap();
@@ -435,6 +446,16 @@ fn cli_writes_optional_file_and_line_coverage_report_for_contract_users() {
             && contract["dataset_coverage"]["files"].is_array()
             && contract["dataset_coverage"]["cases"].is_array()
             && contract["additional_test_coverage"].is_null()
+    }));
+    assert!(contracts.iter().all(|contract| {
+        contract["target_coverage"].as_array().is_some_and(|targets| {
+            !targets.is_empty()
+                && targets.iter().all(|target| {
+                    target["coverage_complete"] == true
+                        && target["threshold_met"] == true
+                        && target["coverage_percent"] == 100.0
+                })
+        })
     }));
     let root = contracts
         .iter()
@@ -496,8 +517,8 @@ fn cli_saves_report_and_returns_nonzero_when_manifest_coverage_threshold_is_miss
     assert_eq!(result.status.code(), Some(1));
     let stdout = String::from_utf8_lossy(&result.stdout);
     let stderr = String::from_utf8_lossy(&result.stderr);
-    assert!(stdout.contains("Cases: 2/2 passed"));
-    assert!(stdout.contains("dataset 80.0%"));
+    assert!(stdout.contains("Dataset cases: 2/2 passed"));
+    assert!(stdout.contains("target lines covered (80.0%, required 100.0%)"));
     assert!(stdout.contains("uncovered lines 3"));
     assert!(stdout.contains("Coverage report: .open-contract/coverage/latest.json"));
     assert!(stderr.contains("coverage requirements not met"));

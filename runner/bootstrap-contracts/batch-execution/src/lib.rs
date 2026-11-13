@@ -268,6 +268,16 @@ impl BatchReport {
                     && record.additional_test_coverage["passed"] != false
                     && record.line_threshold_met
             })
+            && !self.results.is_empty()
+            && self.results.iter().all(|result| {
+                let valid_scope = |coverage: &Option<CoverageFingerprint>| {
+                    coverage.as_ref().is_some_and(|coverage| {
+                        !coverage.files.is_empty() && coverage.baseline_matches != Some(false)
+                    })
+                };
+                valid_scope(&result.coverage)
+                    && result.steps.iter().all(|step| valid_scope(&step.coverage))
+            })
     }
 }
 

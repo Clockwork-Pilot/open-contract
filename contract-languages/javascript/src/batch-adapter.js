@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import inspector from 'node:inspector';
-import { readFile, readdir, realpath, stat } from 'node:fs/promises';
+import { readdir, realpath, stat } from 'node:fs/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import path from 'node:path';
 import { createRequire } from 'node:module';
@@ -29,6 +29,8 @@ const results = [];
 const coverageSnapshots = [];
 const additionalCoverageSnapshots = [];
 const coverageScopes = new Map();
+const datasetCoverageByFile = new Map();
+let coverageLines = [];
 const requests = request.requests ?? [];
 const supplementalTests = request.supplemental_tests ?? [];
 const packageRoot = path.resolve(root, request.package ?? '');
@@ -57,18 +59,33 @@ try {
 		}
 		const snapshot = await post('Profiler.takePreciseCoverage');
 		coverageSnapshots.push(snapshot);
+		const caseCoverage = await normalizedLineCoverage(
+			[setupCoverage, snapshot], packageRoot, request.coverage_sources ?? [],
+		);
+		for (const file of caseCoverage) {
+			const combined = datasetCoverageByFile.get(file.path) ?? {
+				path: file.path,
+				executable_lines: new Set(),
+				covered_lines: new Set(),
+			};
+			for (const line of file.executable_lines) combined.executable_lines.add(line);
+			for (const line of file.covered_lines) combined.covered_lines.add(line);
+			datasetCoverageByFile.set(file.path, combined);
+		}
 		coverageScopes.set(JSON.stringify(item.key), {
 			key: item.key,
-			files: await lineCoverage(
-				[setupCoverage, snapshot], root, packageRoot, request.coverage_sources ?? [],
-			),
+			files: caseCoverage.map(({ path: source, covered_lines: lines }) => ({ path: source, lines })),
 		});
 	}
+	coverageLines = [...datasetCoverageByFile.values()]
+		.map((file) => ({
+			path: file.path,
+			executable_lines: [...file.executable_lines].sort((left, right) => left - right),
+			covered_lines: [...file.covered_lines].sort((left, right) => left - right),
+		}))
+		.sort((left, right) => left.path.localeCompare(right.path));
 	if (supplementalTests.length) {
-		const datasetCoverageLines = await normalizedLineCoverage(
-			coverageSnapshots, packageRoot, request.coverage_sources ?? [],
-		);
-		const datasetPercent = coveragePercent(datasetCoverageLines);
+		const datasetPercent = coveragePercent(coverageLines);
 		if (datasetPercent < 90) {
 			additionalTestCoverage = {
 				status: 'skipped', executed: false, passed: true,
@@ -146,9 +163,6 @@ const coverage = {
 	result: files,
 };
 const scopes = requests.map((item) => coverageScopes.get(JSON.stringify(item.key)) ?? ({ key: item.key, files: [] }));
-const coverageLines = await normalizedLineCoverage(
-	coverageSnapshots, packageRoot, request.coverage_sources ?? [],
-);
 const additionalCoverageLines = supplementalTests.length && additionalTestCoverage?.executed
 	? await normalizedLineCoverage(additionalCoverageSnapshots, packageRoot, request.coverage_sources ?? [])
 	: [];
@@ -230,55 +244,4 @@ function coveragePercent(files) {
 	const executable = files.reduce((total, file) => total + file.executable_lines.length, 0);
 	const covered = files.reduce((total, file) => total + file.covered_lines.length, 0);
 	return executable ? covered * 100 / executable : 0;
-}
-
-async function lineCoverage(snapshots, stagedRoot, sourceRoot, declaredSources) {
-	const linesByPath = new Map();
-	for (const snapshot of snapshots) {
-		for (const script of snapshot.result ?? []) {
-			if (!script.url?.startsWith('file:')) continue;
-			const filename = path.resolve(fileURLToPath(script.url));
-			if (filename !== sourceRoot && !filename.startsWith(`${sourceRoot}${path.sep}`)) continue;
-			const relative = path.relative(sourceRoot, filename).split(path.sep).join('/');
-			if (!declaredSources.some((entry) => relative === entry || relative.startsWith(`${entry.replace(/\/$/, '')}/`))) continue;
-			let source;
-			try { source = await readFile(filename, 'utf8'); } catch { continue; }
-			const starts = lineStarts(source);
-			const lines = linesByPath.get(relative) ?? new Set();
-			for (const fn of script.functions ?? []) {
-				const ranges = fn.ranges ?? [];
-				const boundaries = [...new Set(ranges.flatMap(({ startOffset, endOffset }) => [startOffset, endOffset]))]
-					.sort((left, right) => left - right);
-				for (let index = 0; index + 1 < boundaries.length; index += 1) {
-					const start = boundaries[index];
-					const end = boundaries[index + 1];
-					const innermost = ranges.filter((range) => range.startOffset <= start && range.endOffset >= end)
-						.sort((left, right) => (left.endOffset - left.startOffset) - (right.endOffset - right.startOffset))[0];
-					if (innermost?.count > 0) addOverlappingLines(lines, starts, source.length, start, end);
-				}
-			}
-			linesByPath.set(relative, lines);
-		}
-	}
-	return [...linesByPath]
-		.filter(([, lines]) => lines.size)
-		.sort(([left], [right]) => left.localeCompare(right))
-		.map(([source, lines]) => ({ path: source, lines: [...lines].sort((left, right) => left - right) }));
-}
-
-function lineStarts(source) {
-	const starts = [0];
-	for (let index = 0; index < source.length; index += 1) if (source[index] === '\n') starts.push(index + 1);
-	return starts;
-}
-
-function addOverlappingLines(lines, starts, sourceLength, rangeStart, rangeEnd) {
-	let index = 0;
-	while (index + 1 < starts.length && starts[index + 1] <= rangeStart) index += 1;
-	while (index < starts.length && starts[index] < rangeEnd) {
-		const lineStart = starts[index];
-		const lineEnd = starts[index + 1] ?? sourceLength;
-		if (rangeStart < lineEnd && rangeEnd > lineStart) lines.add(index + 1);
-		index += 1;
-	}
 }

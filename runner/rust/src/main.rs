@@ -1,3 +1,4 @@
+use open_contract_core::batch::{ContractResult, CoverageLineFile, CoverageRecord};
 use open_contract_core::{run_contract_tree, Backend, BatchReport, ManifestBatchAdapter};
 use open_contract_errors::ContractError;
 use serde_json::json;
@@ -56,9 +57,10 @@ fn run() -> Result<(), ContractError> {
         return Err((
             1,
             format!(
-                "{} of {} contract cases passed{}",
+                "{}/{} dataset cases passed across {} contract(s){}",
                 report.passed(),
                 report.total(),
+                report.coverage.len(),
                 mismatch_summary
             ),
         )
@@ -85,33 +87,8 @@ fn run() -> Result<(), ContractError> {
         )
             .into());
     }
-    if !report.coverage_complete() {
-        let failures = report
-            .coverage
-            .iter()
-            .filter(|record| !record.line_threshold_met || !record.missing_sources.is_empty())
-            .map(|record| {
-                let percent = percent(
-                    record.combined_covered_lines,
-                    record.combined_executable_lines,
-                );
-                let mut detail = format!(
-                    "{}: {percent:.1}% ({}/{}) below required {:.1}%",
-                    record.contract,
-                    record.combined_covered_lines,
-                    record.combined_executable_lines,
-                    record.minimum_line_percent
-                );
-                if !record.missing_sources.is_empty() {
-                    detail.push_str(&format!(
-                        "; missing sources {}",
-                        record.missing_sources.join(", ")
-                    ));
-                }
-                detail
-            })
-            .collect::<Vec<_>>()
-            .join("; ");
+    if !coverage_requirements_met(&report) {
+        let failures = coverage_requirement_failures(&report).join("; ");
         return Err((1, format!("coverage requirements not met: {failures}")).into());
     }
     Ok(())
@@ -191,11 +168,19 @@ fn write_coverage_report(
             let mut lines_by_file = BTreeMap::<String, BTreeSet<u32>>::new();
             for result in &contract_results {
                 if let Some(coverage) = &result.coverage {
-                    add_coverage_files(&mut lines_by_file, &coverage.files);
+                    add_coverage_files(
+                        &mut lines_by_file,
+                        &coverage.files,
+                        &record.declared_sources,
+                    );
                 }
                 for step in &result.steps {
                     if let Some(coverage) = &step.coverage {
-                        add_coverage_files(&mut lines_by_file, &coverage.files);
+                        add_coverage_files(
+                            &mut lines_by_file,
+                            &coverage.files,
+                            &record.declared_sources,
+                        );
                     }
                 }
             }
@@ -214,12 +199,14 @@ fn write_coverage_report(
                     let executable = file
                         .map(|file| file.executable_lines.clone())
                         .unwrap_or_default();
-                    let mut covered = file
-                        .map(|file| file.covered_lines.clone())
-                        .unwrap_or_default();
-                    if covered.is_empty() {
-                        covered.extend(lines_by_file.remove(&source).unwrap_or_default());
-                    }
+                    let executable_set = executable.iter().copied().collect::<BTreeSet<_>>();
+                    let covered = lines_by_file
+                        .get(&source)
+                        .into_iter()
+                        .flatten()
+                        .filter(|line| executable_set.contains(line))
+                        .copied()
+                        .collect::<Vec<_>>();
                     let covered_set = covered.iter().copied().collect::<BTreeSet<_>>();
                     let uncovered = executable
                         .iter()
@@ -245,17 +232,60 @@ fn write_coverage_report(
             if let Some(details) = additional_test_coverage.as_object_mut() {
                 details.insert("files".into(), json!(additional_files));
             }
+            let scoped_dataset_coverage = record
+                .line_coverage
+                .iter()
+                .map(|file| CoverageLineFile {
+                    path: file.path.clone(),
+                    executable_lines: file.executable_lines.clone(),
+                    covered_lines: lines_by_file
+                        .get(&file.path)
+                        .map(|lines| lines.iter().copied().collect())
+                        .unwrap_or_default(),
+                })
+                .collect::<Vec<_>>();
             let combined_files = combined_line_file_report(
                 &record.declared_sources,
-                &record.line_coverage,
+                &scoped_dataset_coverage,
                 &record.additional_line_coverage,
             );
+            let target_coverage = target_coverage_report(&contract_results, record);
+            let target_coverage_complete = target_coverage
+                .iter()
+                .all(|target| target["coverage_complete"] == true)
+                && !target_coverage.is_empty();
+            let target_threshold_met = target_coverage
+                .iter()
+                .all(|target| target["threshold_met"] == true)
+                && !target_coverage.is_empty();
+            let scoped_covered_lines = files
+                .iter()
+                .map(|file| file["covered_line_count"].as_u64().unwrap_or(0) as usize)
+                .sum::<usize>();
+            let scoped_executable_lines = files
+                .iter()
+                .map(|file| file["executable_line_count"].as_u64().unwrap_or(0) as usize)
+                .sum::<usize>();
+            let reportable_coverage = target_coverage_complete
+                && record.missing_sources.is_empty()
+                && scoped_executable_lines > 0;
+            let combined_covered_lines = combined_files
+                .iter()
+                .map(|file| file["covered_line_count"].as_u64().unwrap_or(0) as usize)
+                .sum::<usize>();
+            let combined_executable_lines = combined_files
+                .iter()
+                .map(|file| file["executable_line_count"].as_u64().unwrap_or(0) as usize)
+                .sum::<usize>();
             let cases = contract_results
                 .into_iter()
                 .map(|result| {
                     json!({
                         "target_id": result.target_id,
                         "case_id": result.case_id,
+                        "passed": result.passed,
+                        "output": result.output,
+                        "error": result.error,
                         "coverage": result.coverage,
                         "steps": result.steps.iter().map(|step| json!({
                             "step_id": step.id,
@@ -267,13 +297,16 @@ fn write_coverage_report(
             json!({
                 "contract": record.contract,
                 "minimum_line_percent": record.minimum_line_percent,
-                "dataset_coverage_percent": percent(record.dataset_covered_lines, record.dataset_executable_lines),
-                "dataset_covered_lines": record.dataset_covered_lines,
-                "dataset_executable_lines": record.dataset_executable_lines,
-                "combined_coverage_percent": percent(record.combined_covered_lines, record.combined_executable_lines),
-                "combined_covered_lines": record.combined_covered_lines,
-                "combined_executable_lines": record.combined_executable_lines,
-                "line_threshold_met": record.line_threshold_met,
+                "dataset_coverage_percent": reportable_coverage.then(|| percent(scoped_covered_lines, scoped_executable_lines)),
+                "dataset_covered_lines": reportable_coverage.then_some(scoped_covered_lines),
+                "dataset_executable_lines": reportable_coverage.then_some(scoped_executable_lines),
+                "combined_coverage_percent": (reportable_coverage && record.additional_test_coverage["passed"] != false).then(|| percent(combined_covered_lines, combined_executable_lines)),
+                "combined_covered_lines": (reportable_coverage && record.additional_test_coverage["passed"] != false).then_some(combined_covered_lines),
+                "combined_executable_lines": (reportable_coverage && record.additional_test_coverage["passed"] != false).then_some(combined_executable_lines),
+                "line_threshold_met": target_threshold_met && record.line_threshold_met,
+                "adapter_line_threshold_met": record.line_threshold_met,
+                "target_coverage_complete": target_coverage_complete,
+                "target_coverage": target_coverage,
                 "native_report": record.native_report,
                 "declared_sources": record.declared_sources,
                 "covered_sources": record.covered_sources,
@@ -289,7 +322,7 @@ fn write_coverage_report(
         })
         .collect::<Vec<_>>();
     let coverage = json!({
-        "coverage_complete": report.coverage_complete(),
+        "coverage_complete": coverage_requirements_met(report),
         "contracts": contracts,
     });
     let contents = serde_json::to_vec_pretty(&coverage)
@@ -311,34 +344,40 @@ fn coverage_line_summary(report: &serde_json::Value) -> String {
         let name = contract["contract"]
             .as_str()
             .map_or("<unnamed>", |value| value);
-        let percentage = contract["dataset_coverage_percent"].as_f64().unwrap_or(0.0);
-        let combined = contract["combined_coverage_percent"]
-            .as_f64()
-            .unwrap_or(0.0);
         let threshold = contract["minimum_line_percent"].as_f64().unwrap_or(100.0);
-        output.push_str(&format!("  {name}: dataset {percentage:.1}%, combined {combined:.1}% (required {threshold:.1}%)\n"));
-        for file in contract["dataset_coverage"]["files"]
-            .as_array()
-            .into_iter()
-            .flatten()
-        {
-            let path = file["path"].as_str().map_or("<unknown>", |value| value);
-            let executable = file["executable_line_count"]
-                .as_u64()
-                .map_or(0, |value| value);
-            let covered = file["covered_line_count"].as_u64().map_or(0, |value| value);
-            let uncovered = file["uncovered_lines"]
-                .as_array()
-                .into_iter()
-                .flatten()
-                .filter_map(serde_json::Value::as_u64)
-                .filter_map(|line| u32::try_from(line).ok())
-                .collect::<Vec<_>>();
-            if executable > 0 && !uncovered.is_empty() {
-                output.push_str(&format!(
-                    "    {path}: {covered}/{executable} covered; uncovered lines {}\n",
-                    format_line_ranges(&uncovered)
-                ));
+        let targets = contract["target_coverage"].as_array().into_iter().flatten();
+        for target in targets {
+            let target_id = target["target_id"].as_str().unwrap_or("<unnamed>");
+            let cases = target["case_count"].as_u64().unwrap_or(0);
+            let passed = target["passed_cases"].as_u64().unwrap_or(0);
+            if target["coverage_complete"] == true {
+                let percent = target["coverage_percent"].as_f64().unwrap_or(0.0);
+                let covered = target["covered_lines"].as_u64().unwrap_or(0);
+                let executable = target["executable_lines"].as_u64().unwrap_or(0);
+                output.push_str(&format!("  {name} target {target_id}: {passed}/{cases} cases passed; {covered}/{executable} target lines covered ({percent:.1}%, required {threshold:.1}%)\n"));
+            } else {
+                let reason = target["incomplete_reason"]
+                    .as_str()
+                    .unwrap_or("coverage data is incomplete");
+                output.push_str(&format!("  {name} target {target_id}: {passed}/{cases} cases passed; target coverage unavailable ({reason})\n"));
+            }
+            for file in target["files"].as_array().into_iter().flatten() {
+                let path = file["path"].as_str().unwrap_or("<unknown>");
+                let executable = file["executable_line_count"].as_u64().unwrap_or(0);
+                let covered = file["covered_line_count"].as_u64().unwrap_or(0);
+                let uncovered = file["uncovered_lines"]
+                    .as_array()
+                    .into_iter()
+                    .flatten()
+                    .filter_map(serde_json::Value::as_u64)
+                    .filter_map(|line| u32::try_from(line).ok())
+                    .collect::<Vec<_>>();
+                if executable > 0 && !uncovered.is_empty() {
+                    output.push_str(&format!(
+                        "    {path}: {covered}/{executable} target lines; uncovered lines {}\n",
+                        format_line_ranges(&uncovered)
+                    ));
+                }
             }
         }
     }
@@ -378,6 +417,222 @@ fn coverage_line_summary(report: &serde_json::Value) -> String {
     output
 }
 
+fn target_coverage_report(
+    results: &[&ContractResult],
+    record: &CoverageRecord,
+) -> Vec<serde_json::Value> {
+    let mut grouped = BTreeMap::<String, Vec<&ContractResult>>::new();
+    for result in results {
+        grouped
+            .entry(result.target_id.clone())
+            .or_default()
+            .push(result);
+    }
+    grouped
+        .into_iter()
+        .map(|(target_id, cases)| {
+            let mut lines_by_file = BTreeMap::<String, BTreeSet<u32>>::new();
+            let mut scopes_complete = !cases.is_empty();
+            for result in &cases {
+                if let Some(coverage) = &result.coverage {
+                    if coverage.files.is_empty() || coverage.baseline_matches == Some(false) {
+                        scopes_complete = false;
+                    }
+                    scopes_complete &= add_coverage_files(
+                        &mut lines_by_file,
+                        &coverage.files,
+                        &record.declared_sources,
+                    );
+                } else {
+                    scopes_complete = false;
+                }
+                for step in &result.steps {
+                    if let Some(coverage) = &step.coverage {
+                        if coverage.files.is_empty() || coverage.baseline_matches == Some(false) {
+                            scopes_complete = false;
+                        }
+                        scopes_complete &= add_coverage_files(
+                            &mut lines_by_file,
+                            &coverage.files,
+                            &record.declared_sources,
+                        );
+                    } else {
+                        scopes_complete = false;
+                    }
+                }
+            }
+
+            let files = record
+                .declared_sources
+                .iter()
+                .map(|source| {
+                    let executable = record
+                        .line_coverage
+                        .iter()
+                        .find(|file| &file.path == source)
+                        .map(|file| {
+                            file.executable_lines
+                                .iter()
+                                .copied()
+                                .collect::<BTreeSet<_>>()
+                        })
+                        .unwrap_or_default();
+                    let covered = lines_by_file
+                        .get(source)
+                        .cloned()
+                        .unwrap_or_default()
+                        .intersection(&executable)
+                        .copied()
+                        .collect::<BTreeSet<_>>();
+                    (source.clone(), executable, covered)
+                })
+                .collect::<Vec<_>>();
+            let executable_lines = files
+                .iter()
+                .map(|(_, executable, _)| executable.len())
+                .sum::<usize>();
+            let covered_lines = files
+                .iter()
+                .map(|(_, _, covered)| covered.len())
+                .sum::<usize>();
+            let all_sources_present = record.declared_sources.iter().all(|source| {
+                files
+                    .iter()
+                    .any(|(path, executable, _)| path == source && !executable.is_empty())
+            });
+            let coverage_complete = scopes_complete
+                && record.missing_sources.is_empty()
+                && all_sources_present
+                && executable_lines > 0;
+            let coverage_percent = coverage_complete.then(|| percent(covered_lines, executable_lines));
+            let threshold_met = coverage_percent
+                .is_some_and(|coverage| coverage + f64::EPSILON >= record.minimum_line_percent);
+            let mut reasons = Vec::new();
+            if !scopes_complete {
+                reasons.push("cases lack nonempty coverage scopes or a declared fingerprint mismatched".to_string());
+            }
+            if !record.missing_sources.is_empty() {
+                reasons.push(format!(
+                    "missing declared sources: {}",
+                    record.missing_sources.join(", ")
+                ));
+            }
+            if !all_sources_present {
+                reasons.push("no executable-line data for one or more declared sources".to_string());
+            }
+            if executable_lines == 0 {
+                reasons.push("no target executable lines were reported".to_string());
+            }
+            json!({
+                "target_id": target_id,
+                "case_count": cases.len(),
+                "passed_cases": cases.iter().filter(|result| result.passed).count(),
+                "coverage_complete": coverage_complete,
+                "coverage_percent": coverage_percent,
+                "threshold_met": threshold_met,
+                "covered_lines": covered_lines,
+                "executable_lines": executable_lines,
+                "incomplete_reason": if coverage_complete { None::<String> } else { Some(reasons.join("; ")) },
+                "files": files.into_iter().map(|(path, executable, covered)| json!({
+                    "path": path,
+                    "executable_line_count": executable.len(),
+                    "covered_line_count": covered.len(),
+                    "uncovered_lines": executable.difference(&covered).copied().collect::<Vec<_>>(),
+                })).collect::<Vec<_>>(),
+            })
+        })
+        .collect()
+}
+
+fn target_coverage_thresholds_met(report: &BatchReport) -> bool {
+    !report.coverage.is_empty()
+        && report.coverage.iter().all(|record| {
+            let results = report
+                .results
+                .iter()
+                .filter(|result| result.contract == record.contract)
+                .collect::<Vec<_>>();
+            let targets = target_coverage_report(&results, record);
+            !targets.is_empty() && targets.iter().all(|target| target["threshold_met"] == true)
+        })
+}
+
+fn coverage_requirements_met(report: &BatchReport) -> bool {
+    report.coverage_complete() && target_coverage_thresholds_met(report)
+}
+
+fn coverage_requirement_failures(report: &BatchReport) -> Vec<String> {
+    let mut failures = Vec::new();
+    for record in &report.coverage {
+        if !record.line_threshold_met {
+            failures.push(format!(
+                "{} combined coverage: {:.1}% ({}/{}) below required {:.1}%",
+                record.contract,
+                percent(
+                    record.combined_covered_lines,
+                    record.combined_executable_lines
+                ),
+                record.combined_covered_lines,
+                record.combined_executable_lines,
+                record.minimum_line_percent
+            ));
+        }
+        if !record.missing_sources.is_empty() {
+            failures.push(format!(
+                "{}: missing declared sources {}",
+                record.contract,
+                record.missing_sources.join(", ")
+            ));
+        }
+        let results = report
+            .results
+            .iter()
+            .filter(|result| result.contract == record.contract)
+            .collect::<Vec<_>>();
+        let targets = target_coverage_report(&results, record);
+        if targets.is_empty() {
+            failures.push(format!(
+                "{}: no dataset targets were reported",
+                record.contract
+            ));
+        }
+        for target in targets
+            .iter()
+            .filter(|target| target["threshold_met"] != true)
+        {
+            let name = target["target_id"].as_str().unwrap_or("<unnamed>");
+            if let (Some(covered), Some(executable), Some(coverage)) = (
+                target["covered_lines"].as_u64(),
+                target["executable_lines"].as_u64(),
+                target["coverage_percent"].as_f64(),
+            ) {
+                failures.push(format!(
+                    "{} target {}: {:.1}% ({}/{}) below required {:.1}%",
+                    record.contract,
+                    name,
+                    coverage,
+                    covered,
+                    executable,
+                    record.minimum_line_percent
+                ));
+            } else {
+                failures.push(format!(
+                    "{} target {}: coverage unavailable ({})",
+                    record.contract,
+                    name,
+                    target["incomplete_reason"]
+                        .as_str()
+                        .unwrap_or("coverage evidence is incomplete")
+                ));
+            }
+        }
+    }
+    if failures.is_empty() {
+        failures.push("coverage evidence is incomplete".into());
+    }
+    failures
+}
+
 fn percent(covered: usize, executable: usize) -> f64 {
     if executable == 0 {
         0.0
@@ -387,22 +642,38 @@ fn percent(covered: usize, executable: usize) -> f64 {
 }
 
 fn concise_summary(report: &BatchReport) -> String {
-    let mut output = format!("Cases: {}/{} passed\n", report.passed(), report.total());
+    let mut output = format!(
+        "Dataset cases: {}/{} passed across {} contract(s)\n",
+        report.passed(),
+        report.total(),
+        report.coverage.len()
+    );
     let value = serde_json::json!({
         "contracts": report.coverage.iter().map(|record| serde_json::json!({
             "contract": record.contract,
             "minimum_line_percent": record.minimum_line_percent,
-            "dataset_coverage_percent": percent(record.dataset_covered_lines, record.dataset_executable_lines),
-            "combined_coverage_percent": percent(record.combined_covered_lines, record.combined_executable_lines),
-            "dataset_coverage": {"files": record.line_coverage.iter().map(|file| {
-                let executable = file.executable_lines.iter().copied().collect::<BTreeSet<_>>();
-                let covered = file.covered_lines.iter().copied().collect::<BTreeSet<_>>();
-                let uncovered = executable.difference(&covered).copied().collect::<Vec<_>>();
-                serde_json::json!({"path": file.path, "executable_line_count": executable.len(), "covered_line_count": covered.len(), "uncovered_lines": uncovered})
-            }).collect::<Vec<_>>()}
+            "target_coverage": target_coverage_report(
+                &report.results.iter().filter(|result| result.contract == record.contract).collect::<Vec<_>>(),
+                record,
+            )
         })).collect::<Vec<_>>()
     });
     output.push_str(&coverage_line_summary(&value));
+    for result in report.results.iter().filter(|result| !result.passed) {
+        output.push_str(&format!(
+            "  FAIL {}/{}/{}: {}\n",
+            result.contract,
+            result.target_id,
+            result.case_id,
+            result
+                .error
+                .as_deref()
+                .unwrap_or("case verification failed")
+        ));
+        if let Some(actual) = &result.output {
+            output.push_str(&format!("    actual: {actual}\n"));
+        }
+    }
     output
 }
 
@@ -505,19 +776,48 @@ fn format_line_ranges(lines: &[u32]) -> String {
 fn add_coverage_files(
     by_file: &mut BTreeMap<String, BTreeSet<u32>>,
     files: &[open_contract_core::batch::CoverageFile],
-) {
+    declared_sources: &[String],
+) -> bool {
+    let mut all_sources_resolved = true;
     for file in files {
+        let Some(source) = resolve_declared_source(&file.path, declared_sources) else {
+            all_sources_resolved = false;
+            continue;
+        };
         by_file
-            .entry(file.path.clone())
+            .entry(source.to_owned())
             .or_default()
             .extend(file.lines.iter().copied());
     }
+    all_sources_resolved
+}
+
+fn resolve_declared_source<'a>(
+    scope_path: &str,
+    declared_sources: &'a [String],
+) -> Option<&'a str> {
+    let mut matches = declared_sources
+        .iter()
+        .filter(|source| {
+            source.as_str() == scope_path
+                || source
+                    .strip_suffix(scope_path)
+                    .is_some_and(|prefix| prefix.ends_with('/'))
+        })
+        .map(String::as_str);
+    let source = matches.next()?;
+    matches.next().is_none().then_some(source)
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{coverage_fingerprint_mismatches, coverage_line_summary};
-    use open_contract_core::batch::{CoverageFingerprint, StepResult};
+    use super::{
+        concise_summary, coverage_fingerprint_mismatches, coverage_line_summary,
+        coverage_requirements_met, target_coverage_report,
+    };
+    use open_contract_core::batch::{
+        CoverageFile, CoverageFingerprint, CoverageLineFile, CoverageRecord, StepResult,
+    };
     use open_contract_core::{BatchReport, ContractResult};
 
     #[test]
@@ -563,17 +863,204 @@ mod tests {
         let report = serde_json::json!({
             "contracts": [{
                 "contract": "example",
-                "dataset_coverage": {"files": [{
-                    "path": "validator.py",
-                    "executable_line_count": 8,
-                    "covered_line_count": 5,
-                    "uncovered_lines": [4, 5, 6]
-                }]}
+                "minimum_line_percent": 100,
+                "target_coverage": [{
+                    "target_id": "default",
+                    "case_count": 1,
+                    "passed_cases": 1,
+                    "coverage_complete": true,
+                    "coverage_percent": 62.5,
+                    "covered_lines": 5,
+                    "executable_lines": 8,
+                    "files": [{
+                        "path": "validator.py",
+                        "executable_line_count": 8,
+                        "covered_line_count": 5,
+                        "uncovered_lines": [4, 5, 6]
+                    }]
+                }]
             }]
         });
 
         let summary = coverage_line_summary(&report);
-        assert!(summary.contains("validator.py: 5/8 covered; uncovered lines 4-6"));
+        assert!(summary.contains("example target default: 1/1 cases passed; 5/8 target lines covered (62.5%, required 100.0%)"));
+        assert!(summary.contains("validator.py: 5/8 target lines; uncovered lines 4-6"));
+    }
+
+    #[test]
+    fn incomplete_target_coverage_never_prints_a_percentage() {
+        let report = serde_json::json!({
+            "contracts": [{
+                "contract": "n1a-license-state",
+                "minimum_line_percent": 100,
+                "target_coverage": [{
+                    "target_id": "n1a-license-state",
+                    "case_count": 5,
+                    "passed_cases": 0,
+                    "coverage_complete": false,
+                    "coverage_percent": null,
+                    "incomplete_reason": "missing declared sources: license-state.js; cases lack nonempty coverage scopes",
+                    "files": []
+                }]
+            }]
+        });
+
+        let summary = coverage_line_summary(&report);
+        assert!(summary.contains("n1a-license-state target n1a-license-state: 0/5 cases passed; target coverage unavailable"));
+        assert!(summary.contains("missing declared sources: license-state.js"));
+        assert!(!summary.contains("100.0%"));
+    }
+
+    #[test]
+    fn failed_case_summary_names_contract_target_case_and_actual_output() {
+        let result = ContractResult {
+            contract: "n1a-license-state".into(),
+            target_id: "license-state".into(),
+            case_id: "case-1".into(),
+            output: Some(serde_json::json!({"active": false})),
+            passed: false,
+            matched_by: None,
+            error: Some("output did not equal expected value".into()),
+            steps: Vec::new(),
+            coverage: Some(CoverageFingerprint {
+                files: vec![CoverageFile {
+                    path: "license-state.js".into(),
+                    lines: vec![1],
+                }],
+                fingerprint: "observed".into(),
+                expected_fingerprint: Some("expected".into()),
+                baseline_matches: Some(true),
+            }),
+        };
+        let report = BatchReport {
+            results: vec![result],
+            coverage: vec![CoverageRecord {
+                contract: "n1a-license-state".into(),
+                minimum_line_percent: 100.0,
+                dataset_covered_lines: 1,
+                dataset_executable_lines: 1,
+                combined_covered_lines: 1,
+                combined_executable_lines: 1,
+                line_threshold_met: true,
+                native_report: serde_json::json!({"sources": ["license-state.js"]}),
+                declared_sources: vec!["license-state.js".into()],
+                covered_sources: vec!["license-state.js".into()],
+                missing_sources: Vec::new(),
+                line_coverage: vec![CoverageLineFile {
+                    path: "license-state.js".into(),
+                    executable_lines: vec![1],
+                    covered_lines: vec![1],
+                }],
+                additional_test_coverage: serde_json::Value::Null,
+                additional_line_coverage: Vec::new(),
+            }],
+        };
+        let summary = concise_summary(&report);
+        assert!(summary.contains("Dataset cases: 0/1 passed across 1 contract(s)"));
+        assert!(summary.contains("FAIL n1a-license-state/license-state/case-1"));
+        assert!(summary.contains("actual: {\"active\":false}"));
+    }
+
+    #[test]
+    fn target_scopes_below_threshold_fail_even_when_adapter_aggregate_passes() {
+        let result = ContractResult {
+            contract: "example".into(),
+            target_id: "target".into(),
+            case_id: "case".into(),
+            output: Some(serde_json::json!({"ok": true})),
+            passed: true,
+            matched_by: None,
+            error: None,
+            steps: Vec::new(),
+            coverage: Some(CoverageFingerprint {
+                files: vec![CoverageFile {
+                    path: "validator.js".into(),
+                    lines: vec![1],
+                }],
+                fingerprint: "observed".into(),
+                expected_fingerprint: None,
+                baseline_matches: None,
+            }),
+        };
+        let report = BatchReport {
+            results: vec![result],
+            coverage: vec![CoverageRecord {
+                contract: "example".into(),
+                minimum_line_percent: 100.0,
+                dataset_covered_lines: 2,
+                dataset_executable_lines: 2,
+                combined_covered_lines: 2,
+                combined_executable_lines: 2,
+                line_threshold_met: true,
+                native_report: serde_json::json!({"sources": ["validator.js"]}),
+                declared_sources: vec!["validator.js".into()],
+                covered_sources: vec!["validator.js".into()],
+                missing_sources: Vec::new(),
+                line_coverage: vec![CoverageLineFile {
+                    path: "validator.js".into(),
+                    executable_lines: vec![1, 2],
+                    covered_lines: vec![1, 2],
+                }],
+                additional_test_coverage: serde_json::Value::Null,
+                additional_line_coverage: Vec::new(),
+            }],
+        };
+
+        assert!(report.coverage_complete());
+        assert!(!coverage_requirements_met(&report));
+        let target = target_coverage_report(
+            &report.results.iter().collect::<Vec<_>>(),
+            &report.coverage[0],
+        );
+        assert_eq!(target[0]["coverage_percent"], 50.0);
+        assert_eq!(target[0]["threshold_met"], false);
+    }
+
+    #[test]
+    fn target_coverage_ignores_lines_outside_executable_source() {
+        let result = ContractResult {
+            contract: "example".into(),
+            target_id: "target".into(),
+            case_id: "case".into(),
+            output: None,
+            passed: true,
+            matched_by: None,
+            error: None,
+            steps: Vec::new(),
+            coverage: Some(CoverageFingerprint {
+                files: vec![CoverageFile {
+                    path: "validator.js".into(),
+                    lines: vec![1, 2, 99],
+                }],
+                fingerprint: "observed".into(),
+                expected_fingerprint: None,
+                baseline_matches: None,
+            }),
+        };
+        let record = CoverageRecord {
+            contract: "example".into(),
+            minimum_line_percent: 100.0,
+            dataset_covered_lines: 2,
+            dataset_executable_lines: 2,
+            combined_covered_lines: 2,
+            combined_executable_lines: 2,
+            line_threshold_met: true,
+            native_report: serde_json::json!({"sources": ["validator.js"]}),
+            declared_sources: vec!["validator.js".into()],
+            covered_sources: vec!["validator.js".into()],
+            missing_sources: Vec::new(),
+            line_coverage: vec![CoverageLineFile {
+                path: "validator.js".into(),
+                executable_lines: vec![1, 2],
+                covered_lines: vec![1, 2],
+            }],
+            additional_test_coverage: serde_json::Value::Null,
+            additional_line_coverage: Vec::new(),
+        };
+        let target = target_coverage_report(&[&result], &record);
+        assert_eq!(target[0]["covered_lines"], 2);
+        assert_eq!(target[0]["executable_lines"], 2);
+        assert_eq!(target[0]["coverage_percent"], 100.0);
     }
 }
 

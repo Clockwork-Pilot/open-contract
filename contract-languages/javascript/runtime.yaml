@@ -3,6 +3,7 @@ profiles:
   production:
     entrypoint: src/batch-adapter.js
     files:
+      - package.json
       - src
       - node_modules/v8-to-istanbul
       - node_modules/@jridgewell/trace-mapping
