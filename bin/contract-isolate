@@ -93,16 +93,16 @@ def _runtime_profile(name: str | None) -> list[tuple[Path, str]]:
         return []
     python_roots = [
             (Path(sys.prefix).resolve(), "python"),
-            (ROOT / "contract-runner/python/src", "contract-runner/python/src"),
-            (ROOT / "contract-runner/python/schemas", "contract-runner/python/schemas"),
-            (ROOT / "bootstrap-contracts/predicates/predicate-language.schema.json", "bootstrap-contracts/predicates/predicate-language.schema.json"),
-            (ROOT / "bootstrap-contracts/predicates/python/src", "bootstrap-contracts/predicates/python/src"),
+            (ROOT / "contract-languages/python/src", "contract-languages/python/src"),
+            (ROOT / "contract-languages/python/schemas", "contract-languages/python/schemas"),
+            (ROOT / "runner/bootstrap-contracts/predicates/predicate-language.schema.json", "runner/bootstrap-contracts/predicates/predicate-language.schema.json"),
+            (ROOT / "examples/python", "examples/python"),
     ]
     javascript_roots = [
-        (ROOT / "contract-runner/javascript/src", "contract-runner/javascript/src"),
-        (ROOT / "contract-runner/javascript/node_modules", "contract-runner/javascript/node_modules"),
-        (ROOT / "contract-runner/python/schemas", "contract-runner/python/schemas"),
-        (ROOT / "bootstrap-contracts/predicates/predicate-language.schema.json", "bootstrap-contracts/predicates/predicate-language.schema.json"),
+        (ROOT / "contract-languages/javascript/src", "contract-languages/javascript/src"),
+        (ROOT / "contract-languages/javascript/node_modules", "contract-languages/javascript/node_modules"),
+        (ROOT / "contract-languages/python/schemas", "contract-languages/python/schemas"),
+        (ROOT / "runner/bootstrap-contracts/predicates/predicate-language.schema.json", "runner/bootstrap-contracts/predicates/predicate-language.schema.json"),
     ]
     openssl_config = Path("/etc/ssl/openssl.cnf")
     if openssl_config.is_file():
@@ -119,9 +119,10 @@ def _runtime_environment(name: str | None, roots: list[tuple[Path, str]]) -> dic
     if name in {"python", "all"}:
         python_roots = _runtime_profile("python")
         environment["PYTHONPATH"] = os.pathsep.join((str(python_roots[1][0]), str(python_roots[4][0])))
-    if name == "all":
-        environment["OPEN_CONTRACT_JS_ADAPTER"] = str(ROOT / "contract-runner/javascript/src/batch-adapter.js")
-        environment["OPEN_CONTRACT_PYTHON_ADAPTER"] = str(ROOT / "contract-runner/python/src/open_contracts_runner/batch_adapter.py")
+    if name in {"python", "all"}:
+        environment["OPEN_CONTRACT_PYTHON_ADAPTER"] = str(ROOT / "contract-languages/python/src/open_contracts_runner/batch_adapter.py")
+    if name in {"javascript", "all"}:
+        environment["OPEN_CONTRACT_JS_ADAPTER"] = str(ROOT / "contract-languages/javascript/src/batch-adapter.js")
     openssl_config = next((str(source) for source, guest in roots if guest == "system/openssl.cnf"), None)
     if openssl_config:
         environment["OPENSSL_CONF"] = openssl_config

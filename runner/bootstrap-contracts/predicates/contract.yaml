@@ -1,0 +1,18 @@
+version: "1"
+name: predicates-bootstrap
+files:
+  dataset: dataset.json
+  validator: src/main.rs
+  support:
+    - src/lib.rs
+    - src/evaluate.rs
+    - Cargo.toml
+filesystem:
+  read:
+    - dataset.json
+    - src/main.rs
+    - src/lib.rs
+    - src/evaluate.rs
+    - Cargo.toml
+  write:
+    - reports

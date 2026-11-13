@@ -1,7 +1,0 @@
-{
-  "version": 1,
-  "cases": [
-    {"id": "exact", "input": {"value": 4}, "expected": {"value": 4}},
-    {"id": "predicate", "input": {"value": 4}, "predicate": ".value >= 4"}
-  ]
-}

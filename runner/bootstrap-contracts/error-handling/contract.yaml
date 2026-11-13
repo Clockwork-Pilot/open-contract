@@ -1,0 +1,9 @@
+version: "1"
+name: error-handling-bootstrap
+files:
+  dataset: dataset.json
+  validator: src/bin/dataset-contract.rs
+  support: [src/lib.rs, Cargo.toml, Cargo.lock]
+filesystem:
+  read: [dataset.json, src/bin/dataset-contract.rs, src/lib.rs, Cargo.toml, Cargo.lock]
+  write: [reports]

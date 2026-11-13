@@ -1,0 +1,16 @@
+[package]
+name = "open-contract-core"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+
+[dependencies]
+open-contract-manifest = { path = "../bootstrap-contracts/manifest" }
+open-contract-isolation = { path = "../bootstrap-contracts/isolation" }
+open-contract-batch = { path = "../bootstrap-contracts/batch-execution" }
+open-contract-verification = { path = "../bootstrap-contracts/verification" }
+open-contract-errors = { path = "../bootstrap-contracts/error-handling" }
+serde_json = "1"
+
+[dev-dependencies]
+tempfile = "3"

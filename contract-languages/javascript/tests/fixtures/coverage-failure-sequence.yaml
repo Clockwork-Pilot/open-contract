@@ -1,0 +1,21 @@
+version: 1
+targets:
+  - id: coverage
+    kind: custom
+    config: {}
+    cases:
+      - id: alpha-coverage
+        input: {branch: alpha}
+        expected: {branch: alpha, value: A}
+      - id: beta-coverage
+        input: {branch: beta}
+        expected: {branch: beta, value: B}
+      - id: failed-step-retains-coverage
+        input: {}
+        steps:
+          - id: completed
+            input: {branch: alpha}
+            expected: {branch: alpha, value: A}
+          - id: throws
+            input: {branch: throws}
+            expected: {branch: throws}

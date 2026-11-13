@@ -1,0 +1,9 @@
+version: 1
+profiles:
+  production:
+    entrypoint: src/open_contracts_runner/tree_batch_adapter.py
+    files:
+      - src
+    environment_paths:
+      PYTHONPATH: src
+      OPEN_CONTRACT_PYTHON_ADAPTER: src/open_contracts_runner/batch_adapter.py

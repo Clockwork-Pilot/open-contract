@@ -1,0 +1,9 @@
+version: "1"
+name: batch-execution-bootstrap
+files:
+  dataset: dataset.json
+  validator: src/bin/dataset-contract.rs
+  support: [src/lib.rs]
+filesystem:
+  read: [dataset.json, src/bin/dataset-contract.rs, src/lib.rs]
+  write: []

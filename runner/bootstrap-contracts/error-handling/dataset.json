@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "simple-runtime-error",
+      "input": {"exit_code": 1, "message": "case output did not match"},
+      "expected": {
+        "exit_code": 1,
+        "message": "case output did not match",
+        "rendered": "case output did not match",
+        "display": "case output did not match"
+      }
+    },
+    {
+      "id": "error-cannot-use-success-exit-code",
+      "input": {"exit_code": 0, "message": "unexpected success status"},
+      "expected": {
+        "exit_code": 1,
+        "message": "unexpected success status",
+        "rendered": "unexpected success status",
+        "display": "unexpected success status"
+      }
+    },
+    {
+      "id": "one-layer-context",
+      "input": {"exit_code": 2, "message": "manifest is invalid", "contexts": ["manifest"]},
+      "expected": {
+        "exit_code": 2,
+        "message": "manifest is invalid",
+        "rendered": "manifest: manifest is invalid",
+        "display": "manifest: manifest is invalid"
+      }
+    },
+    {
+      "id": "propagate-through-runner-layers",
+      "input": {
+        "exit_code": 2,
+        "message": "undeclared path",
+        "contexts": ["isolation", "contract execution", "runner"]
+      },
+      "expected": {
+        "exit_code": 2,
+        "message": "undeclared path",
+        "rendered": "runner: contract execution: isolation: undeclared path",
+        "display": "runner: contract execution: isolation: undeclared path"
+      }
+    },
+    {
+      "id": "convert-layer-error-to-shared-error",
+      "input": {"exit_code": 1, "message": "coverage incomplete", "from_tuple": true, "contexts": ["verification"]},
+      "expected": {
+        "exit_code": 1,
+        "message": "coverage incomplete",
+        "rendered": "verification: coverage incomplete",
+        "display": "verification: coverage incomplete"
+      }
+    }
+  ]
+}

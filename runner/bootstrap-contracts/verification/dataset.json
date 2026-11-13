@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "exact",
+      "input": {"value": 3,
+        "verify": {"actual": {"value": 4}, "expected": {"value": 4}, "valid": true},
+        "verify_also": [
+          {"actual": {"value": 3}, "expected": {"value": 4}, "valid": false},
+          {"actual": {"value": 4}, "expected": {"value": 4}, "predicate": ".value == 4", "valid": true},
+          {"actual": {"value": 4}, "expected": {"value": 4}, "predicate": ".value == 3", "valid": false},
+          {"actual": {"value": 4}, "valid": false}
+        ]
+      },
+      "expected": {"value": 4}
+    },
+    {
+      "id": "predicate",
+      "input": {"value": 5,
+        "verify": {"actual": {"value": 6}, "predicate": ".value >= 6", "valid": true},
+        "verify_also": [
+          {"actual": {"value": 3}, "predicate": ".value >= 6", "valid": false}
+        ]
+      },
+      "predicate": ".value >= 6"
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+version: 1
+targets:
+  - id: coverage
+    kind: custom
+    config: {}
+    cases:
+      - id: alpha-first
+        input: {branch: alpha}
+        coverage_fingerprint: 0f5c0920f3240054cb84ba01b9c1ff10
+        expected: {branch: alpha, value: A}
+      - id: alpha-again
+        input: {branch: alpha}
+        expected: {branch: alpha, value: A}
+      - id: ordered-branches
+        input: {}
+        steps:
+          - id: alpha
+            input: {branch: alpha}
+            coverage_fingerprint: 0f5c0920f3240054cb84ba01b9c1ff10
+            expected: {branch: alpha, value: A}
+          - id: beta
+            input: {branch: beta}
+            expected: {branch: beta, value: B}

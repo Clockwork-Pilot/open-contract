@@ -1,0 +1,9 @@
+version: "1"
+name: manifest-bootstrap
+files:
+  dataset: dataset.yaml
+  validator: src/bin/dataset-contract.rs
+  support: [src/lib.rs, Cargo.toml, Cargo.lock]
+filesystem:
+  read: [dataset.yaml, src/bin/dataset-contract.rs, src/lib.rs, Cargo.toml, Cargo.lock]
+  write: [reports]

@@ -1,0 +1,11 @@
+version: "1"
+name: isolation-bootstrap
+files:
+  dataset: dataset.json
+  validator: src/bin/dataset-contract.rs
+  support: [src/lib.rs, Cargo.toml, Cargo.lock]
+  supplemental_tests: [tests/backend_supplemental.rs]
+  nested_contracts: [nested/contract.yaml]
+filesystem:
+  read: [dataset.json, src/bin/dataset-contract.rs, src/lib.rs, tests/backend_supplemental.rs, Cargo.toml, Cargo.lock, nested/contract.yaml, support, reports/result.json]
+  write: [reports, reports/result.json, reports/nested/result.json]

@@ -1,0 +1,12 @@
+[package]
+name = "open-contract-manifest"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_yaml = "0.9"
+tempfile = "3"
+
+[dev-dependencies]

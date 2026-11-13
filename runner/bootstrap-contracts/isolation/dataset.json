@@ -1,0 +1,321 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "randomized-stage",
+      "input": {
+        "operation": "stage"
+      },
+      "expected": {
+        "dataset_staged": true,
+        "validator_staged": true,
+        "support_staged": true,
+        "nested_dataset_staged": true,
+        "fresh_root": true
+      }
+    },
+    {
+      "id": "reject-nested-cycle-and-package-escape",
+      "input": {
+        "operation": "reject-cycle-and-package-escape"
+      },
+      "expected": {
+        "cycle_rejected": true,
+        "package_escape_rejected": true
+      }
+    },
+    {
+      "id": "reject-invalid-isolation-paths",
+      "input": {
+        "operation": "reject-invalid-staged-paths"
+      },
+      "expected": {
+        "parent_traversal_rejected": true,
+        "symlink_escape_rejected": true
+      }
+    },
+    {
+      "id": "command-stdin-and-stdout",
+      "input": {
+        "operation": "command",
+        "value": "contract data"
+      },
+      "expected": {
+        "stdout": "contract data",
+        "success": true
+      }
+    },
+    {
+      "id": "python-runtime-command",
+      "input": {
+        "operation": "command",
+        "runtime_profile": "python",
+        "value": "python runtime"
+      },
+      "expected": {
+        "stdout": "python runtime",
+        "success": true
+      }
+    },
+    {
+      "id": "javascript-runtime-command",
+      "input": {
+        "operation": "command",
+        "runtime_profile": "javascript",
+        "value": "javascript runtime"
+      },
+      "expected": {
+        "stdout": "javascript runtime",
+        "success": true
+      }
+    },
+    {
+      "id": "all-runtimes-command",
+      "input": {
+        "operation": "command",
+        "runtime_profile": "all",
+        "value": "all runtimes"
+      },
+      "expected": {
+        "stdout": "all runtimes",
+        "success": true
+      }
+    },
+    {
+      "id": "unknown-runtime-profile",
+      "input": {
+        "operation": "unknown-runtime-profile"
+      },
+      "expected": {
+        "rejected": true
+      }
+    },
+    {
+      "id": "missing-command-executable",
+      "input": {
+        "operation": "command-not-found"
+      },
+      "expected": {
+        "rejected": true
+      }
+    },
+    {
+      "id": "broken-command-stdin-pipe",
+      "input": {
+        "operation": "broken-stdin-pipe"
+      },
+      "expected": {
+        "rejected": true
+      }
+    },
+    {
+      "id": "landlock-command-stdin-and-stdout",
+      "input": {
+        "operation": "command",
+        "backend": "landlock",
+        "runtime_profile": "python",
+        "value": "restricted command"
+      },
+      "expected": {
+        "stdout": "restricted command",
+        "success": true
+      }
+    },
+    {
+      "id": "landlock-denies-undeclared-source",
+      "input": {
+        "operation": "deny-private-read"
+      },
+      "expected": {
+        "denied": true
+      }
+    },
+    {
+      "id": "bubblewrap-missing-launcher",
+      "input": {
+        "operation": "missing-bubblewrap"
+      },
+      "expected": {
+        "rejected": true
+      }
+    },
+    {
+      "id": "bubblewrap-command-builder-through-fake-launcher",
+      "input": {
+        "operation": "mocked-bubblewrap"
+      },
+      "expected": {
+        "launcher_invoked": true
+      }
+    },
+    {
+      "id": "runtime-mounts-only-language-adapters",
+      "input": {
+        "operation": "runtime-mounts-only-adapters"
+      },
+      "expected": {
+        "adapter_roots_only": true,
+        "javascript_runtime_packages": [
+          "contract-languages/javascript/node_modules/v8-to-istanbul",
+          "contract-languages/javascript/node_modules/@jridgewell/trace-mapping",
+          "contract-languages/javascript/node_modules/@jridgewell/resolve-uri",
+          "contract-languages/javascript/node_modules/@jridgewell/sourcemap-codec",
+          "contract-languages/javascript/node_modules/convert-source-map"
+        ]
+      }
+    },
+    {
+      "id": "reject-bubblewrap-root-without-name",
+      "input": {
+        "operation": "bubblewrap-invalid-root"
+      },
+      "expected": {
+        "rejected": true
+      }
+    },
+    {
+      "id": "bubblewrap-command-or-explicit-namespace-limit",
+      "input": {
+        "operation": "bwrap-command"
+      },
+      "expected": {
+        "attempted": true,
+        "namespace_unavailable": true
+      }
+    },
+    {
+      "id": "empty-command-is-rejected",
+      "input": {
+        "operation": "empty-command"
+      },
+      "expected": {
+        "rejected": true
+      }
+    },
+    {
+      "id": "runtime-profile-valid-resources",
+      "input": {
+        "operation": "runtime-profile",
+        "language": "python",
+        "runtime_yaml": "version: 1\nprofiles:\n  production:\n    entrypoint: src/runner.py\n    files: [src]\n    environment: {MODE: production}\n    environment_paths: {ADAPTER: src/runner.py}\n"
+      },
+      "expected": {
+        "valid": true
+      }
+    },
+    {
+      "id": "runtime-profile-missing-manifest",
+      "input": {
+        "operation": "runtime-profile",
+        "language": "python",
+        "create_runtime_manifest": false
+      },
+      "expected": {
+        "error_contains": "cannot read python runtime manifest"
+      }
+    },
+    {
+      "id": "runtime-profile-invalid-yaml",
+      "input": {
+        "operation": "runtime-profile",
+        "language": "python",
+        "runtime_yaml": "version: [invalid\n"
+      },
+      "expected": {
+        "error_contains": "invalid python runtime manifest"
+      }
+    },
+    {
+      "id": "runtime-profile-unsupported-version",
+      "input": {
+        "operation": "runtime-profile",
+        "language": "python",
+        "runtime_yaml": "version: 2\nprofiles:\n  production:\n    entrypoint: src/runner.py\n    files: [src]\n    environment: {MODE: production}\n    environment_paths: {ADAPTER: src/runner.py}\n"
+      },
+      "expected": {
+        "error_contains": "unsupported python runtime manifest version"
+      }
+    },
+    {
+      "id": "runtime-profile-missing-production",
+      "input": {
+        "operation": "runtime-profile",
+        "language": "python",
+        "runtime_yaml": "version: 1\nprofiles:\n  development:\n    entrypoint: src/runner.py\n    files: [src]\n    environment: {MODE: production}\n    environment_paths: {ADAPTER: src/runner.py}\n"
+      },
+      "expected": {
+        "error_contains": "has no production profile"
+      }
+    },
+    {
+      "id": "runtime-profile-empty-files",
+      "input": {
+        "operation": "runtime-profile",
+        "language": "python",
+        "runtime_yaml": "version: 1\nprofiles:\n  production:\n    entrypoint: src/runner.py\n    files: []\n    environment: {MODE: production}\n    environment_paths: {ADAPTER: src/runner.py}\n"
+      },
+      "expected": {
+        "error_contains": "declares no runtime files"
+      }
+    },
+    {
+      "id": "runtime-profile-invalid-resource-path",
+      "input": {
+        "operation": "runtime-profile",
+        "language": "python",
+        "runtime_yaml": "version: 1\nprofiles:\n  production:\n    entrypoint: src/runner.py\n    files: [../outside]\n    environment: {MODE: production}\n    environment_paths: {ADAPTER: src/runner.py}\n"
+      },
+      "expected": {
+        "error_contains": "invalid runtime package path"
+      }
+    },
+    {
+      "id": "runtime-profile-missing-resource",
+      "input": {
+        "operation": "runtime-profile",
+        "language": "python",
+        "runtime_yaml": "version: 1\nprofiles:\n  production:\n    entrypoint: src/runner.py\n    files: [src/missing.py]\n    environment: {MODE: production}\n    environment_paths: {ADAPTER: src/runner.py}\n"
+      },
+      "expected": {
+        "error_contains": "runtime resource"
+      }
+    },
+    {
+      "id": "runtime-profile-entrypoint-outside-resources",
+      "input": {
+        "operation": "runtime-profile",
+        "language": "python",
+        "runtime_yaml": "version: 1\nprofiles:\n  production:\n    entrypoint: outside.py\n    files: [src]\n    environment: {MODE: production}\n    environment_paths: {ADAPTER: src/runner.py}\n",
+        "entrypoint_path": "outside.py"
+      },
+      "expected": {
+        "error_contains": "entrypoint must be a file included"
+      }
+    },
+    {
+      "id": "runtime-profile-environment-path-outside-resources",
+      "input": {
+        "operation": "runtime-profile",
+        "language": "python",
+        "runtime_yaml": "version: 1\nprofiles:\n  production:\n    entrypoint: src/runner.py\n    files: [src]\n    environment: {MODE: production}\n    environment_paths: {ADAPTER: outside.py}\n",
+        "create_outside_resource": true
+      },
+      "expected": {
+        "error_contains": "environment path \"outside.py\" is outside"
+      }
+    },
+    {
+      "id": "runtime-profile-symlink-escape",
+      "input": {
+        "operation": "runtime-profile",
+        "language": "python",
+        "runtime_yaml": "version: 1\nprofiles:\n  production:\n    entrypoint: escape\n    files: [escape]\n    environment: {MODE: production}\n    environment_paths: {ADAPTER: src/runner.py}\n",
+        "create_entrypoint": false,
+        "create_symlink_escape": true
+      },
+      "expected": {
+        "error_contains": "runtime resource escapes language package"
+      }
+    }
+  ]
+}

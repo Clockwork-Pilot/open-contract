@@ -1,0 +1,182 @@
+version: 1
+cases:
+  - id: package-relative-path
+    input: {operation: path, path: validator.py}
+    expected: {valid: true}
+  - id: empty-path
+    input: {operation: path, path: ""}
+    expected: {valid: false}
+  - id: rejects-absolute-package-path
+    input: {operation: path, path: /outside/private.txt}
+    expected: {valid: false}
+  - id: backslash-path
+    input: {operation: path, path: 'folder\\file'}
+    expected: {valid: false}
+  - id: parent-path
+    input: {operation: path, path: ../escape}
+    expected: {valid: false}
+  - id: empty-component
+    input: {operation: path, path: folder//file}
+    expected: {valid: false}
+  - id: dot-component
+    input: {operation: path, path: folder/./file}
+    expected: {valid: false}
+  - id: dot-path
+    input: {operation: path, path: .}
+    expected: {valid: false}
+  - id: drive-prefix
+    input: {operation: path, path: 'C:/secret'}
+    expected: {valid: false}
+  - id: valid-manifest-with-support-and-nested-contract
+    input:
+      operation: manifest
+      yaml: |
+        version: '1'
+        name: sample
+        files: {dataset: dataset.json, validator: validator.py, support: [support/helper.py], nested_contracts: [child/contract.yaml]}
+        filesystem: {read: [dataset.json, validator.py, support, child/contract.yaml], write: [reports/deep/result.json]}
+    expected: {valid: true}
+  - id: valid-manifest-with-explicit-supplemental-tests
+    input:
+      operation: manifest
+      yaml: |
+        version: '1'
+        name: sample
+        files: {dataset: dataset.json, validator: validator.py, supplemental_tests: [tests/extra.rs]}
+        filesystem: {read: [dataset.json, validator.py, tests/extra.rs], write: []}
+    expected: {valid: true}
+  - id: valid-manifest-with-execution-command
+    input:
+      operation: manifest
+      yaml: |
+        version: '1'
+        name: sample
+        files: {dataset: dataset.json, validator: validator.py}
+        execution: {command: [python3, -m, adapter], runtime_profile: python}
+        filesystem: {read: [dataset.json, validator.py], write: []}
+    expected: {valid: true}
+  - id: empty-execution-command
+    input:
+      operation: manifest
+      yaml: |
+        version: '1'
+        name: sample
+        files: {dataset: dataset.json, validator: validator.py}
+        execution: {command: []}
+        filesystem: {read: [dataset.json, validator.py], write: []}
+    expected: {valid: false}
+  - id: blank-execution-command
+    input:
+      operation: manifest
+      yaml: |
+        version: '1'
+        name: sample
+        files: {dataset: dataset.json, validator: validator.py}
+        execution: {command: ['  ']}
+        filesystem: {read: [dataset.json, validator.py], write: []}
+    expected: {valid: false}
+  - id: blank-execution-runtime-profile
+    input:
+      operation: manifest
+      yaml: |
+        version: '1'
+        name: sample
+        files: {dataset: dataset.json, validator: validator.py}
+        execution: {command: [python3], runtime_profile: '  '}
+        filesystem: {read: [dataset.json, validator.py], write: []}
+    expected: {valid: false}
+  - id: unsupported-manifest-version
+    input:
+      operation: manifest
+      yaml: |
+        version: '2'
+        name: sample
+        files: {dataset: dataset.json, validator: validator.py}
+        filesystem: {read: [dataset.json, validator.py], write: []}
+    expected: {valid: false}
+  - id: blank-manifest-name
+    input:
+      operation: manifest
+      yaml: |
+        version: '1'
+        name: '  '
+        files: {dataset: dataset.json, validator: validator.py}
+        filesystem: {read: [dataset.json, validator.py], write: []}
+    expected: {valid: false}
+  - id: missing-readable-path
+    input:
+      operation: manifest
+      yaml: |
+        version: '1'
+        name: sample
+        files: {dataset: dataset.json, validator: validator.py}
+        filesystem: {read: [dataset.json, validator.py, missing.json], write: []}
+    expected: {valid: false}
+  - id: invalid-write-path
+    input:
+      operation: manifest
+      yaml: |
+        version: '1'
+        name: sample
+        files: {dataset: dataset.json, validator: validator.py}
+        filesystem: {read: [dataset.json, validator.py], write: [/tmp/out]}
+    expected: {valid: false}
+  - id: undeclared-validator-read
+    input:
+      operation: manifest
+      yaml: |
+        version: '1'
+        name: sample
+        files: {dataset: dataset.json, validator: validator.py}
+        filesystem: {read: [dataset.json], write: []}
+    expected: {valid: false}
+  - id: missing-dataset-file
+    input:
+      operation: manifest
+      yaml: |
+        version: '1'
+        name: sample
+        files: {dataset: missing.json, validator: validator.py}
+        filesystem: {read: [missing.json, validator.py], write: []}
+    expected: {valid: false}
+  - id: directory-is-not-a-manifest-file
+    input:
+      operation: manifest
+      yaml: |
+        version: '1'
+        name: sample
+        files: {dataset: directory, validator: validator.py}
+        filesystem: {read: [directory, validator.py], write: []}
+    expected: {valid: false}
+  - id: symlink-path-cannot-escape-package
+    input:
+      operation: manifest
+      symlink_escape: true
+      yaml: |
+        version: '1'
+        name: sample
+        files: {dataset: escape, validator: validator.py}
+        filesystem: {read: [escape, validator.py], write: []}
+    expected: {valid: false}
+  - id: write-path-cannot-escape-through-symlink
+    input:
+      operation: manifest
+      symlink_escape: true
+      yaml: |
+        version: '1'
+        name: sample
+        files: {dataset: dataset.json, validator: validator.py}
+        filesystem: {read: [dataset.json, validator.py], write: [escape/outside.txt]}
+    expected: {valid: false}
+  - id: malformed-manifest-yaml
+    input: {operation: manifest, yaml: 'not: [valid: yaml'}
+    expected: {valid: false}
+  - id: missing-manifest
+    input: {operation: missing-manifest}
+    expected: {valid: false}
+  - id: directory-is-not-a-readable-manifest-file
+    input: {operation: directory-manifest}
+    expected: {valid: false}
+  - id: filesystem-root-is-not-a-manifest-file
+    input: {operation: root-manifest}
+    expected: {valid: false}

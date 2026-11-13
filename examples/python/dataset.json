@@ -1,0 +1,5919 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "literal-true",
+      "input": {
+        "json": {},
+        "predicate": "true"
+      },
+      "expected": true,
+      "coverage_fingerprint": "f7d0cb41b904e9b2f58a58470e134218"
+    },
+    {
+      "id": "literal-false",
+      "input": {
+        "json": {},
+        "predicate": "false"
+      },
+      "expected": false,
+      "coverage_fingerprint": "25153a027401da535eeedcce0623baaa"
+    },
+    {
+      "id": "empty-expression",
+      "input": {
+        "json": {},
+        "predicate": ""
+      },
+      "expected": false,
+      "coverage_fingerprint": "8d594073f47f7fb7451e0b8648784c02"
+    },
+    {
+      "id": "equal-number",
+      "input": {
+        "json": {
+          "n": 5
+        },
+        "predicate": ".n == 5"
+      },
+      "expected": true,
+      "coverage_fingerprint": "d045679ecd2ba711e077056a1375ff47"
+    },
+    {
+      "id": "not-equal",
+      "input": {
+        "json": {
+          "n": 5
+        },
+        "predicate": ".n != 4"
+      },
+      "expected": true,
+      "coverage_fingerprint": "53cbbf62375a352175bf22d2a1b991b1"
+    },
+    {
+      "id": "greater",
+      "input": {
+        "json": {
+          "n": 5
+        },
+        "predicate": ".n > 4"
+      },
+      "expected": true,
+      "coverage_fingerprint": "d62eb8faefe1867b0ab4ea859b80eabb"
+    },
+    {
+      "id": "greater-equal",
+      "input": {
+        "json": {
+          "n": 5
+        },
+        "predicate": ".n >= 5"
+      },
+      "expected": true,
+      "coverage_fingerprint": "d62eb8faefe1867b0ab4ea859b80eabb"
+    },
+    {
+      "id": "less",
+      "input": {
+        "json": {
+          "n": 5
+        },
+        "predicate": ".n < 6"
+      },
+      "expected": true,
+      "coverage_fingerprint": "d62eb8faefe1867b0ab4ea859b80eabb"
+    },
+    {
+      "id": "less-equal",
+      "input": {
+        "json": {
+          "n": 5
+        },
+        "predicate": ".n <= 5"
+      },
+      "expected": true,
+      "coverage_fingerprint": "d62eb8faefe1867b0ab4ea859b80eabb"
+    },
+    {
+      "id": "field-comparison",
+      "input": {
+        "json": {
+          "n": 5,
+          "same": 5
+        },
+        "predicate": ".n == .same"
+      },
+      "expected": true,
+      "coverage_fingerprint": "e1d26246fd1ccc9dac865fbc0c35e686"
+    },
+    {
+      "id": "missing-field",
+      "input": {
+        "json": {},
+        "predicate": ".missing == 5"
+      },
+      "expected": false,
+      "coverage_fingerprint": "b4a90662daecd1fb691e1a2a3cbb780d"
+    },
+    {
+      "id": "missing-not-equal",
+      "input": {
+        "json": {},
+        "predicate": ".missing != 5"
+      },
+      "expected": true,
+      "coverage_fingerprint": "7f5a913e4089c2c61074649190f99fdf"
+    },
+    {
+      "id": "null-exists",
+      "input": {
+        "json": {
+          "value": null
+        },
+        "predicate": "exists(.value)"
+      },
+      "expected": false,
+      "coverage_fingerprint": "b41c22c22df50553cc95af00b11a4546"
+    },
+    {
+      "id": "absent-exists",
+      "input": {
+        "json": {},
+        "predicate": "exists(.value)"
+      },
+      "expected": false,
+      "coverage_fingerprint": "dbe0ab098b18d81c27f7c6149de08124"
+    },
+    {
+      "id": "empty-object-exists",
+      "input": {
+        "json": {
+          "value": {}
+        },
+        "predicate": "exists(.value)"
+      },
+      "expected": false,
+      "coverage_fingerprint": "b41c22c22df50553cc95af00b11a4546"
+    },
+    {
+      "id": "empty-list-exists",
+      "input": {
+        "json": {
+          "value": []
+        },
+        "predicate": "exists(.value)"
+      },
+      "expected": false,
+      "coverage_fingerprint": "b41c22c22df50553cc95af00b11a4546"
+    },
+    {
+      "id": "not-and-parentheses",
+      "input": {
+        "json": {
+          "n": 5,
+          "active": true
+        },
+        "predicate": "NOT (.n < 3 OR .active == false)"
+      },
+      "expected": true,
+      "coverage_fingerprint": "8de014081a37cd625b7056166605862d"
+    },
+    {
+      "id": "or-and-precedence",
+      "input": {
+        "json": {
+          "n": 1,
+          "active": true
+        },
+        "predicate": ".n == 1 OR .active == false AND .n == 9"
+      },
+      "expected": true,
+      "coverage_fingerprint": "7976e1f9a4f58506a55bc2bad4cc5c97"
+    },
+    {
+      "id": "invalid-left-field",
+      "input": {
+        "json": {
+          "n": 1
+        },
+        "predicate": "name == 1"
+      },
+      "expected": false,
+      "coverage_fingerprint": "e890c56b13f2a9324b7f872a695fa9d1"
+    },
+    {
+      "id": "unparseable-right",
+      "input": {
+        "json": {
+          "n": 1
+        },
+        "predicate": ".n == nope"
+      },
+      "expected": false,
+      "coverage_fingerprint": "b03328c4c2a8c5e2a8b97e8aaa37f4d4"
+    },
+    {
+      "id": "unsupported-expression",
+      "input": {
+        "json": {
+          "n": 1
+        },
+        "predicate": "unknown"
+      },
+      "expected": false,
+      "coverage_fingerprint": "84edcdd90d79b2400e1c5b8e48adb4e2"
+    },
+    {
+      "id": "unsupported-playbook-only-function",
+      "input": {
+        "json": {
+          "tests": []
+        },
+        "predicate": "all_tests_passed(.tests)"
+      },
+      "expected": false,
+      "coverage_fingerprint": "84edcdd90d79b2400e1c5b8e48adb4e2"
+    },
+    {
+      "id": "fully-wrapped-expression",
+      "input": {
+        "json": {
+          "n": 1
+        },
+        "predicate": "(.n == 1)"
+      },
+      "expected": true,
+      "coverage_fingerprint": "a6e7558eacab7a8b3824c02a2ef9abe8"
+    },
+    {
+      "id": "partially-wrapped-expression",
+      "input": {
+        "json": {
+          "n": 1
+        },
+        "predicate": "(.n == 1) AND (.n == 1)"
+      },
+      "expected": true,
+      "coverage_fingerprint": "11c4824a9fb0a9262e27be78b7370d5f"
+    },
+    {
+      "id": "parentheses-inside-string",
+      "input": {
+        "json": {
+          "text": "a(b"
+        },
+        "predicate": "(.text == 'a(b')"
+      },
+      "expected": true,
+      "coverage_fingerprint": "58657117ff5ec19763f0893eb2062c7a"
+    },
+    {
+      "id": "dotted-path-quoted-object-keys",
+      "input": {
+        "json": {
+          "a": {
+            "b": {
+              "c/d": {
+                "~key": "found"
+              }
+            }
+          }
+        },
+        "predicate": ".a.b[\"c/d\"][\"~key\"] == \"found\""
+      },
+      "expected": true,
+      "coverage_fingerprint": "c5291e82f4e3da0483a16fe9a5cb7688"
+    },
+    {
+      "id": "dotted-path-array-index",
+      "input": {
+        "json": {
+          "payload": {
+            "items": [
+              "first",
+              "second"
+            ]
+          }
+        },
+        "predicate": ".payload.items.1 == \"second\""
+      },
+      "expected": true,
+      "coverage_fingerprint": "c21664864b59af0e450a7bbd31e0cb06"
+    },
+    {
+      "id": "exists-dotted-path-quoted-key",
+      "input": {
+        "json": {
+          "payload": {
+            "a/b": 1
+          }
+        },
+        "predicate": "exists(.payload[\"a/b\"])"
+      },
+      "expected": true,
+      "coverage_fingerprint": "b41c22c22df50553cc95af00b11a4546"
+    },
+    {
+      "id": "exists-dotted-path-missing-key",
+      "input": {
+        "json": {
+          "payload": {}
+        },
+        "predicate": "exists(.payload.missing)"
+      },
+      "expected": false,
+      "coverage_fingerprint": "edd9ef177bf56401b234bfde69527c70"
+    },
+    {
+      "id": "malformed-bracketed-object-key",
+      "input": {
+        "json": {
+          "payload": {
+            "bad~2key": 1
+          }
+        },
+        "predicate": ".payload[\"bad~2key\" == 1"
+      },
+      "expected": false,
+      "coverage_fingerprint": "58ba2ee3c89098f8686e36ca569fba58"
+    },
+    {
+      "id": "invalid-unqualified-field-path",
+      "input": {
+        "json": {
+          "payload": 1
+        },
+        "predicate": "payload == 1"
+      },
+      "expected": false,
+      "coverage_fingerprint": "e890c56b13f2a9324b7f872a695fa9d1"
+    },
+    {
+      "id": "coverage-invalid-token",
+      "input": {
+        "json": {
+          "value": 1
+        },
+        "predicate": ".value == 1 @"
+      },
+      "expected": false,
+      "coverage_fingerprint": "d2cc04bb1f07601f0d442ded2fbe537a"
+    },
+    {
+      "id": "coverage-invalid-string-escape",
+      "input": {
+        "json": {
+          "value": "x"
+        },
+        "predicate": ".value == '\\xZZ'"
+      },
+      "expected": false,
+      "coverage_fingerprint": "631d453c3f45d29ce2cde19f8ca0ef23"
+    },
+    {
+      "id": "coverage-unexpected-expression-end",
+      "input": {
+        "json": {
+          "value": 1
+        },
+        "predicate": ".value =="
+      },
+      "expected": false,
+      "coverage_fingerprint": "fb45006a3ee4be9e1975c34466592c76"
+    },
+    {
+      "id": "coverage-unclosed-expression-parenthesis",
+      "input": {
+        "json": {
+          "value": 1
+        },
+        "predicate": "(.value == 1 true)"
+      },
+      "expected": false,
+      "coverage_fingerprint": "4c1f2795f1f86e1e71a6c3303537a0c3"
+    },
+    {
+      "id": "coverage-exists-missing-parentheses",
+      "input": {
+        "json": {
+          "value": 1
+        },
+        "predicate": "exists .value"
+      },
+      "expected": false,
+      "coverage_fingerprint": "1270e8ca901148bc3ca57013543bb31f"
+    },
+    {
+      "id": "coverage-exists-non-field-argument",
+      "input": {
+        "json": {
+          "value": 1
+        },
+        "predicate": "exists(1)"
+      },
+      "expected": false,
+      "coverage_fingerprint": "f9c5cf9833b1d47964a3c4244c00fa54"
+    },
+    {
+      "id": "coverage-exists-extra-argument",
+      "input": {
+        "json": {
+          "value": 1,
+          "other": 2
+        },
+        "predicate": "exists(.value .other)"
+      },
+      "expected": false,
+      "coverage_fingerprint": "87aa43bf01015bc8e9e5268d65dbb62e"
+    },
+    {
+      "id": "coverage-null-literal",
+      "input": {
+        "json": {
+          "value": null
+        },
+        "predicate": ".value == null"
+      },
+      "expected": true,
+      "coverage_fingerprint": "100aabafdf872278919fe2039c06e99d"
+    },
+    {
+      "id": "coverage-right-missing-field",
+      "input": {
+        "json": {
+          "value": 1
+        },
+        "predicate": ".value == .missing"
+      },
+      "expected": false,
+      "coverage_fingerprint": "68f20f6073716093cc1172fe012cf160"
+    },
+    {
+      "id": "coverage-path-missing-parentheses",
+      "input": {
+        "json": {},
+        "predicate": "path == true"
+      },
+      "expected": false,
+      "coverage_fingerprint": "c7c2f1b2416a142fff7cbfc7f8f32647"
+    },
+    {
+      "id": "coverage-path-non-string-argument",
+      "input": {
+        "json": {},
+        "predicate": ".items[true] == 3"
+      },
+      "expected": false,
+      "coverage_fingerprint": "58ba2ee3c89098f8686e36ca569fba58"
+    },
+    {
+      "id": "coverage-path-extra-argument",
+      "input": {
+        "json": {},
+        "predicate": "exists(.a .b)"
+      },
+      "expected": false,
+      "coverage_fingerprint": "87aa43bf01015bc8e9e5268d65dbb62e"
+    },
+    {
+      "id": "root-field-path",
+      "input": {
+        "json": {
+          "root": true
+        },
+        "predicate": ".root == true"
+      },
+      "expected": true,
+      "coverage_fingerprint": "684f9b8303e9b3d1fd081ec9d6c92ee7"
+    },
+    {
+      "id": "dotted-array-index-out-of-range",
+      "input": {
+        "json": {
+          "items": [
+            1
+          ]
+        },
+        "predicate": "exists(.items.3)"
+      },
+      "expected": false,
+      "coverage_fingerprint": "9c28a459c4f12c8dd8edd6e74846ec86"
+    },
+    {
+      "id": "dotted-scalar-traversal",
+      "input": {
+        "json": {
+          "value": 1
+        },
+        "predicate": "exists(.value.child)"
+      },
+      "expected": false,
+      "coverage_fingerprint": "edd9ef177bf56401b234bfde69527c70"
+    },
+    {
+      "id": "malformed-bracketed-key-in-exists",
+      "input": {
+        "json": {
+          "bad~2key": 1
+        },
+        "predicate": "exists(. [\"bad~2key\")"
+      },
+      "expected": false,
+      "coverage_fingerprint": "58ba2ee3c89098f8686e36ca569fba58"
+    },
+    {
+      "id": "missing-exists-close-parenthesis",
+      "input": {
+        "json": {
+          "field": 1
+        },
+        "predicate": "exists(.field"
+      },
+      "expected": false,
+      "coverage_fingerprint": "b7bad206e3869bc1bc91b1fd516c7e38"
+    },
+    {
+      "id": "query-graph-row-metadata-key",
+      "input": {
+        "json": {
+          "item": {
+            "id": "keep",
+            "@key": "keep"
+          }
+        },
+        "predicate": ".item.@key == \"keep\""
+      },
+      "expected": true,
+      "coverage_fingerprint": "c5291e82f4e3da0483a16fe9a5cb7688"
+    },
+    {
+      "id": "query-graph-row-metadata-value-fallback",
+      "input": {
+        "json": {
+          "item": {
+            "@key": "fallback"
+          }
+        },
+        "predicate": ".item.@key == \"fallback\""
+      },
+      "expected": true,
+      "coverage_fingerprint": "c5291e82f4e3da0483a16fe9a5cb7688"
+    },
+    {
+      "id": "query-graph-row-direct-alias-value",
+      "input": {
+        "json": {
+          "item": {
+            "id": "keep"
+          }
+        },
+        "predicate": ".item.id == \"keep\""
+      },
+      "expected": true,
+      "coverage_fingerprint": "c5291e82f4e3da0483a16fe9a5cb7688"
+    },
+    {
+      "id": "query-graph-row-expression-merges-metadata",
+      "input": {
+        "json": {
+          "item": {
+            "id": "keep",
+            "@key": "keep",
+            "@path": "/items/keep"
+          }
+        },
+        "predicate": ".item.@key == 'keep'"
+      },
+      "expected": true,
+      "coverage_fingerprint": "c5291e82f4e3da0483a16fe9a5cb7688"
+    },
+    {
+      "id": "query-graph-row-expression-without-metadata",
+      "input": {
+        "json": {
+          "item": {
+            "id": "keep"
+          }
+        },
+        "predicate": ".item.id == 'keep'"
+      },
+      "expected": true,
+      "coverage_fingerprint": "c5291e82f4e3da0483a16fe9a5cb7688"
+    },
+    {
+      "id": "coverage-scalar-primary-row",
+      "input": {
+        "json": {
+          "item": 4
+        },
+        "predicate": ".item == 4"
+      },
+      "expected": true,
+      "coverage_fingerprint": "d045679ecd2ba711e077056a1375ff47"
+    },
+    {
+      "id": "query-graph-native-ast",
+      "input": {
+        "json": {
+          "count": 3,
+          "state": "ready"
+        },
+        "predicate": ".count >= 3 AND (.state == \"ready\" OR .state == \"failed\")"
+      },
+      "expected": true,
+      "coverage_fingerprint": "4d16db513818912e975253ce3abf9400"
+    },
+    {
+      "id": "query-graph-alias-nested-path-and-key-keep",
+      "input": {
+        "json": {
+          "item": {
+            "id": "keep",
+            "facts": {
+              "score": 4
+            },
+            "@key": "keep"
+          }
+        },
+        "predicate": ".item.facts.score >= 4 AND .item.@key == 'keep' AND exists(.item)"
+      },
+      "expected": true,
+      "coverage_fingerprint": "81152c621a759a95e30d956c18113a93"
+    },
+    {
+      "id": "query-graph-alias-nested-path-and-key-skip",
+      "input": {
+        "json": {
+          "item": {
+            "id": "skip",
+            "facts": {
+              "score": 2
+            },
+            "@key": "skip"
+          }
+        },
+        "predicate": ".item.facts.score >= 4 AND .item.@key == 'keep' AND exists(.item)"
+      },
+      "expected": false,
+      "coverage_fingerprint": "81152c621a759a95e30d956c18113a93"
+    },
+    {
+      "id": "query-graph-legacy-object-where-keep",
+      "input": {
+        "json": {
+          "item": {
+            "id": "keep",
+            "score": 5,
+            "@key": "keep"
+          }
+        },
+        "predicate": ".item.score >= 3"
+      },
+      "expected": true,
+      "coverage_fingerprint": "d62eb8faefe1867b0ab4ea859b80eabb"
+    },
+    {
+      "id": "query-graph-legacy-object-where-skip",
+      "input": {
+        "json": {
+          "item": {
+            "id": "skip",
+            "score": 1,
+            "@key": "skip"
+          }
+        },
+        "predicate": ".item.score >= 3"
+      },
+      "expected": false,
+      "coverage_fingerprint": "d62eb8faefe1867b0ab4ea859b80eabb"
+    },
+    {
+      "id": "query-graph-view-f64-comparison-fraction",
+      "input": {
+        "json": {
+          "item": {
+            "id": "fraction",
+            "score": 1.25,
+            "@key": "fraction"
+          }
+        },
+        "predicate": ".item.score > 1.2"
+      },
+      "expected": true,
+      "coverage_fingerprint": "d62eb8faefe1867b0ab4ea859b80eabb"
+    },
+    {
+      "id": "query-graph-json-text-predicate-keep",
+      "input": {
+        "json": {
+          "item": {
+            "id": "keep",
+            "score": 4,
+            "@key": "keep"
+          }
+        },
+        "predicate": ".item.score >= 4"
+      },
+      "expected": true,
+      "coverage_fingerprint": "d62eb8faefe1867b0ab4ea859b80eabb"
+    },
+    {
+      "id": "query-graph-json-text-predicate-skip",
+      "input": {
+        "json": {
+          "item": {
+            "id": "skip",
+            "score": 2,
+            "@key": "skip"
+          }
+        },
+        "predicate": ".item.score >= 4"
+      },
+      "expected": false,
+      "coverage_fingerprint": "d62eb8faefe1867b0ab4ea859b80eabb"
+    },
+    {
+      "id": "signed-integer-comparison",
+      "input": {
+        "json": {
+          "left": -1,
+          "right": 2
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "a6219d935df407475463e8ab76ad6f1d"
+    },
+    {
+      "id": "unsigned-integer-comparison",
+      "input": {
+        "json": {
+          "left": 18446744073709551614,
+          "right": 18446744073709551613
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "a6219d935df407475463e8ab76ad6f1d"
+    },
+    {
+      "id": "floating-point-comparison",
+      "input": {
+        "json": {
+          "left": 1.25,
+          "right": 1.2
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "a6219d935df407475463e8ab76ad6f1d"
+    },
+    {
+      "id": "boolean-number-type-mismatch",
+      "input": {
+        "json": {
+          "value": true
+        },
+        "predicate": ".value == 1"
+      },
+      "expected": false,
+      "coverage_fingerprint": "349cc2e1e9af3be5a76c701734138931"
+    },
+    {
+      "id": "digest-equality-case-insensitive",
+      "input": {
+        "json": {
+          "hash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "predicate": ".hash == \"sha256:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\""
+      },
+      "expected": true,
+      "coverage_fingerprint": "3f7a0d6168e6b0f5f5d8a57004addb18"
+    },
+    {
+      "id": "boolean-ordering",
+      "input": {
+        "json": {
+          "enabled": true
+        },
+        "predicate": ".enabled > false"
+      },
+      "expected": true,
+      "coverage_fingerprint": "106f00221f7d44d6e8facd4763821cb3"
+    },
+    {
+      "id": "string-ordering",
+      "input": {
+        "json": {
+          "value": "beta"
+        },
+        "predicate": ".value > \"alpha\""
+      },
+      "expected": true,
+      "coverage_fingerprint": "25ccd6a328f4c62d871db3ddb18a3a34"
+    },
+    {
+      "id": "digest-ordering",
+      "input": {
+        "json": {
+          "hash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "predicate": ".hash < \"sha256:BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB\""
+      },
+      "expected": true,
+      "coverage_fingerprint": "25ccd6a328f4c62d871db3ddb18a3a34"
+    },
+    {
+      "id": "object-ordering-rejected",
+      "input": {
+        "json": {
+          "value": {}
+        },
+        "predicate": ".value > 1"
+      },
+      "expected": false,
+      "coverage_fingerprint": "340530c9adfb6f8f58bb5eb025a5ecd5"
+    },
+    {
+      "id": "different-type-ordering-rejected",
+      "input": {
+        "json": {
+          "value": "1"
+        },
+        "predicate": ".value > 1"
+      },
+      "expected": false,
+      "coverage_fingerprint": "5dca527a8190bec7f3136e7d3071cb02"
+    },
+    {
+      "id": "malformed-empty-field-path",
+      "input": {
+        "json": {},
+        "predicate": ". == 1"
+      },
+      "expected": false,
+      "coverage_fingerprint": "4482106f8cecc0a7205020b156e3ef94"
+    },
+    {
+      "id": "malformed-empty-dot-segment",
+      "input": {
+        "json": {
+          "value": {
+            "other": 1
+          }
+        },
+        "predicate": ".value..other == 1"
+      },
+      "expected": false,
+      "coverage_fingerprint": "58ba2ee3c89098f8686e36ca569fba58"
+    },
+    {
+      "id": "quoted-key-with-escaped-quote",
+      "input": {
+        "json": {
+          "obj": {
+            "a\"b": 1
+          }
+        },
+        "predicate": ".obj[\"a\\\"b\"] == 1"
+      },
+      "expected": true,
+      "coverage_fingerprint": "d045679ecd2ba711e077056a1375ff47"
+    },
+    {
+      "id": "malformed-open-key-selector",
+      "input": {
+        "json": {
+          "obj": {}
+        },
+        "predicate": ".obj[ == 1"
+      },
+      "expected": false,
+      "coverage_fingerprint": "58ba2ee3c89098f8686e36ca569fba58"
+    },
+    {
+      "id": "type-missing-equal-missing",
+      "input": {
+        "json": {},
+        "predicate": ".left == .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "cec3756630bc6936e17ce7cff6c7459d"
+    },
+    {
+      "id": "type-missing-not-equal-missing",
+      "input": {
+        "json": {},
+        "predicate": ".left != .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "d3050d9a4d56f56e0e72f7225d4bf547"
+    },
+    {
+      "id": "type-missing-greater-missing",
+      "input": {
+        "json": {},
+        "predicate": ".left > .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "3ecd40b3aa53bf89c35d62cddb03af00"
+    },
+    {
+      "id": "type-missing-greater-equal-missing",
+      "input": {
+        "json": {},
+        "predicate": ".left >= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "3ecd40b3aa53bf89c35d62cddb03af00"
+    },
+    {
+      "id": "type-missing-less-missing",
+      "input": {
+        "json": {},
+        "predicate": ".left < .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "3ecd40b3aa53bf89c35d62cddb03af00"
+    },
+    {
+      "id": "type-missing-less-equal-missing",
+      "input": {
+        "json": {},
+        "predicate": ".left <= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "3ecd40b3aa53bf89c35d62cddb03af00"
+    },
+    {
+      "id": "type-missing-equal-null",
+      "input": {
+        "json": {
+          "right": null
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "0e22d762d6ed7ddd3c84007b5b92698b"
+    },
+    {
+      "id": "type-missing-not-equal-null",
+      "input": {
+        "json": {
+          "right": null
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "19adbd1f4f26906de6348dbc751fea4b"
+    },
+    {
+      "id": "type-missing-greater-null",
+      "input": {
+        "json": {
+          "right": null
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "80b7335b10e4a06fbe3e923dc3629210"
+    },
+    {
+      "id": "type-missing-greater-equal-null",
+      "input": {
+        "json": {
+          "right": null
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "80b7335b10e4a06fbe3e923dc3629210"
+    },
+    {
+      "id": "type-missing-less-null",
+      "input": {
+        "json": {
+          "right": null
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "80b7335b10e4a06fbe3e923dc3629210"
+    },
+    {
+      "id": "type-missing-less-equal-null",
+      "input": {
+        "json": {
+          "right": null
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "80b7335b10e4a06fbe3e923dc3629210"
+    },
+    {
+      "id": "type-missing-equal-boolean",
+      "input": {
+        "json": {
+          "right": true
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "5f23fd104356fe1b6fc400bb475b6b46"
+    },
+    {
+      "id": "type-missing-not-equal-boolean",
+      "input": {
+        "json": {
+          "right": true
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "e40fb2bcb587023e6edfb72a8924430e"
+    },
+    {
+      "id": "type-missing-greater-boolean",
+      "input": {
+        "json": {
+          "right": true
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "e5083a5bab4f6f26d6d30edfd2a441e8"
+    },
+    {
+      "id": "type-missing-greater-equal-boolean",
+      "input": {
+        "json": {
+          "right": true
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "e5083a5bab4f6f26d6d30edfd2a441e8"
+    },
+    {
+      "id": "type-missing-less-boolean",
+      "input": {
+        "json": {
+          "right": true
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "e5083a5bab4f6f26d6d30edfd2a441e8"
+    },
+    {
+      "id": "type-missing-less-equal-boolean",
+      "input": {
+        "json": {
+          "right": true
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "e5083a5bab4f6f26d6d30edfd2a441e8"
+    },
+    {
+      "id": "type-missing-equal-integer",
+      "input": {
+        "json": {
+          "right": 2
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "0e22d762d6ed7ddd3c84007b5b92698b"
+    },
+    {
+      "id": "type-missing-not-equal-integer",
+      "input": {
+        "json": {
+          "right": 2
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "19adbd1f4f26906de6348dbc751fea4b"
+    },
+    {
+      "id": "type-missing-greater-integer",
+      "input": {
+        "json": {
+          "right": 2
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "f919ca0b05540e77130d819bcf971b31"
+    },
+    {
+      "id": "type-missing-greater-equal-integer",
+      "input": {
+        "json": {
+          "right": 2
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "f919ca0b05540e77130d819bcf971b31"
+    },
+    {
+      "id": "type-missing-less-integer",
+      "input": {
+        "json": {
+          "right": 2
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "f919ca0b05540e77130d819bcf971b31"
+    },
+    {
+      "id": "type-missing-less-equal-integer",
+      "input": {
+        "json": {
+          "right": 2
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "f919ca0b05540e77130d819bcf971b31"
+    },
+    {
+      "id": "type-missing-equal-decimal",
+      "input": {
+        "json": {
+          "right": 2.0
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "0e22d762d6ed7ddd3c84007b5b92698b"
+    },
+    {
+      "id": "type-missing-not-equal-decimal",
+      "input": {
+        "json": {
+          "right": 2.0
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "19adbd1f4f26906de6348dbc751fea4b"
+    },
+    {
+      "id": "type-missing-greater-decimal",
+      "input": {
+        "json": {
+          "right": 2.0
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "f919ca0b05540e77130d819bcf971b31"
+    },
+    {
+      "id": "type-missing-greater-equal-decimal",
+      "input": {
+        "json": {
+          "right": 2.0
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "f919ca0b05540e77130d819bcf971b31"
+    },
+    {
+      "id": "type-missing-less-decimal",
+      "input": {
+        "json": {
+          "right": 2.0
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "f919ca0b05540e77130d819bcf971b31"
+    },
+    {
+      "id": "type-missing-less-equal-decimal",
+      "input": {
+        "json": {
+          "right": 2.0
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "f919ca0b05540e77130d819bcf971b31"
+    },
+    {
+      "id": "type-missing-equal-string",
+      "input": {
+        "json": {
+          "right": "alpha"
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "0e22d762d6ed7ddd3c84007b5b92698b"
+    },
+    {
+      "id": "type-missing-not-equal-string",
+      "input": {
+        "json": {
+          "right": "alpha"
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "19adbd1f4f26906de6348dbc751fea4b"
+    },
+    {
+      "id": "type-missing-greater-string",
+      "input": {
+        "json": {
+          "right": "alpha"
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "7008646a0c0f9a432d0b050bb8a2299d"
+    },
+    {
+      "id": "type-missing-greater-equal-string",
+      "input": {
+        "json": {
+          "right": "alpha"
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "7008646a0c0f9a432d0b050bb8a2299d"
+    },
+    {
+      "id": "type-missing-less-string",
+      "input": {
+        "json": {
+          "right": "alpha"
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "7008646a0c0f9a432d0b050bb8a2299d"
+    },
+    {
+      "id": "type-missing-less-equal-string",
+      "input": {
+        "json": {
+          "right": "alpha"
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "7008646a0c0f9a432d0b050bb8a2299d"
+    },
+    {
+      "id": "type-missing-equal-array",
+      "input": {
+        "json": {
+          "right": [
+            1
+          ]
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "0e22d762d6ed7ddd3c84007b5b92698b"
+    },
+    {
+      "id": "type-missing-not-equal-array",
+      "input": {
+        "json": {
+          "right": [
+            1
+          ]
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "19adbd1f4f26906de6348dbc751fea4b"
+    },
+    {
+      "id": "type-missing-greater-array",
+      "input": {
+        "json": {
+          "right": [
+            1
+          ]
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "80b7335b10e4a06fbe3e923dc3629210"
+    },
+    {
+      "id": "type-missing-greater-equal-array",
+      "input": {
+        "json": {
+          "right": [
+            1
+          ]
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "80b7335b10e4a06fbe3e923dc3629210"
+    },
+    {
+      "id": "type-missing-less-array",
+      "input": {
+        "json": {
+          "right": [
+            1
+          ]
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "80b7335b10e4a06fbe3e923dc3629210"
+    },
+    {
+      "id": "type-missing-less-equal-array",
+      "input": {
+        "json": {
+          "right": [
+            1
+          ]
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "80b7335b10e4a06fbe3e923dc3629210"
+    },
+    {
+      "id": "type-missing-equal-object",
+      "input": {
+        "json": {
+          "right": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "0e22d762d6ed7ddd3c84007b5b92698b"
+    },
+    {
+      "id": "type-missing-not-equal-object",
+      "input": {
+        "json": {
+          "right": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "19adbd1f4f26906de6348dbc751fea4b"
+    },
+    {
+      "id": "type-missing-greater-object",
+      "input": {
+        "json": {
+          "right": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "80b7335b10e4a06fbe3e923dc3629210"
+    },
+    {
+      "id": "type-missing-greater-equal-object",
+      "input": {
+        "json": {
+          "right": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "80b7335b10e4a06fbe3e923dc3629210"
+    },
+    {
+      "id": "type-missing-less-object",
+      "input": {
+        "json": {
+          "right": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "80b7335b10e4a06fbe3e923dc3629210"
+    },
+    {
+      "id": "type-missing-less-equal-object",
+      "input": {
+        "json": {
+          "right": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "80b7335b10e4a06fbe3e923dc3629210"
+    },
+    {
+      "id": "type-exists-missing-1",
+      "input": {
+        "json": {},
+        "predicate": "exists(.value)"
+      },
+      "expected": false,
+      "coverage_fingerprint": "dbe0ab098b18d81c27f7c6149de08124"
+    },
+    {
+      "id": "type-null-equal-missing",
+      "input": {
+        "json": {
+          "left": null
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "68f20f6073716093cc1172fe012cf160"
+    },
+    {
+      "id": "type-null-not-equal-missing",
+      "input": {
+        "json": {
+          "left": null
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "151a586e937e2ad89e5cb9c1c9c18418"
+    },
+    {
+      "id": "type-null-greater-missing",
+      "input": {
+        "json": {
+          "left": null
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "80b7335b10e4a06fbe3e923dc3629210"
+    },
+    {
+      "id": "type-null-greater-equal-missing",
+      "input": {
+        "json": {
+          "left": null
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "80b7335b10e4a06fbe3e923dc3629210"
+    },
+    {
+      "id": "type-null-less-missing",
+      "input": {
+        "json": {
+          "left": null
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "80b7335b10e4a06fbe3e923dc3629210"
+    },
+    {
+      "id": "type-null-less-equal-missing",
+      "input": {
+        "json": {
+          "left": null
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "80b7335b10e4a06fbe3e923dc3629210"
+    },
+    {
+      "id": "type-null-equal-null",
+      "input": {
+        "json": {
+          "left": null,
+          "right": null
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "b8bfe5567fafbf106a1307678bb1e314"
+    },
+    {
+      "id": "type-null-not-equal-null",
+      "input": {
+        "json": {
+          "left": null,
+          "right": null
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "9133772c352da2e56390f1fb47d20526"
+    },
+    {
+      "id": "type-null-greater-null",
+      "input": {
+        "json": {
+          "left": null,
+          "right": null
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "74f9cbee214a0316c3f76e06b60ffca4"
+    },
+    {
+      "id": "type-null-greater-equal-null",
+      "input": {
+        "json": {
+          "left": null,
+          "right": null
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "74f9cbee214a0316c3f76e06b60ffca4"
+    },
+    {
+      "id": "type-null-less-null",
+      "input": {
+        "json": {
+          "left": null,
+          "right": null
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "74f9cbee214a0316c3f76e06b60ffca4"
+    },
+    {
+      "id": "type-null-less-equal-null",
+      "input": {
+        "json": {
+          "left": null,
+          "right": null
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "74f9cbee214a0316c3f76e06b60ffca4"
+    },
+    {
+      "id": "type-null-equal-boolean",
+      "input": {
+        "json": {
+          "left": null,
+          "right": true
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "b9b8fa66fc398852802c43f9a841a524"
+    },
+    {
+      "id": "type-null-not-equal-boolean",
+      "input": {
+        "json": {
+          "left": null,
+          "right": true
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "99637ced2325f7dd851a99eb236632b0"
+    },
+    {
+      "id": "type-null-greater-boolean",
+      "input": {
+        "json": {
+          "left": null,
+          "right": true
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "41a2c003bca204abed5a075dffbff2e2"
+    },
+    {
+      "id": "type-null-greater-equal-boolean",
+      "input": {
+        "json": {
+          "left": null,
+          "right": true
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "41a2c003bca204abed5a075dffbff2e2"
+    },
+    {
+      "id": "type-null-less-boolean",
+      "input": {
+        "json": {
+          "left": null,
+          "right": true
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "41a2c003bca204abed5a075dffbff2e2"
+    },
+    {
+      "id": "type-null-less-equal-boolean",
+      "input": {
+        "json": {
+          "left": null,
+          "right": true
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "41a2c003bca204abed5a075dffbff2e2"
+    },
+    {
+      "id": "type-null-equal-integer",
+      "input": {
+        "json": {
+          "left": null,
+          "right": 2
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "b8bfe5567fafbf106a1307678bb1e314"
+    },
+    {
+      "id": "type-null-not-equal-integer",
+      "input": {
+        "json": {
+          "left": null,
+          "right": 2
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "9133772c352da2e56390f1fb47d20526"
+    },
+    {
+      "id": "type-null-greater-integer",
+      "input": {
+        "json": {
+          "left": null,
+          "right": 2
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "130493e038e691d48355dcfd57c6be9f"
+    },
+    {
+      "id": "type-null-greater-equal-integer",
+      "input": {
+        "json": {
+          "left": null,
+          "right": 2
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "130493e038e691d48355dcfd57c6be9f"
+    },
+    {
+      "id": "type-null-less-integer",
+      "input": {
+        "json": {
+          "left": null,
+          "right": 2
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "130493e038e691d48355dcfd57c6be9f"
+    },
+    {
+      "id": "type-null-less-equal-integer",
+      "input": {
+        "json": {
+          "left": null,
+          "right": 2
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "130493e038e691d48355dcfd57c6be9f"
+    },
+    {
+      "id": "type-null-equal-decimal",
+      "input": {
+        "json": {
+          "left": null,
+          "right": 2.0
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "b8bfe5567fafbf106a1307678bb1e314"
+    },
+    {
+      "id": "type-null-not-equal-decimal",
+      "input": {
+        "json": {
+          "left": null,
+          "right": 2.0
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "9133772c352da2e56390f1fb47d20526"
+    },
+    {
+      "id": "type-null-greater-decimal",
+      "input": {
+        "json": {
+          "left": null,
+          "right": 2.0
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "130493e038e691d48355dcfd57c6be9f"
+    },
+    {
+      "id": "type-null-greater-equal-decimal",
+      "input": {
+        "json": {
+          "left": null,
+          "right": 2.0
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "130493e038e691d48355dcfd57c6be9f"
+    },
+    {
+      "id": "type-null-less-decimal",
+      "input": {
+        "json": {
+          "left": null,
+          "right": 2.0
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "130493e038e691d48355dcfd57c6be9f"
+    },
+    {
+      "id": "type-null-less-equal-decimal",
+      "input": {
+        "json": {
+          "left": null,
+          "right": 2.0
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "130493e038e691d48355dcfd57c6be9f"
+    },
+    {
+      "id": "type-null-equal-string",
+      "input": {
+        "json": {
+          "left": null,
+          "right": "alpha"
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "b8bfe5567fafbf106a1307678bb1e314"
+    },
+    {
+      "id": "type-null-not-equal-string",
+      "input": {
+        "json": {
+          "left": null,
+          "right": "alpha"
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "9133772c352da2e56390f1fb47d20526"
+    },
+    {
+      "id": "type-null-greater-string",
+      "input": {
+        "json": {
+          "left": null,
+          "right": "alpha"
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "a765e7b4f5c820e1df3759088e67885d"
+    },
+    {
+      "id": "type-null-greater-equal-string",
+      "input": {
+        "json": {
+          "left": null,
+          "right": "alpha"
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "a765e7b4f5c820e1df3759088e67885d"
+    },
+    {
+      "id": "type-null-less-string",
+      "input": {
+        "json": {
+          "left": null,
+          "right": "alpha"
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "a765e7b4f5c820e1df3759088e67885d"
+    },
+    {
+      "id": "type-null-less-equal-string",
+      "input": {
+        "json": {
+          "left": null,
+          "right": "alpha"
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "a765e7b4f5c820e1df3759088e67885d"
+    },
+    {
+      "id": "type-null-equal-array",
+      "input": {
+        "json": {
+          "left": null,
+          "right": [
+            1
+          ]
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "b8bfe5567fafbf106a1307678bb1e314"
+    },
+    {
+      "id": "type-null-not-equal-array",
+      "input": {
+        "json": {
+          "left": null,
+          "right": [
+            1
+          ]
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "9133772c352da2e56390f1fb47d20526"
+    },
+    {
+      "id": "type-null-greater-array",
+      "input": {
+        "json": {
+          "left": null,
+          "right": [
+            1
+          ]
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "74f9cbee214a0316c3f76e06b60ffca4"
+    },
+    {
+      "id": "type-null-greater-equal-array",
+      "input": {
+        "json": {
+          "left": null,
+          "right": [
+            1
+          ]
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "74f9cbee214a0316c3f76e06b60ffca4"
+    },
+    {
+      "id": "type-null-less-array",
+      "input": {
+        "json": {
+          "left": null,
+          "right": [
+            1
+          ]
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "74f9cbee214a0316c3f76e06b60ffca4"
+    },
+    {
+      "id": "type-null-less-equal-array",
+      "input": {
+        "json": {
+          "left": null,
+          "right": [
+            1
+          ]
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "74f9cbee214a0316c3f76e06b60ffca4"
+    },
+    {
+      "id": "type-null-equal-object",
+      "input": {
+        "json": {
+          "left": null,
+          "right": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "b8bfe5567fafbf106a1307678bb1e314"
+    },
+    {
+      "id": "type-null-not-equal-object",
+      "input": {
+        "json": {
+          "left": null,
+          "right": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "9133772c352da2e56390f1fb47d20526"
+    },
+    {
+      "id": "type-null-greater-object",
+      "input": {
+        "json": {
+          "left": null,
+          "right": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "74f9cbee214a0316c3f76e06b60ffca4"
+    },
+    {
+      "id": "type-null-greater-equal-object",
+      "input": {
+        "json": {
+          "left": null,
+          "right": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "74f9cbee214a0316c3f76e06b60ffca4"
+    },
+    {
+      "id": "type-null-less-object",
+      "input": {
+        "json": {
+          "left": null,
+          "right": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "74f9cbee214a0316c3f76e06b60ffca4"
+    },
+    {
+      "id": "type-null-less-equal-object",
+      "input": {
+        "json": {
+          "left": null,
+          "right": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "74f9cbee214a0316c3f76e06b60ffca4"
+    },
+    {
+      "id": "type-exists-null-1",
+      "input": {
+        "json": {
+          "value": null
+        },
+        "predicate": "exists(.value)"
+      },
+      "expected": false,
+      "coverage_fingerprint": "b41c22c22df50553cc95af00b11a4546"
+    },
+    {
+      "id": "type-boolean-equal-missing",
+      "input": {
+        "json": {
+          "left": true
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "5b2f7110635a06a8fa31f01b8a51a65a"
+    },
+    {
+      "id": "type-boolean-not-equal-missing",
+      "input": {
+        "json": {
+          "left": true
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "e71df1da6ebe3d59485bfdf843a9cf49"
+    },
+    {
+      "id": "type-boolean-greater-missing",
+      "input": {
+        "json": {
+          "left": true
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "e5083a5bab4f6f26d6d30edfd2a441e8"
+    },
+    {
+      "id": "type-boolean-greater-equal-missing",
+      "input": {
+        "json": {
+          "left": true
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "e5083a5bab4f6f26d6d30edfd2a441e8"
+    },
+    {
+      "id": "type-boolean-less-missing",
+      "input": {
+        "json": {
+          "left": true
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "e5083a5bab4f6f26d6d30edfd2a441e8"
+    },
+    {
+      "id": "type-boolean-less-equal-missing",
+      "input": {
+        "json": {
+          "left": true
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "e5083a5bab4f6f26d6d30edfd2a441e8"
+    },
+    {
+      "id": "type-boolean-equal-null",
+      "input": {
+        "json": {
+          "left": true,
+          "right": null
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "b9b8fa66fc398852802c43f9a841a524"
+    },
+    {
+      "id": "type-boolean-not-equal-null",
+      "input": {
+        "json": {
+          "left": true,
+          "right": null
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "99637ced2325f7dd851a99eb236632b0"
+    },
+    {
+      "id": "type-boolean-greater-null",
+      "input": {
+        "json": {
+          "left": true,
+          "right": null
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "41a2c003bca204abed5a075dffbff2e2"
+    },
+    {
+      "id": "type-boolean-greater-equal-null",
+      "input": {
+        "json": {
+          "left": true,
+          "right": null
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "41a2c003bca204abed5a075dffbff2e2"
+    },
+    {
+      "id": "type-boolean-less-null",
+      "input": {
+        "json": {
+          "left": true,
+          "right": null
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "41a2c003bca204abed5a075dffbff2e2"
+    },
+    {
+      "id": "type-boolean-less-equal-null",
+      "input": {
+        "json": {
+          "left": true,
+          "right": null
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "41a2c003bca204abed5a075dffbff2e2"
+    },
+    {
+      "id": "type-boolean-equal-boolean",
+      "input": {
+        "json": {
+          "left": true,
+          "right": true
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "b8bfe5567fafbf106a1307678bb1e314"
+    },
+    {
+      "id": "type-boolean-not-equal-boolean",
+      "input": {
+        "json": {
+          "left": true,
+          "right": true
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "9133772c352da2e56390f1fb47d20526"
+    },
+    {
+      "id": "type-boolean-greater-boolean",
+      "input": {
+        "json": {
+          "left": true,
+          "right": true
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "ae03c01cf65b8fe7cba30511376d75d6"
+    },
+    {
+      "id": "type-boolean-greater-equal-boolean",
+      "input": {
+        "json": {
+          "left": true,
+          "right": true
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "ae03c01cf65b8fe7cba30511376d75d6"
+    },
+    {
+      "id": "type-boolean-less-boolean",
+      "input": {
+        "json": {
+          "left": true,
+          "right": true
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "ae03c01cf65b8fe7cba30511376d75d6"
+    },
+    {
+      "id": "type-boolean-less-equal-boolean",
+      "input": {
+        "json": {
+          "left": true,
+          "right": true
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "ae03c01cf65b8fe7cba30511376d75d6"
+    },
+    {
+      "id": "type-boolean-equal-integer",
+      "input": {
+        "json": {
+          "left": true,
+          "right": 2
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "b9b8fa66fc398852802c43f9a841a524"
+    },
+    {
+      "id": "type-boolean-not-equal-integer",
+      "input": {
+        "json": {
+          "left": true,
+          "right": 2
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "99637ced2325f7dd851a99eb236632b0"
+    },
+    {
+      "id": "type-boolean-greater-integer",
+      "input": {
+        "json": {
+          "left": true,
+          "right": 2
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "ce9b3757ca2f403b971a2d30929d3816"
+    },
+    {
+      "id": "type-boolean-greater-equal-integer",
+      "input": {
+        "json": {
+          "left": true,
+          "right": 2
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "ce9b3757ca2f403b971a2d30929d3816"
+    },
+    {
+      "id": "type-boolean-less-integer",
+      "input": {
+        "json": {
+          "left": true,
+          "right": 2
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "ce9b3757ca2f403b971a2d30929d3816"
+    },
+    {
+      "id": "type-boolean-less-equal-integer",
+      "input": {
+        "json": {
+          "left": true,
+          "right": 2
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "ce9b3757ca2f403b971a2d30929d3816"
+    },
+    {
+      "id": "type-boolean-equal-decimal",
+      "input": {
+        "json": {
+          "left": true,
+          "right": 2.0
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "b9b8fa66fc398852802c43f9a841a524"
+    },
+    {
+      "id": "type-boolean-not-equal-decimal",
+      "input": {
+        "json": {
+          "left": true,
+          "right": 2.0
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "99637ced2325f7dd851a99eb236632b0"
+    },
+    {
+      "id": "type-boolean-greater-decimal",
+      "input": {
+        "json": {
+          "left": true,
+          "right": 2.0
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "ce9b3757ca2f403b971a2d30929d3816"
+    },
+    {
+      "id": "type-boolean-greater-equal-decimal",
+      "input": {
+        "json": {
+          "left": true,
+          "right": 2.0
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "ce9b3757ca2f403b971a2d30929d3816"
+    },
+    {
+      "id": "type-boolean-less-decimal",
+      "input": {
+        "json": {
+          "left": true,
+          "right": 2.0
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "ce9b3757ca2f403b971a2d30929d3816"
+    },
+    {
+      "id": "type-boolean-less-equal-decimal",
+      "input": {
+        "json": {
+          "left": true,
+          "right": 2.0
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "ce9b3757ca2f403b971a2d30929d3816"
+    },
+    {
+      "id": "type-boolean-equal-string",
+      "input": {
+        "json": {
+          "left": true,
+          "right": "alpha"
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "b9b8fa66fc398852802c43f9a841a524"
+    },
+    {
+      "id": "type-boolean-not-equal-string",
+      "input": {
+        "json": {
+          "left": true,
+          "right": "alpha"
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "99637ced2325f7dd851a99eb236632b0"
+    },
+    {
+      "id": "type-boolean-greater-string",
+      "input": {
+        "json": {
+          "left": true,
+          "right": "alpha"
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "ce5bb2d66c8fad5be93ccdf28d143586"
+    },
+    {
+      "id": "type-boolean-greater-equal-string",
+      "input": {
+        "json": {
+          "left": true,
+          "right": "alpha"
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "ce5bb2d66c8fad5be93ccdf28d143586"
+    },
+    {
+      "id": "type-boolean-less-string",
+      "input": {
+        "json": {
+          "left": true,
+          "right": "alpha"
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "ce5bb2d66c8fad5be93ccdf28d143586"
+    },
+    {
+      "id": "type-boolean-less-equal-string",
+      "input": {
+        "json": {
+          "left": true,
+          "right": "alpha"
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "ce5bb2d66c8fad5be93ccdf28d143586"
+    },
+    {
+      "id": "type-boolean-equal-array",
+      "input": {
+        "json": {
+          "left": true,
+          "right": [
+            1
+          ]
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "b9b8fa66fc398852802c43f9a841a524"
+    },
+    {
+      "id": "type-boolean-not-equal-array",
+      "input": {
+        "json": {
+          "left": true,
+          "right": [
+            1
+          ]
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "99637ced2325f7dd851a99eb236632b0"
+    },
+    {
+      "id": "type-boolean-greater-array",
+      "input": {
+        "json": {
+          "left": true,
+          "right": [
+            1
+          ]
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "41a2c003bca204abed5a075dffbff2e2"
+    },
+    {
+      "id": "type-boolean-greater-equal-array",
+      "input": {
+        "json": {
+          "left": true,
+          "right": [
+            1
+          ]
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "41a2c003bca204abed5a075dffbff2e2"
+    },
+    {
+      "id": "type-boolean-less-array",
+      "input": {
+        "json": {
+          "left": true,
+          "right": [
+            1
+          ]
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "41a2c003bca204abed5a075dffbff2e2"
+    },
+    {
+      "id": "type-boolean-less-equal-array",
+      "input": {
+        "json": {
+          "left": true,
+          "right": [
+            1
+          ]
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "41a2c003bca204abed5a075dffbff2e2"
+    },
+    {
+      "id": "type-boolean-equal-object",
+      "input": {
+        "json": {
+          "left": true,
+          "right": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "b9b8fa66fc398852802c43f9a841a524"
+    },
+    {
+      "id": "type-boolean-not-equal-object",
+      "input": {
+        "json": {
+          "left": true,
+          "right": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "99637ced2325f7dd851a99eb236632b0"
+    },
+    {
+      "id": "type-boolean-greater-object",
+      "input": {
+        "json": {
+          "left": true,
+          "right": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "41a2c003bca204abed5a075dffbff2e2"
+    },
+    {
+      "id": "type-boolean-greater-equal-object",
+      "input": {
+        "json": {
+          "left": true,
+          "right": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "41a2c003bca204abed5a075dffbff2e2"
+    },
+    {
+      "id": "type-boolean-less-object",
+      "input": {
+        "json": {
+          "left": true,
+          "right": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "41a2c003bca204abed5a075dffbff2e2"
+    },
+    {
+      "id": "type-boolean-less-equal-object",
+      "input": {
+        "json": {
+          "left": true,
+          "right": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "41a2c003bca204abed5a075dffbff2e2"
+    },
+    {
+      "id": "type-exists-boolean-1",
+      "input": {
+        "json": {
+          "value": false
+        },
+        "predicate": "exists(.value)"
+      },
+      "expected": true,
+      "coverage_fingerprint": "b41c22c22df50553cc95af00b11a4546"
+    },
+    {
+      "id": "type-exists-boolean-2",
+      "input": {
+        "json": {
+          "value": true
+        },
+        "predicate": "exists(.value)"
+      },
+      "expected": true,
+      "coverage_fingerprint": "b41c22c22df50553cc95af00b11a4546"
+    },
+    {
+      "id": "type-integer-equal-missing",
+      "input": {
+        "json": {
+          "left": 2
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "68f20f6073716093cc1172fe012cf160"
+    },
+    {
+      "id": "type-integer-not-equal-missing",
+      "input": {
+        "json": {
+          "left": 2
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "151a586e937e2ad89e5cb9c1c9c18418"
+    },
+    {
+      "id": "type-integer-greater-missing",
+      "input": {
+        "json": {
+          "left": 2
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "f919ca0b05540e77130d819bcf971b31"
+    },
+    {
+      "id": "type-integer-greater-equal-missing",
+      "input": {
+        "json": {
+          "left": 2
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "f919ca0b05540e77130d819bcf971b31"
+    },
+    {
+      "id": "type-integer-less-missing",
+      "input": {
+        "json": {
+          "left": 2
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "f919ca0b05540e77130d819bcf971b31"
+    },
+    {
+      "id": "type-integer-less-equal-missing",
+      "input": {
+        "json": {
+          "left": 2
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "f919ca0b05540e77130d819bcf971b31"
+    },
+    {
+      "id": "type-integer-equal-null",
+      "input": {
+        "json": {
+          "left": 2,
+          "right": null
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "b8bfe5567fafbf106a1307678bb1e314"
+    },
+    {
+      "id": "type-integer-not-equal-null",
+      "input": {
+        "json": {
+          "left": 2,
+          "right": null
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "9133772c352da2e56390f1fb47d20526"
+    },
+    {
+      "id": "type-integer-greater-null",
+      "input": {
+        "json": {
+          "left": 2,
+          "right": null
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "130493e038e691d48355dcfd57c6be9f"
+    },
+    {
+      "id": "type-integer-greater-equal-null",
+      "input": {
+        "json": {
+          "left": 2,
+          "right": null
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "130493e038e691d48355dcfd57c6be9f"
+    },
+    {
+      "id": "type-integer-less-null",
+      "input": {
+        "json": {
+          "left": 2,
+          "right": null
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "130493e038e691d48355dcfd57c6be9f"
+    },
+    {
+      "id": "type-integer-less-equal-null",
+      "input": {
+        "json": {
+          "left": 2,
+          "right": null
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "130493e038e691d48355dcfd57c6be9f"
+    },
+    {
+      "id": "type-integer-equal-boolean",
+      "input": {
+        "json": {
+          "left": 2,
+          "right": true
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "b9b8fa66fc398852802c43f9a841a524"
+    },
+    {
+      "id": "type-integer-not-equal-boolean",
+      "input": {
+        "json": {
+          "left": 2,
+          "right": true
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "99637ced2325f7dd851a99eb236632b0"
+    },
+    {
+      "id": "type-integer-greater-boolean",
+      "input": {
+        "json": {
+          "left": 2,
+          "right": true
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "ce9b3757ca2f403b971a2d30929d3816"
+    },
+    {
+      "id": "type-integer-greater-equal-boolean",
+      "input": {
+        "json": {
+          "left": 2,
+          "right": true
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "ce9b3757ca2f403b971a2d30929d3816"
+    },
+    {
+      "id": "type-integer-less-boolean",
+      "input": {
+        "json": {
+          "left": 2,
+          "right": true
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "ce9b3757ca2f403b971a2d30929d3816"
+    },
+    {
+      "id": "type-integer-less-equal-boolean",
+      "input": {
+        "json": {
+          "left": 2,
+          "right": true
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "ce9b3757ca2f403b971a2d30929d3816"
+    },
+    {
+      "id": "type-integer-equal-integer",
+      "input": {
+        "json": {
+          "left": 2,
+          "right": 2
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "e1d26246fd1ccc9dac865fbc0c35e686"
+    },
+    {
+      "id": "type-integer-not-equal-integer",
+      "input": {
+        "json": {
+          "left": 2,
+          "right": 2
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "554bd535b23c7e4745f3c24b9cefa7d0"
+    },
+    {
+      "id": "type-integer-greater-integer",
+      "input": {
+        "json": {
+          "left": 2,
+          "right": 2
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "a6219d935df407475463e8ab76ad6f1d"
+    },
+    {
+      "id": "type-integer-greater-equal-integer",
+      "input": {
+        "json": {
+          "left": 2,
+          "right": 2
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "a6219d935df407475463e8ab76ad6f1d"
+    },
+    {
+      "id": "type-integer-less-integer",
+      "input": {
+        "json": {
+          "left": 2,
+          "right": 2
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "a6219d935df407475463e8ab76ad6f1d"
+    },
+    {
+      "id": "type-integer-less-equal-integer",
+      "input": {
+        "json": {
+          "left": 2,
+          "right": 2
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "a6219d935df407475463e8ab76ad6f1d"
+    },
+    {
+      "id": "type-integer-equal-decimal",
+      "input": {
+        "json": {
+          "left": 2,
+          "right": 2.0
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "e1d26246fd1ccc9dac865fbc0c35e686"
+    },
+    {
+      "id": "type-integer-not-equal-decimal",
+      "input": {
+        "json": {
+          "left": 2,
+          "right": 2.0
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "554bd535b23c7e4745f3c24b9cefa7d0"
+    },
+    {
+      "id": "type-integer-greater-decimal",
+      "input": {
+        "json": {
+          "left": 2,
+          "right": 2.0
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "a6219d935df407475463e8ab76ad6f1d"
+    },
+    {
+      "id": "type-integer-greater-equal-decimal",
+      "input": {
+        "json": {
+          "left": 2,
+          "right": 2.0
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "a6219d935df407475463e8ab76ad6f1d"
+    },
+    {
+      "id": "type-integer-less-decimal",
+      "input": {
+        "json": {
+          "left": 2,
+          "right": 2.0
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "a6219d935df407475463e8ab76ad6f1d"
+    },
+    {
+      "id": "type-integer-less-equal-decimal",
+      "input": {
+        "json": {
+          "left": 2,
+          "right": 2.0
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "a6219d935df407475463e8ab76ad6f1d"
+    },
+    {
+      "id": "type-integer-equal-string",
+      "input": {
+        "json": {
+          "left": 2,
+          "right": "alpha"
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "b8bfe5567fafbf106a1307678bb1e314"
+    },
+    {
+      "id": "type-integer-not-equal-string",
+      "input": {
+        "json": {
+          "left": 2,
+          "right": "alpha"
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "9133772c352da2e56390f1fb47d20526"
+    },
+    {
+      "id": "type-integer-greater-string",
+      "input": {
+        "json": {
+          "left": 2,
+          "right": "alpha"
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "c037eaa210f7ac6051af10da3b403635"
+    },
+    {
+      "id": "type-integer-greater-equal-string",
+      "input": {
+        "json": {
+          "left": 2,
+          "right": "alpha"
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "c037eaa210f7ac6051af10da3b403635"
+    },
+    {
+      "id": "type-integer-less-string",
+      "input": {
+        "json": {
+          "left": 2,
+          "right": "alpha"
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "c037eaa210f7ac6051af10da3b403635"
+    },
+    {
+      "id": "type-integer-less-equal-string",
+      "input": {
+        "json": {
+          "left": 2,
+          "right": "alpha"
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "c037eaa210f7ac6051af10da3b403635"
+    },
+    {
+      "id": "type-integer-equal-array",
+      "input": {
+        "json": {
+          "left": 2,
+          "right": [
+            1
+          ]
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "b8bfe5567fafbf106a1307678bb1e314"
+    },
+    {
+      "id": "type-integer-not-equal-array",
+      "input": {
+        "json": {
+          "left": 2,
+          "right": [
+            1
+          ]
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "9133772c352da2e56390f1fb47d20526"
+    },
+    {
+      "id": "type-integer-greater-array",
+      "input": {
+        "json": {
+          "left": 2,
+          "right": [
+            1
+          ]
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "130493e038e691d48355dcfd57c6be9f"
+    },
+    {
+      "id": "type-integer-greater-equal-array",
+      "input": {
+        "json": {
+          "left": 2,
+          "right": [
+            1
+          ]
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "130493e038e691d48355dcfd57c6be9f"
+    },
+    {
+      "id": "type-integer-less-array",
+      "input": {
+        "json": {
+          "left": 2,
+          "right": [
+            1
+          ]
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "130493e038e691d48355dcfd57c6be9f"
+    },
+    {
+      "id": "type-integer-less-equal-array",
+      "input": {
+        "json": {
+          "left": 2,
+          "right": [
+            1
+          ]
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "130493e038e691d48355dcfd57c6be9f"
+    },
+    {
+      "id": "type-integer-equal-object",
+      "input": {
+        "json": {
+          "left": 2,
+          "right": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "b8bfe5567fafbf106a1307678bb1e314"
+    },
+    {
+      "id": "type-integer-not-equal-object",
+      "input": {
+        "json": {
+          "left": 2,
+          "right": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "9133772c352da2e56390f1fb47d20526"
+    },
+    {
+      "id": "type-integer-greater-object",
+      "input": {
+        "json": {
+          "left": 2,
+          "right": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "130493e038e691d48355dcfd57c6be9f"
+    },
+    {
+      "id": "type-integer-greater-equal-object",
+      "input": {
+        "json": {
+          "left": 2,
+          "right": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "130493e038e691d48355dcfd57c6be9f"
+    },
+    {
+      "id": "type-integer-less-object",
+      "input": {
+        "json": {
+          "left": 2,
+          "right": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "130493e038e691d48355dcfd57c6be9f"
+    },
+    {
+      "id": "type-integer-less-equal-object",
+      "input": {
+        "json": {
+          "left": 2,
+          "right": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "130493e038e691d48355dcfd57c6be9f"
+    },
+    {
+      "id": "type-exists-integer-1",
+      "input": {
+        "json": {
+          "value": 0
+        },
+        "predicate": "exists(.value)"
+      },
+      "expected": true,
+      "coverage_fingerprint": "b41c22c22df50553cc95af00b11a4546"
+    },
+    {
+      "id": "type-decimal-equal-missing",
+      "input": {
+        "json": {
+          "left": 2.0
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "68f20f6073716093cc1172fe012cf160"
+    },
+    {
+      "id": "type-decimal-not-equal-missing",
+      "input": {
+        "json": {
+          "left": 2.0
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "151a586e937e2ad89e5cb9c1c9c18418"
+    },
+    {
+      "id": "type-decimal-greater-missing",
+      "input": {
+        "json": {
+          "left": 2.0
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "f919ca0b05540e77130d819bcf971b31"
+    },
+    {
+      "id": "type-decimal-greater-equal-missing",
+      "input": {
+        "json": {
+          "left": 2.0
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "f919ca0b05540e77130d819bcf971b31"
+    },
+    {
+      "id": "type-decimal-less-missing",
+      "input": {
+        "json": {
+          "left": 2.0
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "f919ca0b05540e77130d819bcf971b31"
+    },
+    {
+      "id": "type-decimal-less-equal-missing",
+      "input": {
+        "json": {
+          "left": 2.0
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "f919ca0b05540e77130d819bcf971b31"
+    },
+    {
+      "id": "type-decimal-equal-null",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": null
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "b8bfe5567fafbf106a1307678bb1e314"
+    },
+    {
+      "id": "type-decimal-not-equal-null",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": null
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "9133772c352da2e56390f1fb47d20526"
+    },
+    {
+      "id": "type-decimal-greater-null",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": null
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "130493e038e691d48355dcfd57c6be9f"
+    },
+    {
+      "id": "type-decimal-greater-equal-null",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": null
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "130493e038e691d48355dcfd57c6be9f"
+    },
+    {
+      "id": "type-decimal-less-null",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": null
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "130493e038e691d48355dcfd57c6be9f"
+    },
+    {
+      "id": "type-decimal-less-equal-null",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": null
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "130493e038e691d48355dcfd57c6be9f"
+    },
+    {
+      "id": "type-decimal-equal-boolean",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": true
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "b9b8fa66fc398852802c43f9a841a524"
+    },
+    {
+      "id": "type-decimal-not-equal-boolean",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": true
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "99637ced2325f7dd851a99eb236632b0"
+    },
+    {
+      "id": "type-decimal-greater-boolean",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": true
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "ce9b3757ca2f403b971a2d30929d3816"
+    },
+    {
+      "id": "type-decimal-greater-equal-boolean",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": true
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "ce9b3757ca2f403b971a2d30929d3816"
+    },
+    {
+      "id": "type-decimal-less-boolean",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": true
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "ce9b3757ca2f403b971a2d30929d3816"
+    },
+    {
+      "id": "type-decimal-less-equal-boolean",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": true
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "ce9b3757ca2f403b971a2d30929d3816"
+    },
+    {
+      "id": "type-decimal-equal-integer",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": 2
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "e1d26246fd1ccc9dac865fbc0c35e686"
+    },
+    {
+      "id": "type-decimal-not-equal-integer",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": 2
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "554bd535b23c7e4745f3c24b9cefa7d0"
+    },
+    {
+      "id": "type-decimal-greater-integer",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": 2
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "a6219d935df407475463e8ab76ad6f1d"
+    },
+    {
+      "id": "type-decimal-greater-equal-integer",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": 2
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "a6219d935df407475463e8ab76ad6f1d"
+    },
+    {
+      "id": "type-decimal-less-integer",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": 2
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "a6219d935df407475463e8ab76ad6f1d"
+    },
+    {
+      "id": "type-decimal-less-equal-integer",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": 2
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "a6219d935df407475463e8ab76ad6f1d"
+    },
+    {
+      "id": "type-decimal-equal-decimal",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": 2.0
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "e1d26246fd1ccc9dac865fbc0c35e686"
+    },
+    {
+      "id": "type-decimal-not-equal-decimal",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": 2.0
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "554bd535b23c7e4745f3c24b9cefa7d0"
+    },
+    {
+      "id": "type-decimal-greater-decimal",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": 2.0
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "a6219d935df407475463e8ab76ad6f1d"
+    },
+    {
+      "id": "type-decimal-greater-equal-decimal",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": 2.0
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "a6219d935df407475463e8ab76ad6f1d"
+    },
+    {
+      "id": "type-decimal-less-decimal",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": 2.0
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "a6219d935df407475463e8ab76ad6f1d"
+    },
+    {
+      "id": "type-decimal-less-equal-decimal",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": 2.0
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "a6219d935df407475463e8ab76ad6f1d"
+    },
+    {
+      "id": "type-decimal-equal-string",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": "alpha"
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "b8bfe5567fafbf106a1307678bb1e314"
+    },
+    {
+      "id": "type-decimal-not-equal-string",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": "alpha"
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "9133772c352da2e56390f1fb47d20526"
+    },
+    {
+      "id": "type-decimal-greater-string",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": "alpha"
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "c037eaa210f7ac6051af10da3b403635"
+    },
+    {
+      "id": "type-decimal-greater-equal-string",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": "alpha"
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "c037eaa210f7ac6051af10da3b403635"
+    },
+    {
+      "id": "type-decimal-less-string",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": "alpha"
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "c037eaa210f7ac6051af10da3b403635"
+    },
+    {
+      "id": "type-decimal-less-equal-string",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": "alpha"
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "c037eaa210f7ac6051af10da3b403635"
+    },
+    {
+      "id": "type-decimal-equal-array",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": [
+            1
+          ]
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "b8bfe5567fafbf106a1307678bb1e314"
+    },
+    {
+      "id": "type-decimal-not-equal-array",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": [
+            1
+          ]
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "9133772c352da2e56390f1fb47d20526"
+    },
+    {
+      "id": "type-decimal-greater-array",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": [
+            1
+          ]
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "130493e038e691d48355dcfd57c6be9f"
+    },
+    {
+      "id": "type-decimal-greater-equal-array",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": [
+            1
+          ]
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "130493e038e691d48355dcfd57c6be9f"
+    },
+    {
+      "id": "type-decimal-less-array",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": [
+            1
+          ]
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "130493e038e691d48355dcfd57c6be9f"
+    },
+    {
+      "id": "type-decimal-less-equal-array",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": [
+            1
+          ]
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "130493e038e691d48355dcfd57c6be9f"
+    },
+    {
+      "id": "type-decimal-equal-object",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "b8bfe5567fafbf106a1307678bb1e314"
+    },
+    {
+      "id": "type-decimal-not-equal-object",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "9133772c352da2e56390f1fb47d20526"
+    },
+    {
+      "id": "type-decimal-greater-object",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "130493e038e691d48355dcfd57c6be9f"
+    },
+    {
+      "id": "type-decimal-greater-equal-object",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "130493e038e691d48355dcfd57c6be9f"
+    },
+    {
+      "id": "type-decimal-less-object",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "130493e038e691d48355dcfd57c6be9f"
+    },
+    {
+      "id": "type-decimal-less-equal-object",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "130493e038e691d48355dcfd57c6be9f"
+    },
+    {
+      "id": "type-exists-decimal-1",
+      "input": {
+        "json": {
+          "value": 1.5
+        },
+        "predicate": "exists(.value)"
+      },
+      "expected": true,
+      "coverage_fingerprint": "b41c22c22df50553cc95af00b11a4546"
+    },
+    {
+      "id": "type-string-equal-missing",
+      "input": {
+        "json": {
+          "left": "alpha"
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "68f20f6073716093cc1172fe012cf160"
+    },
+    {
+      "id": "type-string-not-equal-missing",
+      "input": {
+        "json": {
+          "left": "alpha"
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "151a586e937e2ad89e5cb9c1c9c18418"
+    },
+    {
+      "id": "type-string-greater-missing",
+      "input": {
+        "json": {
+          "left": "alpha"
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "7008646a0c0f9a432d0b050bb8a2299d"
+    },
+    {
+      "id": "type-string-greater-equal-missing",
+      "input": {
+        "json": {
+          "left": "alpha"
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "7008646a0c0f9a432d0b050bb8a2299d"
+    },
+    {
+      "id": "type-string-less-missing",
+      "input": {
+        "json": {
+          "left": "alpha"
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "7008646a0c0f9a432d0b050bb8a2299d"
+    },
+    {
+      "id": "type-string-less-equal-missing",
+      "input": {
+        "json": {
+          "left": "alpha"
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "7008646a0c0f9a432d0b050bb8a2299d"
+    },
+    {
+      "id": "type-string-equal-null",
+      "input": {
+        "json": {
+          "left": "alpha",
+          "right": null
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "b8bfe5567fafbf106a1307678bb1e314"
+    },
+    {
+      "id": "type-string-not-equal-null",
+      "input": {
+        "json": {
+          "left": "alpha",
+          "right": null
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "9133772c352da2e56390f1fb47d20526"
+    },
+    {
+      "id": "type-string-greater-null",
+      "input": {
+        "json": {
+          "left": "alpha",
+          "right": null
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "a765e7b4f5c820e1df3759088e67885d"
+    },
+    {
+      "id": "type-string-greater-equal-null",
+      "input": {
+        "json": {
+          "left": "alpha",
+          "right": null
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "a765e7b4f5c820e1df3759088e67885d"
+    },
+    {
+      "id": "type-string-less-null",
+      "input": {
+        "json": {
+          "left": "alpha",
+          "right": null
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "a765e7b4f5c820e1df3759088e67885d"
+    },
+    {
+      "id": "type-string-less-equal-null",
+      "input": {
+        "json": {
+          "left": "alpha",
+          "right": null
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "a765e7b4f5c820e1df3759088e67885d"
+    },
+    {
+      "id": "type-string-equal-boolean",
+      "input": {
+        "json": {
+          "left": "alpha",
+          "right": true
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "b9b8fa66fc398852802c43f9a841a524"
+    },
+    {
+      "id": "type-string-not-equal-boolean",
+      "input": {
+        "json": {
+          "left": "alpha",
+          "right": true
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "99637ced2325f7dd851a99eb236632b0"
+    },
+    {
+      "id": "type-string-greater-boolean",
+      "input": {
+        "json": {
+          "left": "alpha",
+          "right": true
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "ce5bb2d66c8fad5be93ccdf28d143586"
+    },
+    {
+      "id": "type-string-greater-equal-boolean",
+      "input": {
+        "json": {
+          "left": "alpha",
+          "right": true
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "ce5bb2d66c8fad5be93ccdf28d143586"
+    },
+    {
+      "id": "type-string-less-boolean",
+      "input": {
+        "json": {
+          "left": "alpha",
+          "right": true
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "ce5bb2d66c8fad5be93ccdf28d143586"
+    },
+    {
+      "id": "type-string-less-equal-boolean",
+      "input": {
+        "json": {
+          "left": "alpha",
+          "right": true
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "ce5bb2d66c8fad5be93ccdf28d143586"
+    },
+    {
+      "id": "type-string-equal-integer",
+      "input": {
+        "json": {
+          "left": "alpha",
+          "right": 2
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "b8bfe5567fafbf106a1307678bb1e314"
+    },
+    {
+      "id": "type-string-not-equal-integer",
+      "input": {
+        "json": {
+          "left": "alpha",
+          "right": 2
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "9133772c352da2e56390f1fb47d20526"
+    },
+    {
+      "id": "type-string-greater-integer",
+      "input": {
+        "json": {
+          "left": "alpha",
+          "right": 2
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "c037eaa210f7ac6051af10da3b403635"
+    },
+    {
+      "id": "type-string-greater-equal-integer",
+      "input": {
+        "json": {
+          "left": "alpha",
+          "right": 2
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "c037eaa210f7ac6051af10da3b403635"
+    },
+    {
+      "id": "type-string-less-integer",
+      "input": {
+        "json": {
+          "left": "alpha",
+          "right": 2
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "c037eaa210f7ac6051af10da3b403635"
+    },
+    {
+      "id": "type-string-less-equal-integer",
+      "input": {
+        "json": {
+          "left": "alpha",
+          "right": 2
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "c037eaa210f7ac6051af10da3b403635"
+    },
+    {
+      "id": "type-string-equal-decimal",
+      "input": {
+        "json": {
+          "left": "alpha",
+          "right": 2.0
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "b8bfe5567fafbf106a1307678bb1e314"
+    },
+    {
+      "id": "type-string-not-equal-decimal",
+      "input": {
+        "json": {
+          "left": "alpha",
+          "right": 2.0
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "9133772c352da2e56390f1fb47d20526"
+    },
+    {
+      "id": "type-string-greater-decimal",
+      "input": {
+        "json": {
+          "left": "alpha",
+          "right": 2.0
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "c037eaa210f7ac6051af10da3b403635"
+    },
+    {
+      "id": "type-string-greater-equal-decimal",
+      "input": {
+        "json": {
+          "left": "alpha",
+          "right": 2.0
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "c037eaa210f7ac6051af10da3b403635"
+    },
+    {
+      "id": "type-string-less-decimal",
+      "input": {
+        "json": {
+          "left": "alpha",
+          "right": 2.0
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "c037eaa210f7ac6051af10da3b403635"
+    },
+    {
+      "id": "type-string-less-equal-decimal",
+      "input": {
+        "json": {
+          "left": "alpha",
+          "right": 2.0
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "c037eaa210f7ac6051af10da3b403635"
+    },
+    {
+      "id": "type-string-equal-string",
+      "input": {
+        "json": {
+          "left": "alpha",
+          "right": "alpha"
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "6329842631b38f3e3ea2aee27e3e2aba"
+    },
+    {
+      "id": "type-string-not-equal-string",
+      "input": {
+        "json": {
+          "left": "alpha",
+          "right": "alpha"
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "83e63911b8de616358f9155d220c8e9e"
+    },
+    {
+      "id": "type-string-greater-string",
+      "input": {
+        "json": {
+          "left": "alpha",
+          "right": "alpha"
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "7e0a1adb4b69e4c6368c5b0eea43cb7e"
+    },
+    {
+      "id": "type-string-greater-equal-string",
+      "input": {
+        "json": {
+          "left": "alpha",
+          "right": "alpha"
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "7e0a1adb4b69e4c6368c5b0eea43cb7e"
+    },
+    {
+      "id": "type-string-less-string",
+      "input": {
+        "json": {
+          "left": "alpha",
+          "right": "alpha"
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "7e0a1adb4b69e4c6368c5b0eea43cb7e"
+    },
+    {
+      "id": "type-string-less-equal-string",
+      "input": {
+        "json": {
+          "left": "alpha",
+          "right": "alpha"
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "7e0a1adb4b69e4c6368c5b0eea43cb7e"
+    },
+    {
+      "id": "type-string-equal-array",
+      "input": {
+        "json": {
+          "left": "alpha",
+          "right": [
+            1
+          ]
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "b8bfe5567fafbf106a1307678bb1e314"
+    },
+    {
+      "id": "type-string-not-equal-array",
+      "input": {
+        "json": {
+          "left": "alpha",
+          "right": [
+            1
+          ]
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "9133772c352da2e56390f1fb47d20526"
+    },
+    {
+      "id": "type-string-greater-array",
+      "input": {
+        "json": {
+          "left": "alpha",
+          "right": [
+            1
+          ]
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "a765e7b4f5c820e1df3759088e67885d"
+    },
+    {
+      "id": "type-string-greater-equal-array",
+      "input": {
+        "json": {
+          "left": "alpha",
+          "right": [
+            1
+          ]
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "a765e7b4f5c820e1df3759088e67885d"
+    },
+    {
+      "id": "type-string-less-array",
+      "input": {
+        "json": {
+          "left": "alpha",
+          "right": [
+            1
+          ]
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "a765e7b4f5c820e1df3759088e67885d"
+    },
+    {
+      "id": "type-string-less-equal-array",
+      "input": {
+        "json": {
+          "left": "alpha",
+          "right": [
+            1
+          ]
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "a765e7b4f5c820e1df3759088e67885d"
+    },
+    {
+      "id": "type-string-equal-object",
+      "input": {
+        "json": {
+          "left": "alpha",
+          "right": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "b8bfe5567fafbf106a1307678bb1e314"
+    },
+    {
+      "id": "type-string-not-equal-object",
+      "input": {
+        "json": {
+          "left": "alpha",
+          "right": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "9133772c352da2e56390f1fb47d20526"
+    },
+    {
+      "id": "type-string-greater-object",
+      "input": {
+        "json": {
+          "left": "alpha",
+          "right": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "a765e7b4f5c820e1df3759088e67885d"
+    },
+    {
+      "id": "type-string-greater-equal-object",
+      "input": {
+        "json": {
+          "left": "alpha",
+          "right": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "a765e7b4f5c820e1df3759088e67885d"
+    },
+    {
+      "id": "type-string-less-object",
+      "input": {
+        "json": {
+          "left": "alpha",
+          "right": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "a765e7b4f5c820e1df3759088e67885d"
+    },
+    {
+      "id": "type-string-less-equal-object",
+      "input": {
+        "json": {
+          "left": "alpha",
+          "right": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "a765e7b4f5c820e1df3759088e67885d"
+    },
+    {
+      "id": "type-exists-string-1",
+      "input": {
+        "json": {
+          "value": ""
+        },
+        "predicate": "exists(.value)"
+      },
+      "expected": true,
+      "coverage_fingerprint": "b41c22c22df50553cc95af00b11a4546"
+    },
+    {
+      "id": "type-exists-string-2",
+      "input": {
+        "json": {
+          "value": "text"
+        },
+        "predicate": "exists(.value)"
+      },
+      "expected": true,
+      "coverage_fingerprint": "b41c22c22df50553cc95af00b11a4546"
+    },
+    {
+      "id": "type-array-equal-missing",
+      "input": {
+        "json": {
+          "left": [
+            1
+          ]
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "68f20f6073716093cc1172fe012cf160"
+    },
+    {
+      "id": "type-array-not-equal-missing",
+      "input": {
+        "json": {
+          "left": [
+            1
+          ]
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "151a586e937e2ad89e5cb9c1c9c18418"
+    },
+    {
+      "id": "type-array-greater-missing",
+      "input": {
+        "json": {
+          "left": [
+            1
+          ]
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "80b7335b10e4a06fbe3e923dc3629210"
+    },
+    {
+      "id": "type-array-greater-equal-missing",
+      "input": {
+        "json": {
+          "left": [
+            1
+          ]
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "80b7335b10e4a06fbe3e923dc3629210"
+    },
+    {
+      "id": "type-array-less-missing",
+      "input": {
+        "json": {
+          "left": [
+            1
+          ]
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "80b7335b10e4a06fbe3e923dc3629210"
+    },
+    {
+      "id": "type-array-less-equal-missing",
+      "input": {
+        "json": {
+          "left": [
+            1
+          ]
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "80b7335b10e4a06fbe3e923dc3629210"
+    },
+    {
+      "id": "type-array-equal-null",
+      "input": {
+        "json": {
+          "left": [
+            1
+          ],
+          "right": null
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "b8bfe5567fafbf106a1307678bb1e314"
+    },
+    {
+      "id": "type-array-not-equal-null",
+      "input": {
+        "json": {
+          "left": [
+            1
+          ],
+          "right": null
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "9133772c352da2e56390f1fb47d20526"
+    },
+    {
+      "id": "type-array-greater-null",
+      "input": {
+        "json": {
+          "left": [
+            1
+          ],
+          "right": null
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "74f9cbee214a0316c3f76e06b60ffca4"
+    },
+    {
+      "id": "type-array-greater-equal-null",
+      "input": {
+        "json": {
+          "left": [
+            1
+          ],
+          "right": null
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "74f9cbee214a0316c3f76e06b60ffca4"
+    },
+    {
+      "id": "type-array-less-null",
+      "input": {
+        "json": {
+          "left": [
+            1
+          ],
+          "right": null
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "74f9cbee214a0316c3f76e06b60ffca4"
+    },
+    {
+      "id": "type-array-less-equal-null",
+      "input": {
+        "json": {
+          "left": [
+            1
+          ],
+          "right": null
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "74f9cbee214a0316c3f76e06b60ffca4"
+    },
+    {
+      "id": "type-array-equal-boolean",
+      "input": {
+        "json": {
+          "left": [
+            1
+          ],
+          "right": true
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "b9b8fa66fc398852802c43f9a841a524"
+    },
+    {
+      "id": "type-array-not-equal-boolean",
+      "input": {
+        "json": {
+          "left": [
+            1
+          ],
+          "right": true
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "99637ced2325f7dd851a99eb236632b0"
+    },
+    {
+      "id": "type-array-greater-boolean",
+      "input": {
+        "json": {
+          "left": [
+            1
+          ],
+          "right": true
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "41a2c003bca204abed5a075dffbff2e2"
+    },
+    {
+      "id": "type-array-greater-equal-boolean",
+      "input": {
+        "json": {
+          "left": [
+            1
+          ],
+          "right": true
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "41a2c003bca204abed5a075dffbff2e2"
+    },
+    {
+      "id": "type-array-less-boolean",
+      "input": {
+        "json": {
+          "left": [
+            1
+          ],
+          "right": true
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "41a2c003bca204abed5a075dffbff2e2"
+    },
+    {
+      "id": "type-array-less-equal-boolean",
+      "input": {
+        "json": {
+          "left": [
+            1
+          ],
+          "right": true
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "41a2c003bca204abed5a075dffbff2e2"
+    },
+    {
+      "id": "type-array-equal-integer",
+      "input": {
+        "json": {
+          "left": [
+            1
+          ],
+          "right": 2
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "b8bfe5567fafbf106a1307678bb1e314"
+    },
+    {
+      "id": "type-array-not-equal-integer",
+      "input": {
+        "json": {
+          "left": [
+            1
+          ],
+          "right": 2
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "9133772c352da2e56390f1fb47d20526"
+    },
+    {
+      "id": "type-array-greater-integer",
+      "input": {
+        "json": {
+          "left": [
+            1
+          ],
+          "right": 2
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "130493e038e691d48355dcfd57c6be9f"
+    },
+    {
+      "id": "type-array-greater-equal-integer",
+      "input": {
+        "json": {
+          "left": [
+            1
+          ],
+          "right": 2
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "130493e038e691d48355dcfd57c6be9f"
+    },
+    {
+      "id": "type-array-less-integer",
+      "input": {
+        "json": {
+          "left": [
+            1
+          ],
+          "right": 2
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "130493e038e691d48355dcfd57c6be9f"
+    },
+    {
+      "id": "type-array-less-equal-integer",
+      "input": {
+        "json": {
+          "left": [
+            1
+          ],
+          "right": 2
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "130493e038e691d48355dcfd57c6be9f"
+    },
+    {
+      "id": "type-array-equal-decimal",
+      "input": {
+        "json": {
+          "left": [
+            1
+          ],
+          "right": 2.0
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "b8bfe5567fafbf106a1307678bb1e314"
+    },
+    {
+      "id": "type-array-not-equal-decimal",
+      "input": {
+        "json": {
+          "left": [
+            1
+          ],
+          "right": 2.0
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "9133772c352da2e56390f1fb47d20526"
+    },
+    {
+      "id": "type-array-greater-decimal",
+      "input": {
+        "json": {
+          "left": [
+            1
+          ],
+          "right": 2.0
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "130493e038e691d48355dcfd57c6be9f"
+    },
+    {
+      "id": "type-array-greater-equal-decimal",
+      "input": {
+        "json": {
+          "left": [
+            1
+          ],
+          "right": 2.0
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "130493e038e691d48355dcfd57c6be9f"
+    },
+    {
+      "id": "type-array-less-decimal",
+      "input": {
+        "json": {
+          "left": [
+            1
+          ],
+          "right": 2.0
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "130493e038e691d48355dcfd57c6be9f"
+    },
+    {
+      "id": "type-array-less-equal-decimal",
+      "input": {
+        "json": {
+          "left": [
+            1
+          ],
+          "right": 2.0
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "130493e038e691d48355dcfd57c6be9f"
+    },
+    {
+      "id": "type-array-equal-string",
+      "input": {
+        "json": {
+          "left": [
+            1
+          ],
+          "right": "alpha"
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "b8bfe5567fafbf106a1307678bb1e314"
+    },
+    {
+      "id": "type-array-not-equal-string",
+      "input": {
+        "json": {
+          "left": [
+            1
+          ],
+          "right": "alpha"
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "9133772c352da2e56390f1fb47d20526"
+    },
+    {
+      "id": "type-array-greater-string",
+      "input": {
+        "json": {
+          "left": [
+            1
+          ],
+          "right": "alpha"
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "a765e7b4f5c820e1df3759088e67885d"
+    },
+    {
+      "id": "type-array-greater-equal-string",
+      "input": {
+        "json": {
+          "left": [
+            1
+          ],
+          "right": "alpha"
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "a765e7b4f5c820e1df3759088e67885d"
+    },
+    {
+      "id": "type-array-less-string",
+      "input": {
+        "json": {
+          "left": [
+            1
+          ],
+          "right": "alpha"
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "a765e7b4f5c820e1df3759088e67885d"
+    },
+    {
+      "id": "type-array-less-equal-string",
+      "input": {
+        "json": {
+          "left": [
+            1
+          ],
+          "right": "alpha"
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "a765e7b4f5c820e1df3759088e67885d"
+    },
+    {
+      "id": "type-array-equal-array",
+      "input": {
+        "json": {
+          "left": [
+            1
+          ],
+          "right": [
+            1
+          ]
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "b8bfe5567fafbf106a1307678bb1e314"
+    },
+    {
+      "id": "type-array-not-equal-array",
+      "input": {
+        "json": {
+          "left": [
+            1
+          ],
+          "right": [
+            1
+          ]
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "9133772c352da2e56390f1fb47d20526"
+    },
+    {
+      "id": "type-array-greater-array",
+      "input": {
+        "json": {
+          "left": [
+            1
+          ],
+          "right": [
+            1
+          ]
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "74f9cbee214a0316c3f76e06b60ffca4"
+    },
+    {
+      "id": "type-array-greater-equal-array",
+      "input": {
+        "json": {
+          "left": [
+            1
+          ],
+          "right": [
+            1
+          ]
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "74f9cbee214a0316c3f76e06b60ffca4"
+    },
+    {
+      "id": "type-array-less-array",
+      "input": {
+        "json": {
+          "left": [
+            1
+          ],
+          "right": [
+            1
+          ]
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "74f9cbee214a0316c3f76e06b60ffca4"
+    },
+    {
+      "id": "type-array-less-equal-array",
+      "input": {
+        "json": {
+          "left": [
+            1
+          ],
+          "right": [
+            1
+          ]
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "74f9cbee214a0316c3f76e06b60ffca4"
+    },
+    {
+      "id": "type-array-equal-object",
+      "input": {
+        "json": {
+          "left": [
+            1
+          ],
+          "right": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "b8bfe5567fafbf106a1307678bb1e314"
+    },
+    {
+      "id": "type-array-not-equal-object",
+      "input": {
+        "json": {
+          "left": [
+            1
+          ],
+          "right": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "9133772c352da2e56390f1fb47d20526"
+    },
+    {
+      "id": "type-array-greater-object",
+      "input": {
+        "json": {
+          "left": [
+            1
+          ],
+          "right": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "74f9cbee214a0316c3f76e06b60ffca4"
+    },
+    {
+      "id": "type-array-greater-equal-object",
+      "input": {
+        "json": {
+          "left": [
+            1
+          ],
+          "right": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "74f9cbee214a0316c3f76e06b60ffca4"
+    },
+    {
+      "id": "type-array-less-object",
+      "input": {
+        "json": {
+          "left": [
+            1
+          ],
+          "right": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "74f9cbee214a0316c3f76e06b60ffca4"
+    },
+    {
+      "id": "type-array-less-equal-object",
+      "input": {
+        "json": {
+          "left": [
+            1
+          ],
+          "right": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "74f9cbee214a0316c3f76e06b60ffca4"
+    },
+    {
+      "id": "type-exists-array-1",
+      "input": {
+        "json": {
+          "value": []
+        },
+        "predicate": "exists(.value)"
+      },
+      "expected": false,
+      "coverage_fingerprint": "b41c22c22df50553cc95af00b11a4546"
+    },
+    {
+      "id": "type-exists-array-2",
+      "input": {
+        "json": {
+          "value": [
+            1
+          ]
+        },
+        "predicate": "exists(.value)"
+      },
+      "expected": true,
+      "coverage_fingerprint": "b41c22c22df50553cc95af00b11a4546"
+    },
+    {
+      "id": "type-object-equal-missing",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "68f20f6073716093cc1172fe012cf160"
+    },
+    {
+      "id": "type-object-not-equal-missing",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "151a586e937e2ad89e5cb9c1c9c18418"
+    },
+    {
+      "id": "type-object-greater-missing",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "80b7335b10e4a06fbe3e923dc3629210"
+    },
+    {
+      "id": "type-object-greater-equal-missing",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "80b7335b10e4a06fbe3e923dc3629210"
+    },
+    {
+      "id": "type-object-less-missing",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "80b7335b10e4a06fbe3e923dc3629210"
+    },
+    {
+      "id": "type-object-less-equal-missing",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "80b7335b10e4a06fbe3e923dc3629210"
+    },
+    {
+      "id": "type-object-equal-null",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": null
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "b8bfe5567fafbf106a1307678bb1e314"
+    },
+    {
+      "id": "type-object-not-equal-null",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": null
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "9133772c352da2e56390f1fb47d20526"
+    },
+    {
+      "id": "type-object-greater-null",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": null
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "74f9cbee214a0316c3f76e06b60ffca4"
+    },
+    {
+      "id": "type-object-greater-equal-null",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": null
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "74f9cbee214a0316c3f76e06b60ffca4"
+    },
+    {
+      "id": "type-object-less-null",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": null
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "74f9cbee214a0316c3f76e06b60ffca4"
+    },
+    {
+      "id": "type-object-less-equal-null",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": null
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "74f9cbee214a0316c3f76e06b60ffca4"
+    },
+    {
+      "id": "type-object-equal-boolean",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": true
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "b9b8fa66fc398852802c43f9a841a524"
+    },
+    {
+      "id": "type-object-not-equal-boolean",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": true
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "99637ced2325f7dd851a99eb236632b0"
+    },
+    {
+      "id": "type-object-greater-boolean",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": true
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "41a2c003bca204abed5a075dffbff2e2"
+    },
+    {
+      "id": "type-object-greater-equal-boolean",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": true
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "41a2c003bca204abed5a075dffbff2e2"
+    },
+    {
+      "id": "type-object-less-boolean",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": true
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "41a2c003bca204abed5a075dffbff2e2"
+    },
+    {
+      "id": "type-object-less-equal-boolean",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": true
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "41a2c003bca204abed5a075dffbff2e2"
+    },
+    {
+      "id": "type-object-equal-integer",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": 2
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "b8bfe5567fafbf106a1307678bb1e314"
+    },
+    {
+      "id": "type-object-not-equal-integer",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": 2
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "9133772c352da2e56390f1fb47d20526"
+    },
+    {
+      "id": "type-object-greater-integer",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": 2
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "130493e038e691d48355dcfd57c6be9f"
+    },
+    {
+      "id": "type-object-greater-equal-integer",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": 2
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "130493e038e691d48355dcfd57c6be9f"
+    },
+    {
+      "id": "type-object-less-integer",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": 2
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "130493e038e691d48355dcfd57c6be9f"
+    },
+    {
+      "id": "type-object-less-equal-integer",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": 2
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "130493e038e691d48355dcfd57c6be9f"
+    },
+    {
+      "id": "type-object-equal-decimal",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": 2.0
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "b8bfe5567fafbf106a1307678bb1e314"
+    },
+    {
+      "id": "type-object-not-equal-decimal",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": 2.0
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "9133772c352da2e56390f1fb47d20526"
+    },
+    {
+      "id": "type-object-greater-decimal",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": 2.0
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "130493e038e691d48355dcfd57c6be9f"
+    },
+    {
+      "id": "type-object-greater-equal-decimal",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": 2.0
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "130493e038e691d48355dcfd57c6be9f"
+    },
+    {
+      "id": "type-object-less-decimal",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": 2.0
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "130493e038e691d48355dcfd57c6be9f"
+    },
+    {
+      "id": "type-object-less-equal-decimal",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": 2.0
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "130493e038e691d48355dcfd57c6be9f"
+    },
+    {
+      "id": "type-object-equal-string",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": "alpha"
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "b8bfe5567fafbf106a1307678bb1e314"
+    },
+    {
+      "id": "type-object-not-equal-string",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": "alpha"
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "9133772c352da2e56390f1fb47d20526"
+    },
+    {
+      "id": "type-object-greater-string",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": "alpha"
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "a765e7b4f5c820e1df3759088e67885d"
+    },
+    {
+      "id": "type-object-greater-equal-string",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": "alpha"
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "a765e7b4f5c820e1df3759088e67885d"
+    },
+    {
+      "id": "type-object-less-string",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": "alpha"
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "a765e7b4f5c820e1df3759088e67885d"
+    },
+    {
+      "id": "type-object-less-equal-string",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": "alpha"
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "a765e7b4f5c820e1df3759088e67885d"
+    },
+    {
+      "id": "type-object-equal-array",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": [
+            1
+          ]
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "b8bfe5567fafbf106a1307678bb1e314"
+    },
+    {
+      "id": "type-object-not-equal-array",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": [
+            1
+          ]
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "9133772c352da2e56390f1fb47d20526"
+    },
+    {
+      "id": "type-object-greater-array",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": [
+            1
+          ]
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "74f9cbee214a0316c3f76e06b60ffca4"
+    },
+    {
+      "id": "type-object-greater-equal-array",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": [
+            1
+          ]
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "74f9cbee214a0316c3f76e06b60ffca4"
+    },
+    {
+      "id": "type-object-less-array",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": [
+            1
+          ]
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "74f9cbee214a0316c3f76e06b60ffca4"
+    },
+    {
+      "id": "type-object-less-equal-array",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": [
+            1
+          ]
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "74f9cbee214a0316c3f76e06b60ffca4"
+    },
+    {
+      "id": "type-object-equal-object",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": true,
+      "coverage_fingerprint": "b8bfe5567fafbf106a1307678bb1e314"
+    },
+    {
+      "id": "type-object-not-equal-object",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "9133772c352da2e56390f1fb47d20526"
+    },
+    {
+      "id": "type-object-greater-object",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "74f9cbee214a0316c3f76e06b60ffca4"
+    },
+    {
+      "id": "type-object-greater-equal-object",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "74f9cbee214a0316c3f76e06b60ffca4"
+    },
+    {
+      "id": "type-object-less-object",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "74f9cbee214a0316c3f76e06b60ffca4"
+    },
+    {
+      "id": "type-object-less-equal-object",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false,
+      "coverage_fingerprint": "74f9cbee214a0316c3f76e06b60ffca4"
+    },
+    {
+      "id": "type-exists-object-1",
+      "input": {
+        "json": {
+          "value": {}
+        },
+        "predicate": "exists(.value)"
+      },
+      "expected": false,
+      "coverage_fingerprint": "b41c22c22df50553cc95af00b11a4546"
+    },
+    {
+      "id": "type-exists-object-2",
+      "input": {
+        "json": {
+          "value": {
+            "key": "value"
+          }
+        },
+        "predicate": "exists(.value)"
+      },
+      "expected": true,
+      "coverage_fingerprint": "b41c22c22df50553cc95af00b11a4546"
+    }
+  ]
+}

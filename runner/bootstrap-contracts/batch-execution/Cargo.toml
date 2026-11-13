@@ -1,0 +1,15 @@
+[package]
+name = "open-contract-batch"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+
+[dependencies]
+open-contract-isolation = { path = "../isolation" }
+open-contract-manifest = { path = "../manifest" }
+open-contract-verification = { path = "../verification" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_yaml = "0.9"
+sha2 = "0.10"
+tempfile = "3"

@@ -1,0 +1,8 @@
+version: "1"
+name: isolation-nested-fixture
+files:
+  dataset: dataset.json
+  validator: validator.py
+filesystem:
+  read: [dataset.json, validator.py]
+  write: []

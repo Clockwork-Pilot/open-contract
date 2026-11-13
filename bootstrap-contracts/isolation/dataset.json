@@ -1,6 +1,0 @@
-{
-  "version": 1,
-  "cases": [
-    {"id": "randomized-stage", "input": {"value": "contract data"}, "expected": {"value": "contract data"}}
-  ]
-}
