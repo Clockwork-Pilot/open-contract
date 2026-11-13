@@ -261,6 +261,12 @@ pub struct ContractResult {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CoverageRecord {
     pub contract: String,
+    pub minimum_line_percent: f64,
+    pub dataset_covered_lines: usize,
+    pub dataset_executable_lines: usize,
+    pub combined_covered_lines: usize,
+    pub combined_executable_lines: usize,
+    pub line_threshold_met: bool,
     pub native_report: Value,
     pub declared_sources: Vec<String>,
     pub covered_sources: Vec<String>,
@@ -293,6 +299,7 @@ impl BatchReport {
             && self.coverage.iter().all(|record| {
                 record.missing_sources.is_empty()
                     && record.additional_test_coverage["passed"] != false
+                    && record.line_threshold_met
             })
     }
 }
@@ -342,6 +349,18 @@ pub fn run_contract_tree(
             &batch.package_prefix,
             &mut adapter_batch.additional_coverage_lines,
         );
+        let (dataset_covered_lines, dataset_executable_lines) =
+            line_coverage_totals(&adapter_batch.coverage_lines);
+        let combined_lines = merge_line_coverage(
+            &adapter_batch.coverage_lines,
+            &adapter_batch.additional_coverage_lines,
+        );
+        let (combined_covered_lines, combined_executable_lines) =
+            line_coverage_totals(&combined_lines);
+        let minimum_line_percent = batch.manifest.manifest.coverage.minimum_line_percent;
+        let combined_percent = coverage_percent(combined_covered_lines, combined_executable_lines);
+        let line_threshold_met = combined_executable_lines > 0
+            && combined_percent + f64::EPSILON >= minimum_line_percent;
         let outputs = index_results(adapter_batch.results)?;
         let coverage_scopes = index_coverage_scopes(batch, adapter_batch.coverage_scopes)?;
         let declared_sources = declared_sources(batch);
@@ -362,6 +381,12 @@ pub fn run_contract_tree(
             .collect();
         report.coverage.push(CoverageRecord {
             contract: batch.manifest.manifest.name.clone(),
+            minimum_line_percent,
+            dataset_covered_lines,
+            dataset_executable_lines,
+            combined_covered_lines,
+            combined_executable_lines,
+            line_threshold_met,
             native_report: adapter_batch.coverage.unwrap_or(Value::Null),
             declared_sources,
             covered_sources: {
@@ -398,6 +423,7 @@ fn declared_sources(batch: &ContractBatch) -> Vec<String> {
     sources.extend(batch.manifest.manifest.files.support.iter().cloned());
     sources
         .into_iter()
+        .filter(|source| is_source_file(source))
         .map(|source| {
             batch
                 .package_prefix
@@ -406,6 +432,15 @@ fn declared_sources(batch: &ContractBatch) -> Vec<String> {
                 .replace('\\', "/")
         })
         .collect()
+}
+
+fn is_source_file(path: &str) -> bool {
+    matches!(
+        Path::new(path)
+            .extension()
+            .and_then(|extension| extension.to_str()),
+        Some("py" | "js" | "mjs" | "cjs" | "rs")
+    )
 }
 
 fn validate_additional_test_coverage(
@@ -482,21 +517,61 @@ fn validate_additional_test_coverage(
 }
 
 fn line_coverage_totals(files: &[CoverageLineFile]) -> (usize, usize) {
-    let mut covered = 0;
-    let mut executable = 0;
+    let mut by_path = std::collections::BTreeMap::<
+        String,
+        (
+            std::collections::BTreeSet<u32>,
+            std::collections::BTreeSet<u32>,
+        ),
+    >::new();
     for file in files {
-        let executable_lines = file
-            .executable_lines
-            .iter()
-            .collect::<std::collections::BTreeSet<_>>();
-        let covered_lines = file
-            .covered_lines
-            .iter()
-            .collect::<std::collections::BTreeSet<_>>();
-        executable += executable_lines.len();
-        covered += covered_lines.intersection(&executable_lines).count();
+        let (executable, covered) = by_path.entry(file.path.clone()).or_default();
+        executable.extend(file.executable_lines.iter().copied());
+        covered.extend(file.covered_lines.iter().copied());
     }
-    (covered, executable)
+    by_path.into_values().fold(
+        (0, 0),
+        |(covered_total, executable_total), (executable, covered)| {
+            (
+                covered_total + covered.intersection(&executable).count(),
+                executable_total + executable.len(),
+            )
+        },
+    )
+}
+
+fn merge_line_coverage(
+    dataset: &[CoverageLineFile],
+    supplemental: &[CoverageLineFile],
+) -> Vec<CoverageLineFile> {
+    let mut by_path = std::collections::BTreeMap::<
+        String,
+        (
+            std::collections::BTreeSet<u32>,
+            std::collections::BTreeSet<u32>,
+        ),
+    >::new();
+    for file in dataset.iter().chain(supplemental) {
+        let (executable, covered) = by_path.entry(file.path.clone()).or_default();
+        executable.extend(file.executable_lines.iter().copied());
+        covered.extend(file.covered_lines.iter().copied());
+    }
+    by_path
+        .into_iter()
+        .map(|(path, (executable, covered))| CoverageLineFile {
+            path,
+            executable_lines: executable.into_iter().collect(),
+            covered_lines: covered.into_iter().collect(),
+        })
+        .collect()
+}
+
+fn coverage_percent(covered: usize, executable: usize) -> f64 {
+    if executable == 0 {
+        0.0
+    } else {
+        covered as f64 * 100.0 / executable as f64
+    }
 }
 
 fn coverage_line_json(files: &[CoverageLineFile]) -> Vec<Value> {
@@ -665,6 +740,15 @@ fn coverage_for_key(
             expected.map(|_| format!("coverage fingerprint unavailable for {:?}", key)),
         );
     };
+    if expected.is_some() && coverage.files.iter().all(|file| file.lines.is_empty()) {
+        return (
+            Some(coverage),
+            Some(format!(
+                "coverage fingerprint has zero covered lines for {:?}",
+                key
+            )),
+        );
+    }
     compare_fingerprint(&mut coverage, expected);
     let mismatch = (coverage.baseline_matches == Some(false)).then(|| {
         format!(
@@ -681,6 +765,12 @@ fn coverage_for_files(
     expected: Option<&str>,
 ) -> (Option<CoverageFingerprint>, Option<String>) {
     let files = merge_coverage_files(files);
+    if expected.is_some() && files.iter().all(|file| file.lines.is_empty()) {
+        return (
+            None,
+            Some("coverage fingerprint has zero covered lines".into()),
+        );
+    }
     let mut coverage = CoverageFingerprint {
         fingerprint: coverage_hash(&files),
         files,
@@ -848,6 +938,11 @@ fn validate_fingerprint(value: &Option<String>, scope: &str) -> Result<(), Strin
         {
             return Err(format!(
                 "coverage_fingerprint on {scope} must be 32 lowercase hexadecimal characters"
+            ));
+        }
+        if value.bytes().all(|byte| byte == b'0') {
+            return Err(format!(
+                "coverage_fingerprint on {scope} cannot represent zero coverage"
             ));
         }
     }
@@ -1095,6 +1190,7 @@ pub fn batch_input(
 ) -> Value {
     let mut coverage_sources = vec![manifest.files.validator.clone()];
     coverage_sources.extend(manifest.files.support.iter().cloned());
+    coverage_sources.retain(|source| is_source_file(source));
     json!({
         "contract": manifest.name,
         "package": package_prefix.to_string_lossy().replace('\\', "/"),

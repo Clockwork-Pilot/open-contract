@@ -23,7 +23,7 @@ fn run() -> Result<(), ContractError> {
     }
     let manifest = PathBuf::from(args.next().ok_or((2, "missing manifest path".into()))?);
     let mut backend = None;
-    let mut coverage_report = None;
+    let mut coverage_report = PathBuf::from(".open-contract/coverage/latest.json");
     while let Some(arg) = args.next() {
         match arg.as_str() {
             "--isolation" => {
@@ -32,13 +32,10 @@ fn run() -> Result<(), ContractError> {
                 )?)
             }
             "--coverage-report" => {
-                if coverage_report.is_some() {
-                    return Err((2, "--coverage-report may only be specified once".into()).into());
-                }
-                coverage_report = Some(PathBuf::from(
+                coverage_report = PathBuf::from(
                     args.next()
                         .ok_or((2, "missing coverage report path".into()))?,
-                ));
+                );
             }
             other => return Err((2, format!("unknown argument: {other}")).into()),
         }
@@ -46,14 +43,9 @@ fn run() -> Result<(), ContractError> {
     let backend = backend.ok_or((2, "--isolation is required".into()))?;
     let report = run_contract_tree(manifest, backend, &ManifestBatchAdapter)
         .map_err(|error| ContractError::from((2, error)).context("contract execution"))?;
-    println!(
-        "{}",
-        serde_json::to_string_pretty(&report).map_err(|e| (2, e.to_string()))?
-    );
-    if let Some(path) = coverage_report {
-        write_coverage_report(&path, &report)?;
-        eprintln!("coverage report written to {}", path.display());
-    }
+    write_coverage_report(&coverage_report, &report)?;
+    print!("{}", concise_summary(&report));
+    println!("Coverage report: {}", coverage_report.display());
     if report.passed() != report.total() {
         let mismatches = coverage_fingerprint_mismatches(&report);
         let mismatch_summary = if mismatches.is_empty() {
@@ -94,18 +86,33 @@ fn run() -> Result<(), ContractError> {
             .into());
     }
     if !report.coverage_complete() {
-        let missing = report
+        let failures = report
             .coverage
             .iter()
-            .filter(|record| !record.missing_sources.is_empty())
-            .map(|record| format!("{}: {}", record.contract, record.missing_sources.join(", ")))
+            .filter(|record| !record.line_threshold_met || !record.missing_sources.is_empty())
+            .map(|record| {
+                let percent = percent(
+                    record.combined_covered_lines,
+                    record.combined_executable_lines,
+                );
+                let mut detail = format!(
+                    "{}: {percent:.1}% ({}/{}) below required {:.1}%",
+                    record.contract,
+                    record.combined_covered_lines,
+                    record.combined_executable_lines,
+                    record.minimum_line_percent
+                );
+                if !record.missing_sources.is_empty() {
+                    detail.push_str(&format!(
+                        "; missing sources {}",
+                        record.missing_sources.join(", ")
+                    ));
+                }
+                detail
+            })
             .collect::<Vec<_>>()
             .join("; ");
-        return Err((
-            1,
-            format!("coverage did not exercise every declared contract source: {missing}"),
-        )
-            .into());
+        return Err((1, format!("coverage requirements not met: {failures}")).into());
     }
     Ok(())
 }
@@ -259,6 +266,14 @@ fn write_coverage_report(
                 .collect::<Vec<_>>();
             json!({
                 "contract": record.contract,
+                "minimum_line_percent": record.minimum_line_percent,
+                "dataset_coverage_percent": percent(record.dataset_covered_lines, record.dataset_executable_lines),
+                "dataset_covered_lines": record.dataset_covered_lines,
+                "dataset_executable_lines": record.dataset_executable_lines,
+                "combined_coverage_percent": percent(record.combined_covered_lines, record.combined_executable_lines),
+                "combined_covered_lines": record.combined_covered_lines,
+                "combined_executable_lines": record.combined_executable_lines,
+                "line_threshold_met": record.line_threshold_met,
                 "native_report": record.native_report,
                 "declared_sources": record.declared_sources,
                 "covered_sources": record.covered_sources,
@@ -287,17 +302,21 @@ fn write_coverage_report(
             )
         })
         .map_err(ContractError::from)?;
-    eprint!("{}", coverage_line_summary(&coverage));
     Ok(())
 }
 
 fn coverage_line_summary(report: &serde_json::Value) -> String {
-    let mut output = String::from("Dataset line coverage:\n");
+    let mut output = String::new();
     for contract in report["contracts"].as_array().into_iter().flatten() {
         let name = contract["contract"]
             .as_str()
             .map_or("<unnamed>", |value| value);
-        output.push_str(&format!("  {name}:\n"));
+        let percentage = contract["dataset_coverage_percent"].as_f64().unwrap_or(0.0);
+        let combined = contract["combined_coverage_percent"]
+            .as_f64()
+            .unwrap_or(0.0);
+        let threshold = contract["minimum_line_percent"].as_f64().unwrap_or(100.0);
+        output.push_str(&format!("  {name}: dataset {percentage:.1}%, combined {combined:.1}% (required {threshold:.1}%)\n"));
         for file in contract["dataset_coverage"]["files"]
             .as_array()
             .into_iter()
@@ -315,13 +334,7 @@ fn coverage_line_summary(report: &serde_json::Value) -> String {
                 .filter_map(serde_json::Value::as_u64)
                 .filter_map(|line| u32::try_from(line).ok())
                 .collect::<Vec<_>>();
-            if executable == 0 {
-                output.push_str(&format!("    {path}: normalized line data unavailable\n"));
-            } else if uncovered.is_empty() {
-                output.push_str(&format!(
-                    "    {path}: all {covered}/{executable} executable lines covered\n"
-                ));
-            } else {
+            if executable > 0 && !uncovered.is_empty() {
                 output.push_str(&format!(
                     "    {path}: {covered}/{executable} covered; uncovered lines {}\n",
                     format_line_ranges(&uncovered)
@@ -362,6 +375,34 @@ fn coverage_line_summary(report: &serde_json::Value) -> String {
             }
         }
     }
+    output
+}
+
+fn percent(covered: usize, executable: usize) -> f64 {
+    if executable == 0 {
+        0.0
+    } else {
+        covered as f64 * 100.0 / executable as f64
+    }
+}
+
+fn concise_summary(report: &BatchReport) -> String {
+    let mut output = format!("Cases: {}/{} passed\n", report.passed(), report.total());
+    let value = serde_json::json!({
+        "contracts": report.coverage.iter().map(|record| serde_json::json!({
+            "contract": record.contract,
+            "minimum_line_percent": record.minimum_line_percent,
+            "dataset_coverage_percent": percent(record.dataset_covered_lines, record.dataset_executable_lines),
+            "combined_coverage_percent": percent(record.combined_covered_lines, record.combined_executable_lines),
+            "dataset_coverage": {"files": record.line_coverage.iter().map(|file| {
+                let executable = file.executable_lines.iter().copied().collect::<BTreeSet<_>>();
+                let covered = file.covered_lines.iter().copied().collect::<BTreeSet<_>>();
+                let uncovered = executable.difference(&covered).copied().collect::<Vec<_>>();
+                serde_json::json!({"path": file.path, "executable_line_count": executable.len(), "covered_line_count": covered.len(), "uncovered_lines": uncovered})
+            }).collect::<Vec<_>>()}
+        })).collect::<Vec<_>>()
+    });
+    output.push_str(&coverage_line_summary(&value));
     output
 }
 

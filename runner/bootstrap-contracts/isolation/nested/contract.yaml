@@ -1,5 +1,7 @@
 version: "1"
 name: isolation-nested-fixture
+coverage:
+  minimum_line_percent: 100
 files:
   dataset: dataset.json
   validator: validator.py

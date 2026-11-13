@@ -36,6 +36,16 @@ cases:
         files: {dataset: dataset.json, validator: validator.py, support: [support/helper.py], nested_contracts: [child/contract.yaml]}
         filesystem: {read: [dataset.json, validator.py, support, child/contract.yaml], write: [reports/deep/result.json]}
     expected: {valid: true}
+  - id: invalid-line-coverage-threshold
+    input:
+      operation: manifest
+      yaml: |
+        version: '1'
+        name: sample
+        files: {dataset: dataset.json, validator: validator.py}
+        coverage: {minimum_line_percent: 101}
+        filesystem: {read: [dataset.json, validator.py], write: []}
+    expected: {valid: false}
   - id: valid-manifest-with-explicit-supplemental-tests
     input:
       operation: manifest

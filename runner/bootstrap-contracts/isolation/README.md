@@ -1,7 +1,7 @@
 # Filesystem isolation bootstrap contract
 
 This package's dataset exercises the Rust runner's filesystem staging and
-isolation behavior. The dataset executable is `src/bin/dataset-contract.rs`.
+isolation behavior. The dataset executable is `src/main.rs`.
 Its cases check declared files, writes, nested package files, and fresh staging
 roots. Dataset coverage comes from running those cases.
 

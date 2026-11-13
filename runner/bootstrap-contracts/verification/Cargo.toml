@@ -4,6 +4,10 @@ version = "0.1.0"
 edition = "2021"
 license = "MIT"
 
+[[bin]]
+name = "dataset-contract"
+path = "src/main.rs"
+
 [dependencies]
 open-contracts-predicates = { path = "../predicates" }
 serde_json = "1"

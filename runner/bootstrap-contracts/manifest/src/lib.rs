@@ -9,8 +9,29 @@ pub struct Manifest {
     pub name: String,
     pub files: Files,
     #[serde(default)]
+    pub coverage: Coverage,
+    #[serde(default)]
     pub execution: Option<ExecutionCommand>,
     pub filesystem: FileSystem,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Coverage {
+    #[serde(default = "default_minimum_line_percent")]
+    pub minimum_line_percent: f64,
+}
+
+impl Default for Coverage {
+    fn default() -> Self {
+        Self {
+            minimum_line_percent: default_minimum_line_percent(),
+        }
+    }
+}
+
+fn default_minimum_line_percent() -> f64 {
+    100.0
 }
 
 /// Language adapter command that executes one validator request. Dataset and
@@ -68,6 +89,11 @@ impl ManifestPlan {
         if manifest.name.trim().is_empty() {
             return Err("manifest name must be non-empty".into());
         }
+        if !manifest.coverage.minimum_line_percent.is_finite()
+            || !(0.0..=100.0).contains(&manifest.coverage.minimum_line_percent)
+        {
+            return Err("coverage.minimum_line_percent must be between 0 and 100".into());
+        }
         if let Some(execution) = &manifest.execution {
             if execution.command.is_empty() || execution.command[0].trim().is_empty() {
                 return Err("manifest execution command must not be empty".into());
@@ -85,13 +111,7 @@ impl ManifestPlan {
             manifest.files.validator.as_str(),
         ];
         declared_files.extend(manifest.files.support.iter().map(String::as_str));
-        declared_files.extend(
-            manifest
-                .files
-                .supplemental_tests
-                .iter()
-                .map(String::as_str),
-        );
+        declared_files.extend(manifest.files.supplemental_tests.iter().map(String::as_str));
         declared_files.extend(manifest.files.nested_contracts.iter().map(String::as_str));
         for path in &manifest.filesystem.read {
             validate_package_path(path)?;
@@ -284,6 +304,25 @@ mod tests {
             write_manifest(temp.path(), &write_escape);
             assert!(ManifestPlan::load(temp.path().join("contract.yaml")).is_err());
         }
+    }
+
+    #[test]
+    fn coverage_threshold_defaults_to_100_and_rejects_out_of_range_values() {
+        let temp = package();
+        write_manifest(temp.path(), VALID);
+        let plan = ManifestPlan::load(temp.path().join("contract.yaml")).unwrap();
+        assert_eq!(plan.manifest.coverage.minimum_line_percent, 100.0);
+
+        write_manifest(
+            temp.path(),
+            &VALID.replace(
+                "files: {dataset: dataset.json, validator: validator.py}",
+                "files: {dataset: dataset.json, validator: validator.py}\ncoverage: {minimum_line_percent: 101}",
+            ),
+        );
+        assert!(ManifestPlan::load(temp.path().join("contract.yaml"))
+            .unwrap_err()
+            .contains("coverage.minimum_line_percent"));
     }
 
     #[test]

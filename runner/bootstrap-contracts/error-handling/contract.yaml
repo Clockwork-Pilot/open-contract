@@ -1,9 +1,17 @@
 version: "1"
 name: error-handling-bootstrap
+coverage:
+  minimum_line_percent: 100
 files:
   dataset: dataset.json
-  validator: src/bin/dataset-contract.rs
-  support: [src/lib.rs, Cargo.toml, Cargo.lock]
+  validator: src/main.rs
+  support:
+    - src/lib.rs
+    - Cargo.toml
 filesystem:
-  read: [dataset.json, src/bin/dataset-contract.rs, src/lib.rs, Cargo.toml, Cargo.lock]
+  read:
+    - dataset.json
+    - src/main.rs
+    - src/lib.rs
+    - Cargo.toml
   write: [reports]

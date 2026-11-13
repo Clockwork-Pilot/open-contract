@@ -1,7 +1,7 @@
 # Manifest bootstrap contract
 
 This package's dataset exercises the Rust manifest parser and planner in
-`src/lib.rs`. Its dataset executable is `src/bin/dataset-contract.rs`; coverage
+`src/lib.rs`. Its dataset executable is `src/main.rs`; coverage
 for this package comes from running that dataset executable, not from unit
 tests.
 

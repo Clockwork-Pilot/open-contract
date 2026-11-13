@@ -172,7 +172,7 @@ def implementation_sources(payload: dict, package: Path, supplemental_tests: lis
         item for item in files
         if item.get("filename", "").replace("\\", "/").startswith(source_root)
         and item.get("filename", "").replace("\\", "/").endswith(".rs")
-        and not item.get("filename", "").replace("\\", "/").endswith("/bin/dataset-contract.rs")
+        and not item.get("filename", "").replace("\\", "/").endswith("/main.rs")
         and Path(item.get("filename", "")).resolve() not in ignored
     ]
 

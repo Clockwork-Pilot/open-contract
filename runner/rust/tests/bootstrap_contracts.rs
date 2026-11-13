@@ -105,7 +105,14 @@ impl BatchAdapter for EchoBatch {
                         }],
                     }
                 }).collect(),
-                coverage_lines: Vec::new(),
+                coverage_lines: std::iter::once(batch.manifest.manifest.files.validator.clone())
+                    .chain(batch.manifest.manifest.files.support.iter().cloned())
+                    .map(|path| open_contract_core::batch::CoverageLineFile {
+                        path,
+                        executable_lines: vec![1],
+                        covered_lines: vec![1],
+                    })
+                    .collect(),
                 ..AdapterBatch::default()
             })
             .collect())
@@ -393,7 +400,10 @@ fn cli_writes_optional_file_and_line_coverage_report_for_contract_users() {
         "runner failed: {}",
         String::from_utf8_lossy(&result.stderr)
     );
-    assert!(String::from_utf8_lossy(&result.stderr).contains("Dataset line coverage:"));
+    let stdout = String::from_utf8_lossy(&result.stdout);
+    assert!(stdout.contains("Cases:"));
+    assert!(stdout.contains("Coverage report:"));
+    assert!(!stdout.trim_start().starts_with('{'));
     let report: Value = serde_json::from_slice(&std::fs::read(report_path).unwrap()).unwrap();
     assert_eq!(report["coverage_complete"], true);
     let contracts = report["contracts"].as_array().unwrap();
@@ -435,6 +445,49 @@ fn cli_writes_optional_file_and_line_coverage_report_for_contract_users() {
         .unwrap()
         .iter()
         .any(|file| file["path"] == "child/validator.mjs"));
+}
+
+#[test]
+fn cli_saves_report_and_returns_nonzero_when_manifest_coverage_threshold_is_missed() {
+    let package = tempfile::tempdir().unwrap();
+    let manifest = write_cross_language_fixture(package.path());
+    std::fs::write(
+        package.path().join("validator.py"),
+        "def validate(value):\n    if value.get('flag'):\n        result = {'value': value['value']}\n    else:\n        result = {'value': value['value']}\n    return result\n",
+    )
+    .unwrap();
+    let source = std::fs::read_to_string(&manifest).unwrap();
+    std::fs::write(
+        &manifest,
+        source.replace(
+            "name: python-root\n",
+            "name: python-root\ncoverage: {minimum_line_percent: 100}\n",
+        ),
+    )
+    .unwrap();
+
+    let result = Command::new(env!("CARGO_BIN_EXE_open-contract-core"))
+        .arg("run-manifest")
+        .arg(&manifest)
+        .args(["--isolation", "none"])
+        .current_dir(package.path())
+        .output()
+        .unwrap();
+
+    assert_eq!(result.status.code(), Some(1));
+    let stdout = String::from_utf8_lossy(&result.stdout);
+    let stderr = String::from_utf8_lossy(&result.stderr);
+    assert!(stdout.contains("Cases: 2/2 passed"));
+    assert!(stdout.contains("dataset 80.0%"));
+    assert!(stdout.contains("uncovered lines 3"));
+    assert!(stdout.contains("Coverage report: .open-contract/coverage/latest.json"));
+    assert!(stderr.contains("coverage requirements not met"));
+    let report: Value = serde_json::from_slice(
+        &std::fs::read(package.path().join(".open-contract/coverage/latest.json")).unwrap(),
+    )
+    .unwrap();
+    assert_eq!(report["coverage_complete"], false);
+    assert_eq!(report["contracts"][0]["minimum_line_percent"], json!(100.0));
 }
 
 #[test]
@@ -597,7 +650,7 @@ fn dataset_coverage_fingerprints_match_cases_and_steps() {
     let dataset_path = package.path().join("dataset.json");
     let mismatched = std::fs::read_to_string(&dataset_path).unwrap().replace(
         "60c6194cbdc58033999a1fb07d147da8",
-        "00000000000000000000000000000000",
+        "60c6194cbdc58033999a1fb07d147da9",
     );
     std::fs::write(dataset_path, mismatched).unwrap();
     let report = run_contract_tree(

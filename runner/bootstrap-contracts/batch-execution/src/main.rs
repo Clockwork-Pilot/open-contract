@@ -304,9 +304,7 @@ impl BatchAdapter for FixtureAdapter {
 
 impl FixtureAdapter {
     fn line_coverage(&self, batch: &ContractBatch) -> Vec<open_contract_batch::CoverageLineFile> {
-        if self.mode == "supplemental-no-lines"
-            || (!self.mode.starts_with("supplemental-") && self.mode != "line-coverage")
-        {
+        if self.mode == "supplemental-no-lines" || self.mode == "no-coverage" {
             return Vec::new();
         }
         let (executable_lines, covered_lines) = if matches!(
@@ -442,6 +440,10 @@ impl FixtureAdapter {
                         "zero-coverage-line" => vec![CoverageFile {
                             path: batch.manifest.manifest.files.validator.clone(),
                             lines: vec![0],
+                        }],
+                        "empty-coverage" => vec![CoverageFile {
+                            path: batch.manifest.manifest.files.validator.clone(),
+                            lines: Vec::new(),
                         }],
                         "multi-file-coverage" => std::iter::once(CoverageFile {
                             path: batch.manifest.manifest.files.validator.clone(),

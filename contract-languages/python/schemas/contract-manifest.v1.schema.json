@@ -16,10 +16,18 @@
         "dataset": {"$ref": "#/$defs/packagePath"},
         "validator": {"$ref": "#/$defs/packagePath"},
         "support": {"type": "array", "items": {"$ref": "#/$defs/packagePath"}, "uniqueItems": true},
+        "supplemental_tests": {"type": "array", "items": {"$ref": "#/$defs/packagePath"}, "uniqueItems": true},
         "nested_contracts": {"type": "array", "items": {"$ref": "#/$defs/packagePath"}, "uniqueItems": true}
       }
     },
-    "batch": {
+    "coverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "minimum_line_percent": {"type": "number", "minimum": 0, "maximum": 100, "default": 100}
+      }
+    },
+    "execution": {
       "type": "object",
       "required": ["command"],
       "additionalProperties": false,

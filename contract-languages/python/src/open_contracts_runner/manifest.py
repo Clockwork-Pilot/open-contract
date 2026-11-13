@@ -14,33 +14,42 @@ import yaml
 def read_manifest(path: str | Path) -> tuple[dict[str, Any], Path]:
     manifest_path = Path(path).resolve(strict=True)
     value = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
-    if not isinstance(value, dict) or set(value) != {"version", "name", "files", "filesystem"}:
-        raise ValueError("manifest must contain exactly version, name, files, and filesystem")
+    if not isinstance(value, dict) or set(value) - {"version", "name", "files", "filesystem", "coverage", "execution"}:
+        raise ValueError("manifest contains unsupported top-level fields")
+    if not {"version", "name", "files", "filesystem"}.issubset(value):
+        raise ValueError("manifest must contain version, name, files, and filesystem")
     if value["version"] != "1" or not isinstance(value["name"], str) or not value["name"]:
         raise ValueError("manifest version must be '1' and name must be a non-empty string")
     files = value["files"]
     policy = value["filesystem"]
-    if not isinstance(files, dict) or set(files) - {"dataset", "validator", "support", "nested_contracts"}:
-        raise ValueError("manifest files must contain dataset, validator, optional support, and nested_contracts")
+    if not isinstance(files, dict) or set(files) - {"dataset", "validator", "support", "supplemental_tests", "nested_contracts"}:
+        raise ValueError("manifest files contain unsupported fields")
     if not isinstance(files.get("dataset"), str) or not isinstance(files.get("validator"), str):
         raise ValueError("manifest files.dataset and files.validator must be package-relative paths")
     if not isinstance(policy, dict) or set(policy) != {"read", "write"}:
         raise ValueError("manifest filesystem must contain exactly read and write")
     if any(not isinstance(policy.get(key), list) for key in ("read", "write")):
         raise ValueError("manifest filesystem.read and filesystem.write must be arrays")
-    if any(not isinstance(files.get(key, []), list) for key in ("support", "nested_contracts")):
-        raise ValueError("manifest support and nested_contracts must be arrays")
+    if any(not isinstance(files.get(key, []), list) for key in ("support", "supplemental_tests", "nested_contracts")):
+        raise ValueError("manifest support, supplemental_tests, and nested_contracts must be arrays")
+    coverage = value.get("coverage", {})
+    if not isinstance(coverage, dict) or set(coverage) - {"minimum_line_percent"}:
+        raise ValueError("manifest coverage may contain only minimum_line_percent")
+    minimum_line_percent = coverage.get("minimum_line_percent", 100)
+    if isinstance(minimum_line_percent, bool) or not isinstance(minimum_line_percent, (int, float)) or not 0 <= minimum_line_percent <= 100:
+        raise ValueError("coverage.minimum_line_percent must be between 0 and 100")
 
     package_root = manifest_path.parent
     paths: list[str] = [files["dataset"], files["validator"]]
     paths.extend(files.get("support", []))
+    paths.extend(files.get("supplemental_tests", []))
     paths.extend(files.get("nested_contracts", []))
     paths.extend(policy["read"])
     paths.extend(policy["write"])
     for name in paths:
         _validate_relative_path(name)
 
-    for name in paths[: 2 + len(files.get("support", [])) + len(files.get("nested_contracts", []))]:
+    for name in paths[: 2 + len(files.get("support", [])) + len(files.get("supplemental_tests", [])) + len(files.get("nested_contracts", []))]:
         resolved = (package_root / PurePosixPath(name)).resolve(strict=True)
         if not resolved.is_relative_to(package_root):
             raise ValueError(f"manifest path escapes its package through a symlink: {name}")
@@ -53,7 +62,7 @@ def read_manifest(path: str | Path) -> tuple[dict[str, Any], Path]:
     for name in files.get("support", []):
         if not any(name == allowed or name.startswith(f"{allowed}/") for allowed in policy["read"]):
             raise ValueError(f"support file is not readable under filesystem.read: {name}")
-    for name in (files["dataset"], files["validator"], *files.get("nested_contracts", [])):
+    for name in (files["dataset"], files["validator"], *files.get("supplemental_tests", []), *files.get("nested_contracts", [])):
         if not any(name == allowed or name.startswith(f"{allowed}/") for allowed in policy["read"]):
             raise ValueError(f"contract file is not readable under filesystem.read: {name}")
     for name in policy["write"]:
@@ -71,6 +80,7 @@ def stage_package(manifest: dict[str, Any], source_root: Path) -> tempfile.Tempo
     root = Path(stage.name)
     names = [manifest["files"]["dataset"], manifest["files"]["validator"]]
     names.extend(manifest["files"].get("support", []))
+    names.extend(manifest["files"].get("supplemental_tests", []))
     names.extend(manifest["files"].get("nested_contracts", []))
     for name in names:
         source = (source_root / PurePosixPath(name)).resolve(strict=True)
@@ -108,7 +118,7 @@ def stage_contract_tree(manifest: dict[str, Any], source_root: Path, manifest_pa
             raise ValueError(f"nested contract cycle detected at {current_manifest}")
         stack = stack | {current_manifest}
         current_files = current["files"]
-        for name in [current_files["dataset"], current_files["validator"], *current_files.get("support", [])]:
+        for name in [current_files["dataset"], current_files["validator"], *current_files.get("support", []), *current_files.get("supplemental_tests", [])]:
             source = (current_source / name).resolve(strict=True)
             if not source.is_relative_to(current_source.resolve()):
                 raise ValueError(f"manifest path escapes its package through a symlink: {name}")

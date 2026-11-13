@@ -7,24 +7,34 @@ export async function readManifest(manifestPath) {
 	manifestPath = await realpath(manifestPath);
 	const value = YAML.parse(await readFile(manifestPath, 'utf8'));
 	if (!value || Array.isArray(value) || typeof value !== 'object'
-		|| Object.keys(value).sort().join(',') !== 'files,filesystem,name,version') {
-		throw new Error('manifest must contain exactly version, name, files, and filesystem');
+		|| Object.keys(value).some((key) => !['version', 'name', 'files', 'filesystem', 'coverage', 'execution'].includes(key))
+		|| ['version', 'name', 'files', 'filesystem'].some((key) => !(key in value))) {
+		throw new Error('manifest must contain version, name, files, and filesystem and only supported fields');
 	}
 	if (value.version !== '1' || typeof value.name !== 'string' || !value.name) throw new Error("manifest version must be '1' and name must be non-empty");
+	const coverage = value.coverage ?? {};
+	if (!coverage || typeof coverage !== 'object' || Array.isArray(coverage)
+		|| Object.keys(coverage).some((key) => key !== 'minimum_line_percent')) {
+		throw new Error('manifest coverage may contain only minimum_line_percent');
+	}
+	const minimumLinePercent = coverage.minimum_line_percent ?? 100;
+	if (typeof minimumLinePercent !== 'number' || !Number.isFinite(minimumLinePercent) || minimumLinePercent < 0 || minimumLinePercent > 100) {
+		throw new Error('coverage.minimum_line_percent must be between 0 and 100');
+	}
 	const { files, filesystem } = value;
 	if (!files || typeof files !== 'object' || Array.isArray(files)
-		|| Object.keys(files).some((key) => !['dataset', 'validator', 'support', 'nested_contracts'].includes(key))
+		|| Object.keys(files).some((key) => !['dataset', 'validator', 'support', 'supplemental_tests', 'nested_contracts'].includes(key))
 		|| typeof files.dataset !== 'string' || typeof files.validator !== 'string') {
 		throw new Error('manifest files must contain dataset, validator, optional support, and nested_contracts');
 	}
-	for (const key of ['support', 'nested_contracts']) if (files[key] !== undefined && !Array.isArray(files[key])) throw new Error(`manifest files.${key} must be an array`);
+	for (const key of ['support', 'supplemental_tests', 'nested_contracts']) if (files[key] !== undefined && !Array.isArray(files[key])) throw new Error(`manifest files.${key} must be an array`);
 	if (!filesystem || typeof filesystem !== 'object' || Array.isArray(filesystem)
 		|| Object.keys(filesystem).sort().join(',') !== 'read,write'
 		|| !Array.isArray(filesystem.read) || !Array.isArray(filesystem.write)) {
 		throw new Error('manifest filesystem must contain read and write arrays');
 	}
 	const root = path.dirname(manifestPath);
-	const listed = [files.dataset, files.validator, ...(files.support ?? []), ...(files.nested_contracts ?? [])];
+	const listed = [files.dataset, files.validator, ...(files.support ?? []), ...(files.supplemental_tests ?? []), ...(files.nested_contracts ?? [])];
 	for (const name of [...listed, ...filesystem.read, ...filesystem.write]) validatePackagePath(name);
 	for (const name of listed) {
 		const resolved = await realpath(path.join(root, name));
@@ -37,7 +47,7 @@ export async function readManifest(manifestPath) {
 	for (const name of files.support ?? []) {
 		if (!filesystem.read.some((allowed) => name === allowed || name.startsWith(`${allowed}/`))) throw new Error(`support file is not readable under filesystem.read: ${name}`);
 	}
-	for (const name of [files.dataset, files.validator, ...(files.nested_contracts ?? [])]) {
+	for (const name of [files.dataset, files.validator, ...(files.supplemental_tests ?? []), ...(files.nested_contracts ?? [])]) {
 		if (!filesystem.read.some((allowed) => name === allowed || name.startsWith(`${allowed}/`))) throw new Error(`contract file is not readable under filesystem.read: ${name}`);
 	}
 	for (const name of filesystem.write) {
@@ -51,7 +61,7 @@ export async function readManifest(manifestPath) {
 
 export async function stagePackage(manifest, sourceRoot) {
 	const root = await mkdtemp(path.join(os.tmpdir(), 'open-contract-'));
-	const names = [manifest.files.dataset, manifest.files.validator, ...(manifest.files.support ?? []), ...(manifest.files.nested_contracts ?? [])];
+	const names = [manifest.files.dataset, manifest.files.validator, ...(manifest.files.support ?? []), ...(manifest.files.supplemental_tests ?? []), ...(manifest.files.nested_contracts ?? [])];
 	try {
 		for (const name of names) {
 			const source = await realpath(path.join(sourceRoot, name));
@@ -89,7 +99,7 @@ export async function stageContractTree(manifest, sourceRoot, topManifestPath) {
 		if (stack.has(currentManifestPath)) throw new Error(`nested contract cycle detected at ${currentManifestPath}`);
 		const nextStack = new Set(stack).add(currentManifestPath);
 		const files = current.files;
-		for (const name of [files.dataset, files.validator, ...(files.support ?? [])]) {
+		for (const name of [files.dataset, files.validator, ...(files.support ?? []), ...(files.supplemental_tests ?? [])]) {
 			const source = await realpath(path.join(currentRoot, name));
 			if (!isInside(currentRoot, source)) throw new Error(`manifest path escapes its package through a symlink: ${name}`);
 			const destination = path.join(root, prefix, name);

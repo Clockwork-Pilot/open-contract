@@ -166,7 +166,7 @@ fn check_stage(
         "staged bytes differ from package dataset"
     );
     ensure!(
-        tree.root.join("src/bin/dataset-contract.rs").is_file(),
+        tree.root.join("src/main.rs").is_file(),
         "validator is not staged"
     );
     ensure!(

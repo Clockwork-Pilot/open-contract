@@ -267,7 +267,7 @@
               "expected": {
                 "value": 1
               },
-              "coverage_fingerprint": "00000000000000000000000000000000"
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
             }
           ]
         },
@@ -292,7 +292,7 @@
               "expected": {
                 "value": 1
               },
-              "coverage_fingerprint": "00000000000000000000000000000000"
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da9"
             }
           ]
         }
@@ -300,6 +300,24 @@
       "expected": {
         "passed": false,
         "result_error_contains": "coverage fingerprint mismatch"
+      }
+    },
+    {
+      "id": "zero-coverage-fingerprint-is-invalid",
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [{
+            "id": "one",
+            "input": {"value": 1},
+            "expected": {"value": 1},
+            "coverage_fingerprint": "00000000000000000000000000000000"
+          }]
+        }
+      },
+      "expected": {
+        "passed": false,
+        "error_contains": "cannot represent zero coverage"
       }
     },
     {
@@ -410,7 +428,7 @@
             {
               "id": "sequence",
               "input": {},
-              "coverage_fingerprint": "00000000000000000000000000000000",
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8",
               "steps": [
                 {
                   "id": "first",
@@ -634,6 +652,44 @@
       },
       "expected": {
         "error_contains": "line numbers must be positive"
+      }
+    },
+    {
+      "id": "pinned-fingerprint-rejects-empty-case-coverage",
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [{
+            "id": "one",
+            "input": {"value": 1},
+            "expected": {"value": 1},
+            "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+          }]
+        },
+        "adapter_mode": "empty-coverage"
+      },
+      "expected": {
+        "passed": false,
+        "result_error_contains": "zero covered lines"
+      }
+    },
+    {
+      "id": "pinned-fingerprint-rejects-empty-sequence-coverage",
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [{
+            "id": "sequence",
+            "input": {},
+            "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8",
+            "steps": [{"id": "step", "input": {"value": 1}, "expected": {"value": 1}}]
+          }]
+        },
+        "adapter_mode": "empty-coverage"
+      },
+      "expected": {
+        "passed": false,
+        "result_error_contains": "zero covered lines"
       }
     },
     {
@@ -1273,7 +1329,7 @@
         "command": [
           "python3",
           "-c",
-          "import json,sys; x=json.load(sys.stdin); out=[]; exec(\"for c in x['contracts']:\\n out.append({'contract':c['contract'],'results':[{'key':r['key'],'output':r['input']} for r in c['requests']],'coverage':{'sources':[c['validator'].split('/')[-1]]},'coverage_scopes':[{'key':r['key'],'files':[{'path':c['validator'].split('/')[-1],'lines':[1,2]}]} for r in c['requests']]})\"); print(json.dumps({'contracts':out}))"
+            "import json,sys; x=json.load(sys.stdin); out=[]; exec(\"for c in x['contracts']:\\n out.append({'contract':c['contract'],'results':[{'key':r['key'],'output':r['input']} for r in c['requests']],'coverage':{'sources':[c['validator'].split('/')[-1]]},'coverage_scopes':[{'key':r['key'],'files':[{'path':c['validator'].split('/')[-1],'lines':[1,2]}]} for r in c['requests']],'coverage_lines':[{'path':c['validator'].split('/')[-1],'executable_lines':[1,2],'covered_lines':[1,2]}]})\"); print(json.dumps({'contracts':out}))"
         ]
       },
       "expected": {
@@ -1339,7 +1395,7 @@
             {
               "id": "sequence",
               "input": {},
-              "coverage_fingerprint": "00000000000000000000000000000000",
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da9",
               "steps": [
                 {
                   "id": "step",
@@ -1378,7 +1434,7 @@
                   "expected": {
                     "value": 1
                   },
-                  "coverage_fingerprint": "00000000000000000000000000000000"
+                  "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da9"
                 }
               ]
             }
@@ -1654,7 +1710,7 @@
       },
       "expected": {
         "passed": true,
-        "coverage_complete": true,
+        "coverage_complete": false,
         "supplemental_status": "skipped"
       }
     },
@@ -1680,7 +1736,7 @@
       },
       "expected": {
         "passed": true,
-        "coverage_complete": true,
+        "coverage_complete": false,
         "supplemental_status": "skipped"
       }
     },
