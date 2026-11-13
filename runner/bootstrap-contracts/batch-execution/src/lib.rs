@@ -135,6 +135,69 @@ pub struct ContractBatch {
     pub requests: Vec<ExecutionRequest>,
 }
 
+/// Resolve the filesystem and command plan for a contract tree without
+/// executing its declared commands.
+pub fn show_isolation_plan(
+    manifest_path: impl AsRef<Path>,
+    backend: Backend,
+    isolation_runtime: Option<PathBuf>,
+) -> Result<String, String> {
+    let root = ManifestPlan::load(manifest_path)?;
+    let tree = StagedTree::create_with_runtime(&root, isolation_runtime)?;
+    let mut output = String::new();
+
+    output.push_str(&format!("Isolation: {}\n", backend.as_str()));
+    if backend == Backend::None {
+        output.push_str("Filesystem enforcement: none (host access is unrestricted)\n");
+    }
+    output.push_str("Contract read-only paths:\n");
+    for path in &tree.read {
+        let full_path = tree.root.join(path);
+        let kind = if full_path.is_dir() { "recursive" } else { "file" };
+        output.push_str(&format!("  {path} ({kind})\n"));
+    }
+    output.push_str("Contract writable paths:\n");
+    for path in &tree.write {
+        let full_path = tree.root.join(path);
+        let kind = if full_path.is_dir() { "recursive" } else { "file" };
+        output.push_str(&format!("  {path} ({kind})\n"));
+    }
+
+    for (manifest, prefix) in tree.manifests_with_prefixes() {
+        let execution = manifest.manifest.execution.as_ref().ok_or_else(|| {
+            format!("contract {} is missing execution.command", manifest.manifest.name)
+        })?;
+        let working_directory = tree.root.join(prefix);
+        let command = tree.plan_command_at(
+            backend,
+            &working_directory,
+            &execution.command,
+            manifest.manifest.language_package.as_deref(),
+        )?;
+        output.push_str(&format!("Contract {}:\n", manifest.manifest.name));
+        output.push_str(&format!("  Working directory: {}\n", command.working_directory.display()));
+        output.push_str(&format!("  Command argv: {:?}\n", command.command));
+        if let Some(executable) = command.resolved_executable {
+            output.push_str(&format!("  Resolved executable: {}\n", executable.display()));
+        }
+        output.push_str("  Runtime read-only paths:\n");
+        for path in command.runtime_roots {
+            let kind = if path.is_dir() { "recursive" } else { "file" };
+            output.push_str(&format!("    {} ({kind})\n", path.display()));
+        }
+        if backend == Backend::Bubblewrap {
+            let namespace_name = tree
+                .root
+                .file_name()
+                .and_then(|name| name.to_str())
+                .ok_or_else(|| "staged contract has no usable namespace name".to_string())?;
+            output.push_str("  Bubblewrap fixed mounts: /proc, /dev, /tmp, /contract\n");
+            output.push_str(&format!("  Bubblewrap contract root: /contract/{namespace_name}\n"));
+        }
+    }
+    Ok(output)
+}
+
 /// Contract command contract: each command receives one complete flattened
 /// dataset batch and returns raw outputs/errors and coverage. Rust owns matching
 /// and predicate verification after the batch.
@@ -286,8 +349,19 @@ pub fn run_contract_tree(
     backend: Backend,
     adapter: &dyn BatchAdapter,
 ) -> Result<BatchReport, String> {
+    run_contract_tree_with_runtime(manifest_path, backend, None, adapter)
+}
+
+/// Run a contract tree with an optional override for the selected isolation
+/// backend's system runtime manifest.
+pub fn run_contract_tree_with_runtime(
+    manifest_path: impl AsRef<Path>,
+    backend: Backend,
+    isolation_runtime: Option<PathBuf>,
+    adapter: &dyn BatchAdapter,
+) -> Result<BatchReport, String> {
     let root = ManifestPlan::load(manifest_path)?;
-    let tree = StagedTree::create(&root)?;
+    let tree = StagedTree::create_with_runtime(&root, isolation_runtime)?;
     let mut batches = Vec::new();
     let mut checks_by_contract = Vec::new();
     let mut names = std::collections::HashSet::new();

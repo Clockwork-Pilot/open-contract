@@ -19,15 +19,30 @@ pub(super) fn run(
     argv: &[String],
     input: &[u8],
     language_package: Option<&str>,
+    isolation_runtime: Option<&Path>,
 ) -> Result<Output, String> {
-    let runtime = runtime(language_package)?;
+    let plan = plan_command(backend, argv, language_package, isolation_runtime)?;
+    run_prepared(backend, package_root, working_directory, read, write, plan, input)
+}
+
+pub(super) fn run_prepared(
+    backend: Backend,
+    package_root: &Path,
+    working_directory: &Path,
+    read: &[String],
+    write: &[String],
+    plan: CommandPlan,
+    input: &[u8],
+) -> Result<Output, String> {
+    let runtime = plan.runtime;
+    let argv = plan.command;
     match backend {
         Backend::None => {
             let root = package_root
                 .canonicalize()
                 .map_err(|error| error.to_string())?;
             let cwd = checked_working_directory(&root, working_directory)?;
-            let mut command = command(argv, &cwd, &runtime.environment);
+            let mut command = command(&argv, &cwd, &runtime.environment);
             collect_output(&mut command, input)
         }
         Backend::Bubblewrap => run_bubblewrap(
@@ -35,7 +50,7 @@ pub(super) fn run(
             working_directory,
             read,
             write,
-            argv,
+            &argv,
             input,
             &runtime,
         ),
@@ -44,22 +59,138 @@ pub(super) fn run(
             working_directory,
             read,
             write,
-            argv,
+            &argv,
             input,
             &runtime,
         ),
     }
 }
 
-struct Runtime {
+pub struct CommandPlan {
+    pub command: Vec<String>,
+    pub runtime_roots: Vec<PathBuf>,
+    pub resolved_executable: Option<PathBuf>,
+    pub(super) runtime: Runtime,
+}
+
+pub(super) fn plan_command(
+    backend: Backend,
+    argv: &[String],
+    language_package: Option<&str>,
+    isolation_runtime: Option<&Path>,
+) -> Result<CommandPlan, String> {
+    let prepared = prepare_command(backend, argv, language_package, isolation_runtime)?;
+    Ok(CommandPlan {
+        command: prepared.command,
+        runtime_roots: prepared.runtime.roots.clone(),
+        resolved_executable: prepared.resolved_executable,
+        runtime: prepared.runtime,
+    })
+}
+
+struct PreparedCommand {
+    command: Vec<String>,
+    runtime: Runtime,
+    resolved_executable: Option<PathBuf>,
+}
+
+fn prepare_command(
+    backend: Backend,
+    argv: &[String],
+    language_package: Option<&str>,
+    isolation_runtime: Option<&Path>,
+) -> Result<PreparedCommand, String> {
+    let mut runtime = runtime(language_package, backend, isolation_runtime)?;
+    let command = expand_command(argv)?;
+    if command
+        .first()
+        .is_none_or(|executable| executable.trim().is_empty())
+    {
+        return Err("execution.command executable cannot be empty after environment expansion".into());
+    }
+    let resolved_executable = if runtime.command_executable {
+        let execution_environment = safe_environment(&runtime.environment);
+        let search_path = execution_environment.get("PATH").map(String::as_str);
+        let executable = find_executable_in_path(&command[0], search_path).ok_or_else(|| {
+            format!(
+                "isolation runtime permits the command executable, but it cannot be resolved: {}",
+                command[0]
+            )
+        })?;
+        runtime
+            .roots
+            .extend(runtime_command_roots_for_executable(&executable));
+        runtime.roots.sort();
+        runtime.roots.dedup();
+        Some(executable)
+    } else {
+        None
+    };
+    Ok(PreparedCommand {
+        command,
+        runtime,
+        resolved_executable,
+    })
+}
+
+/// Expand explicit `${NAME}` references in command arguments. Values remain
+/// one argv element; this deliberately does not invoke a shell or split words.
+fn expand_command(argv: &[String]) -> Result<Vec<String>, String> {
+    argv.iter().map(|argument| expand_argument(argument)).collect()
+}
+
+fn expand_argument(argument: &str) -> Result<String, String> {
+    let mut expanded = String::with_capacity(argument.len());
+    let mut remaining = argument;
+    while let Some(start) = remaining.find("${") {
+        expanded.push_str(&remaining[..start]);
+        let reference = &remaining[start + 2..];
+        let end = reference
+            .find('}')
+            .ok_or_else(|| format!("unterminated environment reference in command argument {argument:?}"))?;
+        let name = &reference[..end];
+        let mut characters = name.chars();
+        let valid_start = characters
+            .next()
+            .is_some_and(|character| character == '_' || character.is_ascii_alphabetic());
+        if !valid_start
+            || !characters.all(|character| character == '_' || character.is_ascii_alphanumeric())
+        {
+            return Err(format!("invalid environment variable name {name:?} in command argument {argument:?}"));
+        }
+        let value = std::env::var_os(name)
+            .ok_or_else(|| format!("execution.command references unset environment variable {name}"))?
+            .into_string()
+            .map_err(|_| format!("environment variable {name} is not valid UTF-8"))?;
+        expanded.push_str(&value);
+        remaining = &reference[end + 1..];
+    }
+    expanded.push_str(remaining);
+    Ok(expanded)
+}
+
+pub(super) struct Runtime {
     roots: Vec<PathBuf>,
     environment: BTreeMap<String, String>,
+    command_executable: bool,
 }
 
 #[derive(Deserialize)]
 struct RuntimeManifest {
     version: u32,
     profiles: BTreeMap<String, RuntimeProfile>,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct IsolationRuntimeManifest {
+    version: u32,
+    #[serde(default)]
+    read_only: Vec<PathBuf>,
+    #[serde(default)]
+    environment: BTreeMap<String, String>,
+    #[serde(default)]
+    command_executable: bool,
 }
 
 #[derive(Deserialize)]
@@ -76,11 +207,16 @@ pub(super) fn validate_language_package(repository: &Path, language: &str) -> Re
     let mut runtime = Runtime {
         roots: Vec::new(),
         environment: BTreeMap::new(),
+        command_executable: false,
     };
     add_language_package(&mut runtime, repository, language)
 }
 
-fn runtime(profile: Option<&str>) -> Result<Runtime, String> {
+fn runtime(
+    profile: Option<&str>,
+    backend: Backend,
+    isolation_runtime: Option<&Path>,
+) -> Result<Runtime, String> {
     let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../../..")
         .canonicalize()
@@ -88,20 +224,65 @@ fn runtime(profile: Option<&str>) -> Result<Runtime, String> {
     let mut runtime = Runtime {
         roots: Vec::new(),
         environment: BTreeMap::new(),
+        command_executable: false,
     };
     match profile {
         None => {}
         Some(package) => add_language_package(&mut runtime, &repository, package)?,
     }
+    if backend != Backend::None {
+        let runtime_manifest = match isolation_runtime {
+            Some(path) => path.to_path_buf(),
+            None => repository
+                .join("runner/isolation-runtime")
+                .join(format!("{}.yaml", backend.as_str())),
+        };
+        add_isolation_runtime(&mut runtime, &runtime_manifest)?;
+    }
     runtime.roots.sort();
     runtime.roots.dedup();
-    if let Some(config) = Path::new("/etc/ssl/openssl.cnf").canonicalize().ok() {
-        runtime.roots.push(config.clone());
-        runtime
-            .environment
-            .insert("OPENSSL_CONF".into(), config.to_string_lossy().into_owned());
-    }
     Ok(runtime)
+}
+
+fn add_isolation_runtime(runtime: &mut Runtime, manifest_path: &Path) -> Result<(), String> {
+    let bytes = fs::read(manifest_path).map_err(|error| {
+        format!(
+            "cannot read isolation runtime manifest {}: {error}",
+            manifest_path.display()
+        )
+    })?;
+    let manifest: IsolationRuntimeManifest = serde_yaml::from_slice(&bytes).map_err(|error| {
+        format!(
+            "invalid isolation runtime manifest {}: {error}",
+            manifest_path.display()
+        )
+    })?;
+    if manifest.version != 1 {
+        return Err(format!(
+            "unsupported isolation runtime manifest version {}",
+            manifest.version
+        ));
+    }
+    for path in manifest.read_only {
+        if !path.is_absolute() {
+            return Err(format!(
+                "isolation runtime paths must be absolute: {}",
+                path.display()
+            ));
+        }
+        if !path.exists() {
+            return Err(format!(
+                "isolation runtime path {} is unavailable",
+                path.display()
+            ));
+        }
+        // Preserve Bubblewrap namespace paths such as /lib64 even when they
+        // are host symlinks to directories under /usr.
+        runtime.roots.push(path);
+    }
+    runtime.environment.extend(manifest.environment);
+    runtime.command_executable = manifest.command_executable;
+    Ok(())
 }
 
 fn add_language_package(
@@ -275,20 +456,8 @@ fn run_bubblewrap(
         "--clearenv".into(),
     ];
     let mut created = HashSet::from(["/".to_string()]);
-    for system in ["/usr", "/lib", "/lib64", "/bin", "/sbin"] {
-        let source = Path::new(system);
-        if source.exists() {
-            bind_readonly(&mut args, source, source, &mut created);
-        }
-    }
-    for source in runtime
-        .roots
-        .iter()
-        .chain(runtime_command_roots(argv).iter())
-    {
-        if source.exists() {
-            bind_readonly(&mut args, source, source, &mut created);
-        }
+    for source in &runtime.roots {
+        bind_readonly(&mut args, source, source, &mut created);
     }
     args.extend([
         "--proc".into(),
@@ -366,17 +535,8 @@ fn run_landlock(
     for path in write {
         allowed.push((checked_path(&root, path)?, true));
     }
-    for path in runtime
-        .roots
-        .iter()
-        .chain(runtime_command_roots(argv).iter())
-    {
-        if path.exists() {
-            allowed.push((
-                path.canonicalize().map_err(|error| error.to_string())?,
-                false,
-            ));
-        }
+    for path in &runtime.roots {
+        allowed.push((path.clone(), false));
     }
     let rules = landlock_rules(&allowed)?;
     let ruleset = create_landlock_ruleset(&rules).map_err(|error| error.to_string())?;
@@ -387,7 +547,7 @@ fn run_landlock(
     collect_output(&mut child, input)
 }
 
-fn checked_working_directory(root: &Path, working_directory: &Path) -> Result<PathBuf, String> {
+pub(super) fn checked_working_directory(root: &Path, working_directory: &Path) -> Result<PathBuf, String> {
     let cwd = working_directory
         .canonicalize()
         .map_err(|error| format!("command working directory is unavailable: {error}"))?;
@@ -455,6 +615,7 @@ fn bind_readonly(
         source.to_string_lossy().into_owned(),
         destination.to_string_lossy().into_owned(),
     ]);
+    created.insert(destination.to_string_lossy().into_owned());
 }
 
 fn bind_writable(
@@ -469,6 +630,7 @@ fn bind_writable(
         source.to_string_lossy().into_owned(),
         destination.to_string_lossy().into_owned(),
     ]);
+    created.insert(destination.to_string_lossy().into_owned());
 }
 
 fn ensure_parent_dirs(args: &mut Vec<String>, target: &Path, created: &mut HashSet<String>) {
@@ -486,38 +648,41 @@ fn ensure_parent_dirs(args: &mut Vec<String>, target: &Path, created: &mut HashS
     }
 }
 
+fn find_executable(name: &str) -> Option<PathBuf> {
+    find_executable_in_path(name, std::env::var_os("PATH").as_deref().and_then(|path| path.to_str()))
+}
+
+fn find_executable_in_path(name: &str, search_path: Option<&str>) -> Option<PathBuf> {
+    let path = Path::new(name);
+    if path.is_absolute() {
+        return path.exists().then(|| path.to_path_buf());
+    }
+    std::env::split_paths(&std::ffi::OsStr::new(search_path?))
+        .map(|dir| dir.join(path))
+        .find(|candidate| candidate.is_file())
+}
+
+#[cfg(test)]
 fn runtime_command_roots(argv: &[String]) -> Vec<PathBuf> {
-    let mut roots = [
-        PathBuf::from("/usr"),
-        PathBuf::from("/lib"),
-        PathBuf::from("/lib64"),
-    ]
-    .into_iter()
-    .filter(|path| path.exists())
-    .collect::<Vec<_>>();
-    if let Some(executable) = find_executable(&argv[0]) {
-        if let Some(parent) = executable.parent() {
-            if !["/usr", "/lib", "/lib64", "/bin", "/sbin"]
-                .iter()
-                .any(|system| executable.starts_with(system))
-            {
-                roots.push(parent.to_path_buf());
-            }
+    let path = std::env::var_os("PATH").map(|value| value.to_string_lossy().into_owned());
+    find_executable_in_path(&argv[0], path.as_deref())
+        .map(|executable| runtime_command_roots_for_executable(&executable))
+        .unwrap_or_default()
+}
+
+fn runtime_command_roots_for_executable(executable: &Path) -> Vec<PathBuf> {
+    let mut roots = Vec::new();
+    if let Some(directory) = executable.parent() {
+        roots.push(directory.to_path_buf());
+    }
+    if let Ok(resolved) = executable.canonicalize() {
+        if let Some(directory) = resolved.parent() {
+            roots.push(directory.to_path_buf());
         }
     }
     roots.sort();
     roots.dedup();
     roots
-}
-
-fn find_executable(name: &str) -> Option<PathBuf> {
-    let path = Path::new(name);
-    if path.is_absolute() {
-        return path.exists().then(|| path.to_path_buf());
-    }
-    std::env::split_paths(&std::env::var_os("PATH")?)
-        .map(|dir| dir.join(path))
-        .find(|candidate| candidate.is_file())
 }
 
 fn safe_environment(runtime: &BTreeMap<String, String>) -> BTreeMap<String, String> {

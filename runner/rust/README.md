@@ -53,6 +53,26 @@ contracts, while keeping all commands inside the root isolation boundary. The
 logical `language_package` identifier is resolved by runner configuration; it
 does not contain a host path or a list of support files.
 
+For `bwrap` and `landlock`, the runner selects the corresponding bundled system
+runtime YAML from `runner/isolation-runtime/<backend>.yaml`. Override that
+selection with `--isolation-runtime <path>`; the override replaces the bundled
+file. Each YAML lists absolute host paths made available read-only and
+environment values passed to the isolated command. Paths must exist. For
+example:
+
+```sh
+cargo run --manifest-path runner/rust/Cargo.toml -- run-manifest contract.yaml \
+  --isolation bwrap \
+  --isolation-runtime ./runtime/bwrap.yaml
+```
+
+Bubblewrap mounts listed paths read-only. Landlock grants read and execute
+access to listed paths. The `command_executable` setting explicitly grants
+access to the executable resolved from `execution.command`, including an
+executable supplied through an environment reference such as `${NODE_BIN}`.
+`--isolation-runtime` is not accepted with
+`--isolation none`.
+
 `--coverage-report <path>` is optional. It writes each executed contract's raw
 native report, declared and covered source paths, and missing source paths to a
 separate JSON file. It also lists executable, covered, and uncovered line

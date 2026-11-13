@@ -1,5 +1,7 @@
 use open_contract_core::batch::{ContractResult, CoverageLineFile, CoverageRecord};
-use open_contract_core::{run_contract_tree, Backend, BatchReport, ManifestBatchAdapter};
+use open_contract_core::{
+    run_contract_tree_with_runtime, show_isolation_plan, Backend, BatchReport, ManifestBatchAdapter,
+};
 use open_contract_errors::ContractError;
 use serde_json::json;
 use std::collections::{BTreeMap, BTreeSet};
@@ -19,11 +21,16 @@ fn main() -> ExitCode {
 
 fn run() -> Result<(), ContractError> {
     let mut args = std::env::args().skip(1);
-    if args.next().as_deref() != Some("run-manifest") {
-        return Err((2, "usage: open-contract-core run-manifest <contract.yaml> --isolation <none|bwrap|landlock> [--coverage-report <path>]".into()).into());
+    let subcommand = args.next();
+    if subcommand.as_deref() == Some("show-isolation-plan") {
+        return show_plan(args);
+    }
+    if subcommand.as_deref() != Some("run-manifest") {
+        return Err((2, "usage: open-contract-core <run-manifest|show-isolation-plan> <contract.yaml> --isolation <none|bwrap|landlock> [--isolation-runtime <path>] [--coverage-report <path>]".into()).into());
     }
     let manifest = PathBuf::from(args.next().ok_or((2, "missing manifest path".into()))?);
     let mut backend = None;
+    let mut isolation_runtime = None;
     let mut coverage_report = PathBuf::from(".open-contract/coverage/latest.json");
     while let Some(arg) = args.next() {
         match arg.as_str() {
@@ -38,12 +45,26 @@ fn run() -> Result<(), ContractError> {
                         .ok_or((2, "missing coverage report path".into()))?,
                 );
             }
+            "--isolation-runtime" => {
+                isolation_runtime = Some(PathBuf::from(
+                    args.next()
+                        .ok_or((2, "missing isolation runtime path".into()))?,
+                ));
+            }
             other => return Err((2, format!("unknown argument: {other}")).into()),
         }
     }
     let backend = backend.ok_or((2, "--isolation is required".into()))?;
-    let report = run_contract_tree(manifest, backend, &ManifestBatchAdapter)
-        .map_err(|error| ContractError::from((2, error)).context("contract execution"))?;
+    if backend == Backend::None && isolation_runtime.is_some() {
+        return Err((
+            2,
+            "--isolation-runtime cannot be used with --isolation none".into(),
+        )
+            .into());
+    }
+    let report =
+        run_contract_tree_with_runtime(manifest, backend, isolation_runtime, &ManifestBatchAdapter)
+            .map_err(|error| ContractError::from((2, error)).context("contract execution"))?;
     write_coverage_report(&coverage_report, &report)?;
     print!("{}", concise_summary(&report));
     println!("Coverage report: {}", coverage_report.display());
@@ -91,6 +112,40 @@ fn run() -> Result<(), ContractError> {
         let failures = coverage_requirement_failures(&report).join("; ");
         return Err((1, format!("coverage requirements not met: {failures}")).into());
     }
+    Ok(())
+}
+
+fn show_plan(mut args: impl Iterator<Item = String>) -> Result<(), ContractError> {
+    let manifest = PathBuf::from(args.next().ok_or((2, "missing manifest path".into()))?);
+    let mut backend = None;
+    let mut isolation_runtime = None;
+    while let Some(arg) = args.next() {
+        match arg.as_str() {
+            "--isolation" => {
+                backend = Some(parse_backend(
+                    &args.next().ok_or((2, "missing isolation backend".into()))?,
+                )?);
+            }
+            "--isolation-runtime" => {
+                isolation_runtime = Some(PathBuf::from(
+                    args.next()
+                        .ok_or((2, "missing isolation runtime path".into()))?,
+                ));
+            }
+            other => return Err((2, format!("unknown argument: {other}")).into()),
+        }
+    }
+    let backend = backend.ok_or((2, "--isolation is required".into()))?;
+    if backend == Backend::None && isolation_runtime.is_some() {
+        return Err((
+            2,
+            "--isolation-runtime cannot be used with --isolation none".into(),
+        )
+            .into());
+    }
+    let plan = show_isolation_plan(manifest, backend, isolation_runtime)
+        .map_err(|error| ContractError::from((2, error)).context("isolation plan"))?;
+    print!("{plan}");
     Ok(())
 }
 

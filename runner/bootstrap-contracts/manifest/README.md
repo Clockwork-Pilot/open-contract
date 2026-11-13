@@ -11,6 +11,12 @@ Rust supplies the flattened case and step inputs; the adapter returns validator
 outputs without deciding dataset structure or verifying expected results. Language-specific validator interfaces and runtimes live
 separately under `contract-languages/`.
 
+Command arguments may reference explicitly supplied environment variables using
+`${NAME}` syntax. Each reference is expanded as part of one argument, without
+shell parsing or word splitting. For example, `"${NODE_BIN}"` lets the caller
+select the executable path while the contract names the variable it requires.
+Unset variables fail before command execution.
+
 Run the dataset coverage check from the repository root:
 
 ```sh

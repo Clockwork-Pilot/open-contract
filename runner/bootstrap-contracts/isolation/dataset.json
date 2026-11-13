@@ -363,6 +363,26 @@
       "expected": {
         "error_contains": "runtime resource escapes language package"
       }
+    },
+    {
+      "id": "command-environment-references",
+      "input": {
+        "operation": "command-environment-references"
+      },
+      "expected": {
+        "expanded": true,
+        "invalid_references_rejected": true
+      }
+    },
+    {
+      "id": "isolation-runtime-yaml-source-of-truth",
+      "input": {
+        "operation": "isolation-runtime-manifest"
+      },
+      "expected": {
+        "override_applied": true,
+        "invalid_manifests_rejected": true
+      }
     }
   ]
 }

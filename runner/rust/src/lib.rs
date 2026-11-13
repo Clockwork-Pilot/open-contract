@@ -6,8 +6,8 @@ pub use open_contract_manifest as manifest;
 pub use open_contract_verification as verify;
 
 pub use open_contract_batch::{
-    run_contract_tree, BatchAdapter, BatchReport, ContractBatch, ContractResult,
-    ManifestBatchAdapter,
+    run_contract_tree, run_contract_tree_with_runtime, show_isolation_plan, BatchAdapter,
+    BatchReport, ContractBatch, ContractResult, ManifestBatchAdapter,
 };
 pub use open_contract_isolation::{Backend, StagedTree};
 pub use open_contract_manifest::{Manifest, ManifestPlan};

@@ -1,0 +1,17 @@
+version: 1
+
+# Host paths mounted read-only in the Bubblewrap namespace.
+# Paths must be absolute and exist on the host.
+read_only:
+  - /usr
+  - /lib
+  - /lib64
+  - /bin
+  - /sbin
+  - /etc/ssl/openssl.cnf
+
+environment:
+  OPENSSL_CONF: /etc/ssl/openssl.cnf
+
+# Also mount the executable resolved from execution.command read-only.
+command_executable: true

@@ -97,6 +97,8 @@ fn run() -> Result<(), String> {
             "missing-bubblewrap" => check_missing_bubblewrap(&tree, expected),
             "mocked-bubblewrap" => check_mocked_bubblewrap(&tree, expected),
             "runtime-mounts-only-adapters" => check_runtime_mounts_only_adapters(&tree, expected),
+            "command-environment-references" => check_command_environment_references(&tree, expected),
+            "isolation-runtime-manifest" => check_isolation_runtime_manifest(&tree, expected),
             "language-package" => check_language_package(case),
             "bubblewrap-invalid-root" => check_bubblewrap_invalid_root(tree, expected),
             "deny-private-read" => check_private_read(&tree, &package, expected),
@@ -109,6 +111,165 @@ fn run() -> Result<(), String> {
         let _ = index;
     }
     println!("Isolation dataset: {} cases passed", cases.len());
+    Ok(())
+}
+
+fn check_command_environment_references(
+    tree: &StagedTree,
+    expected: &Value,
+) -> Result<(), String> {
+    const NAME: &str = "OPEN_CONTRACT_ISOLATION_CONTRACT_VALUE";
+    std::env::set_var(NAME, "contract supplied value");
+    let expanded = tree.run_command(
+        Backend::None,
+        &tree.root,
+        &[
+            "/bin/echo".into(),
+            "${OPEN_CONTRACT_ISOLATION_CONTRACT_VALUE}".into(),
+        ],
+        b"",
+        None,
+    );
+    std::env::remove_var(NAME);
+    let output = expanded?;
+    ensure!(
+        output.status.success()
+            && String::from_utf8_lossy(&output.stdout) == "contract supplied value\n",
+        "command environment reference did not expand as one argument"
+    );
+
+    let invalid_references = [
+        ("${UNCLOSED", "unterminated environment reference"),
+        ("${1INVALID}", "invalid environment variable name"),
+        (
+            "${OPEN_CONTRACT_ISOLATION_CONTRACT_UNSET}",
+            "references unset environment variable",
+        ),
+    ];
+    for (argument, message) in invalid_references {
+        let error = tree
+            .run_command(
+                Backend::None,
+                &tree.root,
+                &["/bin/true".into(), argument.into()],
+                b"",
+                None,
+            )
+            .err()
+            .ok_or_else(|| format!("invalid command reference {argument:?} was accepted"))?;
+        ensure!(error.contains(message), "unexpected command reference error: {error}");
+    }
+    ensure!(expected["expanded"] == true, "expected.expanded is false");
+    ensure!(expected["invalid_references_rejected"] == true, "expected.invalid_references_rejected is false");
+    Ok(())
+}
+
+fn check_isolation_runtime_manifest(
+    tree: &StagedTree,
+    expected: &Value,
+) -> Result<(), String> {
+    let temporary = tempfile::tempdir().map_err(|error| error.to_string())?;
+    let runtime_manifest = temporary.path().join("runtime.yaml");
+    std::fs::write(
+        &runtime_manifest,
+        "version: 1\nread_only: []\nenvironment: {RUNTIME_MARKER: from-runtime-yaml}\ncommand_executable: true\n",
+    )
+    .map_err(|error| error.to_string())?;
+
+    let fake_bin = tempfile::tempdir().map_err(|error| error.to_string())?;
+    let launcher = fake_bin.path().join("bwrap");
+    std::fs::write(&launcher, "#!/bin/sh\nprintf '%s\\n' \"$@\"\n")
+        .map_err(|error| error.to_string())?;
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        std::fs::set_permissions(&launcher, std::fs::Permissions::from_mode(0o755))
+            .map_err(|error| error.to_string())?;
+    }
+    let previous_path = std::env::var_os("PATH");
+    let fake_path = match &previous_path {
+        Some(path) => format!("{}:{}", fake_bin.path().display(), path.to_string_lossy()),
+        None => fake_bin.path().display().to_string(),
+    };
+    std::env::set_var("PATH", fake_path);
+    let custom_tree = StagedTree::create_with_runtime(
+        &tree.root_plan,
+        Some(runtime_manifest.clone()),
+    )?;
+    let invocation = custom_tree.run_command(
+        Backend::Bubblewrap,
+        &custom_tree.root,
+        &["true".into()],
+        b"",
+        None,
+    );
+    if let Some(path) = previous_path {
+        std::env::set_var("PATH", path);
+    } else {
+        std::env::remove_var("PATH");
+    }
+    let output = invocation?;
+    let arguments = String::from_utf8_lossy(&output.stdout);
+    ensure!(
+        arguments.contains("RUNTIME_MARKER")
+            && arguments.contains("from-runtime-yaml")
+            && arguments.contains("/usr/bin"),
+        "explicit isolation runtime was not applied to Bubblewrap"
+    );
+
+    let invalid_manifests = [
+        (
+            "missing.yaml",
+            "version: 1\n".to_string(),
+            "cannot read isolation runtime manifest",
+        ),
+        (
+            "invalid.yaml",
+            "version: [\n".to_string(),
+            "invalid isolation runtime manifest",
+        ),
+        (
+            "unsupported.yaml",
+            "version: 2\n".to_string(),
+            "unsupported isolation runtime manifest version",
+        ),
+        (
+            "relative.yaml",
+            "version: 1\nread_only: [relative]\n".to_string(),
+            "paths must be absolute",
+        ),
+        (
+            "unavailable.yaml",
+            format!(
+                "version: 1\nread_only: [{}]\n",
+                temporary.path().join("not-present").display()
+            ),
+            "isolation runtime path",
+        ),
+    ];
+    for (name, contents, message) in invalid_manifests {
+        let path = temporary.path().join(name);
+        if name != "missing.yaml" {
+            std::fs::write(&path, contents).map_err(|error| error.to_string())?;
+        }
+        let custom_tree = StagedTree::create_with_runtime(
+            &tree.root_plan,
+            Some(path),
+        )?;
+        let error = custom_tree
+            .run_command(
+                Backend::Bubblewrap,
+                &custom_tree.root,
+                &["true".into()],
+                b"",
+                None,
+            )
+            .err()
+            .ok_or_else(|| format!("invalid isolation runtime {name} was accepted"))?;
+        ensure!(error.contains(message), "unexpected isolation runtime error: {error}");
+    }
+    ensure!(expected["override_applied"] == true, "expected.override_applied is false");
+    ensure!(expected["invalid_manifests_rejected"] == true, "expected.invalid_manifests_rejected is false");
     Ok(())
 }
 

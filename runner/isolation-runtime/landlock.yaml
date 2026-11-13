@@ -1,0 +1,15 @@
+version: 1
+
+# Host paths the process may read or execute under Landlock.
+# Paths must be absolute and exist on the host.
+read_only:
+  - /usr
+  - /lib
+  - /lib64
+  - /etc/ssl/openssl.cnf
+
+environment:
+  OPENSSL_CONF: /etc/ssl/openssl.cnf
+
+# Also grant access to the executable resolved from execution.command.
+command_executable: true

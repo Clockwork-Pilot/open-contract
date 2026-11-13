@@ -12,6 +12,14 @@ pub enum Backend {
     Landlock,
 }
 
+pub struct StagedCommandPlan {
+    pub command: Vec<String>,
+    pub working_directory: PathBuf,
+    pub runtime_roots: Vec<PathBuf>,
+    pub resolved_executable: Option<PathBuf>,
+    runtime_plan: backend::CommandPlan,
+}
+
 /// Validate a language support package using the same loader used to stage
 /// its runtime resources for commands.
 pub fn validate_language_package(repository: &Path, language: &str) -> Result<(), String> {
@@ -38,10 +46,21 @@ pub struct StagedTree {
     pub write: Vec<String>,
     pub manifests: Vec<ManifestPlan>,
     manifest_prefixes: Vec<PathBuf>,
+    isolation_runtime: Option<PathBuf>,
 }
 
 impl StagedTree {
     pub fn create(root: &ManifestPlan) -> Result<Self, String> {
+        Self::create_with_runtime(root, None)
+    }
+
+    /// Create a staged tree using an optional caller-selected isolation
+    /// runtime manifest. When omitted, the selected backend loads its bundled
+    /// runtime manifest at command execution time.
+    pub fn create_with_runtime(
+        root: &ManifestPlan,
+        isolation_runtime: Option<PathBuf>,
+    ) -> Result<Self, String> {
         let temp = tempfile::Builder::new()
             .prefix("open-contract-")
             .tempdir()
@@ -55,6 +74,7 @@ impl StagedTree {
             write: Vec::new(),
             manifests: Vec::new(),
             manifest_prefixes: Vec::new(),
+            isolation_runtime,
         };
         tree.stage_recursive(root, Path::new(""), &mut Vec::new())?;
         tree.read.sort();
@@ -125,9 +145,6 @@ impl StagedTree {
         input: &[u8],
         language_package: Option<&str>,
     ) -> Result<Output, String> {
-        if command.is_empty() {
-            return Err("isolation command cannot be empty".into());
-        }
         backend::run(
             backend,
             package_root,
@@ -137,6 +154,7 @@ impl StagedTree {
             command,
             input,
             language_package,
+            self.isolation_runtime.as_deref(),
         )
     }
 
@@ -150,19 +168,42 @@ impl StagedTree {
         input: &[u8],
         language_package: Option<&str>,
     ) -> Result<Output, String> {
-        if command.is_empty() {
-            return Err("isolation command cannot be empty".into());
-        }
-        backend::run(
+        let plan = self.plan_command_at(backend, working_directory, command, language_package)?;
+        backend::run_prepared(
             backend,
             &self.root,
-            working_directory,
+            &plan.working_directory,
             &self.read,
             &self.write,
-            command,
+            plan.runtime_plan,
             input,
-            language_package,
         )
+    }
+
+    /// Resolve the same command and runtime resources used by execution,
+    /// without starting the command.
+    pub fn plan_command_at(
+        &self,
+        backend: Backend,
+        working_directory: &Path,
+        command: &[String],
+        language_package: Option<&str>,
+    ) -> Result<StagedCommandPlan, String> {
+        let root = self.root.canonicalize().map_err(|error| error.to_string())?;
+        let working_directory = backend::checked_working_directory(&root, working_directory)?;
+        let plan = backend::plan_command(
+            backend,
+            command,
+            language_package,
+            self.isolation_runtime.as_deref(),
+        )?;
+        Ok(StagedCommandPlan {
+            command: plan.command.clone(),
+            working_directory,
+            runtime_roots: plan.runtime_roots.clone(),
+            resolved_executable: plan.resolved_executable.clone(),
+            runtime_plan: plan,
+        })
     }
 
     pub fn root_manifest(&self) -> Option<&ManifestPlan> {
