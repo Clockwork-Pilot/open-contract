@@ -48,34 +48,75 @@ try {
 	if (typeof validate !== 'function') throw new Error('validator must export validate(input) or a default function');
 	const setupCoverage = await post('Profiler.takePreciseCoverage');
 	coverageSnapshots.push(setupCoverage);
+	const requestCounts = new Map();
 	for (const item of requests) {
-		try {
-			const output = await validate(item.input);
-			const serialized = JSON.stringify(output);
-			if (serialized === undefined) throw new TypeError('validator output is not JSON serializable');
-			results.push({ key: item.key, output: JSON.parse(serialized) });
-		} catch (error) {
-			results.push({ key: item.key, error: `${error?.name ?? 'Error'}: ${error?.message ?? error}` });
+		const caseKey = `${item.key.target_id}/${item.key.case_id}`;
+		requestCounts.set(caseKey, (requestCounts.get(caseKey) ?? 0) + 1);
+	}
+	const capturesByCase = new Map();
+	for (let index = 0; index < requests.length;) {
+		const first = requests[index];
+		const firstCaseKey = `${first.key.target_id}/${first.key.case_id}`;
+		const firstStep = first.config?.javascript?.cases?.[first.key.case_id]?.steps?.[first.key.step_id] ?? {};
+		const batch = [first];
+		if (firstStep.parallel === true) {
+			for (let next = index + 1; next < requests.length; next += 1) {
+				const candidate = requests[next];
+				const candidateCaseKey = `${candidate.key.target_id}/${candidate.key.case_id}`;
+				const candidateStep = candidate.config?.javascript?.cases?.[candidate.key.case_id]?.steps?.[candidate.key.step_id] ?? {};
+				if (candidateCaseKey !== firstCaseKey || candidateStep.parallel !== true) break;
+				batch.push(candidate);
+			}
 		}
-		const snapshot = await post('Profiler.takePreciseCoverage');
-		coverageSnapshots.push(snapshot);
-		const caseCoverage = await normalizedLineCoverage(
-			[setupCoverage, snapshot], packageRoot, request.coverage_sources ?? [],
-		);
-		for (const file of caseCoverage) {
-			const combined = datasetCoverageByFile.get(file.path) ?? {
-				path: file.path,
-				executable_lines: new Set(),
-				covered_lines: new Set(),
-			};
-			for (const line of file.executable_lines) combined.executable_lines.add(line);
-			for (const line of file.covered_lines) combined.covered_lines.add(line);
-			datasetCoverageByFile.set(file.path, combined);
+		const batchResults = await Promise.all(batch.map(async (item) => {
+			const caseKey = `${item.key.target_id}/${item.key.case_id}`;
+			const languageStep = item.config?.javascript?.cases?.[item.key.case_id]?.steps?.[item.key.step_id] ?? {};
+			try {
+				const input = resolveCaptures(item.input, capturesByCase.get(caseKey) ?? {});
+				const output = await validate(input, {
+					target_id: item.key.target_id,
+					case_id: item.key.case_id,
+					step_id: item.key.step_id,
+					step_count: requestCounts.get(caseKey),
+					parallel: languageStep.parallel === true,
+				});
+				const serialized = JSON.stringify(output);
+				if (serialized === undefined) throw new TypeError('validator output is not JSON serializable');
+				return { item, languageStep, result: { key: item.key, output: JSON.parse(serialized) } };
+			} catch (error) {
+				return { item, languageStep, result: { key: item.key, error: `${error?.name ?? 'Error'}: ${error?.message ?? error}` } };
+			}
+		}));
+		for (const { item, languageStep, result } of batchResults) {
+			const caseKey = `${item.key.target_id}/${item.key.case_id}`;
+			results.push(result);
+			const snapshot = await post('Profiler.takePreciseCoverage');
+			coverageSnapshots.push(snapshot);
+			const caseCoverage = await normalizedLineCoverage(
+				[setupCoverage, snapshot], packageRoot, request.coverage_sources ?? [],
+			);
+			for (const file of caseCoverage) {
+				const combined = datasetCoverageByFile.get(file.path) ?? {
+					path: file.path,
+					executable_lines: new Set(),
+					covered_lines: new Set(),
+				};
+				for (const line of file.executable_lines) combined.executable_lines.add(line);
+				for (const line of file.covered_lines) combined.covered_lines.add(line);
+				datasetCoverageByFile.set(file.path, combined);
+			}
+			coverageScopes.set(JSON.stringify(item.key), {
+				key: item.key,
+				files: caseCoverage.map(({ path: source, covered_lines: lines }) => ({ path: source, lines })),
+			});
+			const captures = capturesByCase.get(caseKey) ?? {};
+			for (const [name, pointer] of Object.entries(languageStep.capture ?? {})) {
+				const value = jsonPointer(result.output, pointer);
+				if (value !== undefined) captures[name] = value;
+			}
+			capturesByCase.set(caseKey, captures);
 		}
-		coverageScopes.set(JSON.stringify(item.key), {
-			key: item.key,
-			files: caseCoverage.map(({ path: source, covered_lines: lines }) => ({ path: source, lines })),
-		});
+		index += batch.length;
 	}
 	coverageLines = [...datasetCoverageByFile.values()]
 		.map((file) => ({
@@ -215,6 +256,24 @@ async function normalizedLineCoverage(snapshots, sourceRoot, declaredSources) {
 		});
 	}
 	return files.sort((left, right) => left.path.localeCompare(right.path));
+}
+
+function resolveCaptures(value, captures) {
+	if (Array.isArray(value)) return value.map((item) => resolveCaptures(item, captures));
+	if (value && typeof value === 'object') {
+		if (Object.keys(value).length === 1 && typeof value.$capture === 'string') {
+			if (!Object.hasOwn(captures, value.$capture)) throw new Error(`capture ${value.$capture} is unavailable`);
+			return captures[value.$capture];
+		}
+		return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, resolveCaptures(item, captures)]));
+	}
+	return value;
+}
+
+function jsonPointer(value, pointer) {
+	if (typeof pointer !== 'string' || !pointer.startsWith('/')) return undefined;
+	return pointer.slice(1).split('/').map((part) => part.replaceAll('~1', '/').replaceAll('~0', '~'))
+		.reduce((current, key) => current == null ? undefined : current[key], value);
 }
 
 async function declaredSourceFiles(sourceRoot, declaredSources) {
