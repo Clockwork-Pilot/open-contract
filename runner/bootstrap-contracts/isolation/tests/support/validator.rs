@@ -18,12 +18,35 @@ pub(crate) fn execute_dataset() -> Result<usize, String> {
     let plan = ManifestPlan::load(package.join("isolation-package.fixture.yaml"))
         .map_err(|error| format!("cannot load isolation manifest: {error}"))?;
     let mut previous_root = None;
-    run_cases(package.join("dataset.json"), |_, case| {
+    #[cfg(coverage)]
+    let capture_path = std::env::var_os("OPEN_CONTRACT_BOOTSTRAP_COVERAGE_SNAPSHOTS");
+    #[cfg(coverage)]
+    let mut snapshots = Vec::new();
+    let result = run_cases(package.join("dataset.json"), |_, case| {
+        #[cfg(coverage)]
+        if capture_path.is_some() {
+            unsafe { profile::reset_counters() };
+        }
         let current = validate_case(&plan, &package, &previous_root, case)?;
         previous_root = Some(current);
+        #[cfg(coverage)]
+        if capture_path.is_some() {
+            snapshots.push((case.id.clone(), profile::snapshot()?));
+        }
         Ok(())
-    })
+    });
+    #[cfg(coverage)]
+    if let Some(path) = capture_path {
+        profile::restore_aggregate(&snapshots)?;
+        profile::write_snapshots(Path::new(&path), &snapshots)
+            .map_err(|error| format!("cannot write coverage snapshots: {error}"))?;
+    }
+    result
 }
+
+#[cfg(coverage)]
+#[path = "profile.rs"]
+mod profile;
 
 #[path = "dataset_setup.rs"]
 mod dataset_setup;

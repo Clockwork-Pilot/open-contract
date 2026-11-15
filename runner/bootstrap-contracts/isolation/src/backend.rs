@@ -50,7 +50,7 @@ pub(super) fn run_prepared(
                 .canonicalize()
                 .map_err(|error| error.to_string())?;
             let cwd = checked_working_directory(&root, working_directory)?;
-            let mut command = command(&argv, &cwd, &runtime.environment);
+            let mut command = command(&argv, &cwd.host, &runtime.environment);
             collect_output(&mut command, input)
         }
         Backend::Bubblewrap => run_bubblewrap(
@@ -519,18 +519,18 @@ fn run_bubblewrap(
         .collect::<Result<Vec<_>, _>>()?;
     let guest_reads = read_sources
         .iter()
-        .map(|source| guest_path_within_root(&guest, &root, source))
+        .map(|source| guest_path_within_root(&guest, source))
         .collect::<Vec<_>>();
     let guest_writes = write_sources
         .iter()
-        .map(|source| guest_path_within_root(&guest, &root, source))
+        .map(|source| guest_path_within_root(&guest, source))
         .collect::<Vec<_>>();
-    let guest_cwd = guest_path_within_root(&guest, &root, &cwd);
+    let guest_cwd = guest_path_within_root(&guest, &cwd);
     for (source, destination) in read_sources.iter().zip(guest_reads) {
-        bind_readonly(&mut args, source, &destination, &mut created);
+        bind_readonly(&mut args, &source.host, &destination, &mut created);
     }
     for (source, destination) in write_sources.iter().zip(guest_writes) {
-        bind_writable(&mut args, source, &destination, &mut created);
+        bind_writable(&mut args, &source.host, &destination, &mut created);
     }
 
     let mut child = Command::new(bwrap);
@@ -567,17 +567,17 @@ fn run_landlock(
     let cwd = checked_working_directory(&root, working_directory)?;
     let mut allowed = Vec::new();
     for path in read {
-        allowed.push((checked_path(&root, path)?, false));
+        allowed.push((checked_path(&root, path)?.host, false));
     }
     for path in write {
-        allowed.push((checked_path(&root, path)?, true));
+        allowed.push((checked_path(&root, path)?.host, true));
     }
     for path in &runtime.roots {
         allowed.push((path.clone(), false));
     }
     let rules = landlock_rules(&allowed)?;
     let ruleset = create_landlock_ruleset(&rules).map_err(|error| error.to_string())?;
-    let mut child = command(argv, &cwd, &safe_environment(&runtime.environment));
+    let mut child = command(argv, &cwd.host, &safe_environment(&runtime.environment));
     unsafe {
         child.pre_exec(landlock_pre_exec(ruleset, install_landlock));
     }
@@ -594,17 +594,28 @@ pub(super) fn landlock_pre_exec(
 pub(super) fn checked_working_directory(
     root: &Path,
     working_directory: &Path,
-) -> Result<PathBuf, String> {
+) -> Result<CheckedPath, String> {
     let cwd = working_directory
         .canonicalize()
         .map_err(|error| format!("command working directory is unavailable: {error}"))?;
-    if !cwd.starts_with(root) || !cwd.is_dir() {
+    let relative = cwd.strip_prefix(root).map_err(|_| {
+        "command working directory must be inside the staged contract tree".to_string()
+    })?.to_path_buf();
+    if !cwd.is_dir() {
         return Err("command working directory must be inside the staged contract tree".into());
     }
-    Ok(cwd)
+    Ok(CheckedPath {
+        host: cwd,
+        relative,
+    })
 }
 
-fn checked_path(root: &Path, relative: &str) -> Result<PathBuf, String> {
+pub(super) struct CheckedPath {
+    pub(super) host: PathBuf,
+    relative: PathBuf,
+}
+
+fn checked_path(root: &Path, relative: &str) -> Result<CheckedPath, String> {
     let path = Path::new(relative);
     if path.is_absolute()
         || path
@@ -617,10 +628,14 @@ fn checked_path(root: &Path, relative: &str) -> Result<PathBuf, String> {
     let resolved = full
         .canonicalize()
         .map_err(|error| format!("{}: {error}", full.display()))?;
-    if !resolved.starts_with(root) {
-        return Err(format!("staged path escapes package root: {relative}"));
-    }
-    Ok(resolved)
+    let guest_relative = resolved
+        .strip_prefix(root)
+        .map_err(|_| format!("staged path escapes package root: {relative}"))?
+        .to_path_buf();
+    Ok(CheckedPath {
+        host: resolved,
+        relative: guest_relative,
+    })
 }
 
 fn guest_root(package_root: &Path) -> Result<String, String> {
@@ -631,11 +646,8 @@ fn guest_root(package_root: &Path) -> Result<String, String> {
     Ok(format!("/contract/{name}"))
 }
 
-fn guest_path_within_root(guest: &str, root: &Path, source: &Path) -> PathBuf {
-    let relative = source
-        .strip_prefix(root)
-        .expect("guest paths are derived from validated staged paths");
-    Path::new(guest).join(relative)
+fn guest_path_within_root(guest: &str, source: &CheckedPath) -> PathBuf {
+    Path::new(guest).join(&source.relative)
 }
 
 pub(super) fn canonicalize_runner_root(path: &Path) -> Result<PathBuf, String> {

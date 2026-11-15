@@ -75,7 +75,7 @@ def main() -> int:
     completed = subprocess.run(command, cwd=CRATE, env=environment, check=False)
     if completed.returncode:
         return completed.returncode
-    binary = target_dir / "debug" / "predicate-sandbox"
+    binary = target_dir / "llvm-cov-target" / "debug" / "predicate-sandbox"
     if not binary.is_file() or not os.access(binary, os.X_OK):
         print(f"cargo llvm-cov did not produce the predicate runner at {binary}", file=sys.stderr)
         return 2
@@ -84,8 +84,7 @@ def main() -> int:
     files = [file for data in payload.get("data", []) for file in data.get("files", [])]
     evaluators = [
         file for file in files
-        if Path(file.get("filename", "")).is_absolute()
-        and resolve_source_path(file.get("filename", "")) == (CRATE / "src" / "evaluate.rs").resolve()
+        if resolve_source_path(file.get("filename", "")) == (CRATE / "src" / "evaluate.rs").resolve()
     ]
     if len(evaluators) != 1:
         print("coverage report must contain exactly one Rust predicate evaluator module", file=sys.stderr)

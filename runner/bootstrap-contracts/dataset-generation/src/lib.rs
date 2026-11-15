@@ -162,8 +162,7 @@ fn parse_type(kind: &str, path: &str) -> Result<SchemaType, String> {
 fn ensure_unique(values: &[Value], path: &str) -> Result<(), String> {
     let mut seen = BTreeSet::new();
     for value in values {
-        let encoded = serde_json::to_string(value)
-            .map_err(|error| format!("cannot encode {path}: {error}"))?;
+        let encoded = value.to_string();
         if !seen.insert(encoded) {
             return Err(format!("{path} entries must be unique"));
         }
@@ -190,9 +189,18 @@ fn length_keyword(schema: &Value, key: &str, path: &str) -> Result<Option<usize>
             let length = value
                 .as_u64()
                 .ok_or_else(|| format!("{path}.{key} must be a nonnegative integer"))?;
-            usize::try_from(length).map_err(|_| format!("{path}.{key} is too large to generate"))
+            // Any larger value fails the generator's string-length limit. Clamp
+            // before conversion so this remains safe on 32-bit targets too.
+            Ok(length.min((MAX_GENERATED_STRING_LENGTH + 1) as u64) as usize)
         })
         .transpose()
+}
+
+fn validated_length_keyword(schema: &Value, key: &str) -> Option<usize> {
+    schema
+        .get(key)
+        .and_then(Value::as_u64)
+        .map(|length| length.min((MAX_GENERATED_STRING_LENGTH + 1) as u64) as usize)
 }
 
 fn validate_bounds(schema: &Value, path: &str) -> Result<(), String> {
@@ -225,8 +233,9 @@ fn validate_bounds(schema: &Value, path: &str) -> Result<(), String> {
 }
 
 fn string_values(schema: &Value, path: &str) -> Result<Vec<Value>, String> {
-    let minimum = length_keyword(schema, "minLength", path)?.unwrap_or(0);
-    let maximum = length_keyword(schema, "maxLength", path)?;
+    // `values_for` validates length keywords before type-specific generation.
+    let minimum = validated_length_keyword(schema, "minLength").unwrap_or(0);
+    let maximum = validated_length_keyword(schema, "maxLength");
     if minimum > MAX_GENERATED_STRING_LENGTH
         || maximum.is_some_and(|length| length > MAX_GENERATED_STRING_LENGTH)
     {
@@ -264,10 +273,13 @@ fn string_values(schema: &Value, path: &str) -> Result<Vec<Value>, String> {
 }
 
 fn numeric_values(schema: &Value, path: &str, integer: bool) -> Result<Vec<Value>, String> {
-    let minimum = numeric_keyword(schema, "minimum", path)?;
-    let maximum = numeric_keyword(schema, "maximum", path)?;
-    let exclusive_minimum = numeric_keyword(schema, "exclusiveMinimum", path)?;
-    let exclusive_maximum = numeric_keyword(schema, "exclusiveMaximum", path)?;
+    // `values_for` validates every bound before dispatching to this function.
+    // Read the already-validated values directly so the public numeric path
+    // does not contain duplicate, unreachable validation errors.
+    let minimum = schema.get("minimum").and_then(Value::as_f64);
+    let maximum = schema.get("maximum").and_then(Value::as_f64);
+    let exclusive_minimum = schema.get("exclusiveMinimum").and_then(Value::as_f64);
+    let exclusive_maximum = schema.get("exclusiveMaximum").and_then(Value::as_f64);
     let mut numbers = Vec::new();
 
     if integer {
@@ -332,25 +344,31 @@ fn numeric_values(schema: &Value, path: &str, integer: bool) -> Result<Vec<Value
         }
     }
 
-    let mut values = Vec::new();
-    for number in numbers {
-        let number = if integer { number.round() } else { number };
-        let json_number = if integer {
-            let integer = number as i64;
-            serde_json::Number::from(integer)
-        } else {
-            serde_json::Number::from_f64(number)
-                .ok_or_else(|| format!("{path} produced a non-finite number"))?
-        };
-        let value = Value::Number(json_number);
-        if matches_schema(schema, &value) && !values.contains(&value) {
-            values.push(value);
+    let values = numbers
+        .into_iter()
+        .filter_map(|number| {
+            let number = if integer { number.round() } else { number };
+            let json_number = if integer {
+                Some(serde_json::Number::from(number as i64))
+            } else {
+                // Candidate construction only retains finite values: an
+                // overflowed midpoint fails the strict range comparisons above.
+                serde_json::Number::from_f64(number)
+            };
+            json_number.map(Value::Number)
+        })
+        .filter(|value| matches_schema(schema, value))
+        .collect::<Vec<_>>();
+    let mut unique_values = Vec::new();
+    for value in values {
+        if !unique_values.contains(&value) {
+            unique_values.push(value);
         }
     }
-    if values.is_empty() {
+    if unique_values.is_empty() {
         return Err(format!("{path} has no generated values within its range"));
     }
-    Ok(values)
+    Ok(unique_values)
 }
 
 fn values_for_type(schema: &Value, kind: SchemaType, path: &str) -> Result<Vec<Value>, String> {
@@ -622,8 +640,7 @@ fn deduplicate(values: Vec<Value>) -> Result<Vec<Value>, String> {
     let mut seen = BTreeSet::new();
     let mut unique = Vec::new();
     for value in values {
-        let encoded = serde_json::to_string(&value)
-            .map_err(|error| format!("cannot encode generated input: {error}"))?;
+        let encoded = value.to_string();
         if seen.insert(encoded) {
             if unique.len() == MAX_DATASET_CASES {
                 return Err(format!(

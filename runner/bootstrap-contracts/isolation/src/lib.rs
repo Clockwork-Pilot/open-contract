@@ -206,7 +206,7 @@ impl StagedTree {
         )?;
         Ok(StagedCommandPlan {
             command: plan.command.clone(),
-            working_directory,
+            working_directory: working_directory.host,
             runtime_roots: plan.runtime_roots.clone(),
             resolved_executable: plan.resolved_executable.clone(),
             runtime_plan: plan,

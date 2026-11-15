@@ -146,7 +146,12 @@ pub fn show_isolation_plan(
     let tree = StagedTree::create_with_runtime(&root, isolation_runtime)?;
     let mut output = String::new();
 
-    output.push_str(&format!("Isolation: {}\n", backend.as_str()));
+    let backend_name = match backend {
+        Backend::None => "none",
+        Backend::Bubblewrap => "bubblewrap",
+        Backend::Landlock => "landlock",
+    };
+    output.push_str(&format!("Isolation: {backend_name}\n"));
     if backend == Backend::None {
         output.push_str("Filesystem enforcement: none (host access is unrestricted)\n");
     }
@@ -203,19 +208,19 @@ pub fn show_isolation_plan(
             output.push_str(&format!("    {} ({kind})\n", path.display()));
         }
         if backend == Backend::Bubblewrap {
-            let namespace_name = tree
-                .root
-                .file_name()
-                .and_then(|name| name.to_str())
-                .ok_or_else(|| "staged contract has no usable namespace name".to_string())?;
             output.push_str("  Bubblewrap fixed mounts: /proc, /dev, /tmp, /contract\n");
-            output.push_str(&format!(
-                "  Bubblewrap contract root: /contract/{namespace_name}\n"
-            ));
+            output.push_str("  Bubblewrap contract root: /contract/<randomized-root>\n");
         }
     }
     Ok(output)
 }
+
+#[cfg(test)]
+extern crate self as runner_batch;
+
+#[cfg(test)]
+#[path = "../tests/unit_dataset_runner.rs"]
+mod dataset_runner_test;
 
 /// Contract command contract: each command receives one complete flattened
 /// dataset batch and returns raw outputs/errors and coverage. Rust owns matching
@@ -878,10 +883,8 @@ fn coverage_for_files(
 }
 
 fn compare_fingerprint(coverage: &mut CoverageFingerprint, expected: Option<&str>) {
-    if let Some(expected) = expected {
-        coverage.expected_fingerprint = Some(expected.to_owned());
-        coverage.baseline_matches = Some(expected == coverage.fingerprint);
-    }
+    coverage.expected_fingerprint = expected.map(str::to_owned);
+    coverage.baseline_matches = expected.map(|expected| expected == coverage.fingerprint);
 }
 
 pub fn load_dataset(path: &Path) -> Result<Dataset, String> {
@@ -1286,147 +1289,5 @@ pub fn batch_input(manifest: &Manifest, requests: &[ExecutionRequest]) -> Value 
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn dataset_contract_cases_are_reused_as_unit_inputs() {
-        let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("dataset.json");
-        let outer = load_dataset(&path).expect("bootstrap dataset should parse");
-        let cases = outer.cases.expect("dataset wrapper has cases");
-        let mut checked = 0;
-        for case in cases {
-            if case.input.get("extension").is_some() {
-                continue;
-            }
-            let Some(value) = case.input.get("dataset") else {
-                continue;
-            };
-            let inner: Dataset = serde_json::from_value(value.clone())
-                .expect("embedded public dataset input should deserialize");
-            let result = flatten_dataset(&inner);
-            if case
-                .expected
-                .as_ref()
-                .is_some_and(|expected| expected.get("error_contains").is_some())
-            {
-                assert!(result.is_err(), "{} should be rejected", case.id);
-            } else {
-                let (requests, checks) = result.expect("public dataset input should flatten");
-                assert!(!requests.is_empty(), "{} should request execution", case.id);
-                assert_eq!(
-                    requests.len(),
-                    checks.len()
-                        + requests
-                            .iter()
-                            .filter(|r| r.key.step_id.is_some())
-                            .count()
-                            .saturating_sub(
-                                checks
-                                    .iter()
-                                    .filter(|check| matches!(check, Check::Sequence { .. }))
-                                    .count()
-                            ),
-                    "{} request/check structure",
-                    case.id
-                );
-            }
-            checked += 1;
-        }
-        assert!(checked >= 20, "expected to reuse the public dataset cases");
-    }
-
-    #[test]
-    fn adapter_result_index_rejects_duplicate_keys() {
-        let key = ExecutionKey {
-            target_id: "t".into(),
-            case_id: "c".into(),
-            step_id: None,
-        };
-        let result = AdapterResult {
-            key: key.clone(),
-            output: Some(Value::Null),
-            error: None,
-        };
-        let error = index_results(vec![result.clone(), result]).unwrap_err();
-        assert!(error.contains("duplicate result keys"));
-    }
-
-    #[test]
-    fn coverage_scope_validation_rejects_missing_and_invalid_fingerprints() {
-        assert!(validate_fingerprint(&None, "case")
-            .unwrap_err()
-            .contains("is required"));
-        assert!(validate_fingerprint(&Some("XYZ".into()), "case").is_err());
-        assert!(
-            validate_fingerprint(&Some("00000000000000000000000000000000".into()), "case").is_err()
-        );
-        assert!(
-            validate_fingerprint(&Some("0123456789abcdef0123456789abcdef".into()), "case").is_ok()
-        );
-
-        let key = ExecutionKey {
-            target_id: "t".into(),
-            case_id: "c".into(),
-            step_id: None,
-        };
-        let empty = std::collections::HashMap::new();
-        let (coverage, error) =
-            coverage_for_key(&empty, &key, Some("0123456789abcdef0123456789abcdef"));
-        assert!(coverage.is_none());
-        assert!(error.unwrap().contains("coverage fingerprint unavailable"));
-
-        let files = vec![CoverageFile {
-            path: "validator.py".into(),
-            lines: vec![],
-        }];
-        let (coverage, error) = coverage_for_files(files, Some("0123456789abcdef0123456789abcdef"));
-        assert!(coverage.is_none());
-        assert!(error.unwrap().contains("zero covered lines"));
-    }
-
-    #[test]
-    fn coverage_files_are_canonical_and_duplicate_lines_merge() {
-        let merged = merge_coverage_files(vec![
-            CoverageFile {
-                path: "validator.py".into(),
-                lines: vec![2, 1],
-            },
-            CoverageFile {
-                path: "validator.py".into(),
-                lines: vec![2, 3],
-            },
-        ]);
-        assert_eq!(merged.len(), 1);
-        assert_eq!(merged[0].path, "validator.py");
-        assert_eq!(merged[0].lines, vec![1, 2, 3]);
-        assert!(canonical_coverage_files(vec![CoverageFile {
-            path: "validator.py".into(),
-            lines: vec![0]
-        }])
-        .is_err());
-    }
-
-    #[test]
-    fn verification_handles_expected_errors_and_missing_outputs() {
-        let result = AdapterResult {
-            key: ExecutionKey {
-                target_id: "t".into(),
-                case_id: "c".into(),
-                step_id: None,
-            },
-            output: None,
-            error: Some("invalid input".into()),
-        };
-        assert!(evaluate_result(&result, None, None, Some("invalid input")).0);
-        assert!(!evaluate_result(&result, None, None, Some("different")).0);
-        let empty = AdapterResult {
-            error: None,
-            ..result
-        };
-        assert!(evaluate_result(&empty, None, None, None)
-            .2
-            .unwrap()
-            .contains("neither output nor error"));
-    }
-}
+#[path = "../tests/unit_tests.rs"]
+mod tests;

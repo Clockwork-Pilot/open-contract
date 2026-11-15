@@ -57,7 +57,10 @@ impl DatasetCase {
 
 /// Load the shared bootstrap dataset envelope from JSON or YAML.
 pub fn load_dataset(path: impl AsRef<Path>) -> Result<Dataset, String> {
-    let path = path.as_ref();
+    load_dataset_path(path.as_ref())
+}
+
+fn load_dataset_path(path: &Path) -> Result<Dataset, String> {
     let bytes = fs::read(path).map_err(|error| format!("cannot read dataset: {error}"))?;
     match path.extension().and_then(|extension| extension.to_str()) {
         Some("json") => {

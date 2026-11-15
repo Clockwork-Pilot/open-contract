@@ -246,6 +246,10 @@ cases:
     coverage_fingerprint: "85839f4d77711f08e66f48680890f9d0"
     input: {"operation": "root-manifest", "path": "/"}
     expected: {"valid": false}
+  - id: filesystem-root-string-is-not-a-manifest-package
+    coverage_fingerprint: "85839f4d77711f08e66f48680890f9d0"
+    input: {"operation": "string-manifest", "path": "/"}
+    expected: {"valid": false}
   - id: invalid-readable-package-path
     coverage_fingerprint: "e947cb5cbee85fe55e60660af0ac276b"
     input:

@@ -9,7 +9,7 @@
         "extension": "json",
         "document": "{\"version\":1,\"cases\":[{\"id\":\"sample\",\"input\":{\"value\":7},\"expected\":{\"value\":7}}]}"
       },
-      "coverage_fingerprint": "c5827b67a9aa1de5aac035c05d795022",
+      "coverage_fingerprint": "4754d05a953882b4f224d23882e2b11d",
       "expected": {
         "ok": true
       }
@@ -22,7 +22,7 @@
         "extension": "yaml",
         "document": "version: 1\ncases:\n  - id: sample\n    input: {value: 9}\n    predicate: .value == 9\n"
       },
-      "coverage_fingerprint": "f50d097d946a5b74bf17fa36d6362ac1",
+      "coverage_fingerprint": "48b0b8d38fc231fe79ce381cd38ac5c9",
       "expected": {
         "ok": true
       }
@@ -35,7 +35,7 @@
         "extension": "yml",
         "document": "version: 1\ncases:\n  - id: sample\n    input: value\n    expected: value\n"
       },
-      "coverage_fingerprint": "ae87f68b9667166f28d8c2b49b512968",
+      "coverage_fingerprint": "a3ba786e5c61199e4501a532ad6f8af5",
       "expected": {
         "ok": true
       }
@@ -49,7 +49,7 @@
         "document": "{",
         "error": "invalid dataset JSON"
       },
-      "coverage_fingerprint": "1c6108d55559d86914fe6aff376517a8",
+      "coverage_fingerprint": "830aa46a5417db4047ac824730211dd0",
       "expected": {
         "ok": true
       }
@@ -63,7 +63,7 @@
         "document": "version: [",
         "error": "invalid dataset YAML"
       },
-      "coverage_fingerprint": "9290310ea5ef720fc53ae2e11a1521d8",
+      "coverage_fingerprint": "581f6f5ecbf6ddad0012a8818451267e",
       "expected": {
         "ok": true
       }
@@ -77,7 +77,7 @@
         "document": "anything",
         "error": "unsupported dataset extension: txt"
       },
-      "coverage_fingerprint": "07bf7729a48daaefb0c19d681bb77e2b",
+      "coverage_fingerprint": "5314d2d77f6602913698d4ad98b65312",
       "expected": {
         "ok": true
       }
@@ -91,7 +91,7 @@
         "document": "anything",
         "error": "dataset path must have a .json, .yaml, or .yml extension"
       },
-      "coverage_fingerprint": "c12be07bfbc02a95a8c2f163b29a853c",
+      "coverage_fingerprint": "9216051d2cdaffb3a9270db1e5cec2b8",
       "expected": {
         "ok": true
       }
@@ -103,7 +103,7 @@
         "operation": "missing-file",
         "error": "cannot read dataset"
       },
-      "coverage_fingerprint": "59b830a80a5081616815584a920c1946",
+      "coverage_fingerprint": "13f300fd95471e41ddca0f47575d6b95",
       "expected": {
         "ok": true
       }
@@ -116,7 +116,7 @@
         "extension": "json",
         "document": "{\"version\":1,\"cases\":[{\"id\":\"plain\",\"input\":null,\"expected\":null}]}"
       },
-      "coverage_fingerprint": "19f51437c2a99de60257d319be9bb1c8",
+      "coverage_fingerprint": "b7db38c88a3d577acb3ba9fa47f44f75",
       "expected": {
         "ok": true
       }
@@ -129,7 +129,7 @@
         "extension": "json",
         "document": "{\"version\":1,\"cases\":[{\"id\":\"without-expected\",\"input\":{}}]}"
       },
-      "coverage_fingerprint": "31b2e22cb85e296266fe0c1ee7b3b821",
+      "coverage_fingerprint": "3542909e6c7ab3b4fa969be364a5b556",
       "expected": {
         "ok": true
       }
@@ -142,7 +142,7 @@
         "extension": "json",
         "document": "{\"version\":1,\"cases\":[{\"id\":\"one\",\"input\":1,\"expected\":1},{\"id\":\"two\",\"input\":2,\"predicate\":\"true\"}]}"
       },
-      "coverage_fingerprint": "f8d248aac4cf59e93dd158987cafe524",
+      "coverage_fingerprint": "40d5517e758e96ca60d0fa9536ab06e4",
       "expected": {
         "ok": true
       }
@@ -156,7 +156,7 @@
         "document": "{\"version\":2,\"cases\":[{\"id\":\"one\",\"input\":1,\"expected\":1}]}",
         "error": "unsupported bootstrap dataset version 2"
       },
-      "coverage_fingerprint": "f982b9d31496c71382a8031447605a38",
+      "coverage_fingerprint": "13ac64dfdf398a6d43ccffb27d94ea6e",
       "expected": {
         "ok": true
       }
@@ -170,7 +170,7 @@
         "document": "{\"version\":1,\"cases\":[]}",
         "error": "dataset must contain at least one case"
       },
-      "coverage_fingerprint": "c89fab0cca7c5406ab66491084dc67aa",
+      "coverage_fingerprint": "8cc6f5be8701dd72bf2a3e412ec11bdc",
       "expected": {
         "ok": true
       }
@@ -184,7 +184,7 @@
         "document": "{\"version\":1,\"cases\":[{\"id\":\"no-result\",\"input\":1}]}",
         "error": "expected or predicate is required"
       },
-      "coverage_fingerprint": "708d9a2c241e93f4e00be7a7d357676d",
+      "coverage_fingerprint": "0d5c906affbabaa31e1e01ff3f605057",
       "expected": {
         "ok": true
       }
@@ -197,7 +197,7 @@
         "extension": "json",
         "document": "{\"version\":1,\"cases\":[{\"id\":\"bad\",\"input\":1,\"expected\":1},{\"id\":\"good\",\"input\":2,\"expected\":2}]}"
       },
-      "coverage_fingerprint": "a09c0cc5327d7318567d0de36875ec57",
+      "coverage_fingerprint": "970f993b444538ddb2f9797bf05aa672",
       "expected": {
         "ok": true
       }
@@ -211,7 +211,7 @@
         "document": "{",
         "error": "invalid dataset JSON"
       },
-      "coverage_fingerprint": "ce1d5703d479e326f2d10dfc50801c04",
+      "coverage_fingerprint": "506c2121b6cd56c7d73d79abca7d215e",
       "expected": {
         "ok": true
       }

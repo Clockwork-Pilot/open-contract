@@ -80,6 +80,12 @@ fn validate_case(package: &PathBuf, case: &DatasetCase) -> Result<(), String> {
                 .ok_or_else(|| "input.path must be a string".to_string())?;
             ManifestPlan::load(std::path::Path::new(path)).is_ok()
         }
+        "string-manifest" => {
+            let path = input["path"]
+                .as_str()
+                .ok_or_else(|| "input.path must be a string".to_string())?;
+            ManifestPlan::load(path).is_ok()
+        }
         other => return Err(format!("unknown operation {other:?}")),
     };
     let actual = json!({"valid": valid});

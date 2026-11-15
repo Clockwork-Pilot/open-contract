@@ -24,7 +24,8 @@
         "passed": true,
         "total": 1,
         "coverage_complete": true
-      }
+      },
+      "coverage_fingerprint": "f0fca63bac894c29cfda03b1277cad0e"
     },
     {
       "id": "predicate-only",
@@ -45,7 +46,8 @@
       },
       "expected": {
         "passed": true
-      }
+      },
+      "coverage_fingerprint": "749c38be74792c8f09fff22b0288a529"
     },
     {
       "id": "expected-and-predicate",
@@ -69,7 +71,8 @@
       },
       "expected": {
         "passed": true
-      }
+      },
+      "coverage_fingerprint": "059355fa9f518eb73c363ccae630682e"
     },
     {
       "id": "yaml-dataset",
@@ -79,7 +82,8 @@
       },
       "expected": {
         "passed": true
-      }
+      },
+      "coverage_fingerprint": "382c4ffdbdd695fc5d130821958f8d2a"
     },
     {
       "id": "yml-dataset",
@@ -89,7 +93,8 @@
       },
       "expected": {
         "passed": true
-      }
+      },
+      "coverage_fingerprint": "382c4ffdbdd695fc5d130821958f8d2a"
     },
     {
       "id": "expected-error-but-output",
@@ -111,7 +116,8 @@
       "expected": {
         "passed": false,
         "result_error_contains": "but validator returned output"
-      }
+      },
+      "coverage_fingerprint": "c5ca3bcfc7f6a0aee60fcc3300fd28bc"
     },
     {
       "id": "wrong-exact-output",
@@ -135,7 +141,8 @@
       "expected": {
         "passed": false,
         "result_error_contains": "did not equal"
-      }
+      },
+      "coverage_fingerprint": "b0136a8fd6d4bf737af52263c5e4bbd7"
     },
     {
       "id": "false-predicate",
@@ -157,7 +164,8 @@
       "expected": {
         "passed": false,
         "result_error_contains": "did not satisfy"
-      }
+      },
+      "coverage_fingerprint": "aa351af2860c5f4095ec082bd606af49"
     },
     {
       "id": "sequence-steps",
@@ -198,7 +206,8 @@
       "expected": {
         "passed": true,
         "total": 1
-      }
+      },
+      "coverage_fingerprint": "1b1ff094333a508f5b0dc2d5b91fad1f"
     },
     {
       "id": "sequence-aggregate-mismatch",
@@ -234,7 +243,8 @@
       "expected": {
         "passed": false,
         "result_error_contains": "did not equal"
-      }
+      },
+      "coverage_fingerprint": "b6144c2cb58158da85930ca0b90f87c6"
     },
     {
       "id": "invalid-extension",
@@ -254,7 +264,8 @@
       },
       "expected": {
         "error_contains": "must use .json, .yaml, or .yml"
-      }
+      },
+      "coverage_fingerprint": "5761ca35216ae8f969bb363bce60bdfb"
     },
     {
       "id": "invalid-json",
@@ -263,7 +274,8 @@
       },
       "expected": {
         "error_contains": "invalid dataset"
-      }
+      },
+      "coverage_fingerprint": "ef8225cfed2b5a4d28bc23a9d49f730a"
     },
     {
       "id": "invalid-yaml",
@@ -273,7 +285,8 @@
       },
       "expected": {
         "error_contains": "invalid dataset"
-      }
+      },
+      "coverage_fingerprint": "4e8f70189396de540969bc7a4af39825"
     },
     {
       "id": "wrong-version",
@@ -292,7 +305,8 @@
       },
       "expected": {
         "error_contains": "version must be 1"
-      }
+      },
+      "coverage_fingerprint": "79bfbb9de78ccebeb2639f8c2257b020"
     },
     {
       "id": "no-cases-or-targets",
@@ -303,7 +317,8 @@
       },
       "expected": {
         "error_contains": "exactly one of cases or targets"
-      }
+      },
+      "coverage_fingerprint": "28198a8583dde82b437236ceea8f50cd"
     },
     {
       "id": "both-cases-and-targets",
@@ -316,7 +331,8 @@
       },
       "expected": {
         "error_contains": "exactly one of cases or targets"
-      }
+      },
+      "coverage_fingerprint": "28198a8583dde82b437236ceea8f50cd"
     },
     {
       "id": "empty-cases",
@@ -328,7 +344,8 @@
       },
       "expected": {
         "error_contains": "at least one case or step"
-      }
+      },
+      "coverage_fingerprint": "64e358c8db8fee1a20fd1908c893e60a"
     },
     {
       "id": "duplicate-target-id",
@@ -363,7 +380,8 @@
       },
       "expected": {
         "error_contains": "target ID must be non-empty and unique"
-      }
+      },
+      "coverage_fingerprint": "36f1f51aaf806deecb97c73ae2b42f1b"
     },
     {
       "id": "empty-target-id",
@@ -387,7 +405,8 @@
       },
       "expected": {
         "error_contains": "target ID must be non-empty and unique"
-      }
+      },
+      "coverage_fingerprint": "1139da0daad639867c9538e3112e8ff1"
     },
     {
       "id": "duplicate-case-id",
@@ -412,7 +431,8 @@
       },
       "expected": {
         "error_contains": "case ID must be non-empty and unique"
-      }
+      },
+      "coverage_fingerprint": "0a53dde31a485030db4c3c4e57a9c5dc"
     },
     {
       "id": "empty-case-id",
@@ -431,7 +451,8 @@
       },
       "expected": {
         "error_contains": "case ID must be non-empty and unique"
-      }
+      },
+      "coverage_fingerprint": "d9a9d7c8fee4138ae1951f2599696c80"
     },
     {
       "id": "case-without-assertion",
@@ -449,7 +470,8 @@
       },
       "expected": {
         "error_contains": "must contain expected or predicate"
-      }
+      },
+      "coverage_fingerprint": "7e9080328ce5c9c670358be2804fb0c9"
     },
     {
       "id": "case-error-combined-with-expected",
@@ -469,7 +491,8 @@
       },
       "expected": {
         "error_contains": "cannot combine expected_error"
-      }
+      },
+      "coverage_fingerprint": "7f4cf6ca5a64fda58417f69e4eae19ff"
     },
     {
       "id": "sequence-case-expected-error",
@@ -495,7 +518,8 @@
       },
       "expected": {
         "error_contains": "sequence case"
-      }
+      },
+      "coverage_fingerprint": "416fb79ad47cae7a95feebf44edc8bb2"
     },
     {
       "id": "duplicate-step-id",
@@ -527,7 +551,8 @@
       },
       "expected": {
         "error_contains": "step ID must be non-empty and unique"
-      }
+      },
+      "coverage_fingerprint": "7ca212bc9dfbb549977929ef47201665"
     },
     {
       "id": "empty-step-id",
@@ -553,7 +578,8 @@
       },
       "expected": {
         "error_contains": "step ID must be non-empty and unique"
-      }
+      },
+      "coverage_fingerprint": "ce7d955ded26e0333fa77ce3c75b686a"
     },
     {
       "id": "step-error-combined-with-expected",
@@ -580,7 +606,8 @@
       },
       "expected": {
         "error_contains": "cannot combine expected_error"
-      }
+      },
+      "coverage_fingerprint": "1755ca99422c66162af105c9ec5d9a23"
     },
     {
       "id": "sequence-aggregate-exact",
@@ -630,7 +657,8 @@
       },
       "expected": {
         "passed": true
-      }
+      },
+      "coverage_fingerprint": "52f201eb0e3b0834003c96fd298c0908"
     },
     {
       "id": "sequence-aggregate-predicate",
@@ -663,7 +691,8 @@
       },
       "expected": {
         "passed": true
-      }
+      },
+      "coverage_fingerprint": "4080918b8d21c55a0a938588c3712da1"
     },
     {
       "id": "sequence-aggregate-expected-and-predicate",
@@ -714,7 +743,8 @@
       },
       "expected": {
         "passed": true
-      }
+      },
+      "coverage_fingerprint": "e5154366b1bb5d5c01a2c79fa2a42321"
     },
     {
       "id": "sequence-case-fingerprint-match",
@@ -744,7 +774,8 @@
       },
       "expected": {
         "passed": true
-      }
+      },
+      "coverage_fingerprint": "c1ccc0d031edd919dbdeab5b3ae83176"
     },
     {
       "id": "mismatched-fingerprint",
@@ -768,7 +799,8 @@
       "expected": {
         "passed": false,
         "result_error_contains": "coverage fingerprint mismatch"
-      }
+      },
+      "coverage_fingerprint": "827949bc773b209243ddcbd648eed2c5"
     },
     {
       "id": "zero-coverage-fingerprint-is-invalid",
@@ -792,7 +824,8 @@
       "expected": {
         "passed": false,
         "error_contains": "cannot represent zero coverage"
-      }
+      },
+      "coverage_fingerprint": "784aec5f0b5747392eeb813c11a3f510"
     },
     {
       "id": "invalid-case-fingerprint",
@@ -811,7 +844,8 @@
       },
       "expected": {
         "error_contains": "must be 32 lowercase hexadecimal"
-      }
+      },
+      "coverage_fingerprint": "77da63916d7852226e9ac2148d299df7"
     },
     {
       "id": "invalid-step-fingerprint",
@@ -836,7 +870,8 @@
       },
       "expected": {
         "error_contains": "must be 32 lowercase hexadecimal"
-      }
+      },
+      "coverage_fingerprint": "0822e1875511d0b5c6183f0d8b5d2d50"
     },
     {
       "id": "sequence-case-fingerprint-mismatch",
@@ -867,7 +902,8 @@
       "expected": {
         "passed": false,
         "result_error_contains": "coverage fingerprint mismatch"
-      }
+      },
+      "coverage_fingerprint": "ded9268f1030de0ff59b61cfd45bf0b0"
     },
     {
       "id": "sequence-step-fingerprint-mismatch",
@@ -898,7 +934,8 @@
       "expected": {
         "passed": false,
         "result_error_contains": "coverage fingerprint mismatch"
-      }
+      },
+      "coverage_fingerprint": "0f36e22987b5e621106c34c33534f895"
     },
     {
       "id": "missing-case-fingerprint",
@@ -916,7 +953,8 @@
       },
       "expected": {
         "error_contains": "coverage_fingerprint on case is required"
-      }
+      },
+      "coverage_fingerprint": "d9ea8d2cd66a28b9edf50f3f94323ae8"
     },
     {
       "id": "missing-step-fingerprint",
@@ -941,7 +979,1657 @@
       },
       "expected": {
         "error_contains": "coverage_fingerprint on step is required"
-      }
+      },
+      "coverage_fingerprint": "52c3494c0a0fb4c89983022705ca74c6"
+    },
+    {
+      "id": "show-isolation-plan-none",
+      "input": {
+        "operation": "show-isolation-plan",
+        "backend": "none",
+        "manifest_yaml": "version: '1'\nname: show-isolation-plan-none\nfiles:\n  dataset: dataset.json\n  validator: validator.py\nfilesystem:\n  read: [dataset.json, validator.py]\n  write: [reports/result.json]\nexecution:\n  command: [/bin/true]\n"
+      },
+      "expected": {
+        "contains": [
+          "Isolation: none",
+          "Filesystem enforcement: none (host access is unrestricted)",
+          "dataset.json (file)",
+          "reports/result.json (file)"
+        ]
+      },
+      "coverage_fingerprint": "ae7ba65b56709d02ba0b11ffebfe646e"
+    },
+    {
+      "id": "show-isolation-plan-bubblewrap",
+      "input": {
+        "operation": "show-isolation-plan",
+        "backend": "bubblewrap",
+        "manifest_yaml": "version: '1'\nname: show-isolation-plan-bubblewrap\nfiles:\n  dataset: dataset.json\n  validator: validator.py\nfilesystem:\n  read: [dataset.json, validator.py]\n  write: [reports]\nexecution:\n  command: [/bin/true]\n"
+      },
+      "expected": {
+        "contains": [
+          "Isolation: bubblewrap",
+          "Bubblewrap fixed mounts: /proc, /dev, /tmp, /contract",
+          "Bubblewrap contract root: /contract/<randomized-root>"
+        ]
+      },
+      "coverage_fingerprint": "f1779c7cba427eaf534f189d154f2e17"
+    },
+    {
+      "id": "show-isolation-plan-landlock",
+      "input": {
+        "operation": "show-isolation-plan",
+        "backend": "landlock",
+        "manifest_yaml": "version: '1'\nname: show-isolation-plan-landlock\nfiles:\n  dataset: dataset.json\n  validator: validator.py\nfilesystem:\n  read: [dataset.json, validator.py]\n  write: [reports]\nexecution:\n  command: [/bin/true]\n"
+      },
+      "expected": {
+        "contains": [
+          "Isolation: landlock",
+          "Contract read-only paths:",
+          "Contract writable paths:"
+        ]
+      },
+      "coverage_fingerprint": "6c5dbd58b693167a0d6dd1fb74b86941"
+    },
+    {
+      "id": "manifest-adapter-executes-batch",
+      "setup": true,
+      "input": {
+        "command": [
+          "python3",
+          "adapter.runner"
+        ],
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "echo-real-input",
+              "input": {
+                "value": 7
+              },
+              "expected": {
+                "value": 7
+              },
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "passed": true,
+        "total": 1,
+        "coverage_complete": true
+      },
+      "coverage_fingerprint": "b8184fbb21a741a24e6c1f0264626f47"
+    },
+    {
+      "id": "show-isolation-plan-rejects-invalid-manifest",
+      "input": {
+        "operation": "show-isolation-plan",
+        "backend": "none",
+        "manifest_yaml": "version: [\n"
+      },
+      "expected": {
+        "error_contains": "invalid"
+      },
+      "coverage_fingerprint": "f85d5d7537b14074ccdc6a8435a95aa3"
+    },
+    {
+      "id": "show-isolation-plan-rejects-missing-read-file",
+      "input": {
+        "operation": "show-isolation-plan",
+        "backend": "none",
+        "manifest_yaml": "version: '1'\nname: missing-read-file\nfiles:\n  dataset: dataset.json\n  validator: validator.py\nfilesystem:\n  read: [missing.txt]\n  write: []\nexecution:\n  command: [/bin/true]\n"
+      },
+      "expected": {
+        "error_contains": "No such file"
+      },
+      "coverage_fingerprint": "f85d5d7537b14074ccdc6a8435a95aa3"
+    },
+    {
+      "id": "show-isolation-plan-requires-command",
+      "input": {
+        "operation": "show-isolation-plan",
+        "backend": "none",
+        "manifest_yaml": "version: '1'\nname: command-required\nfiles:\n  dataset: dataset.json\n  validator: validator.py\nfilesystem:\n  read: [dataset.json, validator.py]\n  write: []\n"
+      },
+      "expected": {
+        "error_contains": "missing execution.command"
+      },
+      "coverage_fingerprint": "b08a0cf887f007ce22279d83f089a610"
+    },
+    {
+      "id": "manifest-adapter-missing-execution",
+      "setup": true,
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "adapter-input",
+              "input": {
+                "value": "example"
+              },
+              "expected": {
+                "value": "example"
+              },
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "error_contains": "missing execution.command"
+      },
+      "coverage_fingerprint": "880a943a6771bb569abc0a4ecfa0b689"
+    },
+    {
+      "id": "manifest-adapter-command-fails",
+      "setup": true,
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "adapter-input",
+              "input": {
+                "value": "example"
+              },
+              "expected": {
+                "value": "example"
+              },
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+            }
+          ]
+        },
+        "command": [
+          "python3",
+          "adapter.runner"
+        ]
+      },
+      "expected": {
+        "error_contains": "execution.command failed"
+      },
+      "coverage_fingerprint": "59696ab6f1476c9746c24d3382fa528c"
+    },
+    {
+      "id": "manifest-adapter-returns-invalid-json",
+      "setup": true,
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "adapter-input",
+              "input": {
+                "value": "example"
+              },
+              "expected": {
+                "value": "example"
+              },
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+            }
+          ]
+        },
+        "command": [
+          "python3",
+          "adapter.runner"
+        ]
+      },
+      "expected": {
+        "error_contains": "invalid batch JSON"
+      },
+      "coverage_fingerprint": "db30aab7c0db8ce1b4f1fa9d0ed80567"
+    },
+    {
+      "id": "manifest-adapter-returns-no-results",
+      "setup": true,
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "adapter-input",
+              "input": {
+                "value": "example"
+              },
+              "expected": {
+                "value": "example"
+              },
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+            }
+          ]
+        },
+        "command": [
+          "python3",
+          "adapter.runner"
+        ]
+      },
+      "expected": {
+        "error_contains": "returned no batch results"
+      },
+      "coverage_fingerprint": "508799c63ced4a7ed52a419a3d3d5199"
+    },
+    {
+      "id": "supplemental-coverage-is-reported",
+      "setup": true,
+      "input": {
+        "supplemental_tests": true,
+        "command": [
+          "python3",
+          "adapter.runner"
+        ],
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "supplemental-input",
+              "input": {
+                "value": "verified"
+              },
+              "expected": {
+                "value": "verified"
+              },
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "passed": true,
+        "total": 1,
+        "coverage_complete": true,
+        "supplemental_status": "passed"
+      },
+      "coverage_fingerprint": "e0f42cddb9a0783e79cb89cc8094ff48"
+    },
+    {
+      "id": "load-dataset-reports-missing-file",
+      "setup": true,
+      "input": {
+        "path": "missing-dataset.json"
+      },
+      "expected": {
+        "error_contains": "No such file or directory"
+      },
+      "coverage_fingerprint": "5b729e6d9a7cb35afb4e51376211847d"
+    },
+    {
+      "id": "dataset-adapter-expected-error",
+      "setup": true,
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "public-case",
+              "input": {
+                "value": "actual"
+              },
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8",
+              "expected_error": "fixture failure"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "passed": true,
+        "total": 1,
+        "coverage_complete": true
+      },
+      "coverage_fingerprint": "769670d006cf29a8a491603530b1bdc2"
+    },
+    {
+      "id": "dataset-adapter-unexpected-error",
+      "setup": true,
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "public-case",
+              "input": {
+                "value": "actual"
+              },
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8",
+              "expected": {
+                "value": "actual"
+              }
+            }
+          ]
+        }
+      },
+      "expected": {
+        "passed": false,
+        "total": 1,
+        "coverage_complete": true,
+        "result_error_contains": "fixture failure"
+      },
+      "coverage_fingerprint": "d8e4708eebff17bf9e70a744deccd016"
+    },
+    {
+      "id": "dataset-adapter-no-output",
+      "setup": true,
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "public-case",
+              "input": {
+                "value": "actual"
+              },
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8",
+              "expected": {
+                "value": "actual"
+              }
+            }
+          ]
+        }
+      },
+      "expected": {
+        "passed": false,
+        "total": 1,
+        "coverage_complete": true,
+        "result_error_contains": "neither output nor error"
+      },
+      "coverage_fingerprint": "80a77acc15d56e5824f6cd185d82aa10"
+    },
+    {
+      "id": "dataset-adapter-omits-result",
+      "setup": true,
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "public-case",
+              "input": {
+                "value": "actual"
+              },
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8",
+              "expected": {
+                "value": "actual"
+              }
+            }
+          ]
+        }
+      },
+      "expected": {
+        "error_contains": "adapter omitted result"
+      },
+      "coverage_fingerprint": "10d015f28ddad0e2d31c03f68b61353c"
+    },
+    {
+      "id": "dataset-adapter-missing-coverage",
+      "setup": true,
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "public-case",
+              "input": {
+                "value": "actual"
+              },
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8",
+              "expected": {
+                "value": "actual"
+              }
+            }
+          ]
+        }
+      },
+      "expected": {
+        "passed": false,
+        "total": 1,
+        "coverage_complete": false,
+        "result_error_contains": "coverage fingerprint unavailable"
+      },
+      "coverage_fingerprint": "23b4ac9791b4883f17bbf6d8e8b85ba4"
+    },
+    {
+      "id": "dataset-adapter-duplicate-result",
+      "setup": true,
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "public-case",
+              "input": {
+                "value": "actual"
+              },
+              "expected": {
+                "value": "actual"
+              },
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "error_contains": "duplicate result keys"
+      },
+      "coverage_fingerprint": "c13f64bd97d09fce0528082bdde8ab8c"
+    },
+    {
+      "id": "dataset-adapter-extra-result",
+      "setup": true,
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "public-case",
+              "input": {
+                "value": "actual"
+              },
+              "expected": {
+                "value": "actual"
+              },
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "error_contains": "results that were not requested"
+      },
+      "coverage_fingerprint": "16f820a81a781257453a116f1391a319"
+    },
+    {
+      "id": "dataset-adapter-invalid-coverage-path",
+      "setup": true,
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "public-case",
+              "input": {
+                "value": "actual"
+              },
+              "expected": {
+                "value": "actual"
+              },
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "error_contains": "must stay within the package"
+      },
+      "coverage_fingerprint": "4852f43f06167ad6ba069db455e9e15d"
+    },
+    {
+      "id": "dataset-adapter-unrequested-coverage",
+      "setup": true,
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "public-case",
+              "input": {
+                "value": "actual"
+              },
+              "expected": {
+                "value": "actual"
+              },
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "error_contains": "unrequested execution key"
+      },
+      "coverage_fingerprint": "5586beb674d3fbbd88e2ffbad5d293c4"
+    },
+    {
+      "id": "dataset-adapter-duplicate-coverage",
+      "setup": true,
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "public-case",
+              "input": {
+                "value": "actual"
+              },
+              "expected": {
+                "value": "actual"
+              },
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "error_contains": "duplicate coverage scope"
+      },
+      "coverage_fingerprint": "383cec72f71d55e80b01bac51eca22c5"
+    },
+    {
+      "id": "dataset-adapter-zero-coverage-line",
+      "setup": true,
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "public-case",
+              "input": {
+                "value": "actual"
+              },
+              "expected": {
+                "value": "actual"
+              },
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "error_contains": "line numbers must be positive"
+      },
+      "coverage_fingerprint": "602df0c97c2c42cf1708e09098d159bb"
+    },
+    {
+      "id": "dataset-adapter-missing-step-result",
+      "setup": true,
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "sequence",
+              "input": {
+                "start": 1
+              },
+              "steps": [
+                {
+                  "id": "first",
+                  "input": {
+                    "value": 1
+                  },
+                  "expected": {
+                    "value": 1
+                  },
+                  "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                }
+              ],
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "error_contains": "adapter omitted result"
+      },
+      "coverage_fingerprint": "06a27caeaf49201a769cec8431d1e59f"
+    },
+    {
+      "id": "show-isolation-plan-reads-support-directory",
+      "input": {
+        "operation": "show-isolation-plan",
+        "backend": "landlock",
+        "support": true,
+        "support_path": "support/helper.py",
+        "manifest_yaml": "version: '1'\nname: show-support-directory\nfiles:\n  dataset: dataset.json\n  validator: validator.py\n  support: [support/helper.py]\nfilesystem:\n  read: [dataset.json, validator.py, support]\n  write: []\nexecution:\n  command: [/bin/true]\n"
+      },
+      "expected": {
+        "contains": [
+          "support (recursive)"
+        ]
+      },
+      "coverage_fingerprint": "df51f5ee738783452811d25b30336aa4"
+    },
+    {
+      "id": "show-isolation-plan-rejects-invalid-command-reference",
+      "input": {
+        "operation": "show-isolation-plan",
+        "backend": "landlock",
+        "manifest_yaml": "version: '1'\nname: invalid-command-reference\nfiles:\n  dataset: dataset.json\n  validator: validator.py\nfilesystem:\n  read: [dataset.json, validator.py]\n  write: []\nexecution:\n  command: [\"${1INVALID}\"]\n"
+      },
+      "expected": {
+        "error_contains": "invalid environment variable name"
+      },
+      "coverage_fingerprint": "bdb28741909dcbafcb6274c2ab187f28"
+    },
+    {
+      "id": "dataset-adapter-error",
+      "setup": true,
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "public-case",
+              "input": {
+                "value": "actual"
+              },
+              "expected": {
+                "value": "actual"
+              },
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "error_contains": "fixture adapter failure"
+      },
+      "coverage_fingerprint": "39ba65f65609067463e4678233be5398"
+    },
+    {
+      "id": "dataset-adapter-missing-batch",
+      "setup": true,
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "public-case",
+              "input": {
+                "value": "actual"
+              },
+              "expected": {
+                "value": "actual"
+              },
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "error_contains": "adapter returned 0 contract batches"
+      },
+      "coverage_fingerprint": "435c31856f441453e7739f167d653a62"
+    },
+    {
+      "id": "dataset-adapter-no-line-coverage",
+      "setup": true,
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "public-case",
+              "input": {
+                "value": "actual"
+              },
+              "expected": {
+                "value": "actual"
+              },
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "passed": true,
+        "total": 1,
+        "coverage_complete": false
+      },
+      "coverage_fingerprint": "b15b3a94b5b2ac1165deb7c8fb988054"
+    },
+    {
+      "id": "dataset-adapter-empty-coverage-scope",
+      "setup": true,
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "public-case",
+              "input": {
+                "value": "actual"
+              },
+              "expected": {
+                "value": "actual"
+              },
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "passed": false,
+        "total": 1,
+        "coverage_complete": false,
+        "result_error_contains": "zero covered lines"
+      },
+      "coverage_fingerprint": "3fe6b0ab6389bced72f89dab5a785b71"
+    },
+    {
+      "id": "dataset-adapter-wrong-expected-error",
+      "setup": true,
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "public-case",
+              "input": {
+                "value": "actual"
+              },
+              "expected_error": "fixture failure",
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "passed": false,
+        "total": 1,
+        "coverage_complete": true,
+        "result_error_contains": "expected error"
+      },
+      "coverage_fingerprint": "1999fb3e4222eadf0cd890f6def92892"
+    },
+    {
+      "id": "dataset-adapter-missing-step-coverage",
+      "setup": true,
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "sequence",
+              "input": {},
+              "steps": [
+                {
+                  "id": "first",
+                  "input": {
+                    "value": "actual"
+                  },
+                  "expected": {
+                    "value": "actual"
+                  },
+                  "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                }
+              ],
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "passed": false,
+        "total": 1,
+        "coverage_complete": false,
+        "result_error_contains": "coverage fingerprint unavailable"
+      },
+      "coverage_fingerprint": "0ff974f05193709a9bd689f31e020680"
+    },
+    {
+      "id": "dataset-adapter-nested-contract-tree",
+      "setup": true,
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "public-case",
+              "input": {
+                "value": "actual"
+              },
+              "expected": {
+                "value": "actual"
+              },
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+            }
+          ]
+        },
+        "manifest_yaml": "version: '1'\nname: parent\nfiles:\n  dataset: dataset.json\n  validator: validator.py\n  nested_contracts: [child/contract.yaml]\nfilesystem:\n  read: [dataset.json, validator.py, child/contract.yaml]\n  write: []\n",
+        "child_manifest_yaml": "version: '1'\nname: child\nfiles:\n  dataset: dataset.json\n  validator: validator.py\nfilesystem:\n  read: [dataset.json, validator.py]\n  write: []\n",
+        "child_dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "child-case",
+              "input": {
+                "value": "child"
+              },
+              "expected": {
+                "value": "child"
+              },
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "passed": true,
+        "total": 2,
+        "coverage_complete": true
+      },
+      "coverage_fingerprint": "ed712abbc1f0480347738b90efeba155"
+    },
+    {
+      "id": "dataset-adapter-duplicate-nested-name",
+      "setup": true,
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "public-case",
+              "input": {
+                "value": "actual"
+              },
+              "expected": {
+                "value": "actual"
+              },
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+            }
+          ]
+        },
+        "manifest_yaml": "version: '1'\nname: parent\nfiles:\n  dataset: dataset.json\n  validator: validator.py\n  nested_contracts: [child/contract.yaml]\nfilesystem:\n  read: [dataset.json, validator.py, child/contract.yaml]\n  write: []\n",
+        "child_manifest_yaml": "version: '1'\nname: parent\nfiles:\n  dataset: dataset.json\n  validator: validator.py\nfilesystem:\n  read: [dataset.json, validator.py]\n  write: []\n",
+        "child_dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "child-case",
+              "input": {
+                "value": "child"
+              },
+              "expected": {
+                "value": "child"
+              },
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "error_contains": "duplicate contract name"
+      },
+      "coverage_fingerprint": "68389285b257c34cc0fec7cb4448329f"
+    },
+    {
+      "id": "sequence-step-without-assertion",
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "sequence",
+              "input": {
+                "value": "outer"
+              },
+              "steps": [
+                {
+                  "id": "unasserted",
+                  "input": {
+                    "value": "actual step input"
+                  },
+                  "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                }
+              ],
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "passed": true,
+        "total": 1,
+        "coverage_complete": true
+      },
+      "coverage_fingerprint": "0ce81e96c6d3fa618c89915ff17a7147"
+    },
+    {
+      "id": "dataset-adapter-step-error",
+      "setup": true,
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "sequence",
+              "input": {
+                "value": "outer"
+              },
+              "steps": [
+                {
+                  "id": "fails",
+                  "input": {
+                    "operation": "validate",
+                    "value": "real input"
+                  },
+                  "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8",
+                  "expected_error": "fixture failure"
+                }
+              ],
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "passed": true,
+        "total": 1,
+        "coverage_complete": true
+      },
+      "coverage_fingerprint": "f77f62c69299e71230d65a8c5de8ebd9"
+    },
+    {
+      "id": "dataset-adapter-step-error-does-not-match",
+      "setup": true,
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "sequence",
+              "input": {
+                "value": "outer"
+              },
+              "steps": [
+                {
+                  "id": "fails",
+                  "input": {
+                    "operation": "validate",
+                    "value": "real input"
+                  },
+                  "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8",
+                  "expected_error": "different failure"
+                }
+              ],
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "passed": false,
+        "total": 1,
+        "result_error_contains": "expected error"
+      },
+      "coverage_fingerprint": "326050617a6042b9987bf3c321728375"
+    },
+    {
+      "id": "step-error-combined-with-predicate",
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "sequence",
+              "input": {
+                "value": "outer"
+              },
+              "steps": [
+                {
+                  "id": "invalid",
+                  "input": {
+                    "value": 1
+                  },
+                  "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8",
+                  "predicate": ".value == 1",
+                  "expected_error": "failure"
+                }
+              ],
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "error_contains": "cannot combine expected_error with expected or predicate"
+      },
+      "coverage_fingerprint": "1755ca99422c66162af105c9ec5d9a23"
+    },
+    {
+      "id": "dataset-adapter-sequence-empty-coverage",
+      "setup": true,
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "sequence",
+              "input": {
+                "value": "outer"
+              },
+              "steps": [
+                {
+                  "id": "step",
+                  "input": {
+                    "value": "real input"
+                  },
+                  "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                }
+              ],
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "passed": false,
+        "total": 1,
+        "coverage_complete": false,
+        "result_error_contains": "zero covered lines"
+      },
+      "coverage_fingerprint": "7f0c50f3f70064a46ba2c7cc3e68d683"
+    },
+    {
+      "id": "dataset-adapter-empty-coverage-files",
+      "setup": true,
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "case",
+              "input": {
+                "value": "real input"
+              },
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8",
+              "expected": {
+                "value": "real input"
+              }
+            }
+          ]
+        }
+      },
+      "expected": {
+        "passed": false,
+        "total": 1,
+        "coverage_complete": false,
+        "result_error_contains": "zero covered lines"
+      },
+      "coverage_fingerprint": "b93de2b3afe963fce4c868362ecc9143"
+    },
+    {
+      "id": "dataset-adapter-undeclared-coverage-source",
+      "setup": true,
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "case",
+              "input": {
+                "value": "real input"
+              },
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8",
+              "expected": {
+                "value": "real input"
+              }
+            }
+          ]
+        }
+      },
+      "expected": {
+        "error_contains": "undeclared contract source"
+      },
+      "coverage_fingerprint": "f9eb3920e00ec92146e2fb0ad45a99cc"
+    },
+    {
+      "id": "dataset-adapter-multiple-coverage-files",
+      "input": {
+        "support": true,
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "case",
+              "input": {
+                "value": "real input"
+              },
+              "coverage_fingerprint": "ef0e2bd565684359aaa09b16f2f5ecdf",
+              "expected": {
+                "value": "real input"
+              }
+            }
+          ]
+        }
+      },
+      "expected": {
+        "passed": true,
+        "total": 1,
+        "coverage_complete": true
+      },
+      "coverage_fingerprint": "f0fca63bac894c29cfda03b1277cad0e"
+    },
+    {
+      "id": "dataset-adapter-escaped-coverage-path",
+      "input": {
+        "validator_name": "quote\" backspace\b tab\t newline\n formfeed\f return\r control\u0001.py",
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "case",
+              "input": {
+                "value": "real input"
+              },
+              "coverage_fingerprint": "0c7a4e9bba04a90ef907b73a9f28069a",
+              "expected": {
+                "value": "real input"
+              }
+            }
+          ]
+        }
+      },
+      "expected": {
+        "passed": true,
+        "total": 1,
+        "coverage_complete": true
+      },
+      "coverage_fingerprint": "e7b46ef8ac6519e8e1e6a624a092e85b"
+    },
+    {
+      "id": "run-contract-tree-rejects-invalid-manifest",
+      "input": {
+        "manifest_yaml": "version: [\n",
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "case",
+              "input": {
+                "value": "real input"
+              },
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8",
+              "expected": {
+                "value": "real input"
+              }
+            }
+          ]
+        }
+      },
+      "expected": {
+        "error_contains": "invalid manifest"
+      },
+      "coverage_fingerprint": "24bf35e258ac14305b65624914c77de0"
+    },
+    {
+      "id": "run-contract-tree-rejects-missing-staged-file",
+      "input": {
+        "manifest_yaml": "version: '1'\nname: missing-source\nfiles:\n  dataset: dataset.json\n  validator: absent.py\nfilesystem:\n  read: [dataset.json, absent.py]\n  write: []\n",
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "case",
+              "input": {
+                "value": "real input"
+              },
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8",
+              "expected": {
+                "value": "real input"
+              }
+            }
+          ]
+        }
+      },
+      "expected": {
+        "error_contains": "absent.py: No such file"
+      },
+      "coverage_fingerprint": "24bf35e258ac14305b65624914c77de0"
+    },
+    {
+      "id": "manifest-adapter-command-cannot-start",
+      "setup": true,
+      "input": {
+        "command": [
+          "/definitely/missing/open-contract-adapter"
+        ],
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "case",
+              "input": {
+                "value": "real input"
+              },
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8",
+              "expected": {
+                "value": "real input"
+              }
+            }
+          ]
+        }
+      },
+      "expected": {
+        "error_contains": "No such file or directory"
+      },
+      "coverage_fingerprint": "c6a075fba47125fb3548d0afd839ee0b"
+    },
+    {
+      "id": "dataset-adapter-native-coverage-no-sources",
+      "setup": true,
+      "input": {
+        "nested_contract": true,
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "case",
+              "input": {
+                "value": "real input"
+              },
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8",
+              "expected": {
+                "value": "real input"
+              }
+            }
+          ]
+        }
+      },
+      "expected": {
+        "passed": true,
+        "total": 2,
+        "coverage_complete": false
+      },
+      "coverage_fingerprint": "e21e5c50ace8ea521b3112dadb6c2844"
+    },
+    {
+      "id": "dataset-adapter-native-coverage-non-string-source",
+      "setup": true,
+      "input": {
+        "nested_contract": true,
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "case",
+              "input": {
+                "value": "real input"
+              },
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8",
+              "expected": {
+                "value": "real input"
+              }
+            }
+          ]
+        }
+      },
+      "expected": {
+        "passed": true,
+        "total": 2,
+        "coverage_complete": false
+      },
+      "coverage_fingerprint": "f2a184a3307c382e9521235a0a65dfb8"
+    },
+    {
+      "id": "supplemental-tests-low-dataset-coverage",
+      "setup": true,
+      "input": {
+        "command": [
+          "python3",
+          "adapter.runner"
+        ],
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "case",
+              "input": {
+                "value": "actual input"
+              },
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8",
+              "expected": {
+                "value": "actual input"
+              }
+            }
+          ]
+        },
+        "supplemental_tests": true
+      },
+      "expected": {
+        "error_contains": "90% is required"
+      },
+      "coverage_fingerprint": "af72b92128475f0f22fa71097a9440a5"
+    },
+    {
+      "id": "supplemental-coverage-without-tests",
+      "setup": true,
+      "input": {
+        "command": [
+          "python3",
+          "adapter.runner"
+        ],
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "case",
+              "input": {
+                "value": "actual input"
+              },
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8",
+              "expected": {
+                "value": "actual input"
+              }
+            }
+          ]
+        }
+      },
+      "expected": {
+        "error_contains": "without manifest-declared tests"
+      },
+      "coverage_fingerprint": "796237e9c853d70bdf9a3d348da6f662"
+    },
+    {
+      "id": "supplemental-coverage-missing-report",
+      "setup": true,
+      "input": {
+        "command": [
+          "python3",
+          "adapter.runner"
+        ],
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "case",
+              "input": {
+                "value": "actual input"
+              },
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8",
+              "expected": {
+                "value": "actual input"
+              }
+            }
+          ]
+        },
+        "supplemental_tests": true
+      },
+      "expected": {
+        "error_contains": "omitted supplemental test results"
+      },
+      "coverage_fingerprint": "9155d3a671d2949b36dcdb969b343cf2"
+    },
+    {
+      "id": "supplemental-tests-failed",
+      "setup": true,
+      "input": {
+        "command": [
+          "python3",
+          "adapter.runner"
+        ],
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "case",
+              "input": {
+                "value": "actual input"
+              },
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8",
+              "expected": {
+                "value": "actual input"
+              }
+            }
+          ]
+        },
+        "supplemental_tests": true
+      },
+      "expected": {
+        "passed": true,
+        "total": 1,
+        "coverage_complete": false,
+        "supplemental_status": "failed"
+      },
+      "coverage_fingerprint": "2ec7c1e750b56053a784937e9514afb0"
+    },
+    {
+      "id": "supplemental-tests-skipped",
+      "setup": true,
+      "input": {
+        "command": [
+          "python3",
+          "adapter.runner"
+        ],
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "case",
+              "input": {
+                "value": "actual input"
+              },
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8",
+              "expected": {
+                "value": "actual input"
+              }
+            }
+          ]
+        },
+        "supplemental_tests": true
+      },
+      "expected": {
+        "passed": true,
+        "total": 1,
+        "coverage_complete": false,
+        "supplemental_status": "skipped"
+      },
+      "coverage_fingerprint": "c59a6b64e6851e3e0f65bcab83d85ec9"
+    },
+    {
+      "id": "supplemental-tests-no-executable-lines",
+      "setup": true,
+      "input": {
+        "command": [
+          "python3",
+          "adapter.runner"
+        ],
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "case",
+              "input": {
+                "value": "actual input"
+              },
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8",
+              "expected": {
+                "value": "actual input"
+              }
+            }
+          ]
+        },
+        "supplemental_tests": true
+      },
+      "expected": {
+        "passed": true,
+        "total": 1,
+        "coverage_complete": false,
+        "supplemental_status": "skipped"
+      },
+      "coverage_fingerprint": "259c72eab9b324da6fa486c7ea73c75c"
+    },
+    {
+      "id": "supplemental-tests-coverage-without-run",
+      "setup": true,
+      "input": {
+        "command": [
+          "python3",
+          "adapter.runner"
+        ],
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "case",
+              "input": {
+                "value": "actual input"
+              },
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8",
+              "expected": {
+                "value": "actual input"
+              }
+            }
+          ]
+        },
+        "supplemental_tests": true
+      },
+      "expected": {
+        "error_contains": "without running its tests"
+      },
+      "coverage_fingerprint": "8818e06c2d8216047adbd43bc1bce6e7"
+    },
+    {
+      "id": "dataset-adapter-multiple-step-errors",
+      "setup": true,
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "sequence",
+              "input": {
+                "value": "outer"
+              },
+              "steps": [
+                {
+                  "id": "first",
+                  "input": {
+                    "value": "first public input"
+                  },
+                  "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8",
+                  "expected_error": "first failure"
+                },
+                {
+                  "id": "second",
+                  "input": {
+                    "value": "second public input"
+                  },
+                  "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8",
+                  "expected_error": "second failure"
+                }
+              ],
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "passed": false,
+        "total": 1,
+        "result_error_contains": "expected error"
+      },
+      "coverage_fingerprint": "d65213369285e4b6e6a7a6fdaa0044fe"
+    },
+    {
+      "id": "dataset-adapter-multiple-coverage-lines",
+      "setup": true,
+      "input": {
+        "support": true,
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "case",
+              "input": {
+                "value": "real input"
+              },
+              "coverage_fingerprint": "642e4c8886d32153e0a01013d9244742",
+              "expected": {
+                "value": "real input"
+              }
+            }
+          ]
+        }
+      },
+      "expected": {
+        "passed": true,
+        "total": 1,
+        "coverage_complete": true
+      },
+      "coverage_fingerprint": "f0fca63bac894c29cfda03b1277cad0e"
+    },
+    {
+      "id": "run-contract-tree-staging-rejects-symlink-escape",
+      "setup": true,
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "case",
+              "input": {
+                "value": "real input"
+              },
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8",
+              "expected": {
+                "value": "real input"
+              }
+            }
+          ]
+        }
+      },
+      "expected": {
+        "error_contains": "staging source escapes package"
+      },
+      "coverage_fingerprint": "e04b2cd9f4c81ba899b07c6e427ffea0"
+    },
+    {
+      "id": "supplemental-tests-not-executed",
+      "setup": true,
+      "input": {
+        "supplemental_tests": true,
+        "command": [
+          "python3",
+          "adapter.runner"
+        ],
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "case",
+              "input": {
+                "value": "real input"
+              },
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8",
+              "expected": {
+                "value": "real input"
+              }
+            }
+          ]
+        }
+      },
+      "expected": {
+        "error_contains": "did not execute manifest-declared supplemental tests"
+      },
+      "coverage_fingerprint": "1b0770a9e88a34c716a4432ae1197f97"
+    },
+    {
+      "id": "show-isolation-plan-staging-rejects-symlink-escape",
+      "setup": true,
+      "input": {
+        "operation": "show-isolation-plan",
+        "backend": "bubblewrap",
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "input",
+              "input": {
+                "value": "actual"
+              },
+              "expected": {
+                "value": "actual"
+              },
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "error_contains": "staging source escapes package"
+      },
+      "coverage_fingerprint": "8fffb221709818e697b6366e238a274c"
     }
   ]
 }

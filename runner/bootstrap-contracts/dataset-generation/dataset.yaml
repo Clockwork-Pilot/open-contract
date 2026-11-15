@@ -11,6 +11,7 @@ cases:
       input: false
     - id: generated-0002
       input: true
+  coverage_fingerprint: 'fa7289f7232ba7c917ac1d5c9238cd7d'
 - id: nested-object-and-required-fields
   input:
     schema:
@@ -42,6 +43,7 @@ cases:
       input:
         enabled: true
         label: sample
+  coverage_fingerprint: '1ec8bd6004bd54f0ab6e34d97a828d91'
 - id: optional-property-enum-and-examples
   input:
     schema:
@@ -122,6 +124,7 @@ cases:
       input:
         mode: safe
         retries: 7
+  coverage_fingerprint: 'e8746066f7e2502cfd6305d845406839'
 - id: number-null-and-homogeneous-array
   input:
     schema:
@@ -211,6 +214,7 @@ cases:
         list:
         - -1
         nothing: null
+  coverage_fingerprint: '18309626654b3243ba4fce712f0697e8'
 - id: integer-range-inclusive
   input:
     schema:
@@ -226,6 +230,7 @@ cases:
       input: 4
     - id: generated-0003
       input: 6
+  coverage_fingerprint: '52c1824f168e36dc51ba13b567995cc2'
 - id: integer-range-lower-bound
   input:
     schema:
@@ -238,6 +243,7 @@ cases:
       input: 2
     - id: generated-0002
       input: 3
+  coverage_fingerprint: '97732105ceef4b8b511475061cb3fa70'
 - id: integer-range-upper-bound
   input:
     schema:
@@ -250,6 +256,7 @@ cases:
       input: 1
     - id: generated-0002
       input: 2
+  coverage_fingerprint: '67b99a844863059a0dc3ee977faab105'
 - id: integer-range-exclusive
   input:
     schema:
@@ -265,6 +272,7 @@ cases:
       input: 3
     - id: generated-0003
       input: 5
+  coverage_fingerprint: 'a040eee21dea0fd0419934536fbd37e4'
 - id: integer-range-with-both-bound-keywords
   input:
     schema:
@@ -282,6 +290,7 @@ cases:
       input: 5
     - id: generated-0003
       input: 8
+  coverage_fingerprint: '7f79100003df82096ea597416d4d9c26'
 - id: number-range
   input:
     schema:
@@ -297,6 +306,7 @@ cases:
       input: 1.5
     - id: generated-0003
       input: 2.5
+  coverage_fingerprint: '43437798fe0e4d28f867e1f404def901'
 - id: number-range-lower-bound
   input:
     schema:
@@ -309,6 +319,7 @@ cases:
       input: 1.5
     - id: generated-0002
       input: 2.5
+  coverage_fingerprint: '969d3cc6bb8409d4e557077130382264'
 - id: number-range-upper-bound
   input:
     schema:
@@ -321,6 +332,7 @@ cases:
       input: 0.5
     - id: generated-0002
       input: 1.5
+  coverage_fingerprint: 'd6699c917497b85dc4402994a512c996'
 - id: number-range-with-exclusive-ends
   input:
     schema:
@@ -332,6 +344,7 @@ cases:
     cases:
     - id: generated-0001
       input: 2.5
+  coverage_fingerprint: '17b79d5374adc57bb359b0498554be50'
 - id: number-range-with-both-bound-keywords
   input:
     schema:
@@ -349,6 +362,7 @@ cases:
       input: 5.0
     - id: generated-0003
       input: 8.0
+  coverage_fingerprint: 'a606cb3f7c1473df1d2e3c133937556b'
 - id: string-length-range
   input:
     schema:
@@ -364,6 +378,7 @@ cases:
       input: aaa
     - id: generated-0003
       input: aaaa
+  coverage_fingerprint: '203c128413abd5cc659b0dc9c4c59ab8'
 - id: string-minimum-length
   input:
     schema:
@@ -376,6 +391,7 @@ cases:
       input: aaa
     - id: generated-0002
       input: aaaa
+  coverage_fingerprint: '097e8631209db9f8d1238cba23f054eb'
 - id: string-maximum-length
   input:
     schema:
@@ -390,6 +406,7 @@ cases:
       input: a
     - id: generated-0003
       input: aaa
+  coverage_fingerprint: '04ec686b81ad102f64f147e95a92983a'
 - id: string-length-counts-unicode-characters
   input:
     schema:
@@ -405,6 +422,7 @@ cases:
       input: a
     - id: generated-0002
       input: é
+  coverage_fingerprint: '7704155886390c2fad194727047a924e'
 - id: user-strings-within-length-range
   input:
     schema:
@@ -429,6 +447,7 @@ cases:
       input: custom
     - id: generated-0006
       input: contract
+  coverage_fingerprint: '935c45602701658ea921ec4d273a00e8'
 - id: type-union
   input:
     schema:
@@ -444,6 +463,7 @@ cases:
       input: ''
     - id: generated-0003
       input: sample
+  coverage_fingerprint: 'a05c64d1729e934803e828ef9b86052e'
 - id: tuple-array
   input:
     schema:
@@ -478,6 +498,7 @@ cases:
       input:
       - sample
       - true
+  coverage_fingerprint: '82afe601c3e3f2ea5e4b2210d60ac3a3'
 - id: tuple-followed-by-homogeneous-items
   input:
     schema:
@@ -507,6 +528,7 @@ cases:
       input:
       - sample
       - 4
+  coverage_fingerprint: 'de182c8b80dadae95c24088426cd8b86'
 - id: const-value
   input:
     schema:
@@ -517,6 +539,7 @@ cases:
     cases:
     - id: generated-0001
       input: fixed
+  coverage_fingerprint: 'e17a8fd17fcc421ce5f95f02db4eb419'
 - id: duplicate-examples-are-deduplicated
   input:
     schema:
@@ -531,6 +554,7 @@ cases:
       input: ''
     - id: generated-0002
       input: sample
+  coverage_fingerprint: 'f7ac061748feb6cedc436fa54609fa18'
 - id: explicitly-authored-call-scenario
   input:
     schema:
@@ -580,6 +604,7 @@ cases:
       input:
         customer: premium-user
         trial: true
+  coverage_fingerprint: 'ad85f5da8a8a3a2facd88af170fd67e2'
 - id: schema-annotations
   input:
     schema:
@@ -595,12 +620,14 @@ cases:
       input: ''
     - id: generated-0002
       input: sample
+  coverage_fingerprint: '7c4949746a8cefd145cf1cb745a97416'
 - id: missing-type-enum-or-const
   input:
     schema:
       title: invalid
   expected:
     error_contains: requires type, enum, or const
+  coverage_fingerprint: 'dd987155b349544e428aea06a1de0186'
 - id: unsupported-schema-keyword
   input:
     schema:
@@ -608,6 +635,7 @@ cases:
       pattern: ^[a-z]+$
   expected:
     error_contains: pattern is not supported
+  coverage_fingerprint: '241620b054d34861e20912648a33611f'
 - id: invalid-user-example
   input:
     schema:
@@ -616,6 +644,7 @@ cases:
       - not-a-number
   expected:
     error_contains: examples contains a value outside the schema
+  coverage_fingerprint: '59a7a386b9fdbb613c2c171544b889de'
 - id: invalid-number-example
   input:
     schema:
@@ -625,6 +654,7 @@ cases:
       - 1
   expected:
     error_contains: examples contains a value outside the schema
+  coverage_fingerprint: 'd4c48e49832897b634efb79951c1a86d'
 - id: generated-value-conflicts-with-enum
   input:
     schema:
@@ -633,6 +663,7 @@ cases:
       - other
   expected:
     error_contains: generated a value outside the schema
+  coverage_fingerprint: 'e7055eb9a263b9c16ef638e88c3ab21d'
 - id: enum-conflicts-with-const
   input:
     schema:
@@ -641,6 +672,7 @@ cases:
       - 3
   expected:
     error_contains: generated a value outside the schema
+  coverage_fingerprint: 'e7055eb9a263b9c16ef638e88c3ab21d'
 - id: const-example-conflict
   input:
     schema:
@@ -649,6 +681,7 @@ cases:
       - different
   expected:
     error_contains: examples contains a value outside the schema
+  coverage_fingerprint: '07a7ea0fd79528b5cb6fcaf8444ebde4'
 - id: generated-value-conflicts-with-type
   input:
     schema:
@@ -656,6 +689,7 @@ cases:
       type: string
   expected:
     error_contains: generated a value outside the schema
+  coverage_fingerprint: 'e92c20ffc6b07576be98320ff23941ef'
 - id: malformed-type-checked-against-example
   input:
     schema:
@@ -665,6 +699,7 @@ cases:
       - 1
   expected:
     error_contains: examples contains a value outside the schema
+  coverage_fingerprint: '7b607ad3760c9f319ef42d3f96b48d10'
 - id: example-value-is-not-a-string
   input:
     schema:
@@ -673,6 +708,7 @@ cases:
       - 3
   expected:
     error_contains: examples contains a value outside the schema
+  coverage_fingerprint: '9072dd5cd73053c749b91aec1a16f4b0'
 - id: required-field-missing-from-user-example
   input:
     schema:
@@ -686,6 +722,7 @@ cases:
       - {}
   expected:
     error_contains: examples contains a value outside the schema
+  coverage_fingerprint: '656c84dd8bcf615d0a66af9519bad621'
 - id: nested-property-example-outside-bounds
   input:
     schema:
@@ -698,6 +735,7 @@ cases:
       - name: x
   expected:
     error_contains: examples contains a value outside the schema
+  coverage_fingerprint: '0f4e900028d4eeda14c23c19eca5bfb0'
 - id: object-example-has-wrong-shape
   input:
     schema:
@@ -706,6 +744,7 @@ cases:
       - 1
   expected:
     error_contains: examples contains a value outside the schema
+  coverage_fingerprint: '2fd40fd96f757d811720d6379d43ad29'
 - id: properties-reject-nonobject-const-example
   input:
     schema:
@@ -717,6 +756,7 @@ cases:
       - 1
   expected:
     error_contains: examples contains a value outside the schema
+  coverage_fingerprint: '9bc8e3aca83067ddf894d3032b5255a6'
 - id: object-example-has-invalid-property
   input:
     schema:
@@ -728,6 +768,7 @@ cases:
       - name: 3
   expected:
     error_contains: examples contains a value outside the schema
+  coverage_fingerprint: '00c3a9665577a2dc77f8ce3afcf7ef67'
 - id: tuple-example-has-wrong-item-type
   input:
     schema:
@@ -738,6 +779,7 @@ cases:
       - - 1
   expected:
     error_contains: examples contains a value outside the schema
+  coverage_fingerprint: 'e54a80c54e44fc6c381f93d797ad9e62'
 - id: homogeneous-array-example-has-wrong-item-type
   input:
     schema:
@@ -748,6 +790,7 @@ cases:
       - - 1
   expected:
     error_contains: examples contains a value outside the schema
+  coverage_fingerprint: '1db314435b8429960058ef62329766cf'
 - id: no-representable-number-between-exclusive-bounds
   input:
     schema:
@@ -756,18 +799,21 @@ cases:
       exclusiveMaximum: 1.0000000000000002e308
   expected:
     error_contains: no generated values within its range
+  coverage_fingerprint: 'c3a578b4366ee3b45cae9cd7125b13e5'
 - id: empty-enum
   input:
     schema:
       enum: []
   expected:
     error_contains: enum must not be empty
+  coverage_fingerprint: 'd7bafd15e1e1727aa74c5c9c50131a92'
 - id: unsupported-type
   input:
     schema:
       type: function
   expected:
     error_contains: is not supported
+  coverage_fingerprint: 'a599c8cb6c7f5745f9171bdcea62f6f1'
 - id: properties-must-be-an-object
   input:
     schema:
@@ -775,6 +821,7 @@ cases:
       properties: []
   expected:
     error_contains: properties must be an object
+  coverage_fingerprint: '4f533e28f681f15a76218593e84a067e'
 - id: required-must-be-an-array
   input:
     schema:
@@ -782,6 +829,7 @@ cases:
       required: name
   expected:
     error_contains: required must be an array
+  coverage_fingerprint: '452bf4c205103accfe015ea638d84f60'
 - id: required-items-must-be-strings
   input:
     schema:
@@ -793,11 +841,13 @@ cases:
           type: string
   expected:
     error_contains: required entries must be strings
+  coverage_fingerprint: '6f05846231d61f1f79e997a18afc92b1'
 - id: schema-must-be-an-object
   input:
     schema: 3
   expected:
     error_contains: schema must be an object
+  coverage_fingerprint: '85cf413de27f76dc811f0bced3d8a98d'
 - id: unsupported-json-schema-dialect
   input:
     schema:
@@ -805,6 +855,7 @@ cases:
       type: string
   expected:
     error_contains: must identify JSON Schema draft 2020-12
+  coverage_fingerprint: '4ca2eace6ea17f0c71b03f9d53dc73e5'
 - id: invalid-schema-annotation
   input:
     schema:
@@ -812,12 +863,14 @@ cases:
       title: 4
   expected:
     error_contains: title must be a string
+  coverage_fingerprint: '14b0f8e86de3cbf077ae84513ce55933'
 - id: enum-must-be-an-array
   input:
     schema:
       enum: hello
   expected:
     error_contains: enum must be an array
+  coverage_fingerprint: '75cc5ec3127938b6d09bba2ae18698c0'
 - id: duplicate-enum-values
   input:
     schema:
@@ -826,6 +879,7 @@ cases:
       - hello
   expected:
     error_contains: enum entries must be unique
+  coverage_fingerprint: '7a9c59f86cc411c7272880f74e371591'
 - id: invalid-type-array-value
   input:
     schema:
@@ -834,18 +888,21 @@ cases:
       - 4
   expected:
     error_contains: type entries must be strings
+  coverage_fingerprint: '04dcd30b5a917dd5a8011af9bd8a42a6'
 - id: empty-type-array
   input:
     schema:
       type: []
   expected:
     error_contains: type array must not be empty
+  coverage_fingerprint: '847eed39ab14ac85361706b685d7a5e6'
 - id: invalid-type-form
   input:
     schema:
       type: 4
   expected:
     error_contains: type must be a string or nonempty array
+  coverage_fingerprint: '3e797914ac8da93bf3669e93235ae5b2'
 - id: examples-must-be-an-array
   input:
     schema:
@@ -853,6 +910,7 @@ cases:
       examples: custom
   expected:
     error_contains: examples must be an array
+  coverage_fingerprint: '7944dbfaa1205925d920536a78b6f6cf'
 - id: minimum-must-be-numeric
   input:
     schema:
@@ -860,6 +918,7 @@ cases:
       minimum: low
   expected:
     error_contains: minimum must be a finite number
+  coverage_fingerprint: '9c62cf0cdf730f30e352170e98b11f6e'
 - id: minimum-length-must-be-nonnegative-integer
   input:
     schema:
@@ -867,6 +926,7 @@ cases:
       minLength: -1
   expected:
     error_contains: minLength must be a nonnegative integer
+  coverage_fingerprint: 'e9a2be7609534ca14178d6db04428a8b'
 - id: string-length-generation-limit
   input:
     schema:
@@ -874,6 +934,7 @@ cases:
       minLength: 4097
   expected:
     error_contains: string bounds exceed
+  coverage_fingerprint: 'c4a5d17d792140a6f22f1afdce6e3f3e'
 - id: duplicate-union-types
   input:
     schema:
@@ -882,6 +943,7 @@ cases:
       - string
   expected:
     error_contains: type entries must be unique
+  coverage_fingerprint: '8450e281ad24fbcb7d769d767030603a'
 - id: duplicate-required-properties
   input:
     schema:
@@ -894,6 +956,7 @@ cases:
           type: string
   expected:
     error_contains: required entries must be unique
+  coverage_fingerprint: '092c9402fd11ef007c6cde5cf735d21e'
 - id: required-name-must-exist
   input:
     schema:
@@ -905,6 +968,7 @@ cases:
           type: string
   expected:
     error_contains: required names unknown property
+  coverage_fingerprint: '1c6e0514e097eb80580c48376b6f7e53'
 - id: required-needs-properties
   input:
     schema:
@@ -913,6 +977,7 @@ cases:
       - name
   expected:
     error_contains: required needs properties
+  coverage_fingerprint: '45c64afd9dd69a02b574ead6592714be'
 - id: prefix-items-must-be-an-array
   input:
     schema:
@@ -921,6 +986,7 @@ cases:
         type: string
   expected:
     error_contains: prefixItems must be an array
+  coverage_fingerprint: '9973adcfff7d3cc9bbbe066820487167'
 - id: too-many-enum-cases
   input:
     schema:
@@ -1441,6 +1507,7 @@ cases:
       - 512
   expected:
     error_contains: generated dataset exceeds 512 cases
+  coverage_fingerprint: '59009f9ead578521a42ec4f091b7cdd0'
 - id: too-many-array-item-cases
   input:
     schema:
@@ -1962,6 +2029,7 @@ cases:
         - 511
   expected:
     error_contains: expands beyond 512 cases
+  coverage_fingerprint: 'fa221a99b0c087810dd96c5065a21572'
 - id: too-many-tuple-prefix-combinations
   input:
     schema:
@@ -2483,6 +2551,7 @@ cases:
       - type: boolean
   expected:
     error_contains: expands beyond 512 cases
+  coverage_fingerprint: 'af18f3dfc2048c796cf4501e47161a8c'
 - id: too-many-short-tuple-combinations
   input:
     schema:
@@ -2499,6 +2568,7 @@ cases:
       - type: boolean
   expected:
     error_contains: expands beyond 512 cases
+  coverage_fingerprint: '3d85a9de87395cf412d6cf831c0d941a'
 - id: contradictory-number-range
   input:
     schema:
@@ -2507,6 +2577,7 @@ cases:
       maximum: 2
   expected:
     error_contains: empty numeric range
+  coverage_fingerprint: '073289a1a72d3d9924938e18a8221427'
 - id: equal-exclusive-number-bounds
   input:
     schema:
@@ -2515,6 +2586,7 @@ cases:
       exclusiveMaximum: 4
   expected:
     error_contains: empty numeric range
+  coverage_fingerprint: 'b93e748ecf7bda6eb39c3c65ec83282b'
 - id: range-with-no-integer-values
   input:
     schema:
@@ -2523,6 +2595,7 @@ cases:
       maximum: 1.8
   expected:
     error_contains: no integer values in its range
+  coverage_fingerprint: '540700d3ff2ab1aa86a23f0d010369f0'
 - id: reversed-string-length-range
   input:
     schema:
@@ -2531,6 +2604,7 @@ cases:
       maxLength: 2
   expected:
     error_contains: minLength must not exceed maxLength
+  coverage_fingerprint: 'dc3b322fe75df5c354ab292bb9e5a687'
 - id: example-outside-length-range
   input:
     schema:
@@ -2541,6 +2615,7 @@ cases:
       - abc
   expected:
     error_contains: examples contains a value outside the schema
+  coverage_fingerprint: 'e669a18119d5eaa4fdc00f81e3491cd5'
 - id: oversized-schema
   input:
     schema:
@@ -2566,3 +2641,143 @@ cases:
           type: boolean
   expected:
     error_contains: expands beyond 512 cases
+  coverage_fingerprint: '30d3c5eb06a2862edee187ed4ecbf1c9'
+- id: maximum-length-must-be-numeric
+  input:
+    schema:
+      type: string
+      maxLength: long
+  expected:
+    error_contains: maxLength must be a nonnegative integer
+  coverage_fingerprint: 'b650a893c157a8096a5123a5e67ead0e'
+- id: maximum-string-length-generation-limit
+  input:
+    schema:
+      type: string
+      maxLength: 4097
+  expected:
+    error_contains: string bounds exceed
+  coverage_fingerprint: '044d81751b5c6cb941f26a818b24920e'
+- id: exclusive-minimum-must-be-finite
+  input:
+    schema:
+      type: number
+      exclusiveMinimum: low
+  expected:
+    error_contains: exclusiveMinimum must be a finite number
+  coverage_fingerprint: 'cddbd1dce22e6ea55d57497c59f1f932'
+- id: exclusive-maximum-must-be-finite
+  input:
+    schema:
+      type: number
+      exclusiveMaximum: high
+  expected:
+    error_contains: exclusiveMaximum must be a finite number
+  coverage_fingerprint: '5e9d28f5870d12111b9fe81d6e5ccf79'
+- id: maximum-must-be-finite
+  input:
+    schema:
+      type: number
+      maximum: high
+  expected:
+    error_contains: maximum must be a finite number
+  coverage_fingerprint: '61d3596d91afaee8e30a6f7bdb1c06d4'
+- id: exclusive-integer-lower-bound
+  input:
+    schema:
+      type: integer
+      exclusiveMinimum: 2
+  expected:
+    version: 1
+    cases:
+    - id: generated-0001
+      input: 3
+    - id: generated-0002
+      input: 4
+  coverage_fingerprint: 'bbcd98861d4adf0674d78feba2b96c33'
+- id: exclusive-integer-upper-bound
+  input:
+    schema:
+      type: integer
+      exclusiveMaximum: 2
+  expected:
+    version: 1
+    cases:
+    - id: generated-0001
+      input: 0
+    - id: generated-0002
+      input: 1
+  coverage_fingerprint: 'fe8356241efa7576c0a8860a223158f4'
+- id: exclusive-number-lower-bound
+  input:
+    schema:
+      type: number
+      exclusiveMinimum: 2
+  expected:
+    version: 1
+    cases:
+    - id: generated-0001
+      input: 3.0
+  coverage_fingerprint: '4e157ddc48e8d48a72934fd47c0c7f52'
+- id: exclusive-number-upper-bound
+  input:
+    schema:
+      type: number
+      exclusiveMaximum: 2
+  expected:
+    version: 1
+    cases:
+    - id: generated-0001
+      input: 1.0
+  coverage_fingerprint: 'ba3ea173203e5f484e51261bb0fa366d'
+- id: equal-inclusive-number-bounds
+  input:
+    schema:
+      type: number
+      minimum: 2
+      maximum: 2
+  expected:
+    version: 1
+    cases:
+    - id: generated-0001
+      input: 2.0
+  coverage_fingerprint: '6887c4662aeb7b47bd1b3e4cefd82e5a'
+- id: invalid-schema-in-prefix-items
+  input:
+    schema:
+      type: array
+      prefixItems:
+      - type: string
+      - {}
+  expected:
+    error_contains: $.prefixItems[1] requires type, enum, or const
+  coverage_fingerprint: 'dd468775ae40b29d1de9fc711f66edee'
+- id: invalid-schema-in-homogeneous-items
+  input:
+    schema:
+      type: array
+      items: {}
+  expected:
+    error_contains: $.items requires type, enum, or const
+  coverage_fingerprint: 'f7526f7dbf2c074a299898f4a0c1663f'
+- id: invalid-schema-in-object-property
+  input:
+    schema:
+      type: object
+      properties:
+        name: {}
+  expected:
+    error_contains: $.properties.name requires type, enum, or const
+  coverage_fingerprint: '761a92c9a76dccca76e5602bc9e26e9a'
+- id: maximum-supported-string-length
+  input:
+    schema:
+      type: string
+      minLength: 4096
+      maxLength: 4096
+  expected:
+    version: 1
+    cases:
+    - id: generated-0001
+      input: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  coverage_fingerprint: 'ae986886aed352111466f9b95ca9d0c2'

@@ -82,7 +82,7 @@ check-predicate-contract:
 
 check-bootstrap-dataset-harness:
 	$(PYTHON) runner/tools/check_bootstrap_contract_coverage.py runner/bootstrap-contracts/dataset-harness
-	$(CARGO) test --manifest-path runner/bootstrap-contracts/dataset-harness/Cargo.toml
+	PATH="$(HOME)/.cargo/bin:$(PATH)" $(CARGO) test --manifest-path runner/bootstrap-contracts/dataset-harness/Cargo.toml
 
 check-rust-runtime-safety:
 	$(PYTHON) runner/tools/check_rust_runtime_safety.py

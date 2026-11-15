@@ -1,19 +1,21 @@
 # Batch execution bootstrap contract
 
-This bootstrap contract exercises `src/lib.rs` directly with public batch
-inputs in `dataset.json`. Its Rust dataset driver creates temporary manifests
-and supplies ordinary adapter results so the cases can check output matching,
-predicates, sequences, dataset validation, and coverage fingerprints.
+This bootstrap contract exercises the batch runner's public functions with
+inputs from `dataset.json`. The validator builds the manifest files required by
+each case, invokes the public API, and compares its actual result with the
+case's expectation.
 
-Harness-only scenarios are Rust unit tests under `tests/support/`; their adapter
-behavior and manifest setup are test configuration, separate from batch input
-in `dataset.json`. The unit test in `src/lib.rs` also loads the public dataset
-entries and reuses them as parsing and request-flattening inputs.
+Dataset coverage is the required coverage source. The scoped checker requires
+100% dataset function, instantiation, line, and region coverage, and requires
+every case to pin its observed 32-character fingerprint. Unit tests may cover
+internal helper behavior that the public interface cannot expose, but their
+coverage does not fill dataset gaps.
 
-The coverage check reports dataset coverage, unit-test-only coverage, and their
-combined coverage against the same Rust implementation-line total. It requires
-100% combined coverage and requires the dataset to contribute more covered
-implementation lines than unit tests.
+When a case needs an external condition, mark it with `setup: true`. The
+validator maps the case ID to setup such as a controlled adapter executable,
+then passes the case's actual input through the public batch API and checks the
+returned result. Setup does not supply the expected result or call private
+implementation helpers. Fixture controls stay outside `input`.
 
 For consumer contracts, the Rust runner reads the manifest, starts the selected
 isolation boundary, executes its declared language-adapter command once for the
@@ -21,8 +23,8 @@ contract tree, and verifies returned outputs afterward. Language adapters only
 execute validators and report results and coverage; they do not read datasets,
 iterate cases or steps, evaluate predicates, or provide isolation. That runtime
 path is exercised when running consumer contracts. The batch bootstrap
-contract focuses on the runner's public batch behavior, while protocol edge
-cases are covered by its unit tests.
+contract focuses on public batch behavior. Unit tests are reserved for internal
+behaviors the public batch interface cannot expose.
 
 Datasets use format version 1 and may be JSON or YAML. Prefer YAML for
 hand-authored datasets. Cases and steps can specify exact expected output,
@@ -33,8 +35,8 @@ Every case and step must declare a nonzero `coverage_fingerprint`; missing,
 malformed, zero, and mismatched values fail. Repeated fingerprints are allowed:
 they mean those inputs covered the same source lines, while still permitting
 distinct behavior checks on those inputs. They do not increase the union of
-covered source lines, so use the combined dataset coverage report to see whether
-new cases add line coverage.
+covered source lines, so use the dataset coverage report to see whether new
+cases add line coverage.
 
 Run only this contract's dataset and coverage checker from the Open Contract
 repository root:

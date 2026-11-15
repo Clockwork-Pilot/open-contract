@@ -138,7 +138,7 @@
         "stdout": "def identity(value):\n    return value\n",
         "success": true
       },
-      "coverage_fingerprint": "be65d26b1925fc18e737f7cc5b3a907e"
+      "coverage_fingerprint": "b5526fc6cdbe4243671cb1dbb1580d99"
     },
     {
       "id": "command-stdin-and-stdout",
@@ -154,7 +154,7 @@
         "stdout": "contract data",
         "success": true
       },
-      "coverage_fingerprint": "b9be7cb37ce5d59bb80cfe330047b309"
+      "coverage_fingerprint": "3e1d45fa1cbdda2bdb7ee2195997d657"
     },
     {
       "id": "python-runtime-command",
@@ -171,7 +171,7 @@
         "stdout": "python runtime",
         "success": true
       },
-      "coverage_fingerprint": "abcab85c9070e6e4f68344ad7eaf3d22"
+      "coverage_fingerprint": "51f4110c7f4b4cadbe9b7abf17a172fb"
     },
     {
       "id": "javascript-runtime-command",
@@ -188,7 +188,7 @@
         "stdout": "javascript runtime",
         "success": true
       },
-      "coverage_fingerprint": "abcab85c9070e6e4f68344ad7eaf3d22"
+      "coverage_fingerprint": "51f4110c7f4b4cadbe9b7abf17a172fb"
     },
     {
       "id": "landlock-command-stdin-and-stdout",
@@ -205,7 +205,7 @@
         "stdout": "restricted command",
         "success": true
       },
-      "coverage_fingerprint": "e2db3b10300e230dc3232c1a681d2b21"
+      "coverage_fingerprint": "5bf588be8dcdfa8a16ddab51c2339574"
     },
     {
       "id": "landlock-open-rule-path-failure",
@@ -220,7 +220,7 @@
       "expected": {
         "error_contains": "cannot open Landlock rule path"
       },
-      "coverage_fingerprint": "f693eced0a4a8eaeea447e38d1b555c3"
+      "coverage_fingerprint": "3faec5c89a0c64228523e0000686deef"
     },
     {
       "id": "landlock-abi-query-failure",
@@ -235,7 +235,7 @@
       "expected": {
         "error_contains": "Operation not permitted"
       },
-      "coverage_fingerprint": "e432e44a40fec2e22214dc90ff0b74e5"
+      "coverage_fingerprint": "c4b927b6730a64ebe831d8dbd12f93fc"
     },
     {
       "id": "landlock-ruleset-create-failure",
@@ -250,7 +250,7 @@
       "expected": {
         "error_contains": "Operation not permitted"
       },
-      "coverage_fingerprint": "14f8d6d42568e9f7988411f8022dd36e"
+      "coverage_fingerprint": "613115cbf4ec456af6e8d22352d112d1"
     },
     {
       "id": "landlock-add-path-rule-failure",
@@ -265,7 +265,7 @@
       "expected": {
         "error_contains": "Operation not permitted"
       },
-      "coverage_fingerprint": "edb3c088b03a017b0a68b821457eb661"
+      "coverage_fingerprint": "500f1979bdd0ce462a5646573595c128"
     },
     {
       "id": "landlock-set-no-new-privileges-failure",
@@ -280,7 +280,7 @@
       "expected": {
         "error_contains": "Operation not permitted"
       },
-      "coverage_fingerprint": "ba20a2401eef7a764ba30a22f0085c2e"
+      "coverage_fingerprint": "1da61c24b77f674de782bf09949638ae"
     },
     {
       "id": "landlock-restrict-self-failure",
@@ -295,7 +295,7 @@
       "expected": {
         "error_contains": "Operation not permitted"
       },
-      "coverage_fingerprint": "ba20a2401eef7a764ba30a22f0085c2e"
+      "coverage_fingerprint": "1da61c24b77f674de782bf09949638ae"
     },
     {
       "id": "bubblewrap-unavailable",
@@ -311,7 +311,7 @@
       "expected": {
         "error_contains": "bwrap is not installed or not on PATH"
       },
-      "coverage_fingerprint": "e7c8b96d1f9e25503f951e47f91cbe79"
+      "coverage_fingerprint": "9fb6d8b2b7acba6ade9259e597183082"
     },
     {
       "id": "bubblewrap-command-stdin-and-stdout",
@@ -328,7 +328,7 @@
         "stdout": "bubblewrap isolated command\n",
         "success": true
       },
-      "coverage_fingerprint": "b0bbb492322e7bfdfcec0870d1a0c826"
+      "coverage_fingerprint": "7e2129571a17e97b234a0cb14f9b4f2a"
     },
     {
       "id": "bubblewrap-command-returns-nonzero-status",
@@ -343,7 +343,7 @@
       "expected": {
         "success": false
       },
-      "coverage_fingerprint": "b0bbb492322e7bfdfcec0870d1a0c826"
+      "coverage_fingerprint": "7e2129571a17e97b234a0cb14f9b4f2a"
     },
     {
       "id": "bubblewrap-command-maps-package-root",
@@ -362,7 +362,7 @@
         "stdout_contains_staged_subpath": true,
         "success": true
       },
-      "coverage_fingerprint": "552df0e3b261b408535776bb7c2ab10e"
+      "coverage_fingerprint": "9d64addc2ce020aeabdb16cbaed2c906"
     },
     {
       "id": "empty-command-is-rejected",
@@ -374,7 +374,7 @@
         "rejected": true,
         "package_command_rejected": true
       },
-      "coverage_fingerprint": "baeeb6d9dfa304d44774f504b3fea94b"
+      "coverage_fingerprint": "e86510ace0a63fb5b19ae52ec2cfc529"
     },
     {
       "id": "command-expands-environment-reference",
@@ -391,7 +391,7 @@
         "stdout": "contract supplied value\n",
         "success": true
       },
-      "coverage_fingerprint": "ea23c4996da7f29fa16d7e65f0356b5d"
+      "coverage_fingerprint": "c82dd80c73ccb908fceba9d287cad7c6"
     },
     {
       "id": "command-rejects-unterminated-environment-reference",
@@ -406,7 +406,7 @@
       "expected": {
         "error_contains": "unterminated environment reference"
       },
-      "coverage_fingerprint": "998c99651304d0c7ee3eae4d9e7db22a"
+      "coverage_fingerprint": "0c71a85316f414cc686da561e67ec1fa"
     },
     {
       "id": "command-rejects-invalid-environment-name",
@@ -421,7 +421,7 @@
       "expected": {
         "error_contains": "invalid environment variable name"
       },
-      "coverage_fingerprint": "beda3a8ac0e5b6783be7f702f0136d8e"
+      "coverage_fingerprint": "e546ddb31480638f8033a6aebd089044"
     },
     {
       "id": "command-rejects-unset-environment-reference",
@@ -437,7 +437,7 @@
       "expected": {
         "error_contains": "references unset environment variable"
       },
-      "coverage_fingerprint": "24e5a826bdb4521722ed8f7dda493a85"
+      "coverage_fingerprint": "4c78bf98324449bd478f99ba3a1251ca"
     },
     {
       "id": "runtime-manifest-validation",
@@ -448,7 +448,7 @@
         "override_applied": true,
         "invalid_manifests_rejected": true
       },
-      "coverage_fingerprint": "aea77ff384124b684d69d7f7beb741f4"
+      "coverage_fingerprint": "a2a286993da435f280bbbc7d2b50356b"
     },
     {
       "id": "command-runtime-rejects-unresolved-executable",
@@ -462,7 +462,7 @@
       "expected": {
         "error_contains": "it cannot be resolved: open-contract-command-does-not-exist"
       },
-      "coverage_fingerprint": "e9b6e4e802fedcdce0b3ad7860e47c2a"
+      "coverage_fingerprint": "719a4fe68a81cdb562380f0fac30aee5"
     },
     {
       "id": "reject-nested-cycles-and-package-escape",
@@ -484,7 +484,7 @@
         "parent_traversal_rejected": true,
         "symlink_escape_rejected": true
       },
-      "coverage_fingerprint": "aa1f80ae68e79ef5d2b8b14f1f4f0d2f"
+      "coverage_fingerprint": "40fc2ca018bb19e7ba43ce213190a545"
     },
     {
       "id": "command-from-contract-subdirectory",
@@ -496,7 +496,7 @@
         "working_directory": "nested",
         "outside_rejected": true
       },
-      "coverage_fingerprint": "3c02c9948ad0d876f345958b52227e01"
+      "coverage_fingerprint": "d9078bae8f906f29612907a968c2b10f"
     },
     {
       "id": "unsupported-language-package-is-rejected",
@@ -506,7 +506,7 @@
       "expected": {
         "rejected": true
       },
-      "coverage_fingerprint": "bff24e63b8e5018fbf15824c83e5af0c"
+      "coverage_fingerprint": "c153c5c1e11dec2d8bb98d4b599c0cca"
     },
     {
       "id": "unresolvable-command-is-rejected",
@@ -516,7 +516,7 @@
       "expected": {
         "rejected": true
       },
-      "coverage_fingerprint": "bd022d67e24f8f58f4dd5c7a2b47d5e7"
+      "coverage_fingerprint": "44c3c127b11efde55442064e1ff35931"
     },
     {
       "id": "closed-stdin-pipe-is-reported",
@@ -526,7 +526,7 @@
       "expected": {
         "rejected": true
       },
-      "coverage_fingerprint": "87a6c5d94ffbf43d7606ebeb4b572a9f"
+      "coverage_fingerprint": "3536f2e14b924e23f919a036abad554d"
     },
     {
       "id": "adapter-runtime-mounts-are-limited",
@@ -544,7 +544,7 @@
           "contract-languages/javascript/node_modules/convert-source-map"
         ]
       },
-      "coverage_fingerprint": "52806f3a247004387fbee9f48893aa43"
+      "coverage_fingerprint": "8fefe3bef90c2deae319c32e44441f47"
     },
     {
       "id": "bubblewrap-missing-from-path",
@@ -555,7 +555,7 @@
       "expected": {
         "rejected": true
       },
-      "coverage_fingerprint": "9f268c8da6dc94bf8e490e4e96c7d989"
+      "coverage_fingerprint": "c5fa5ef314aca0568e932b823c83ee6f"
     },
     {
       "id": "bubblewrap-rejects-invalid-working-root",
@@ -565,7 +565,7 @@
       "expected": {
         "rejected": true
       },
-      "coverage_fingerprint": "49a42eccd0d49ccebc8039cfd1cb407c"
+      "coverage_fingerprint": "8b0ed21b57711d754eac0a4fff1453d4"
     },
     {
       "id": "landlock-denies-private-file-read",
@@ -575,7 +575,7 @@
       "expected": {
         "denied": true
       },
-      "coverage_fingerprint": "be65d26b1925fc18e737f7cc5b3a907e"
+      "coverage_fingerprint": "b5526fc6cdbe4243671cb1dbb1580d99"
     },
     {
       "id": "language-package-valid-resources",
@@ -773,7 +773,7 @@
       "expected": {
         "error_contains": "executable cannot be empty"
       },
-      "coverage_fingerprint": "b3650879d76f958cdf90479b0bcf232a"
+      "coverage_fingerprint": "b5cee3c1d2038a1d21dbf29ebaccc3ae"
     },
     {
       "id": "command-rejects-empty-expanded-executable",
@@ -788,7 +788,7 @@
       "expected": {
         "error_contains": "executable cannot be empty after environment expansion"
       },
-      "coverage_fingerprint": "83417ead114969cae2f9abb95f9fc09f"
+      "coverage_fingerprint": "4bd3b83130d5b9475256247ebdf4abdd"
     },
     {
       "id": "command-reports-spawn-failure",
@@ -802,7 +802,7 @@
       "expected": {
         "error_contains": "No such file"
       },
-      "coverage_fingerprint": "93a7f90155a58d0c6c28d99bc1c3eef7"
+      "coverage_fingerprint": "5f3bbfc133baf14ec2928b179e1b1810"
     },
     {
       "id": "command-at-rejects-unavailable-working-directory",
@@ -813,7 +813,18 @@
       "expected": {
         "error_contains": "working directory is unavailable"
       },
-      "coverage_fingerprint": "551d9608e45e81213606d508d8e09a9a"
+      "coverage_fingerprint": "0ba7da817e09f29163562a5ef355d66d"
+    },
+    {
+      "id": "command-at-rejects-file-as-working-directory",
+      "input": {
+        "operation": "command-at",
+        "working_directory": "dataset.json"
+      },
+      "expected": {
+        "error_contains": "inside the staged contract tree"
+      },
+      "coverage_fingerprint": "7400452749e24c742ccccacf75d64b49"
     },
     {
       "id": "command-rejects-invalid-utf8-environment-reference",
@@ -829,7 +840,7 @@
       "expected": {
         "error_contains": "is not valid UTF-8"
       },
-      "coverage_fingerprint": "6f68909067f16ee31021a8497f5fded4"
+      "coverage_fingerprint": "d5c846c18559478a0319ad2032443ce3"
     },
     {
       "id": "language-package-rejects-invalid-entrypoint-path",
@@ -892,7 +903,7 @@
       "expected": {
         "success": true
       },
-      "coverage_fingerprint": "be65d26b1925fc18e737f7cc5b3a907e"
+      "coverage_fingerprint": "b5526fc6cdbe4243671cb1dbb1580d99"
     },
     {
       "id": "landlock-installation-failure-scenarios",
@@ -907,7 +918,7 @@
       "expected": {
         "success": true
       },
-      "coverage_fingerprint": "60a46ae518e41847952fd1685d64ea65"
+      "coverage_fingerprint": "d8f7d18f3c21905dff9a2e103923f8f6"
     },
     {
       "id": "command-backend-error-paths",
@@ -922,7 +933,7 @@
       "expected": {
         "success": true
       },
-      "coverage_fingerprint": "960c02ec2d8c1429395bbbc58eff6046"
+      "coverage_fingerprint": "24d4cf5446cd45c66594d69ecdba8dec"
     },
     {
       "id": "staging-copy-error-paths",
@@ -937,7 +948,7 @@
       "expected": {
         "success": true
       },
-      "coverage_fingerprint": "5a90585aee92416816247bffde0cfaec"
+      "coverage_fingerprint": "d0e140f8c2922bd1e3d093dfe53c1064"
     },
     {
       "id": "command-none-reports-missing-root",
@@ -952,7 +963,7 @@
       "expected": {
         "error_contains": "No such file"
       },
-      "coverage_fingerprint": "86e1df1d0ba3b3f3cd6525f80256b9c8"
+      "coverage_fingerprint": "1d911158616c69d59eeeeaa854ade960"
     },
     {
       "id": "command-bwrap-reports-missing-root",
@@ -967,7 +978,7 @@
       "expected": {
         "error_contains": "No such file"
       },
-      "coverage_fingerprint": "19ac6f65a62a066210e09d9b2693a66b"
+      "coverage_fingerprint": "925f9ffa5b49bc18865a034fdd7d2662"
     },
     {
       "id": "command-landlock-reports-missing-root",
@@ -982,7 +993,7 @@
       "expected": {
         "error_contains": "No such file"
       },
-      "coverage_fingerprint": "7b4f5ed850a46c2e3650714ed6b5aa58"
+      "coverage_fingerprint": "038ffabd0e2032e21a13cd95e6350633"
     },
     {
       "id": "command-bwrap-reports-missing-staged-support",
@@ -997,7 +1008,7 @@
       "expected": {
         "error_contains": "No such file"
       },
-      "coverage_fingerprint": "1325e7ff7287bbdecbaed4497a8c71d1"
+      "coverage_fingerprint": "d65ab041fe45f698add9e7f0d0f9e7cd"
     },
     {
       "id": "command-landlock-reports-missing-staged-support",
@@ -1012,7 +1023,7 @@
       "expected": {
         "error_contains": "No such file"
       },
-      "coverage_fingerprint": "3ed1835482db11e6e07a5f1faa862475"
+      "coverage_fingerprint": "7db86d09428f03bb0d137290c8cbbefb"
     },
     {
       "id": "command-bwrap-reports-missing-staged-write-file",
@@ -1027,7 +1038,7 @@
       "expected": {
         "error_contains": "reports/result.json"
       },
-      "coverage_fingerprint": "421c6750365cbce1d1c551857b3e599d"
+      "coverage_fingerprint": "cb82b51cad2e1b00870be9bedb4d46e8"
     },
     {
       "id": "command-landlock-reports-missing-staged-write-file",
@@ -1042,7 +1053,7 @@
       "expected": {
         "error_contains": "reports/result.json"
       },
-      "coverage_fingerprint": "0716877ed1e04e79e58e734318ed3d37"
+      "coverage_fingerprint": "55c5052a008409a7500a8a03c996c170"
     },
     {
       "id": "command-at-reports-missing-root",

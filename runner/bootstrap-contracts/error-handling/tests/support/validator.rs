@@ -1,24 +1,38 @@
 use bootstrap_dataset_harness::{run_dataset, DatasetCase};
 use runner_errors::ContractError;
 use serde_json::json;
-use std::process::ExitCode;
+use std::path::Path;
 
-fn main() -> ExitCode {
-    match run() {
-        Ok(()) => ExitCode::SUCCESS,
-        Err(error) => {
-            eprintln!("error-handling dataset: {error}");
-            ExitCode::FAILURE
+pub(crate) fn execute_dataset() -> Result<usize, String> {
+    let package = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    #[cfg(coverage)]
+    let capture_path = std::env::var_os("OPEN_CONTRACT_BOOTSTRAP_COVERAGE_SNAPSHOTS");
+    #[cfg(coverage)]
+    let mut snapshots = Vec::new();
+    let result = run_dataset(package.join("dataset.json"), |_, case| {
+        #[cfg(coverage)]
+        if capture_path.is_some() {
+            unsafe { profile::reset_counters() };
         }
+        validate_case(case)?;
+        #[cfg(coverage)]
+        if capture_path.is_some() {
+            snapshots.push((case.id.clone(), profile::snapshot()?));
+        }
+        Ok(())
+    });
+    #[cfg(coverage)]
+    if let Some(path) = capture_path {
+        profile::restore_aggregate(&snapshots)?;
+        profile::write_snapshots(Path::new(&path), &snapshots)
+            .map_err(|error| format!("cannot write coverage snapshots: {error}"))?;
     }
+    result
 }
 
-fn run() -> Result<(), String> {
-    let dataset_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("dataset.json");
-    let cases = run_dataset(dataset_path, |_, case| validate_case(case))?;
-    println!("Error-handling dataset: {cases} cases passed");
-    Ok(())
-}
+#[cfg(coverage)]
+#[path = "profile.rs"]
+mod profile;
 
 fn validate_case(case: &DatasetCase) -> Result<(), String> {
     let input = &case.input;

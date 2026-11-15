@@ -22,7 +22,7 @@ overall_status=0
 
 for contract in "$@"; do
     case "$contract" in
-        batch-execution|dataset-generation|dataset-harness|error-handling|isolation|manifest|verification)
+        batch-execution|dataset-generation|error-handling|isolation|manifest|verification)
             project=$contract
             check_goal="check-$contract-contract"
             profile=".coverage/bootstrap-contracts/$contract-dataset.profdata"
@@ -30,6 +30,12 @@ for contract in "$@"; do
             if [ "$contract" = verification ]; then
                 ignore_regex='^(/|tests/|bin/)'
             fi
+            ;;
+        dataset-harness)
+            project=$contract
+            check_goal=check-bootstrap-dataset-harness
+            profile=".coverage/bootstrap-contracts/$contract-dataset.profdata"
+            ignore_regex='^(/|tests/)'
             ;;
         predicate)
             project=predicates
