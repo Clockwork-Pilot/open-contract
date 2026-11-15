@@ -1,6 +1,7 @@
 use bootstrap_dataset_harness::{run_dataset, DatasetCase};
 use runner_manifest::{validate_package_path, ManifestPlan};
-use serde_json::Value;
+use runner_verification::match_output;
+use serde_json::{json, Value};
 use std::path::PathBuf;
 use std::process::ExitCode;
 
@@ -49,9 +50,7 @@ mod profile;
 
 fn validate_case(package: &PathBuf, case: &DatasetCase) -> Result<(), String> {
     let input = &case.input;
-    let expected = case.expected_value()?["valid"]
-        .as_bool()
-        .ok_or_else(|| "expected.valid must be boolean".to_string())?;
+    let setup_case = manifest_setup_case(case.id.as_str(), case.setup)?;
     let operation = input["operation"]
         .as_str()
         .ok_or_else(|| "input.operation must be a string".to_string())?;
@@ -62,18 +61,18 @@ fn validate_case(package: &PathBuf, case: &DatasetCase) -> Result<(), String> {
                 .ok_or_else(|| "input.path must be a string".to_string())?;
             validate_package_path(path).is_ok()
         }
-        "manifest" => run_manifest_case(input, case.setup.then_some(case.id.as_str()))?,
+        "manifest" => run_manifest_case(input, setup_case)?,
         "missing-manifest" => {
             let path = input["path"]
                 .as_str()
                 .ok_or_else(|| "input.path must be a string".to_string())?;
-            ManifestPlan::load(package.join(path)).is_ok()
+            ManifestPlan::load(&package.join(path)).is_ok()
         }
         "directory-manifest" => {
             let path = input["path"]
                 .as_str()
                 .ok_or_else(|| "input.path must be a string".to_string())?;
-            ManifestPlan::load(package.join(path)).is_ok()
+            ManifestPlan::load(&package.join(path)).is_ok()
         }
         "root-manifest" => {
             let path = input["path"]
@@ -83,10 +82,24 @@ fn validate_case(package: &PathBuf, case: &DatasetCase) -> Result<(), String> {
         }
         other => return Err(format!("unknown operation {other:?}")),
     };
-    if valid != expected {
-        return Err(format!("expected valid={expected}, got {valid}"));
+    let actual = json!({"valid": valid});
+    match_output(&actual, case.expected.as_ref(), case.predicate.as_deref()).map(|_| ())
+}
+
+fn manifest_setup_case(case_id: &str, setup: bool) -> Result<Option<&str>, String> {
+    let requires_setup = matches!(
+        case_id,
+        "read-path-symlink-escape"
+            | "write-path-symlink-escape"
+            | "write-path-dangling-symlink"
+            | "write-path-inaccessible-ancestor"
+    );
+    if setup != requires_setup {
+        return Err(format!(
+            "dataset case {case_id:?} setup must be {requires_setup}"
+        ));
     }
-    Ok(())
+    Ok(requires_setup.then_some(case_id))
 }
 
 fn run_manifest_case(input: &Value, setup_case: Option<&str>) -> Result<bool, String> {
@@ -149,14 +162,15 @@ fn run_manifest_case(input: &Value, setup_case: Option<&str>) -> Result<bool, St
             )
             .map_err(|error| error.to_string())?;
         }
-        _ => {}
+        None => {}
+        Some(other) => return Err(format!("unknown manifest setup case {other:?}")),
     }
 
     let manifest = input["yaml"]
         .as_str()
         .ok_or_else(|| "fixture yaml must be a string".to_string())?;
     std::fs::write(root.join("contract.yaml"), manifest).map_err(|error| error.to_string())?;
-    let valid = ManifestPlan::load(root.join("contract.yaml")).is_ok();
+    let valid = ManifestPlan::load(&root.join("contract.yaml")).is_ok();
     #[cfg(unix)]
     if let Some(path) = permission_restore {
         use std::os::unix::fs::PermissionsExt;

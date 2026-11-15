@@ -66,10 +66,11 @@ not consumer-specific contracts.
   shared dependencies such as `dataset-harness` and `manifest`. Each package
   owns a JSON or YAML dataset that passes real inputs to its public API, and
   its Makefile check runs the package-scoped dataset coverage checker. Require
-  100% dataset line and region coverage and an exact 32-character lowercase
-  hexadecimal fingerprint on every case. Unit-test coverage cannot make up for
-  a dataset gap. Keep raw LLVM profiles and other generated coverage artifacts
-  under the Open Contract root `.coverage/`, never inside a bootstrap package.
+  100% dataset function, instantiation, line, and region coverage and an exact
+  32-character lowercase hexadecimal fingerprint on every case. Unit-test
+  coverage cannot make up for a dataset gap. Keep raw LLVM profiles and other
+  generated coverage artifacts under the Open Contract root `.coverage/`,
+  never inside a bootstrap package.
 - A dataset validator may perform case-specific test setup before invoking the
   public implementation. A case may declare `setup: true` outside `input`, and
   the validator may map its ID to setup that prepares external conditions the

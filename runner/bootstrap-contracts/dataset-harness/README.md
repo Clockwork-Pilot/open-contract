@@ -57,8 +57,9 @@ harness exercises its own public loader and dataset runner through
 [`dataset.json`](dataset.json); its validator supplies real nested dataset
 documents in `input` and checks the returned behavior. LLVM collection lives
 in test support and writes generated profiles under the Open Contract root
-`.coverage/bootstrap-contracts/`. The package check requires 100% dataset line
-and region coverage plus matching case fingerprints.
+`.coverage/bootstrap-contracts/`. The package check requires 100% dataset
+function, instantiation, line, and region coverage plus matching case
+fingerprints.
 
 Check this shared harness crate from the Open Contract repository root:
 

@@ -17,7 +17,7 @@ fn manifest_paths_cannot_escape_through_symlinks() {
 #[test]
 fn manifest_path_read_failures_are_unit_fixtures() {
     let missing = tempfile::tempdir().unwrap();
-    assert!(ManifestPlan::load(missing.path().join("missing.yaml")).is_err());
+    assert!(ManifestPlan::load(&missing.path().join("missing.yaml")).is_err());
 
     let directory = tempfile::tempdir().unwrap();
     assert!(ManifestPlan::load(directory.path()).is_err());

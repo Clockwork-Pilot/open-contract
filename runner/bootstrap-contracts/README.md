@@ -23,11 +23,11 @@ exercise. Keep those helper calls in the unit-test path, separate from dataset
 case setup and dataset fingerprints.
 
 The bootstrap coverage check runs each package's dataset executable and
-requires 100% implementation line and LLVM region coverage from the dataset.
-Unit-test coverage does not contribute to this requirement; use unit tests for
-implementation details the public dataset input cannot exercise. The check
-also requires every case fingerprint to match the lines observed for that
-case.
+requires 100% implementation function, instantiation, line, and LLVM region
+coverage from the dataset. Unit-test coverage does not contribute to this
+requirement; use unit tests for implementation details the public dataset
+input cannot exercise. The check also requires every case fingerprint to
+match the lines observed for that case.
 
 Open Contract datasets use version 1. Every case and every sequence step must
 declare a matching, nonzero `coverage_fingerprint`. A missing, malformed,

@@ -165,11 +165,16 @@ def main() -> int:
     dataset_total = sum(source.get("summary", {}).get("lines", {}).get("count", 0) for source in sources)
     dataset_regions_covered = sum(source.get("summary", {}).get("regions", {}).get("covered", 0) for source in sources)
     dataset_regions_total = sum(source.get("summary", {}).get("regions", {}).get("count", 0) for source in sources)
+    dataset_functions_covered = sum(source.get("summary", {}).get("functions", {}).get("covered", 0) for source in sources)
+    dataset_functions_total = sum(source.get("summary", {}).get("functions", {}).get("count", 0) for source in sources)
+    dataset_instantiations_covered = sum(source.get("summary", {}).get("instantiations", {}).get("covered", 0) for source in sources)
+    dataset_instantiations_total = sum(source.get("summary", {}).get("instantiations", {}).get("count", 0) for source in sources)
     print(
         f"{package.name} dataset coverage: "
+        f"functions {dataset_functions_covered}/{dataset_functions_total} ({percentage(dataset_functions_covered, dataset_functions_total):.1f}%), "
+        f"instantiations {dataset_instantiations_covered}/{dataset_instantiations_total} ({percentage(dataset_instantiations_covered, dataset_instantiations_total):.1f}%), "
         f"lines {dataset_covered}/{dataset_total} ({percentage(dataset_covered, dataset_total):.1f}%), "
-        f"regions {dataset_regions_covered}/{dataset_regions_total} "
-        f"({percentage(dataset_regions_covered, dataset_regions_total):.1f}%)"
+        f"regions {dataset_regions_covered}/{dataset_regions_total} ({percentage(dataset_regions_covered, dataset_regions_total):.1f}%)"
     )
     try:
         snapshots = read_snapshots(snapshots_path)
@@ -200,8 +205,20 @@ def main() -> int:
             print(f"  {mismatch}", file=sys.stderr)
         return 1
     print(f"Rust coverage report: {report}")
-    regions_covered = dataset_regions_total > 0 and dataset_regions_covered == dataset_regions_total
-    return 0 if dataset_total > 0 and dataset_covered == dataset_total and regions_covered else 1
+    metrics = (
+        (dataset_functions_covered, dataset_functions_total),
+        (dataset_instantiations_covered, dataset_instantiations_total),
+        (dataset_covered, dataset_total),
+        (dataset_regions_covered, dataset_regions_total),
+    )
+    complete = all(total > 0 and covered == total for covered, total in metrics)
+    if not complete:
+        print(
+            "bootstrap dataset coverage must reach 100% for functions, "
+            "instantiations, lines, and regions",
+            file=sys.stderr,
+        )
+    return 0 if complete else 1
 
 
 def percentage(covered: int, total: int) -> float:

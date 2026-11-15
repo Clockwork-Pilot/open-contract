@@ -5,11 +5,7 @@ hooks_log/
 .changes-tracker/
 
 examples/python/.open-contract/
-runner/bootstrap-contracts/batch-execution/target/
-runner/bootstrap-contracts/isolation/target/
-runner/bootstrap-contracts/error-handling/target/
-runner/bootstrap-contracts/manifest/target/
-runner/bootstrap-contracts/verification/target/
+runner/bootstrap-contracts/*/target/
 runner/rust/target/
 .coverage/
 

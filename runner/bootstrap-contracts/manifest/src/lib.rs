@@ -77,7 +77,11 @@ pub struct ManifestPlan {
 
 impl ManifestPlan {
     pub fn load(path: impl AsRef<Path>) -> Result<Self, String> {
-        let manifest_path = canonicalize_path(path.as_ref())?;
+        Self::load_path(path.as_ref())
+    }
+
+    fn load_path(path: &Path) -> Result<Self, String> {
+        let manifest_path = canonicalize_path(path)?;
         let mut package_root = manifest_path.clone();
         package_root.pop();
         let manifest: Manifest =
@@ -276,7 +280,7 @@ mod tests {
     fn manifest_plan_loads_valid_packages_and_rejects_invalid_boundaries() {
         let temp = package();
         write_manifest(temp.path(), VALID);
-        let plan = ManifestPlan::load(temp.path().join("contract.yaml")).unwrap();
+        let plan = ManifestPlan::load(&temp.path().join("contract.yaml")).unwrap();
         assert_eq!(plan.manifest.name, "sample");
         assert!(plan
             .package_root
@@ -297,7 +301,7 @@ mod tests {
             "not: [valid: yaml".to_string(),
         ] {
             write_manifest(temp.path(), &invalid);
-            assert!(ManifestPlan::load(temp.path().join("contract.yaml")).is_err());
+            assert!(ManifestPlan::load(&temp.path().join("contract.yaml")).is_err());
         }
 
         let directory = temp.path().join("dataset-dir");
@@ -309,9 +313,9 @@ mod tests {
                 "read: [dataset-dir, validator.py]",
             );
         write_manifest(temp.path(), &directory_manifest);
-        assert!(ManifestPlan::load(temp.path().join("contract.yaml")).is_err());
+        assert!(ManifestPlan::load(&temp.path().join("contract.yaml")).is_err());
 
-        assert!(ManifestPlan::load(temp.path().join("missing.yaml")).is_err());
+        assert!(ManifestPlan::load(&temp.path().join("missing.yaml")).is_err());
         assert!(ManifestPlan::load(temp.path()).is_err());
 
         #[cfg(unix)]
@@ -323,12 +327,12 @@ mod tests {
                 .unwrap();
             let symlink_manifest = VALID.replace("dataset.json", "escape");
             write_manifest(temp.path(), &symlink_manifest);
-            assert!(ManifestPlan::load(temp.path().join("contract.yaml")).is_err());
+            assert!(ManifestPlan::load(&temp.path().join("contract.yaml")).is_err());
 
             let write_escape =
                 VALID.replace("write: [reports/deep]", "write: [outside-dir/new-file]");
             write_manifest(temp.path(), &write_escape);
-            assert!(ManifestPlan::load(temp.path().join("contract.yaml")).is_err());
+            assert!(ManifestPlan::load(&temp.path().join("contract.yaml")).is_err());
         }
     }
 
@@ -336,7 +340,7 @@ mod tests {
     fn coverage_threshold_defaults_to_100_and_rejects_out_of_range_values() {
         let temp = package();
         write_manifest(temp.path(), VALID);
-        let plan = ManifestPlan::load(temp.path().join("contract.yaml")).unwrap();
+        let plan = ManifestPlan::load(&temp.path().join("contract.yaml")).unwrap();
         assert_eq!(plan.manifest.coverage.minimum_line_percent, 100.0);
 
         write_manifest(
@@ -346,7 +350,7 @@ mod tests {
                 "files: {dataset: dataset.json, validator: validator.py}\ncoverage: {minimum_line_percent: 101}",
             ),
         );
-        assert!(ManifestPlan::load(temp.path().join("contract.yaml"))
+        assert!(ManifestPlan::load(&temp.path().join("contract.yaml"))
             .unwrap_err()
             .contains("coverage.minimum_line_percent"));
     }

@@ -1,10 +1,11 @@
 # Manifest bootstrap contract
 
 This package's dataset drives the public manifest parser and planner in
-`src/lib.rs`. The dataset test entrypoint is `tests/support/validator.rs`,
-which passes each dataset case's actual manifest or path input to that API.
-`src/main.rs` is the command-line entrypoint and delegates to the same
-validator for normal execution.
+`src/lib.rs`. The `bin/dataset-contract.rs` command-line entrypoint delegates to
+`tests/support/validator.rs`, which passes each dataset case's actual manifest
+or path input to that API. The coverage check runs this binary with the full
+dataset; the validator captures each case's profile independently and restores
+the aggregate profile after the batch.
 
 The Rust runner owns manifest loading and planning. The `execution.command`
 field names the language adapter command invoked once for the contract tree.
@@ -18,14 +19,15 @@ shell parsing or word splitting. For example, `"${NODE_BIN}"` lets the caller
 select the executable path while the contract names the variable it requires.
 Unset variables fail before command execution.
 
-Dataset cases provide package paths or manifest YAML directly. The test
-validator materializes package files from each manifest input. Cases requiring
-an external condition such as a symlink escape declare `setup: true`; the
+Dataset cases provide package paths or manifest YAML directly. The validator
+materializes the package files needed by the manifest input. Cases requiring
+an extra external condition such as a symlink escape declare `setup: true`; the
 validator maps that case ID to setup, then passes the supplied manifest input
-to the public parser and checks its result. Setup never replaces the public
-call. The package check requires 100% dataset line and region coverage and
-matching case fingerprints. Generated LLVM profiles and reports stay under the
-Open Contract root `.coverage/bootstrap-contracts/` directory.
+to the public parser and checks its actual result. Setup never replaces the
+public call. Results may use `expected`, a sibling result `predicate`, or both.
+The package check requires 100% function, instantiation, line, and region
+coverage, plus matching case fingerprints. Generated LLVM profiles and reports
+stay under the Open Contract root `.coverage/bootstrap-contracts/` directory.
 
 Run only this contract and its required dataset coverage checker from the Open
 Contract repository root:

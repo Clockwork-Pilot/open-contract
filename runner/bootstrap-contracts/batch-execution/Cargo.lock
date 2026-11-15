@@ -207,6 +207,7 @@ name = "runner-manifest"
 version = "0.1.0"
 dependencies = [
  "bootstrap-dataset-harness",
+ "runner-verification",
  "serde",
  "serde_json",
  "serde_yaml",

@@ -131,10 +131,28 @@ name = "runner-manifest"
 version = "0.1.0"
 dependencies = [
  "bootstrap-dataset-harness",
+ "runner-verification",
  "serde",
  "serde_json",
  "serde_yaml",
  "tempfile",
+]
+
+[[package]]
+name = "runner-predicates"
+version = "1.0.0"
+dependencies = [
+ "bootstrap-dataset-harness",
+ "serde_json",
+]
+
+[[package]]
+name = "runner-verification"
+version = "0.1.0"
+dependencies = [
+ "bootstrap-dataset-harness",
+ "runner-predicates",
+ "serde_json",
 ]
 
 [[package]]
