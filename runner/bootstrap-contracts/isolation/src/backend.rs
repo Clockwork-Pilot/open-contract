@@ -8,7 +8,7 @@ use std::os::fd::{AsRawFd, FromRawFd, OwnedFd};
 use std::os::unix::ffi::OsStrExt;
 use std::os::unix::process::CommandExt;
 use std::path::{Path, PathBuf};
-use std::process::{Command, Output, Stdio};
+use std::process::{Child, Command, Output, Stdio};
 
 pub(super) fn run(
     backend: Backend,
@@ -22,7 +22,15 @@ pub(super) fn run(
     isolation_runtime: Option<&Path>,
 ) -> Result<Output, String> {
     let plan = plan_command(backend, argv, language_package, isolation_runtime)?;
-    run_prepared(backend, package_root, working_directory, read, write, plan, input)
+    run_prepared(
+        backend,
+        package_root,
+        working_directory,
+        read,
+        write,
+        plan,
+        input,
+    )
 }
 
 pub(super) fn run_prepared(
@@ -106,7 +114,9 @@ fn prepare_command(
         .first()
         .is_none_or(|executable| executable.trim().is_empty())
     {
-        return Err("execution.command executable cannot be empty after environment expansion".into());
+        return Err(
+            "execution.command executable cannot be empty after environment expansion".into(),
+        );
     }
     let resolved_executable = if runtime.command_executable {
         let execution_environment = safe_environment(&runtime.environment);
@@ -136,7 +146,9 @@ fn prepare_command(
 /// Expand explicit `${NAME}` references in command arguments. Values remain
 /// one argv element; this deliberately does not invoke a shell or split words.
 fn expand_command(argv: &[String]) -> Result<Vec<String>, String> {
-    argv.iter().map(|argument| expand_argument(argument)).collect()
+    argv.iter()
+        .map(|argument| expand_argument(argument))
+        .collect()
 }
 
 fn expand_argument(argument: &str) -> Result<String, String> {
@@ -145,9 +157,9 @@ fn expand_argument(argument: &str) -> Result<String, String> {
     while let Some(start) = remaining.find("${") {
         expanded.push_str(&remaining[..start]);
         let reference = &remaining[start + 2..];
-        let end = reference
-            .find('}')
-            .ok_or_else(|| format!("unterminated environment reference in command argument {argument:?}"))?;
+        let end = reference.find('}').ok_or_else(|| {
+            format!("unterminated environment reference in command argument {argument:?}")
+        })?;
         let name = &reference[..end];
         let mut characters = name.chars();
         let valid_start = characters
@@ -156,10 +168,14 @@ fn expand_argument(argument: &str) -> Result<String, String> {
         if !valid_start
             || !characters.all(|character| character == '_' || character.is_ascii_alphanumeric())
         {
-            return Err(format!("invalid environment variable name {name:?} in command argument {argument:?}"));
+            return Err(format!(
+                "invalid environment variable name {name:?} in command argument {argument:?}"
+            ));
         }
         let value = std::env::var_os(name)
-            .ok_or_else(|| format!("execution.command references unset environment variable {name}"))?
+            .ok_or_else(|| {
+                format!("execution.command references unset environment variable {name}")
+            })?
             .into_string()
             .map_err(|_| format!("environment variable {name} is not valid UTF-8"))?;
         expanded.push_str(&value);
@@ -217,10 +233,21 @@ fn runtime(
     backend: Backend,
     isolation_runtime: Option<&Path>,
 ) -> Result<Runtime, String> {
-    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../../..")
-        .canonicalize()
-        .map_err(|error| format!("runner root is unavailable: {error}"))?;
+    runtime_with_root_path(
+        profile,
+        backend,
+        isolation_runtime,
+        &Path::new(env!("CARGO_MANIFEST_DIR")).join("../../.."),
+    )
+}
+
+pub(super) fn runtime_with_root_path(
+    profile: Option<&str>,
+    backend: Backend,
+    isolation_runtime: Option<&Path>,
+    runner_root: &Path,
+) -> Result<Runtime, String> {
+    let repository = canonicalize_runner_root(runner_root)?;
     let mut runtime = Runtime {
         roots: Vec::new(),
         environment: BTreeMap::new(),
@@ -230,12 +257,12 @@ fn runtime(
         None => {}
         Some(package) => add_language_package(&mut runtime, &repository, package)?,
     }
-    if backend != Backend::None {
+    if let Some(runtime_name) = backend.runtime_manifest_name() {
         let runtime_manifest = match isolation_runtime {
             Some(path) => path.to_path_buf(),
             None => repository
                 .join("runner/isolation-runtime")
-                .join(format!("{}.yaml", backend.as_str())),
+                .join(format!("{runtime_name}.yaml")),
         };
         add_isolation_runtime(&mut runtime, &runtime_manifest)?;
     }
@@ -314,9 +341,6 @@ fn add_language_package(
         .profiles
         .get("production")
         .ok_or_else(|| format!("{language} runtime manifest has no production profile"))?;
-    let package = package
-        .canonicalize()
-        .map_err(|error| format!("{language} runtime package is unavailable: {error}"))?;
     let resources = profile
         .files
         .iter()
@@ -358,7 +382,9 @@ fn language_package_root(repository: &Path, package_id: &str) -> Result<PathBuf,
             character.is_ascii_alphanumeric() || matches!(character, '-' | '_' | '.')
         });
     if !valid_id {
-        return Err(format!("invalid logical language package identifier: {package_id:?}"));
+        return Err(format!(
+            "invalid logical language package identifier: {package_id:?}"
+        ));
     }
     if let Some(config) = std::env::var_os("OPEN_CONTRACT_LANGUAGE_PACKAGES") {
         let mappings: BTreeMap<String, String> = serde_json::from_str(&config.to_string_lossy())
@@ -413,7 +439,16 @@ fn command(argv: &[String], cwd: &Path, environment: &BTreeMap<String, String>) 
     command
 }
 
-fn collect_output(command: &mut Command, input: &[u8]) -> Result<Output, String> {
+pub(super) fn collect_output(command: &mut Command, input: &[u8]) -> Result<Output, String> {
+    let mut wait = |child: Child| child.wait_with_output();
+    collect_output_with_wait(command, input, &mut wait)
+}
+
+pub(super) fn collect_output_with_wait(
+    command: &mut Command,
+    input: &[u8],
+    wait: &mut dyn FnMut(Child) -> io::Result<Output>,
+) -> Result<Output, String> {
     let mut child = command.spawn().map_err(|error| error.to_string())?;
     let write_error = child
         .stdin
@@ -421,9 +456,7 @@ fn collect_output(command: &mut Command, input: &[u8]) -> Result<Output, String>
         .ok_or_else(|| "command stdin unavailable".to_string())?
         .write_all(input)
         .err();
-    let output = child
-        .wait_with_output()
-        .map_err(|error| error.to_string())?;
+    let output = wait(child).map_err(|error| error.to_string())?;
     if let Some(error) = write_error {
         return Err(format!(
             "failed writing command input: {error}; stderr: {}",
@@ -476,26 +509,30 @@ fn run_bubblewrap(
     args.push(guest.clone());
     created.insert(guest.clone());
 
-    for relative in read {
-        let source = checked_path(&root, relative)?;
-        bind_readonly(
-            &mut args,
-            &source,
-            &guest_path(&guest, &root, &source)?,
-            &mut created,
-        );
+    let read_sources = read
+        .iter()
+        .map(|relative| checked_path(&root, relative))
+        .collect::<Result<Vec<_>, _>>()?;
+    let write_sources = write
+        .iter()
+        .map(|relative| checked_path(&root, relative))
+        .collect::<Result<Vec<_>, _>>()?;
+    let guest_reads = read_sources
+        .iter()
+        .map(|source| guest_path_within_root(&guest, &root, source))
+        .collect::<Vec<_>>();
+    let guest_writes = write_sources
+        .iter()
+        .map(|source| guest_path_within_root(&guest, &root, source))
+        .collect::<Vec<_>>();
+    let guest_cwd = guest_path_within_root(&guest, &root, &cwd);
+    for (source, destination) in read_sources.iter().zip(guest_reads) {
+        bind_readonly(&mut args, source, &destination, &mut created);
     }
-    for relative in write {
-        let source = checked_path(&root, relative)?;
-        bind_writable(
-            &mut args,
-            &source,
-            &guest_path(&guest, &root, &source)?,
-            &mut created,
-        );
+    for (source, destination) in write_sources.iter().zip(guest_writes) {
+        bind_writable(&mut args, source, &destination, &mut created);
     }
 
-    let guest_cwd = guest_path(&guest, &root, &cwd)?;
     let mut child = Command::new(bwrap);
     child.args(args).arg("--chdir").arg(guest_cwd);
     let safe_env = safe_environment(&runtime.environment);
@@ -542,12 +579,22 @@ fn run_landlock(
     let ruleset = create_landlock_ruleset(&rules).map_err(|error| error.to_string())?;
     let mut child = command(argv, &cwd, &safe_environment(&runtime.environment));
     unsafe {
-        child.pre_exec(move || install_landlock(&ruleset));
+        child.pre_exec(landlock_pre_exec(ruleset, install_landlock));
     }
     collect_output(&mut child, input)
 }
 
-pub(super) fn checked_working_directory(root: &Path, working_directory: &Path) -> Result<PathBuf, String> {
+pub(super) fn landlock_pre_exec(
+    ruleset: OwnedFd,
+    install: fn(&OwnedFd) -> io::Result<()>,
+) -> impl FnMut() -> io::Result<()> + Send + 'static {
+    move || install(&ruleset)
+}
+
+pub(super) fn checked_working_directory(
+    root: &Path,
+    working_directory: &Path,
+) -> Result<PathBuf, String> {
     let cwd = working_directory
         .canonicalize()
         .map_err(|error| format!("command working directory is unavailable: {error}"))?;
@@ -584,11 +631,16 @@ fn guest_root(package_root: &Path) -> Result<String, String> {
     Ok(format!("/contract/{name}"))
 }
 
-fn guest_path(guest: &str, root: &Path, source: &Path) -> Result<PathBuf, String> {
+fn guest_path_within_root(guest: &str, root: &Path, source: &Path) -> PathBuf {
     let relative = source
         .strip_prefix(root)
-        .map_err(|error| error.to_string())?;
-    Ok(Path::new(guest).join(relative))
+        .expect("guest paths are derived from validated staged paths");
+    Path::new(guest).join(relative)
+}
+
+pub(super) fn canonicalize_runner_root(path: &Path) -> Result<PathBuf, String> {
+    path.canonicalize()
+        .map_err(|error| format!("runner root is unavailable: {error}"))
 }
 
 fn map_package_argument(argument: &str, root: &Path, guest: &str) -> String {
@@ -649,7 +701,12 @@ fn ensure_parent_dirs(args: &mut Vec<String>, target: &Path, created: &mut HashS
 }
 
 fn find_executable(name: &str) -> Option<PathBuf> {
-    find_executable_in_path(name, std::env::var_os("PATH").as_deref().and_then(|path| path.to_str()))
+    find_executable_in_path(
+        name,
+        std::env::var_os("PATH")
+            .as_deref()
+            .and_then(|path| path.to_str()),
+    )
 }
 
 fn find_executable_in_path(name: &str, search_path: Option<&str>) -> Option<PathBuf> {
@@ -662,24 +719,17 @@ fn find_executable_in_path(name: &str, search_path: Option<&str>) -> Option<Path
         .find(|candidate| candidate.is_file())
 }
 
-#[cfg(test)]
-fn runtime_command_roots(argv: &[String]) -> Vec<PathBuf> {
-    let path = std::env::var_os("PATH").map(|value| value.to_string_lossy().into_owned());
-    find_executable_in_path(&argv[0], path.as_deref())
-        .map(|executable| runtime_command_roots_for_executable(&executable))
-        .unwrap_or_default()
-}
-
-fn runtime_command_roots_for_executable(executable: &Path) -> Vec<PathBuf> {
+pub(super) fn runtime_command_roots_for_executable(executable: &Path) -> Vec<PathBuf> {
     let mut roots = Vec::new();
     if let Some(directory) = executable.parent() {
         roots.push(directory.to_path_buf());
     }
-    if let Ok(resolved) = executable.canonicalize() {
-        if let Some(directory) = resolved.parent() {
-            roots.push(directory.to_path_buf());
-        }
-    }
+    roots.extend(
+        executable
+            .canonicalize()
+            .ok()
+            .and_then(|resolved| resolved.parent().map(Path::to_path_buf)),
+    );
     roots.sort();
     roots.dedup();
     roots
@@ -703,17 +753,17 @@ fn safe_environment(runtime: &BTreeMap<String, String>) -> BTreeMap<String, Stri
 }
 
 #[cfg(target_os = "linux")]
-type LandlockRules = Vec<(OwnedFd, u64)>;
+pub(super) type LandlockRules = Vec<(OwnedFd, u64)>;
 
 #[cfg(target_os = "linux")]
-fn landlock_rules(allowed: &[(PathBuf, bool)]) -> Result<LandlockRules, String> {
-    landlock_rules_with_open(allowed, open_landlock_rule_path)
+pub(super) fn landlock_rules(allowed: &[(PathBuf, bool)]) -> Result<LandlockRules, String> {
+    landlock_rules_with_open(allowed, &mut open_landlock_rule_path)
 }
 
 #[cfg(target_os = "linux")]
-fn landlock_rules_with_open(
+pub(super) fn landlock_rules_with_open(
     allowed: &[(PathBuf, bool)],
-    mut open_rule_path: impl FnMut(&Path) -> io::Result<OwnedFd>,
+    open_rule_path: &mut dyn FnMut(&Path) -> io::Result<OwnedFd>,
 ) -> Result<LandlockRules, String> {
     const READ_ACCESS: u64 = (1 << 0) | (1 << 2) | (1 << 3);
     const WRITE_ACCESS: u64 = (1 << 1)
@@ -769,7 +819,7 @@ fn landlock_rules_with_open(
 }
 
 #[cfg(target_os = "linux")]
-fn open_landlock_rule_path(path: &Path) -> io::Result<OwnedFd> {
+pub(super) fn open_landlock_rule_path(path: &Path) -> io::Result<OwnedFd> {
     let encoded = CString::new(path.as_os_str().as_bytes())
         .map_err(|error| io::Error::new(io::ErrorKind::InvalidInput, error))?;
     let fd = unsafe { libc::open(encoded.as_ptr(), 0o10000000 | libc::O_CLOEXEC) };
@@ -781,30 +831,30 @@ fn open_landlock_rule_path(path: &Path) -> io::Result<OwnedFd> {
 
 #[cfg(target_os = "linux")]
 #[repr(C)]
-struct RulesetAttr {
+pub(super) struct RulesetAttr {
     handled_access_fs: u64,
 }
 
 #[cfg(target_os = "linux")]
 #[repr(C)]
-struct PathBeneathAttr {
+pub(super) struct PathBeneathAttr {
     allowed_access: u64,
     parent_fd: i32,
 }
 
 #[cfg(target_os = "linux")]
-enum LandlockCall<'a> {
+pub(super) enum LandlockCall<'a> {
     QueryAbi,
     CreateRuleset(&'a RulesetAttr),
     AddPathRule(i32, &'a PathBeneathAttr),
 }
 
 #[cfg(target_os = "linux")]
-fn create_landlock_ruleset(rules: &LandlockRules) -> io::Result<OwnedFd> {
+pub(super) fn create_landlock_ruleset(rules: &LandlockRules) -> io::Result<OwnedFd> {
     const CREATE: libc::c_long = 444;
     const ADD: libc::c_long = 445;
     const VERSION: libc::c_int = 1;
-    create_landlock_ruleset_with(rules, |call| match call {
+    create_landlock_ruleset_with(rules, &mut |call| match call {
         LandlockCall::QueryAbi => unsafe {
             libc::syscall(CREATE, std::ptr::null::<RulesetAttr>(), 0usize, VERSION)
         },
@@ -816,9 +866,9 @@ fn create_landlock_ruleset(rules: &LandlockRules) -> io::Result<OwnedFd> {
 }
 
 #[cfg(target_os = "linux")]
-fn create_landlock_ruleset_with(
+pub(super) fn create_landlock_ruleset_with(
     rules: &LandlockRules,
-    mut syscall: impl FnMut(LandlockCall<'_>) -> libc::c_long,
+    syscall: &mut dyn FnMut(LandlockCall<'_>) -> libc::c_long,
 ) -> io::Result<OwnedFd> {
     let abi = syscall(LandlockCall::QueryAbi);
     if abi < 1 {
@@ -852,20 +902,20 @@ fn create_landlock_ruleset_with(
 }
 
 #[cfg(target_os = "linux")]
-fn install_landlock(ruleset: &OwnedFd) -> io::Result<()> {
+pub(super) fn install_landlock(ruleset: &OwnedFd) -> io::Result<()> {
     const RESTRICT: libc::c_long = 446;
     install_landlock_with(
         ruleset,
-        || unsafe { libc::prctl(libc::PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0) },
-        |fd| unsafe { libc::syscall(RESTRICT, fd, 0) },
+        &mut || unsafe { libc::prctl(libc::PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0) },
+        &mut |fd| unsafe { libc::syscall(RESTRICT, fd, 0) },
     )
 }
 
 #[cfg(target_os = "linux")]
-fn install_landlock_with(
+pub(super) fn install_landlock_with(
     ruleset: &OwnedFd,
-    mut set_no_new_privs: impl FnMut() -> libc::c_int,
-    mut restrict: impl FnMut(i32) -> libc::c_long,
+    set_no_new_privs: &mut dyn FnMut() -> libc::c_int,
+    restrict: &mut dyn FnMut(i32) -> libc::c_long,
 ) -> io::Result<()> {
     if set_no_new_privs() < 0 {
         return Err(io::Error::last_os_error());
@@ -877,7 +927,7 @@ fn install_landlock_with(
 }
 
 #[cfg(not(target_os = "linux"))]
-type LandlockRules = Vec<(OwnedFd, u64)>;
+pub(super) type LandlockRules = Vec<(OwnedFd, u64)>;
 
 #[cfg(not(target_os = "linux"))]
 fn landlock_rules(_allowed: &[(PathBuf, bool)]) -> Result<LandlockRules, String> {
@@ -899,7 +949,3 @@ fn install_landlock(_ruleset: &OwnedFd) -> io::Result<()> {
         "Landlock is available only on Linux",
     ))
 }
-
-#[cfg(all(test, target_os = "linux"))]
-#[path = "../tests/backend_supplemental.rs"]
-mod backend_supplemental_tests;

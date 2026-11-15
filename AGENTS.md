@@ -62,6 +62,16 @@ not consumer-specific contracts.
 - Treat dataset execution as the primary coverage source. Run the full contract
   dataset first and report its covered files and line numbers separately from
   any supplemental test coverage.
+- A dataset validator may perform case-specific test setup before invoking the
+  public implementation. A case may declare `setup: true` outside `input`, and
+  the validator may map its ID to setup that prepares external conditions the
+  public input cannot create, such as environment values, temporary files, a
+  fake executable, or a controlled OS result. Setup must then pass the case's
+  actual `input` to the public function and check its actual result against
+  `expected` or the result predicate. Setup must not replace that call, invent
+  a result, or call implementation internals to claim dataset coverage. Keep
+  fixture data and setup controls outside the public input; do not add
+  harness-only operations or placeholder inputs to datasets.
 - When developing a contract toward 100% coverage, run its dataset with the
   coverage report, inspect uncovered files and lines, and map each gap to a
   behavior. If LLVM reports missing lines but its LCOV file has no line entries,
@@ -77,12 +87,12 @@ not consumer-specific contracts.
   not rerun contracts that already pass or the full suite until the focused
   coverage gate passes. Then confirm the repaired contract's report reaches
   100% for its implementation before moving on.
-- Ordinary unit tests never contribute to contract coverage. A contract may
-  explicitly list rare supplemental test files in its manifest for behavior
-  that datasets cannot reach. Run dataset cases first; run those files only
-  after dataset-only line coverage reaches 90%. Report their coverage separately
-  and never let it change dataset coverage, fingerprints, or dataset coverage
-  percentages. Every supplemental or mock test must document why dataset cases
+- Ordinary unit tests never contribute to dataset coverage or fingerprints. A
+  contract may use them for internal helper behavior that the public interface
+  cannot expose. Keep their setup and calls in the unit-test path; do not invoke
+  unit-test helpers from a dataset validator to add implementation lines to a
+  case fingerprint. Report unit-test coverage separately from dataset coverage.
+  Every supplemental or mock test must document why a public dataset call
   cannot exercise it and identify the exact behavior or branches it checks.
 - Rust runtime code must return actionable errors instead of panicking. Do not
   use `assert!`, `panic!`, `unwrap`, `expect`, `todo!`, `unimplemented!`, or

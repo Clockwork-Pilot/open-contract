@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "json-case",
+      "setup": true,
+      "input": {"value": 7},
+      "coverage_fingerprint": "0123456789abcdef0123456789abcdef",
+      "expected": {"value": 7}
+    }
+  ]
+}

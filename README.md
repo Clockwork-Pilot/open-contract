@@ -31,20 +31,19 @@ contracts are not placeholder copies of code hidden in the application.
 ## Why contracts
 
 A contract makes the behavior to exercise explicit in its manifest and
-dataset. Open Contract runs each contract inside a filesystem boundary that
-limits it to its declared data and source, plus the runtime resources it needs.
-That makes the contract the boundary we can control: its dataset states what
-must be exercised, and its isolation prevents the check from silently relying
-on unrelated repository files.
+dataset. A dataset describes the contract's public inputs and observable
+expectations: input values, exact outputs, predicates, expected validator
+errors, and sequences of public calls. It should not encode how the test
+harness creates files, fabricates adapter responses, or arranges internal
+fixtures. Open Contract runs each contract inside the filesystem boundary
+declared by its manifest.
 
-Generic unit tests are not the coverage target. Tests that agents generate by
-calling individual functions can cover convenient helper functions without
-specifying which behavior matters to the contract. Coverage therefore comes
-first from running each contract's dataset against its implementation. The
-default `coverage.minimum_line_percent` is 100%, showing that the dataset
-exercises all instrumented implementation lines in scope. This is evidence
-about what the contract exercises, not by itself a proof that the implementation
-is correct.
+Dataset cases are the primary behavior checks because they describe what a
+contract user can provide and observe. Use ordinary unit tests for internal
+conditions that cannot be reached through that public interface, such as
+fabricated adapter failures or harness setup errors. Unit tests may reuse
+dataset inputs as regression examples, while keeping harness controls out of
+the public dataset.
 
 ## Run contracts
 
@@ -85,19 +84,40 @@ errors, and native coverage. The Rust verifier compares outputs with exact
 expected values or evaluates the shared predicate language after the batch
 returns. Contracts are not assumed to be network services.
 
-Bootstrap Rust packages are exercised by dataset executables. Supplemental
-tests are an exceptional option for behavior that datasets cannot exercise: a
-manifest must list them under `files.supplemental_tests`, and dataset coverage
-must be at least 90% before they run. Dataset and supplemental coverage are
-reported separately; supplemental coverage can contribute to the manifest's
-combined threshold. Undeclared unit tests never count.
+Bootstrap Rust packages run their dataset executable with
+`runner/tools/check_bootstrap_contract_coverage.py`. The dataset must cover
+100% of implementation lines and LLVM regions. Unit-test coverage is excluded
+from this requirement; use unit tests for implementation details the public
+dataset interface cannot exercise.
+
+After running the contract checks, generate HTML reports for all bootstrap
+contracts with:
+
+```sh
+make bootstrap-contract-coverage-html
+```
+
+Reports are written to `.coverage/bootstrap-contracts/<contract-name>/html/` at
+the Open Contract repository root. The directory is ignored by Git. Each report
+excludes sibling bootstrap crates used as dependencies; the shared
+`dataset-harness` crate has no separate report.
+
+Every Open Contract dataset case and step must declare a matching,
+nonzero `coverage_fingerprint`. It records the covered package-relative source
+files and lines for that execution. Missing, malformed, zero, or stale values
+fail the case and must be refreshed when its observed coverage changes.
+Coverage checks use the repository-pinned Rust toolchain because LLVM versions
+can map source coverage to lines differently. Rustup installs the configured
+toolchain and `llvm-tools-preview` component when they are missing.
+Repeated fingerprints are allowed: those entries cover the same source lines,
+though they may assert different behavior. A repeated fingerprint adds no new
+line coverage by itself.
 
 The runner prints a concise case and coverage summary, including uncovered line
 ranges. It always writes the full report to
 `.open-contract/coverage/latest.json`; `--coverage-report <path>` selects a
-different location. A run exits nonzero when cases fail, pinned fingerprints
-mismatch, or the manifest's coverage threshold is not met. Coverage fingerprints
-belong on dataset cases or steps; an all-zero fingerprint is invalid.
+different location. A run exits nonzero when cases fail, a required fingerprint
+is missing or mismatched, or the manifest's coverage threshold is not met.
 
 Run the runner, bootstrap-contract coverage checks, and language support checks
 with:

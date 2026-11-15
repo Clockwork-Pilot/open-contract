@@ -1,4 +1,4 @@
-use open_contract_manifest::{validate_package_path, ManifestPlan};
+use runner_manifest::{validate_package_path, ManifestPlan};
 mod backend;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -27,11 +27,11 @@ pub fn validate_language_package(repository: &Path, language: &str) -> Result<()
 }
 
 impl Backend {
-    pub fn as_str(self) -> &'static str {
+    pub fn runtime_manifest_name(self) -> Option<&'static str> {
         match self {
-            Self::None => "none",
-            Self::Bubblewrap => "bwrap",
-            Self::Landlock => "landlock",
+            Self::None => None,
+            Self::Bubblewrap => Some("bwrap"),
+            Self::Landlock => Some("landlock"),
         }
     }
 }
@@ -44,8 +44,7 @@ pub struct StagedTree {
     pub root_plan: ManifestPlan,
     pub read: Vec<String>,
     pub write: Vec<String>,
-    pub manifests: Vec<ManifestPlan>,
-    manifest_prefixes: Vec<PathBuf>,
+    pub manifests: Vec<(ManifestPlan, PathBuf)>,
     isolation_runtime: Option<PathBuf>,
 }
 
@@ -61,6 +60,14 @@ impl StagedTree {
         root: &ManifestPlan,
         isolation_runtime: Option<PathBuf>,
     ) -> Result<Self, String> {
+        Self::create_with_runtime_using(root, isolation_runtime, &mut |path| fs::File::create(path))
+    }
+
+    fn create_with_runtime_using(
+        root: &ManifestPlan,
+        isolation_runtime: Option<PathBuf>,
+        create_file: &mut dyn FnMut(&Path) -> std::io::Result<fs::File>,
+    ) -> Result<Self, String> {
         let temp = tempfile::Builder::new()
             .prefix("open-contract-")
             .tempdir()
@@ -73,10 +80,9 @@ impl StagedTree {
             read: Vec::new(),
             write: Vec::new(),
             manifests: Vec::new(),
-            manifest_prefixes: Vec::new(),
             isolation_runtime,
         };
-        tree.stage_recursive(root, Path::new(""), &mut Vec::new())?;
+        tree.stage_recursive(root, Path::new(""), &mut Vec::new(), create_file)?;
         tree.read.sort();
         tree.read.dedup();
         tree.write.sort();
@@ -89,6 +95,7 @@ impl StagedTree {
         plan: &ManifestPlan,
         prefix: &Path,
         stack: &mut Vec<PathBuf>,
+        create_file: &mut dyn FnMut(&Path) -> std::io::Result<fs::File>,
     ) -> Result<(), String> {
         if stack.contains(&plan.manifest_path) {
             return Err(format!(
@@ -97,8 +104,7 @@ impl StagedTree {
             ));
         }
         stack.push(plan.manifest_path.clone());
-        self.manifests.push(plan.clone());
-        self.manifest_prefixes.push(prefix.to_path_buf());
+        self.manifests.push((plan.clone(), prefix.to_path_buf()));
         for entry in &plan.manifest.filesystem.read {
             let source = plan.package_root.join(entry);
             let target_rel = prefix.join(entry);
@@ -112,9 +118,7 @@ impl StagedTree {
             if target.extension().is_some() {
                 let parent = target.parent().map_or(self.root.as_path(), |path| path);
                 fs::create_dir_all(parent).map_err(|e| e.to_string())?;
-                if !target.exists() {
-                    fs::File::create(&target).map_err(|e| e.to_string())?;
-                }
+                let _created = create_declared_write_file_if_missing(&target, create_file)?;
             } else {
                 fs::create_dir_all(&target).map_err(|e| e.to_string())?;
             }
@@ -131,7 +135,7 @@ impl StagedTree {
             self.read
                 .push(prefix.join(child_rel).to_string_lossy().replace('\\', "/"));
             let child_prefix = prefix.join(child_rel.parent().unwrap_or(Path::new("")));
-            self.stage_recursive(&child, &child_prefix, stack)?;
+            self.stage_recursive(&child, &child_prefix, stack, create_file)?;
         }
         stack.pop();
         Ok(())
@@ -189,7 +193,10 @@ impl StagedTree {
         command: &[String],
         language_package: Option<&str>,
     ) -> Result<StagedCommandPlan, String> {
-        let root = self.root.canonicalize().map_err(|error| error.to_string())?;
+        let root = self
+            .root
+            .canonicalize()
+            .map_err(|error| error.to_string())?;
         let working_directory = backend::checked_working_directory(&root, working_directory)?;
         let plan = backend::plan_command(
             backend,
@@ -205,20 +212,38 @@ impl StagedTree {
             runtime_plan: plan,
         })
     }
+}
 
-    pub fn root_manifest(&self) -> Option<&ManifestPlan> {
-        self.manifests.first()
+fn create_declared_write_file_if_missing(
+    target: &Path,
+    create_file: &mut dyn FnMut(&Path) -> std::io::Result<fs::File>,
+) -> Result<Option<fs::File>, String> {
+    if target.exists() {
+        return Ok(None);
     }
-
-    pub fn manifests_with_prefixes(&self) -> impl Iterator<Item = (&ManifestPlan, &Path)> {
-        self.manifests
-            .iter()
-            .zip(&self.manifest_prefixes)
-            .map(|(manifest, prefix)| (manifest, prefix.as_path()))
-    }
+    create_file(target)
+        .map(Some)
+        .map_err(|error| error.to_string())
 }
 
 fn copy_entry(source: &Path, package_root: &Path, destination: &Path) -> Result<(), String> {
+    copy_entry_with(source, package_root, destination, &mut |directory| {
+        fs::read_dir(directory).map(|entries| {
+            entries
+                .map(|entry| entry.map(|entry| (entry.file_name(), entry.path())))
+                .collect::<Vec<_>>()
+        })
+    })
+}
+
+fn copy_entry_with(
+    source: &Path,
+    package_root: &Path,
+    destination: &Path,
+    read_directory: &mut dyn FnMut(
+        &Path,
+    ) -> std::io::Result<Vec<std::io::Result<(std::ffi::OsString, PathBuf)>>>,
+) -> Result<(), String> {
     let resolved = source
         .canonicalize()
         .map_err(|e| format!("{}: {e}", source.display()))?;
@@ -231,9 +256,9 @@ fn copy_entry(source: &Path, package_root: &Path, destination: &Path) -> Result<
     }
     if resolved.is_dir() {
         fs::create_dir_all(destination).map_err(|e| e.to_string())?;
-        for entry in fs::read_dir(&resolved).map_err(|e| e.to_string())? {
-            let entry = entry.map_err(|e| e.to_string())?;
-            copy_entry(&entry.path(), &root, &destination.join(entry.file_name()))?;
+        for entry in read_directory(&resolved).map_err(|e| e.to_string())? {
+            let (file_name, entry) = entry.map_err(|e| e.to_string())?;
+            copy_entry_with(&entry, &root, &destination.join(file_name), read_directory)?;
         }
     } else {
         let parent = destination.parent().map_or(package_root, |path| path);
@@ -244,130 +269,31 @@ fn copy_entry(source: &Path, package_root: &Path, destination: &Path) -> Result<
 }
 
 #[cfg(test)]
-mod tests {
-    use super::{Backend, StagedTree};
-    use open_contract_manifest::ManifestPlan;
-    use std::path::Path;
+extern crate self as runner_isolation;
 
-    fn package(temp: &Path, name: &str, filesystem: &str, files: &str) -> ManifestPlan {
-        std::fs::write(temp.join("dataset.json"), "{\"version\":1,\"cases\":[]}").unwrap();
-        std::fs::write(
-            temp.join("validator.py"),
-            "def validate(value): return value\n",
-        )
-        .unwrap();
-        std::fs::write(
-            temp.join("contract.yaml"),
-            format!("version: '1'\nname: {name}\nfiles: {{dataset: dataset.json, validator: validator.py{files}}}\nfilesystem: {filesystem}\n"),
-        ).unwrap();
-        ManifestPlan::load(temp.join("contract.yaml")).unwrap()
+#[cfg(test)]
+pub(crate) mod test_fixture {
+    pub(crate) fn exercise_landlock_installation_paths() -> Result<(), String> {
+        super::backend_unit_tests::exercise_landlock_installation_paths()
     }
 
-    #[test]
-    fn isolation_contract_dataset_is_staged_under_a_fresh_root() {
-        let dataset: serde_json::Value =
-            serde_json::from_str(include_str!("../dataset.json")).unwrap();
-        let temp = tempfile::tempdir().unwrap();
-        std::fs::write(temp.path().join("dataset.json"), dataset.to_string()).unwrap();
-        std::fs::write(
-            temp.path().join("validator.py"),
-            "def validate(value): return value\n",
-        )
-        .unwrap();
-        std::fs::write(
-            temp.path().join("contract.yaml"),
-            "version: '1'\nname: isolation-fixture\nfiles: {dataset: dataset.json, validator: validator.py}\nfilesystem: {read: [dataset.json, validator.py], write: [reports]}\n",
-        )
-        .unwrap();
-        let plan = ManifestPlan::load(temp.path().join("contract.yaml")).unwrap();
-        let first = StagedTree::create(&plan).unwrap();
-        let second = StagedTree::create(&plan).unwrap();
-        assert_ne!(first.root, second.root);
-        let staged: serde_json::Value =
-            serde_json::from_slice(&std::fs::read(first.root.join("dataset.json")).unwrap())
-                .unwrap();
-        assert_eq!(
-            staged["cases"][0]["input"]["value"],
-            dataset["cases"][0]["input"]["value"]
-        );
-        assert_eq!(Backend::None.as_str(), "none");
-        assert_eq!(Backend::Bubblewrap.as_str(), "bwrap");
-        assert_eq!(Backend::Landlock.as_str(), "landlock");
-        assert!(first.root_manifest().is_some());
+    pub(crate) fn exercise_backend_error_paths() -> Result<(), String> {
+        super::backend_unit_tests::exercise_backend_error_paths()
     }
 
-    #[test]
-    fn isolation_stages_write_files_and_executes_a_command() {
-        let temp = tempfile::tempdir().unwrap();
-        let plan = package(
-            temp.path(),
-            "write-fixture",
-            "{read: [dataset.json, validator.py], write: [reports/result.json]}",
-            "",
-        );
-        let tree = StagedTree::create(&plan).unwrap();
-        assert!(tree.root.join("reports/result.json").is_file());
-        let output = tree
-            .run_command(
-                Backend::None,
-                &tree.root,
-                &[
-                    "python3".into(),
-                    "-c".into(),
-                    "import sys; print(sys.stdin.read())".into(),
-                ],
-                b"input-check",
-                None,
-            )
-            .unwrap();
-        assert!(output.status.success());
-        assert_eq!(
-            String::from_utf8_lossy(&output.stdout).trim(),
-            "input-check"
-        );
-        assert!(tree
-            .run_command(Backend::None, &tree.root, &[], b"", None)
-            .is_err());
-    }
-
-    #[test]
-    fn isolation_rejects_nested_cycles_and_package_escape_symlinks() {
-        let temp = tempfile::tempdir().unwrap();
-        let cycle = package(
-            temp.path(),
-            "cycle",
-            "{read: [dataset.json, validator.py, contract.yaml], write: []}",
-            ", nested_contracts: [contract.yaml]",
-        );
-        assert!(StagedTree::create(&cycle)
-            .err()
-            .unwrap()
-            .contains("cycle detected"));
-
-        #[cfg(unix)]
-        {
-            let temp = tempfile::tempdir().unwrap();
-            let outside = tempfile::tempdir().unwrap();
-            std::fs::write(outside.path().join("secret"), "secret").unwrap();
-            std::fs::create_dir(temp.path().join("escape")).unwrap();
-            std::fs::write(temp.path().join("escape/child"), "inside").unwrap();
-            std::fs::write(temp.path().join("dataset.json"), "{}").unwrap();
-            std::fs::write(
-                temp.path().join("validator.py"),
-                "def validate(value): return value\n",
-            )
-            .unwrap();
-            std::fs::write(
-                temp.path().join("contract.yaml"),
-                "version: '1'\nname: symlink-escape\nfiles: {dataset: dataset.json, validator: validator.py}\nfilesystem: {read: [dataset.json, validator.py, escape], write: []}\n",
-            ).unwrap();
-            let plan = ManifestPlan::load(temp.path().join("contract.yaml")).unwrap();
-            std::fs::remove_dir_all(temp.path().join("escape")).unwrap();
-            std::os::unix::fs::symlink(outside.path(), temp.path().join("escape")).unwrap();
-            assert!(StagedTree::create(&plan)
-                .err()
-                .unwrap()
-                .contains("escapes package"));
-        }
+    pub(crate) fn exercise_staging_copy_error_paths() -> Result<(), String> {
+        super::staging_unit_tests::exercise_copy_error_paths()
     }
 }
+
+#[cfg(all(test, target_os = "linux"))]
+#[path = "../tests/support/backend_unit_tests.rs"]
+mod backend_unit_tests;
+
+#[cfg(test)]
+#[path = "../tests/support/staging_unit_tests.rs"]
+mod staging_unit_tests;
+
+#[cfg(test)]
+#[path = "../tests/unit_dataset_runner.rs"]
+mod dataset_runner_test;

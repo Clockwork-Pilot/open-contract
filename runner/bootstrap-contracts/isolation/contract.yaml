@@ -4,24 +4,18 @@ coverage:
   minimum_line_percent: 100
 files:
   dataset: dataset.json
-  validator: src/main.rs
+  validator: src/lib.rs
   support:
     - src/lib.rs
     - src/backend.rs
     - Cargo.toml
-  supplemental_tests: [tests/backend_supplemental.rs]
-  nested_contracts: [nested/contract.yaml]
 filesystem:
   read:
     - dataset.json
-    - src/main.rs
     - src/lib.rs
     - src/backend.rs
-    - tests/backend_supplemental.rs
     - Cargo.toml
-    - nested/contract.yaml
     - support
-    - reports/result.json
   write:
     - reports
     - reports/result.json

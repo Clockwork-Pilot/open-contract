@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "unpinned-case",
+      "input": {"value": 1},
+      "expected": {"value": 1}
+    }
+  ]
+}

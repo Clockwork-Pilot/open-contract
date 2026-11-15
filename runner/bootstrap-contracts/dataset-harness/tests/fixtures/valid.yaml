@@ -1,0 +1,6 @@
+version: 1
+cases:
+  - id: yaml-case
+    input: {value: 9}
+    coverage_fingerprint: 0123456789abcdef0123456789abcdef
+    predicate: ".value == 9"
