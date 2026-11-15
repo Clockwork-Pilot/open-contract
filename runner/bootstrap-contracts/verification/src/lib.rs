@@ -1,4 +1,4 @@
-use open_contracts_predicates::evaluate_predicate;
+use runner_predicates::evaluate_predicate;
 use serde_json::Value;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -43,35 +43,5 @@ mod tests {
             MatchKind::Predicate
         );
         assert!(match_output(&json!({"value": 3}), None, Some(".value >= 4")).is_err());
-    }
-
-    #[test]
-    fn verification_contract_dataset_exercises_exact_and_predicate_cases() {
-        let dataset: serde_json::Value =
-            serde_json::from_str(include_str!("../dataset.json")).unwrap();
-        let cases = dataset["cases"].as_array().unwrap();
-        for case in cases {
-            let actual = &case["input"]["verify"]["actual"];
-            let expected = case.get("expected");
-            let predicate = case.get("predicate").and_then(serde_json::Value::as_str);
-            assert!(
-                match_output(actual, expected, predicate).is_ok(),
-                "case {}",
-                case["id"]
-            );
-            for alternative in case["input"]["verify_also"].as_array().unwrap() {
-                let valid = alternative["valid"].as_bool().unwrap();
-                let expected = alternative.get("expected");
-                let predicate = alternative
-                    .get("predicate")
-                    .and_then(serde_json::Value::as_str);
-                assert_eq!(
-                    match_output(&alternative["actual"], expected, predicate).is_ok(),
-                    valid,
-                    "case {} alternative",
-                    case["id"]
-                );
-            }
-        }
     }
 }

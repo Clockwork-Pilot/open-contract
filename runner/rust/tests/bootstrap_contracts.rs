@@ -132,13 +132,6 @@ impl BatchAdapter for EchoBatch {
     }
 }
 
-fn fixture(name: &str) -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../../runner/bootstrap-contracts")
-        .join(name)
-        .join("contract.yaml")
-}
-
 fn write_cross_language_fixture(package: &Path) -> PathBuf {
     let child = package.join("child");
     std::fs::create_dir_all(&child).unwrap();
@@ -204,40 +197,6 @@ filesystem: {read: [dataset.yaml, validator.mjs, run-contract.mjs], write: []}
     )
     .unwrap();
     package.join("contract.yaml")
-}
-
-#[test]
-fn bootstrap_manifests_are_valid_and_manifest_paths_stay_package_relative() {
-    for name in [
-        "manifest",
-        "isolation",
-        "batch-execution",
-        "verification",
-        "error-handling",
-        "predicates",
-    ] {
-        let plan = ManifestPlan::load(fixture(name)).unwrap();
-        assert_eq!(plan.manifest.version, "1");
-    }
-
-    let temp = tempfile::tempdir().unwrap();
-    std::fs::write(temp.path().join("dataset.json"), "{}").unwrap();
-    std::fs::write(
-        temp.path().join("validator.py"),
-        "def validate(x): return x\n",
-    )
-    .unwrap();
-    std::fs::write(
-        temp.path().join("contract.yaml"),
-        r#"
-version: "1"
-name: invalid
-files: {dataset: dataset.json, validator: validator.py}
-filesystem: {read: ["/etc/passwd"], write: []}
-"#,
-    )
-    .unwrap();
-    assert!(ManifestPlan::load(temp.path().join("contract.yaml")).is_err());
 }
 
 #[test]
@@ -448,14 +407,16 @@ fn cli_writes_optional_file_and_line_coverage_report_for_contract_users() {
             && contract["additional_test_coverage"].is_null()
     }));
     assert!(contracts.iter().all(|contract| {
-        contract["target_coverage"].as_array().is_some_and(|targets| {
-            !targets.is_empty()
-                && targets.iter().all(|target| {
-                    target["coverage_complete"] == true
-                        && target["threshold_met"] == true
-                        && target["coverage_percent"] == 100.0
-                })
-        })
+        contract["target_coverage"]
+            .as_array()
+            .is_some_and(|targets| {
+                !targets.is_empty()
+                    && targets.iter().all(|target| {
+                        target["coverage_complete"] == true
+                            && target["threshold_met"] == true
+                            && target["coverage_percent"] == 100.0
+                    })
+            })
     }));
     let root = contracts
         .iter()

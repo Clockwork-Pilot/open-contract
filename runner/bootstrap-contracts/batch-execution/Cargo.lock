@@ -18,6 +18,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "bootstrap-dataset-harness"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "serde_yaml",
+]
+
+[[package]]
 name = "cfg-if"
 version = "1.0.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -142,56 +151,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9f7c3e4beb33f85d45ae3e3a1792185706c8e16d043238c593331cc7cd313b50"
 
 [[package]]
-name = "open-contract-batch"
-version = "0.1.0"
-dependencies = [
- "open-contract-isolation",
- "open-contract-manifest",
- "open-contract-verification",
- "serde",
- "serde_json",
- "serde_yaml",
- "sha2",
- "tempfile",
-]
-
-[[package]]
-name = "open-contract-isolation"
-version = "0.1.0"
-dependencies = [
- "libc",
- "open-contract-manifest",
- "serde",
- "serde_json",
- "serde_yaml",
- "tempfile",
-]
-
-[[package]]
-name = "open-contract-manifest"
-version = "0.1.0"
-dependencies = [
- "serde",
- "serde_yaml",
- "tempfile",
-]
-
-[[package]]
-name = "open-contract-verification"
-version = "0.1.0"
-dependencies = [
- "open-contracts-predicates",
- "serde_json",
-]
-
-[[package]]
-name = "open-contracts-predicates"
-version = "1.0.0"
-dependencies = [
- "serde_json",
-]
-
-[[package]]
 name = "proc-macro2"
 version = "1.0.107"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -214,6 +173,62 @@ name = "r-efi"
 version = "6.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f8dcc9c7d52a811697d2151c701e0d08956f92b0e24136cf4cf27b57a6a0d9bf"
+
+[[package]]
+name = "runner-batch"
+version = "0.1.0"
+dependencies = [
+ "bootstrap-dataset-harness",
+ "runner-isolation",
+ "runner-manifest",
+ "runner-verification",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "sha2",
+ "tempfile",
+]
+
+[[package]]
+name = "runner-isolation"
+version = "0.1.0"
+dependencies = [
+ "bootstrap-dataset-harness",
+ "libc",
+ "runner-manifest",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "tempfile",
+]
+
+[[package]]
+name = "runner-manifest"
+version = "0.1.0"
+dependencies = [
+ "bootstrap-dataset-harness",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "tempfile",
+]
+
+[[package]]
+name = "runner-predicates"
+version = "1.0.0"
+dependencies = [
+ "bootstrap-dataset-harness",
+ "serde_json",
+]
+
+[[package]]
+name = "runner-verification"
+version = "0.1.0"
+dependencies = [
+ "bootstrap-dataset-harness",
+ "runner-predicates",
+ "serde_json",
+]
 
 [[package]]
 name = "rustix"

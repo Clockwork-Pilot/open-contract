@@ -14,7 +14,7 @@ COVERAGE_BINARY ?= $(shell cat "$(COVERAGE_BINARY_PATH)" 2>/dev/null)
 LLVM_COV ?= $(shell PATH="$(HOME)/.cargo/bin:$(PATH)" rustc --print sysroot)/lib/rustlib/$(shell PATH="$(HOME)/.cargo/bin:$(PATH)" rustc -vV | sed -n 's/^host: //p')/bin/llvm-cov
 
 .DEFAULT_GOAL := check-contracts
-.PHONY: check-contracts check-bootstrap-contracts check-rust-core-contracts check-manifest-contract check-isolation-contract check-batch-execution-contract check-verification-contract check-error-handling-contract check-dataset-generation-contract check-predicate-contract check-bootstrap-dataset-harness check-rust-runtime-safety check-runner-examples check-python-predicate-example bootstrap-contract-coverage-html check-bootstrap-contract-coverage-html check-manifest-contract-html check-isolation-contract-html check-batch-execution-contract-html check-verification-contract-html check-error-handling-contract-html check-dataset-generation-contract-html check-predicate-contract-html examples
+.PHONY: check-contracts check-bootstrap-contracts check-rust-core-contracts check-manifest-contract check-isolation-contract check-batch-execution-contract check-verification-contract check-error-handling-contract check-dataset-generation-contract check-predicate-contract check-bootstrap-dataset-harness check-rust-runtime-safety check-runner-examples check-python-predicate-example bootstrap-contract-coverage-html check-bootstrap-contract-coverage-html check-bootstrap-contracts-html check-bootstrap-dataset-harness-html check-manifest-contract-html check-isolation-contract-html check-batch-execution-contract-html check-verification-contract-html check-error-handling-contract-html check-dataset-generation-contract-html check-predicate-contract-html examples
 
 check-contracts: check-bootstrap-contracts check-runner-examples check-python-predicate-example
 
@@ -49,34 +49,39 @@ bootstrap-contract-coverage-html:
 	@printf 'HTML coverage report: %s/index.html\n' "$(COVERAGE_HTML_DIR)"
 
 check-bootstrap-contract-coverage-html:
-	@$(MAKE) check-bootstrap-contracts; check_status=$$?; \
-	$(MAKE) -k report-batch-execution-contract-html report-dataset-generation-contract-html report-error-handling-contract-html report-isolation-contract-html report-manifest-contract-html report-predicate-contract-html report-verification-contract-html; report_status=$$?; \
-	exit $$((check_status || report_status))
+	sh ./runner/tools/check_bootstrap_contract_html.sh batch-execution dataset-generation dataset-harness error-handling isolation manifest predicate verification
 
-define bootstrap_contract_html_target
-.PHONY: report-$(1)-contract-html check-$(1)-contract-html
-report-$(1)-contract-html:
-	$$(MAKE) bootstrap-contract-coverage-html COVERAGE_PROJECT=runner/bootstrap-contracts/$(2) COVERAGE_PROFILE=$$(abspath $(3)) COVERAGE_BINARY_PATH=$$(abspath .coverage/bootstrap-contracts/$(2)-dataset-binary.path) COVERAGE_HTML_DIR=$$(abspath .coverage/bootstrap-contracts/$(2)/html) COVERAGE_SUMMARY=$$(abspath .coverage/bootstrap-contracts/$(2)/summary.txt)
-check-$(1)-contract-html:
-	@set +e; \
-	$$(MAKE) check-$(1)-contract; check_status=$$$$?; \
-	$$(MAKE) report-$(1)-contract-html; report_status=$$$$?; \
-	exit $$$$((check_status || report_status))
-endef
+check-bootstrap-contracts-html: check-bootstrap-contract-coverage-html
 
-$(eval $(call bootstrap_contract_html_target,batch-execution,batch-execution,.coverage/bootstrap-contracts/batch-execution-dataset.profdata))
-$(eval $(call bootstrap_contract_html_target,dataset-generation,dataset-generation,.coverage/bootstrap-contracts/dataset-generation-dataset.profdata))
-$(eval $(call bootstrap_contract_html_target,error-handling,error-handling,.coverage/bootstrap-contracts/error-handling-dataset.profdata))
-$(eval $(call bootstrap_contract_html_target,isolation,isolation,.coverage/bootstrap-contracts/isolation-dataset.profdata))
-$(eval $(call bootstrap_contract_html_target,manifest,manifest,.coverage/bootstrap-contracts/manifest-dataset.profdata))
-$(eval $(call bootstrap_contract_html_target,predicate,predicates,$(HOME)/.cache/open-contract-target/predicates/llvm-cov-target/predicates.profdata))
-$(eval $(call bootstrap_contract_html_target,verification,verification,.coverage/bootstrap-contracts/verification-dataset.profdata))
+check-bootstrap-dataset-harness-html:
+	sh ./runner/tools/check_bootstrap_contract_html.sh dataset-harness
+
+check-batch-execution-contract-html:
+	sh ./runner/tools/check_bootstrap_contract_html.sh batch-execution
+
+check-dataset-generation-contract-html:
+	sh ./runner/tools/check_bootstrap_contract_html.sh dataset-generation
+
+check-error-handling-contract-html:
+	sh ./runner/tools/check_bootstrap_contract_html.sh error-handling
+
+check-isolation-contract-html:
+	sh ./runner/tools/check_bootstrap_contract_html.sh isolation
+
+check-manifest-contract-html:
+	sh ./runner/tools/check_bootstrap_contract_html.sh manifest
+
+check-predicate-contract-html:
+	sh ./runner/tools/check_bootstrap_contract_html.sh predicate
+
+check-verification-contract-html:
+	sh ./runner/tools/check_bootstrap_contract_html.sh verification
 
 check-predicate-contract:
 	$(MAKE) -C runner/bootstrap-contracts/predicates check-predicate-contract
 
 check-bootstrap-dataset-harness:
-	mkdir -p .coverage/bootstrap-contracts
+	$(PYTHON) runner/tools/check_bootstrap_contract_coverage.py runner/bootstrap-contracts/dataset-harness
 	$(CARGO) test --manifest-path runner/bootstrap-contracts/dataset-harness/Cargo.toml
 
 check-rust-runtime-safety:

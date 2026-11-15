@@ -9,8 +9,9 @@ The Rust runner verifies validator outputs. Contract-language support under
 `contract-languages/` supplies the validator interface and runtime; it does not
 decide whether outputs satisfy dataset expectations or predicates.
 
-Run the dataset coverage check from the repository root:
+Run only this contract and its required dataset coverage checker from the
+Open Contract repository root:
 
 ```sh
-python3 runner/tools/check_bootstrap_contract_coverage.py runner/bootstrap-contracts/verification
+make check-verification-contract
 ```

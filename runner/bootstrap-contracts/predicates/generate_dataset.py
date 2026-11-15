@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import json
-import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -13,34 +12,6 @@ ROOT = Path(__file__).resolve().parent
 DATASET = ROOT / "dataset.json"
 LANGUAGE_SCHEMA = ROOT / "predicate-language.schema.json"
 DATASET_CASES = ROOT / "dataset-cases.json"
-
-
-def derive_path(predicate: str) -> str:
-    """Derive the first referenced field as JSON Pointer metadata."""
-    field = re.search(
-        r'(?:\.[A-Za-z0-9_@-]+|\["(?:\\.|[^"\\])*"\])+',
-        predicate,
-    )
-    if field is None:
-        return ""
-    text = field.group(0)
-    parts: list[str] = []
-    index = 0
-    while index < len(text):
-        if text[index] == ".":
-            index += 1
-            start = index
-            while index < len(text) and text[index] not in ".[":
-                index += 1
-            parts.append(text[start:index])
-        else:
-            end = text.index("]", index + 1)
-            segment = text[index + 1 : end]
-            parts.append(json.loads(segment) if segment.startswith('"') else segment)
-            index = end + 1
-    return "/" + "/".join(
-        part.replace("~", "~0").replace("/", "~1") for part in parts
-    )
 
 
 def _sample_record(sample: dict[str, Any], field: str) -> dict[str, Any]:
@@ -194,9 +165,17 @@ def render() -> str:
     language = schema["x-open-contracts-language"]
     case_source = json.loads(DATASET_CASES.read_text(encoding="utf-8"))
     authored_cases = case_source.get("cases")
-    if not isinstance(authored_cases, list):
-        raise ValueError("dataset-cases.json must contain a cases array")
-    cases = authored_cases + generate_language_cases(language)
+    if case_source.get("version") != 1 or not isinstance(authored_cases, list):
+        raise ValueError("dataset-cases.json must be a version 1 dataset")
+    authored = []
+    for case in authored_cases:
+        authored.append({
+            "id": case["id"],
+            "json": case["input"]["json"],
+            "predicate": case["input"]["predicate"],
+            "expected": case["expected"],
+        })
+    cases = authored + generate_language_cases(language)
 
     ids: set[str] = set()
     for case in cases:
@@ -210,12 +189,15 @@ def render() -> str:
         if not isinstance(case["expected"], bool):
             raise ValueError(f"expected must be a boolean: {case['id']}")
 
-    generated = [{**case, "path": derive_path(case["predicate"])} for case in cases]
     generated = [
-        {key: case[key] for key in ("id", "json", "path", "predicate", "expected")}
-        for case in generated
+        {
+            "id": case["id"],
+            "input": {"json": case["json"], "predicate": case["predicate"]},
+            "expected": case["expected"],
+        }
+        for case in cases
     ]
-    return json.dumps({"cases": generated}, indent=2, ensure_ascii=False) + "\n"
+    return json.dumps({"version": 1, "cases": generated}, indent=2, ensure_ascii=False) + "\n"
 
 
 if __name__ == "__main__":

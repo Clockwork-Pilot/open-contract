@@ -1,23 +1,49 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://open-contracts.dev/schemas/predicate-dataset.schema.json",
-  "title": "Predicate evaluation dataset",
+  "title": "Predicate evaluation bootstrap dataset",
   "type": "object",
-  "required": ["cases"],
+  "required": [
+    "version",
+    "cases"
+  ],
   "additionalProperties": false,
   "properties": {
+    "version": {
+      "const": 1
+    },
     "cases": {
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["id", "json", "path", "predicate", "expected"],
+        "required": [
+          "id",
+          "input",
+          "expected"
+        ],
         "additionalProperties": false,
         "properties": {
-          "id": {"type": "string", "minLength": 1},
-          "json": {},
-          "path": {"type": "string"},
-          "predicate": {"$ref": "https://open-contracts.dev/schemas/predicate-language.schema.json"},
-          "expected": {"type": "boolean"}
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "input": {
+            "type": "object",
+            "required": [
+              "json",
+              "predicate"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "json": {},
+              "predicate": {
+                "$ref": "https://open-contracts.dev/schemas/predicate-language.schema.json"
+              }
+            }
+          },
+          "expected": {
+            "type": "boolean"
+          }
         }
       }
     }

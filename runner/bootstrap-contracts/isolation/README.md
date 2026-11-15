@@ -21,6 +21,11 @@ checks the returned result. Setup code must not replace that call, fabricate
 its result, or call backend implementation helpers to add lines to the case's
 dataset fingerprint; keep such helper checks in the separate unit-test path.
 
+`isolation-package.fixture.yaml` is input data for this staging test harness.
+It is parsed by `runner-manifest` to describe the package tree being staged; it
+is not an Open Contract manifest and does not configure isolation for this
+contract's own execution.
+
 The coverage check runs only the `dataset` integration-test target and requires
 100% coverage of implementation files under `src`. Validator, fixture, and
 unit-test code do not contribute to that percentage. Use unit tests for internal

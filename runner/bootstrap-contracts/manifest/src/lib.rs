@@ -78,10 +78,8 @@ pub struct ManifestPlan {
 impl ManifestPlan {
     pub fn load(path: impl AsRef<Path>) -> Result<Self, String> {
         let manifest_path = canonicalize_path(path.as_ref())?;
-        let package_root = manifest_path
-            .parent()
-            .ok_or_else(|| "canonical manifest path has no parent directory".to_string())?
-            .to_path_buf();
+        let mut package_root = manifest_path.clone();
+        package_root.pop();
         let manifest: Manifest =
             serde_yaml::from_slice(&fs::read(&manifest_path).map_err(|e| e.to_string())?)
                 .map_err(|e| format!("invalid manifest: {e}"))?;
@@ -191,17 +189,32 @@ fn resolve_inside(root: &Path, raw: &str, must_exist: bool) -> Result<PathBuf, S
             .canonicalize()
             .map_err(|e| format!("{raw}: {e}"))?
     } else {
-        let mut ancestor = candidate.as_path();
-        while !ancestor.exists() {
-            ancestor = ancestor
-                .parent()
-                .ok_or_else(|| format!("cannot resolve a package-relative ancestor for {raw:?}"))?;
+        let mut ancestor = root.to_path_buf();
+        let mut missing_components = Vec::new();
+        let mut missing = false;
+        for component in Path::new(raw).components() {
+            let component = component.as_os_str();
+            if missing {
+                missing_components.push(component.to_os_string());
+                continue;
+            }
+            let next = ancestor.join(component);
+            match fs::symlink_metadata(&next) {
+                Ok(_) => ancestor = next,
+                Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+                    missing = true;
+                    missing_components.push(component.to_os_string());
+                }
+                Err(error) => {
+                    return Err(format!("cannot inspect package path {raw:?}: {error}"));
+                }
+            }
         }
-        let real_ancestor = canonicalize_path(ancestor)?;
-        let suffix = candidate
-            .strip_prefix(ancestor)
-            .map_err(|error| format!("cannot resolve package path {raw:?}: {error}"))?;
-        real_ancestor.join(suffix)
+        let mut resolved = canonicalize_path(&ancestor)?;
+        for component in missing_components {
+            resolved.push(component);
+        }
+        resolved
     };
     if !resolved.starts_with(root) {
         return Err(format!(

@@ -2,7 +2,7 @@ use open_contract_core::batch::{ContractResult, CoverageLineFile, CoverageRecord
 use open_contract_core::{
     run_contract_tree_with_runtime, show_isolation_plan, Backend, BatchReport, ManifestBatchAdapter,
 };
-use open_contract_errors::ContractError;
+use runner_errors::ContractError;
 use serde_json::json;
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;

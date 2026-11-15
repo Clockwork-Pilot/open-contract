@@ -7,7 +7,8 @@ use std::path::PathBuf;
 #[test]
 fn language_package_filesystem_setup_edges_are_unit_fixtures() {
     let package = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let plan = ManifestPlan::load(package.join("contract.yaml")).expect("load contract manifest");
+    let plan = ManifestPlan::load(package.join("isolation-package.fixture.yaml"))
+        .expect("load isolation package fixture");
     let fixtures: Vec<DatasetCase> = vec![
         serde_json::from_value(json!({
     "id": "language-package-resolves-from-runner-configuration",

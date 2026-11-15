@@ -15,7 +15,7 @@ macro_rules! ensure {
 
 pub(crate) fn execute_dataset() -> Result<usize, String> {
     let package = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let plan = ManifestPlan::load(package.join("contract.yaml"))
+    let plan = ManifestPlan::load(package.join("isolation-package.fixture.yaml"))
         .map_err(|error| format!("cannot load isolation manifest: {error}"))?;
     let mut previous_root = None;
     run_cases(package.join("dataset.json"), |_, case| {

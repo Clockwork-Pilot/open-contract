@@ -1,0 +1,220 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "load-json",
+      "setup": true,
+      "input": {
+        "operation": "load",
+        "extension": "json",
+        "document": "{\"version\":1,\"cases\":[{\"id\":\"sample\",\"input\":{\"value\":7},\"expected\":{\"value\":7}}]}"
+      },
+      "coverage_fingerprint": "c5827b67a9aa1de5aac035c05d795022",
+      "expected": {
+        "ok": true
+      }
+    },
+    {
+      "id": "load-yaml",
+      "setup": true,
+      "input": {
+        "operation": "load",
+        "extension": "yaml",
+        "document": "version: 1\ncases:\n  - id: sample\n    input: {value: 9}\n    predicate: .value == 9\n"
+      },
+      "coverage_fingerprint": "f50d097d946a5b74bf17fa36d6362ac1",
+      "expected": {
+        "ok": true
+      }
+    },
+    {
+      "id": "load-yml",
+      "setup": true,
+      "input": {
+        "operation": "load",
+        "extension": "yml",
+        "document": "version: 1\ncases:\n  - id: sample\n    input: value\n    expected: value\n"
+      },
+      "coverage_fingerprint": "ae87f68b9667166f28d8c2b49b512968",
+      "expected": {
+        "ok": true
+      }
+    },
+    {
+      "id": "invalid-json",
+      "setup": true,
+      "input": {
+        "operation": "load-error",
+        "extension": "json",
+        "document": "{",
+        "error": "invalid dataset JSON"
+      },
+      "coverage_fingerprint": "1c6108d55559d86914fe6aff376517a8",
+      "expected": {
+        "ok": true
+      }
+    },
+    {
+      "id": "invalid-yaml",
+      "setup": true,
+      "input": {
+        "operation": "load-error",
+        "extension": "yaml",
+        "document": "version: [",
+        "error": "invalid dataset YAML"
+      },
+      "coverage_fingerprint": "9290310ea5ef720fc53ae2e11a1521d8",
+      "expected": {
+        "ok": true
+      }
+    },
+    {
+      "id": "unsupported-extension",
+      "setup": true,
+      "input": {
+        "operation": "load-error",
+        "extension": "txt",
+        "document": "anything",
+        "error": "unsupported dataset extension: txt"
+      },
+      "coverage_fingerprint": "07bf7729a48daaefb0c19d681bb77e2b",
+      "expected": {
+        "ok": true
+      }
+    },
+    {
+      "id": "extension-required",
+      "setup": true,
+      "input": {
+        "operation": "load-error",
+        "extension": "",
+        "document": "anything",
+        "error": "dataset path must have a .json, .yaml, or .yml extension"
+      },
+      "coverage_fingerprint": "c12be07bfbc02a95a8c2f163b29a853c",
+      "expected": {
+        "ok": true
+      }
+    },
+    {
+      "id": "missing-file",
+      "setup": true,
+      "input": {
+        "operation": "missing-file",
+        "error": "cannot read dataset"
+      },
+      "coverage_fingerprint": "59b830a80a5081616815584a920c1946",
+      "expected": {
+        "ok": true
+      }
+    },
+    {
+      "id": "round-trip-default-fields",
+      "setup": true,
+      "input": {
+        "operation": "round-trip",
+        "extension": "json",
+        "document": "{\"version\":1,\"cases\":[{\"id\":\"plain\",\"input\":null,\"expected\":null}]}"
+      },
+      "coverage_fingerprint": "19f51437c2a99de60257d319be9bb1c8",
+      "expected": {
+        "ok": true
+      }
+    },
+    {
+      "id": "missing-case-result-assertion",
+      "setup": true,
+      "input": {
+        "operation": "missing-expected",
+        "extension": "json",
+        "document": "{\"version\":1,\"cases\":[{\"id\":\"without-expected\",\"input\":{}}]}"
+      },
+      "coverage_fingerprint": "31b2e22cb85e296266fe0c1ee7b3b821",
+      "expected": {
+        "ok": true
+      }
+    },
+    {
+      "id": "run-valid-dataset",
+      "setup": true,
+      "input": {
+        "operation": "run",
+        "extension": "json",
+        "document": "{\"version\":1,\"cases\":[{\"id\":\"one\",\"input\":1,\"expected\":1},{\"id\":\"two\",\"input\":2,\"predicate\":\"true\"}]}"
+      },
+      "coverage_fingerprint": "f8d248aac4cf59e93dd158987cafe524",
+      "expected": {
+        "ok": true
+      }
+    },
+    {
+      "id": "run-unsupported-version",
+      "setup": true,
+      "input": {
+        "operation": "run-error",
+        "extension": "json",
+        "document": "{\"version\":2,\"cases\":[{\"id\":\"one\",\"input\":1,\"expected\":1}]}",
+        "error": "unsupported bootstrap dataset version 2"
+      },
+      "coverage_fingerprint": "f982b9d31496c71382a8031447605a38",
+      "expected": {
+        "ok": true
+      }
+    },
+    {
+      "id": "run-empty-cases",
+      "setup": true,
+      "input": {
+        "operation": "run-error",
+        "extension": "json",
+        "document": "{\"version\":1,\"cases\":[]}",
+        "error": "dataset must contain at least one case"
+      },
+      "coverage_fingerprint": "c89fab0cca7c5406ab66491084dc67aa",
+      "expected": {
+        "ok": true
+      }
+    },
+    {
+      "id": "run-case-without-result-assertion",
+      "setup": true,
+      "input": {
+        "operation": "run-error",
+        "extension": "json",
+        "document": "{\"version\":1,\"cases\":[{\"id\":\"no-result\",\"input\":1}]}",
+        "error": "expected or predicate is required"
+      },
+      "coverage_fingerprint": "708d9a2c241e93f4e00be7a7d357676d",
+      "expected": {
+        "ok": true
+      }
+    },
+    {
+      "id": "run-validator-error-is-qualified",
+      "setup": true,
+      "input": {
+        "operation": "run-validator-error",
+        "extension": "json",
+        "document": "{\"version\":1,\"cases\":[{\"id\":\"bad\",\"input\":1,\"expected\":1},{\"id\":\"good\",\"input\":2,\"expected\":2}]}"
+      },
+      "coverage_fingerprint": "a09c0cc5327d7318567d0de36875ec57",
+      "expected": {
+        "ok": true
+      }
+    },
+    {
+      "id": "run-load-error-is-reported",
+      "setup": true,
+      "input": {
+        "operation": "run-error",
+        "extension": "json",
+        "document": "{",
+        "error": "invalid dataset JSON"
+      },
+      "coverage_fingerprint": "ce1d5703d479e326f2d10dfc50801c04",
+      "expected": {
+        "ok": true
+      }
+    }
+  ]
+}

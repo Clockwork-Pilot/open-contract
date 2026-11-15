@@ -1,3 +1,5 @@
+# Test fixture consumed by runner-manifest::ManifestPlan in the isolation
+# dataset harness. This is not an Open Contract execution manifest.
 version: "1"
 name: isolation-bootstrap
 coverage:

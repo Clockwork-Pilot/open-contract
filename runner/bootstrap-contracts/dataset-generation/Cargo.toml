@@ -1,0 +1,18 @@
+[package]
+name = "runner-dataset-generation"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+
+[[bin]]
+name = "dataset-contract"
+path = "src/main.rs"
+
+[[bin]]
+name = "generate-dataset"
+path = "generate-dataset.rs"
+
+[dependencies]
+bootstrap-dataset-harness = { path = "../dataset-harness" }
+serde_json = "1"
+serde_yaml = "0.9"

@@ -53,6 +53,8 @@ def main() -> int:
     repository_root = Path(__file__).resolve().parents[2]
     artifacts = repository_root / ".coverage" / "bootstrap-contracts"
     artifacts.mkdir(parents=True, exist_ok=True)
+    for stale_profile in artifacts.glob(f"{package.name}-*.profraw"):
+        stale_profile.unlink(missing_ok=True)
     report = artifacts / f"{package.name}-rust.json"
     snapshots_path = artifacts / f"{package.name}-case-profiles.bin"
     binary_record = artifacts / f"{package.name}-dataset-binary.path"
@@ -62,6 +64,9 @@ def main() -> int:
         artifact.unlink(missing_ok=True)
     environment["OPEN_CONTRACT_BOOTSTRAP_COVERAGE_SNAPSHOTS"] = str(snapshots_path)
     environment["CARGO_TARGET_DIR"] = str(artifacts / f"{package.name}-cargo-target")
+    # Keep any raw profiles emitted by Cargo or test helpers under the ignored
+    # Open Contract coverage directory, never beside a bootstrap contract.
+    environment["LLVM_PROFILE_FILE"] = str(artifacts / f"{package.name}-%m-%p.profraw")
     rustflags = environment.get("RUSTFLAGS", "").strip()
     environment["RUSTFLAGS"] = (
         f"{rustflags} -Cinstrument-coverage --cfg=coverage --check-cfg=cfg(coverage) "
@@ -69,7 +74,11 @@ def main() -> int:
     ).strip()
     dataset_test = package / "tests" / "dataset_runner.rs"
     unit_dataset_test = package / "tests" / "unit_dataset_runner.rs"
-    command = [cargo, "test", "--no-run", "--message-format=json-render-diagnostics"]
+    run_dataset_binary = not unit_dataset_test.is_file() and not dataset_test.is_file()
+    command = [cargo, "build" if run_dataset_binary else "test"]
+    if not run_dataset_binary:
+        command.append("--no-run")
+    command.append("--message-format=json-render-diagnostics")
     dataset_target_name = None
     if unit_dataset_test.is_file():
         command.append("--lib")
@@ -92,7 +101,7 @@ def main() -> int:
     if result.returncode:
         print(result.stderr, file=sys.stderr, end="")
         return result.returncode
-    binary = coverage_test_binary(result.stdout, dataset_target_name)
+    binary = coverage_test_binary(result.stdout, dataset_target_name, test_profile=not run_dataset_binary)
     if not binary:
         print(f"Cargo did not report the instrumented dataset test binary for {dataset_target_name}", file=sys.stderr)
         return 2
@@ -102,9 +111,9 @@ def main() -> int:
     environment["LLVM_PROFILE_FILE"] = str(aggregate_profile)
     arguments = []
     if unit_dataset_test.is_file():
-        arguments = ["--exact", "dataset_runner_test::dataset_entries_exercise_public_isolation_api"]
+        arguments = ["--exact", "dataset_runner_test::dataset_entries_exercise_public_api"]
     elif dataset_test.is_file():
-        arguments = ["dataset_entries_exercise_public_isolation_api"]
+        arguments = ["dataset_entries_exercise_public_api"]
     result = subprocess.run([str(binary), *arguments], cwd=package, env=environment, check=False)
     if result.returncode:
         return result.returncode
@@ -397,7 +406,9 @@ def llvm_tools(environment: dict[str, str]) -> tuple[str, str]:
     return str(llvm_cov), str(llvm_profdata)
 
 
-def coverage_test_binary(cargo_output: str, target_name: str) -> Path | None:
+def coverage_test_binary(
+    cargo_output: str, target_name: str, *, test_profile: bool = True
+) -> Path | None:
     """Use Cargo's artifact record, never a newest-binary guess in a shared target dir."""
     for line in cargo_output.splitlines():
         try:
@@ -411,7 +422,7 @@ def coverage_test_binary(cargo_output: str, target_name: str) -> Path | None:
         executable = message.get("executable")
         if (
             target.get("name") == target_name
-            and profile.get("test") is True
+            and profile.get("test") is test_profile
             and isinstance(executable, str)
         ):
             path = Path(executable)

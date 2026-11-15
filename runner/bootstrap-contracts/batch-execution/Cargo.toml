@@ -1,5 +1,5 @@
 [package]
-name = "open-contract-batch"
+name = "runner-batch"
 version = "0.1.0"
 edition = "2021"
 license = "MIT"
@@ -9,9 +9,10 @@ name = "dataset-contract"
 path = "src/main.rs"
 
 [dependencies]
-open-contract-isolation = { path = "../isolation" }
-open-contract-manifest = { path = "../manifest" }
-open-contract-verification = { path = "../verification" }
+bootstrap-dataset-harness = { path = "../dataset-harness" }
+runner-isolation = { path = "../isolation" }
+runner-manifest = { path = "../manifest" }
+runner-verification = { path = "../verification" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 serde_yaml = "0.9"

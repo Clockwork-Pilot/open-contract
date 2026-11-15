@@ -1,5 +1,5 @@
 [package]
-name = "open-contract-errors"
+name = "runner-errors"
 version = "0.1.0"
 edition = "2021"
 license = "MIT"
@@ -9,4 +9,5 @@ name = "dataset-contract"
 path = "src/main.rs"
 
 [dependencies]
+bootstrap-dataset-harness = { path = "../dataset-harness" }
 serde_json = "1"

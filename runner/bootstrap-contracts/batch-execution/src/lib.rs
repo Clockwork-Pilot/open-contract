@@ -1,6 +1,6 @@
-use open_contract_isolation::{Backend, StagedTree};
-use open_contract_manifest::{is_allowed, validate_package_path, Manifest, ManifestPlan};
-use open_contract_verification::{match_output, MatchKind};
+use runner_isolation::{Backend, StagedTree};
+use runner_manifest::{is_allowed, validate_package_path, Manifest, ManifestPlan};
+use runner_verification::{match_output, MatchKind};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
@@ -153,19 +153,30 @@ pub fn show_isolation_plan(
     output.push_str("Contract read-only paths:\n");
     for path in &tree.read {
         let full_path = tree.root.join(path);
-        let kind = if full_path.is_dir() { "recursive" } else { "file" };
+        let kind = if full_path.is_dir() {
+            "recursive"
+        } else {
+            "file"
+        };
         output.push_str(&format!("  {path} ({kind})\n"));
     }
     output.push_str("Contract writable paths:\n");
     for path in &tree.write {
         let full_path = tree.root.join(path);
-        let kind = if full_path.is_dir() { "recursive" } else { "file" };
+        let kind = if full_path.is_dir() {
+            "recursive"
+        } else {
+            "file"
+        };
         output.push_str(&format!("  {path} ({kind})\n"));
     }
 
-    for (manifest, prefix) in tree.manifests_with_prefixes() {
+    for (manifest, prefix) in &tree.manifests {
         let execution = manifest.manifest.execution.as_ref().ok_or_else(|| {
-            format!("contract {} is missing execution.command", manifest.manifest.name)
+            format!(
+                "contract {} is missing execution.command",
+                manifest.manifest.name
+            )
         })?;
         let working_directory = tree.root.join(prefix);
         let command = tree.plan_command_at(
@@ -175,10 +186,16 @@ pub fn show_isolation_plan(
             manifest.manifest.language_package.as_deref(),
         )?;
         output.push_str(&format!("Contract {}:\n", manifest.manifest.name));
-        output.push_str(&format!("  Working directory: {}\n", command.working_directory.display()));
+        output.push_str(&format!(
+            "  Working directory: {}\n",
+            command.working_directory.display()
+        ));
         output.push_str(&format!("  Command argv: {:?}\n", command.command));
         if let Some(executable) = command.resolved_executable {
-            output.push_str(&format!("  Resolved executable: {}\n", executable.display()));
+            output.push_str(&format!(
+                "  Resolved executable: {}\n",
+                executable.display()
+            ));
         }
         output.push_str("  Runtime read-only paths:\n");
         for path in command.runtime_roots {
@@ -192,7 +209,9 @@ pub fn show_isolation_plan(
                 .and_then(|name| name.to_str())
                 .ok_or_else(|| "staged contract has no usable namespace name".to_string())?;
             output.push_str("  Bubblewrap fixed mounts: /proc, /dev, /tmp, /contract\n");
-            output.push_str(&format!("  Bubblewrap contract root: /contract/{namespace_name}\n"));
+            output.push_str(&format!(
+                "  Bubblewrap contract root: /contract/{namespace_name}\n"
+            ));
         }
     }
     Ok(output)
@@ -365,7 +384,7 @@ pub fn run_contract_tree_with_runtime(
     let mut batches = Vec::new();
     let mut checks_by_contract = Vec::new();
     let mut names = std::collections::HashSet::new();
-    for (manifest, package_prefix) in tree.manifests_with_prefixes() {
+    for (manifest, package_prefix) in &tree.manifests {
         if !names.insert(manifest.manifest.name.clone()) {
             return Err(format!(
                 "duplicate contract name in nested tree: {}",
@@ -1000,21 +1019,22 @@ fn flatten_dataset(dataset: &Dataset) -> Result<(Vec<ExecutionRequest>, Vec<Chec
 }
 
 fn validate_fingerprint(value: &Option<String>, scope: &str) -> Result<(), String> {
-    if let Some(value) = value {
-        if value.len() != 32
-            || !value
-                .bytes()
-                .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
-        {
-            return Err(format!(
-                "coverage_fingerprint on {scope} must be 32 lowercase hexadecimal characters"
-            ));
-        }
-        if value.bytes().all(|byte| byte == b'0') {
-            return Err(format!(
-                "coverage_fingerprint on {scope} cannot represent zero coverage"
-            ));
-        }
+    let value = value
+        .as_deref()
+        .ok_or_else(|| format!("coverage_fingerprint on {scope} is required"))?;
+    if value.len() != 32
+        || !value
+            .bytes()
+            .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+    {
+        return Err(format!(
+            "coverage_fingerprint on {scope} must be 32 lowercase hexadecimal characters"
+        ));
+    }
+    if value.bytes().all(|byte| byte == b'0') {
+        return Err(format!(
+            "coverage_fingerprint on {scope} cannot represent zero coverage"
+        ));
     }
     Ok(())
 }
@@ -1146,13 +1166,11 @@ fn verify_dataset(
                 }
                 let case_coverage = if all_steps_covered {
                     coverage_for_files(case_coverage_files, case.coverage_fingerprint.as_deref())
-                } else if case.coverage_fingerprint.is_some() {
+                } else {
                     (
                         None,
                         Some("coverage fingerprint unavailable for one or more steps".into()),
                     )
-                } else {
-                    (None, None)
                 };
                 let case_coverage = (
                     case_coverage.0,
@@ -1253,10 +1271,7 @@ fn displayed_result(result: &AdapterResult) -> Option<Value> {
 }
 
 /// Contract-local JSON batch envelope. Paths remain relative to that contract.
-pub fn batch_input(
-    manifest: &Manifest,
-    requests: &[ExecutionRequest],
-) -> Value {
+pub fn batch_input(manifest: &Manifest, requests: &[ExecutionRequest]) -> Value {
     let mut coverage_sources = vec![manifest.files.validator.clone()];
     coverage_sources.extend(manifest.files.support.iter().cloned());
     coverage_sources.retain(|source| is_source_file(source));
@@ -1268,4 +1283,150 @@ pub fn batch_input(
         "coverage_sources": coverage_sources,
         "requests": requests,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn dataset_contract_cases_are_reused_as_unit_inputs() {
+        let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("dataset.json");
+        let outer = load_dataset(&path).expect("bootstrap dataset should parse");
+        let cases = outer.cases.expect("dataset wrapper has cases");
+        let mut checked = 0;
+        for case in cases {
+            if case.input.get("extension").is_some() {
+                continue;
+            }
+            let Some(value) = case.input.get("dataset") else {
+                continue;
+            };
+            let inner: Dataset = serde_json::from_value(value.clone())
+                .expect("embedded public dataset input should deserialize");
+            let result = flatten_dataset(&inner);
+            if case
+                .expected
+                .as_ref()
+                .is_some_and(|expected| expected.get("error_contains").is_some())
+            {
+                assert!(result.is_err(), "{} should be rejected", case.id);
+            } else {
+                let (requests, checks) = result.expect("public dataset input should flatten");
+                assert!(!requests.is_empty(), "{} should request execution", case.id);
+                assert_eq!(
+                    requests.len(),
+                    checks.len()
+                        + requests
+                            .iter()
+                            .filter(|r| r.key.step_id.is_some())
+                            .count()
+                            .saturating_sub(
+                                checks
+                                    .iter()
+                                    .filter(|check| matches!(check, Check::Sequence { .. }))
+                                    .count()
+                            ),
+                    "{} request/check structure",
+                    case.id
+                );
+            }
+            checked += 1;
+        }
+        assert!(checked >= 20, "expected to reuse the public dataset cases");
+    }
+
+    #[test]
+    fn adapter_result_index_rejects_duplicate_keys() {
+        let key = ExecutionKey {
+            target_id: "t".into(),
+            case_id: "c".into(),
+            step_id: None,
+        };
+        let result = AdapterResult {
+            key: key.clone(),
+            output: Some(Value::Null),
+            error: None,
+        };
+        let error = index_results(vec![result.clone(), result]).unwrap_err();
+        assert!(error.contains("duplicate result keys"));
+    }
+
+    #[test]
+    fn coverage_scope_validation_rejects_missing_and_invalid_fingerprints() {
+        assert!(validate_fingerprint(&None, "case")
+            .unwrap_err()
+            .contains("is required"));
+        assert!(validate_fingerprint(&Some("XYZ".into()), "case").is_err());
+        assert!(
+            validate_fingerprint(&Some("00000000000000000000000000000000".into()), "case").is_err()
+        );
+        assert!(
+            validate_fingerprint(&Some("0123456789abcdef0123456789abcdef".into()), "case").is_ok()
+        );
+
+        let key = ExecutionKey {
+            target_id: "t".into(),
+            case_id: "c".into(),
+            step_id: None,
+        };
+        let empty = std::collections::HashMap::new();
+        let (coverage, error) =
+            coverage_for_key(&empty, &key, Some("0123456789abcdef0123456789abcdef"));
+        assert!(coverage.is_none());
+        assert!(error.unwrap().contains("coverage fingerprint unavailable"));
+
+        let files = vec![CoverageFile {
+            path: "validator.py".into(),
+            lines: vec![],
+        }];
+        let (coverage, error) = coverage_for_files(files, Some("0123456789abcdef0123456789abcdef"));
+        assert!(coverage.is_none());
+        assert!(error.unwrap().contains("zero covered lines"));
+    }
+
+    #[test]
+    fn coverage_files_are_canonical_and_duplicate_lines_merge() {
+        let merged = merge_coverage_files(vec![
+            CoverageFile {
+                path: "validator.py".into(),
+                lines: vec![2, 1],
+            },
+            CoverageFile {
+                path: "validator.py".into(),
+                lines: vec![2, 3],
+            },
+        ]);
+        assert_eq!(merged.len(), 1);
+        assert_eq!(merged[0].path, "validator.py");
+        assert_eq!(merged[0].lines, vec![1, 2, 3]);
+        assert!(canonical_coverage_files(vec![CoverageFile {
+            path: "validator.py".into(),
+            lines: vec![0]
+        }])
+        .is_err());
+    }
+
+    #[test]
+    fn verification_handles_expected_errors_and_missing_outputs() {
+        let result = AdapterResult {
+            key: ExecutionKey {
+                target_id: "t".into(),
+                case_id: "c".into(),
+                step_id: None,
+            },
+            output: None,
+            error: Some("invalid input".into()),
+        };
+        assert!(evaluate_result(&result, None, None, Some("invalid input")).0);
+        assert!(!evaluate_result(&result, None, None, Some("different")).0);
+        let empty = AdapterResult {
+            error: None,
+            ..result
+        };
+        assert!(evaluate_result(&empty, None, None, None)
+            .2
+            .unwrap()
+            .contains("neither output nor error"));
+    }
 }

@@ -35,10 +35,10 @@ operations.
 Each case may declare a `coverage_fingerprint` pin for the implementation
 lines it covers. A missing pin is treated as the all-zero sentinel
 `00000000000000000000000000000000`. The shared coverage checker runs the
-dataset once. During that run, this harness resets the LLVM counters before
+dataset once. Its test-only dataset entrypoint resets LLVM counters before
 each validator call and stores that case's profile snapshot in memory. Once
-all cases have run, it restores the aggregate counters for the normal Rust
-coverage report and writes the snapshots together as one artifact. The
+all cases have run, the test entrypoint restores aggregate counters for the
+normal Rust coverage report and writes the snapshots together as one artifact. The
 checker calculates per-case fingerprints from those snapshots after the
 dataset run with the Rust toolchain's `llvm-profdata` and `llvm-cov`; it does
 not rerun the contract for each case or edit datasets. The checker processes
@@ -52,7 +52,14 @@ check and reports the runtime fingerprint. Copy the reported 32-character
 lowercase hexadecimal value into the matching case, then rerun the check. A
 pin is optional while authoring a case, but required for a passing coverage
 check.
-The format is described by [`dataset.schema.json`](dataset.schema.json).
+The format is described by [`dataset.schema.json`](dataset.schema.json). The
+harness exercises its own public loader and dataset runner through
+[`dataset.json`](dataset.json); its validator supplies real nested dataset
+documents in `input` and checks the returned behavior. LLVM collection lives
+in test support and writes generated profiles under the Open Contract root
+`.coverage/bootstrap-contracts/`. The package check requires 100% dataset line
+and region coverage plus matching case fingerprints.
+
 Check this shared harness crate from the Open Contract repository root:
 
 ```sh

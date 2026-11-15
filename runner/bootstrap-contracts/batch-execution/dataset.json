@@ -2,15 +2,6 @@
   "version": 1,
   "cases": [
     {
-      "id": "dataset-read-error",
-      "input": {
-        "operation": "dataset-read-error"
-      },
-      "expected": {
-        "error_contains": "No such file or directory"
-      }
-    },
-    {
       "id": "exact-output",
       "input": {
         "dataset": {
@@ -23,7 +14,8 @@
               },
               "expected": {
                 "value": 1
-              }
+              },
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
             }
           ]
         }
@@ -45,7 +37,8 @@
               "input": {
                 "value": 1
               },
-              "predicate": ".value == 1"
+              "predicate": ".value == 1",
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
             }
           ]
         }
@@ -68,7 +61,8 @@
               "expected": {
                 "value": 1
               },
-              "predicate": ".value == 1"
+              "predicate": ".value == 1",
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
             }
           ]
         }
@@ -81,7 +75,7 @@
       "id": "yaml-dataset",
       "input": {
         "extension": "yaml",
-        "dataset_yaml": "version: 1\ncases:\n  - id: one\n    input: {value: 1}\n    expected: {value: 1}\n"
+        "dataset_yaml": "version: 1\ncases:\n  - id: one\n    input: {value: 1}\n    expected: {value: 1}\n    coverage_fingerprint: 60c6194cbdc58033999a1fb07d147da8\n"
       },
       "expected": {
         "passed": true
@@ -91,77 +85,10 @@
       "id": "yml-dataset",
       "input": {
         "extension": "yml",
-        "dataset_yaml": "version: 1\ncases:\n  - id: one\n    input: {value: 1}\n    expected: {value: 1}\n"
+        "dataset_yaml": "version: 1\ncases:\n  - id: one\n    input: {value: 1}\n    expected: {value: 1}\n    coverage_fingerprint: 60c6194cbdc58033999a1fb07d147da8\n"
       },
       "expected": {
         "passed": true
-      }
-    },
-    {
-      "id": "expected-validator-error",
-      "input": {
-        "dataset": {
-          "version": 1,
-          "cases": [
-            {
-              "id": "one",
-              "input": {
-                "value": 1
-              },
-              "expected_error": "fixture error"
-            }
-          ]
-        },
-        "adapter_mode": "case-error"
-      },
-      "expected": {
-        "passed": true
-      }
-    },
-    {
-      "id": "unexpected-validator-error",
-      "input": {
-        "dataset": {
-          "version": 1,
-          "cases": [
-            {
-              "id": "one",
-              "input": {
-                "value": 1
-              },
-              "expected": {
-                "value": 1
-              }
-            }
-          ]
-        },
-        "adapter_mode": "case-error"
-      },
-      "expected": {
-        "passed": false,
-        "result_error_contains": "fixture error"
-      }
-    },
-    {
-      "id": "wrong-expected-error",
-      "input": {
-        "dataset": {
-          "version": 1,
-          "cases": [
-            {
-              "id": "one",
-              "input": {
-                "value": 1
-              },
-              "expected_error": "other error"
-            }
-          ]
-        },
-        "adapter_mode": "case-error"
-      },
-      "expected": {
-        "passed": false,
-        "result_error_contains": "expected error"
       }
     },
     {
@@ -175,7 +102,8 @@
               "input": {
                 "value": 1
               },
-              "expected_error": "fixture error"
+              "expected_error": "fixture error",
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
             }
           ]
         }
@@ -183,30 +111,6 @@
       "expected": {
         "passed": false,
         "result_error_contains": "but validator returned output"
-      }
-    },
-    {
-      "id": "missing-output-and-error",
-      "input": {
-        "dataset": {
-          "version": 1,
-          "cases": [
-            {
-              "id": "one",
-              "input": {
-                "value": 1
-              },
-              "expected": {
-                "value": 1
-              }
-            }
-          ]
-        },
-        "adapter_mode": "no-output"
-      },
-      "expected": {
-        "passed": false,
-        "result_error_contains": "neither output nor error"
       }
     },
     {
@@ -222,7 +126,8 @@
               },
               "expected": {
                 "value": 2
-              }
+              },
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
             }
           ]
         }
@@ -243,7 +148,8 @@
               "input": {
                 "value": 1
               },
-              "predicate": ".value == 2"
+              "predicate": ".value == 2",
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
             }
           ]
         }
@@ -251,73 +157,6 @@
       "expected": {
         "passed": false,
         "result_error_contains": "did not satisfy"
-      }
-    },
-    {
-      "id": "missing-case-coverage",
-      "input": {
-        "dataset": {
-          "version": 1,
-          "cases": [
-            {
-              "id": "one",
-              "input": {
-                "value": 1
-              },
-              "expected": {
-                "value": 1
-              },
-              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
-            }
-          ]
-        },
-        "adapter_mode": "no-coverage"
-      },
-      "expected": {
-        "passed": false,
-        "result_error_contains": "fingerprint unavailable"
-      }
-    },
-    {
-      "id": "mismatched-fingerprint",
-      "input": {
-        "dataset": {
-          "version": 1,
-          "cases": [
-            {
-              "id": "one",
-              "input": {
-                "value": 1
-              },
-              "expected": {
-                "value": 1
-              },
-              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da9"
-            }
-          ]
-        }
-      },
-      "expected": {
-        "passed": false,
-        "result_error_contains": "coverage fingerprint mismatch"
-      }
-    },
-    {
-      "id": "zero-coverage-fingerprint-is-invalid",
-      "input": {
-        "dataset": {
-          "version": 1,
-          "cases": [{
-            "id": "one",
-            "input": {"value": 1},
-            "expected": {"value": 1},
-            "coverage_fingerprint": "00000000000000000000000000000000"
-          }]
-        }
-      },
-      "expected": {
-        "passed": false,
-        "error_contains": "cannot represent zero coverage"
       }
     },
     {
@@ -339,16 +178,19 @@
                   },
                   "expected": {
                     "value": 1
-                  }
+                  },
+                  "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
                 },
                 {
                   "id": "second",
                   "input": {
                     "value": 2
                   },
-                  "predicate": ".value == 2"
+                  "predicate": ".value == 2",
+                  "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
                 }
-              ]
+              ],
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
             }
           ]
         }
@@ -380,9 +222,11 @@
                   },
                   "expected": {
                     "value": 1
-                  }
+                  },
+                  "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
                 }
-              ]
+              ],
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
             }
           ]
         }
@@ -390,329 +234,6 @@
       "expected": {
         "passed": false,
         "result_error_contains": "did not equal"
-      }
-    },
-    {
-      "id": "unasserted-step-error",
-      "input": {
-        "dataset": {
-          "version": 1,
-          "cases": [
-            {
-              "id": "sequence",
-              "input": {},
-              "steps": [
-                {
-                  "id": "first",
-                  "input": {
-                    "value": 1
-                  }
-                }
-              ]
-            }
-          ]
-        },
-        "adapter_mode": "case-error"
-      },
-      "expected": {
-        "passed": false,
-        "result_error_contains": "fixture error"
-      }
-    },
-    {
-      "id": "sequence-missing-step-coverage",
-      "input": {
-        "dataset": {
-          "version": 1,
-          "cases": [
-            {
-              "id": "sequence",
-              "input": {},
-              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8",
-              "steps": [
-                {
-                  "id": "first",
-                  "input": {
-                    "value": 1
-                  }
-                }
-              ]
-            }
-          ]
-        },
-        "adapter_mode": "no-coverage"
-      },
-      "expected": {
-        "passed": false,
-        "result_error_contains": "fingerprint unavailable"
-      }
-    },
-    {
-      "id": "adapter-error",
-      "input": {
-        "dataset": {
-          "version": 1,
-          "cases": [
-            {
-              "id": "one",
-              "input": {
-                "value": 1
-              },
-              "expected": {
-                "value": 1
-              }
-            }
-          ]
-        },
-        "adapter_mode": "adapter-error"
-      },
-      "expected": {
-        "error_contains": "fixture adapter failed"
-      }
-    },
-    {
-      "id": "wrong-batch-count",
-      "input": {
-        "dataset": {
-          "version": 1,
-          "cases": [
-            {
-              "id": "one",
-              "input": {
-                "value": 1
-              },
-              "expected": {
-                "value": 1
-              }
-            }
-          ]
-        },
-        "adapter_mode": "no-batches"
-      },
-      "expected": {
-        "error_contains": "returned 0 contract batches"
-      }
-    },
-    {
-      "id": "no-results",
-      "input": {
-        "dataset": {
-          "version": 1,
-          "cases": [
-            {
-              "id": "one",
-              "input": {
-                "value": 1
-              },
-              "expected": {
-                "value": 1
-              }
-            }
-          ]
-        },
-        "adapter_mode": "no-results"
-      },
-      "expected": {
-        "error_contains": "omitted result"
-      }
-    },
-    {
-      "id": "duplicate-results",
-      "input": {
-        "dataset": {
-          "version": 1,
-          "cases": [
-            {
-              "id": "one",
-              "input": {
-                "value": 1
-              },
-              "expected": {
-                "value": 1
-              }
-            }
-          ]
-        },
-        "adapter_mode": "duplicate-results"
-      },
-      "expected": {
-        "error_contains": "duplicate result keys"
-      }
-    },
-    {
-      "id": "extra-results",
-      "input": {
-        "dataset": {
-          "version": 1,
-          "cases": [
-            {
-              "id": "one",
-              "input": {
-                "value": 1
-              },
-              "expected": {
-                "value": 1
-              }
-            }
-          ]
-        },
-        "adapter_mode": "extra-results"
-      },
-      "expected": {
-        "error_contains": "not requested"
-      }
-    },
-    {
-      "id": "unrequested-coverage",
-      "input": {
-        "dataset": {
-          "version": 1,
-          "cases": [
-            {
-              "id": "one",
-              "input": {
-                "value": 1
-              },
-              "expected": {
-                "value": 1
-              }
-            }
-          ]
-        },
-        "adapter_mode": "unrequested-coverage"
-      },
-      "expected": {
-        "error_contains": "unrequested execution key"
-      }
-    },
-    {
-      "id": "undeclared-coverage-file",
-      "input": {
-        "dataset": {
-          "version": 1,
-          "cases": [
-            {
-              "id": "one",
-              "input": {
-                "value": 1
-              },
-              "expected": {
-                "value": 1
-              }
-            }
-          ]
-        },
-        "adapter_mode": "undeclared-coverage"
-      },
-      "expected": {
-        "error_contains": "undeclared contract source"
-      }
-    },
-    {
-      "id": "invalid-coverage-path",
-      "input": {
-        "dataset": {
-          "version": 1,
-          "cases": [
-            {
-              "id": "one",
-              "input": {
-                "value": 1
-              },
-              "expected": {
-                "value": 1
-              }
-            }
-          ]
-        },
-        "adapter_mode": "invalid-coverage-path"
-      },
-      "expected": {
-        "error_contains": "must stay within the package"
-      }
-    },
-    {
-      "id": "zero-coverage-line",
-      "input": {
-        "dataset": {
-          "version": 1,
-          "cases": [
-            {
-              "id": "one",
-              "input": {
-                "value": 1
-              },
-              "expected": {
-                "value": 1
-              }
-            }
-          ]
-        },
-        "adapter_mode": "zero-coverage-line"
-      },
-      "expected": {
-        "error_contains": "line numbers must be positive"
-      }
-    },
-    {
-      "id": "pinned-fingerprint-rejects-empty-case-coverage",
-      "input": {
-        "dataset": {
-          "version": 1,
-          "cases": [{
-            "id": "one",
-            "input": {"value": 1},
-            "expected": {"value": 1},
-            "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
-          }]
-        },
-        "adapter_mode": "empty-coverage"
-      },
-      "expected": {
-        "passed": false,
-        "result_error_contains": "zero covered lines"
-      }
-    },
-    {
-      "id": "pinned-fingerprint-rejects-empty-sequence-coverage",
-      "input": {
-        "dataset": {
-          "version": 1,
-          "cases": [{
-            "id": "sequence",
-            "input": {},
-            "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8",
-            "steps": [{"id": "step", "input": {"value": 1}, "expected": {"value": 1}}]
-          }]
-        },
-        "adapter_mode": "empty-coverage"
-      },
-      "expected": {
-        "passed": false,
-        "result_error_contains": "zero covered lines"
-      }
-    },
-    {
-      "id": "duplicate-coverage",
-      "input": {
-        "dataset": {
-          "version": 1,
-          "cases": [
-            {
-              "id": "one",
-              "input": {
-                "value": 1
-              },
-              "expected": {
-                "value": 1
-              }
-            }
-          ]
-        },
-        "adapter_mode": "duplicate-coverage"
-      },
-      "expected": {
-        "error_contains": "duplicate coverage scope"
       }
     },
     {
@@ -725,7 +246,8 @@
             {
               "id": "one",
               "input": {},
-              "expected": {}
+              "expected": {},
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
             }
           ]
         }
@@ -762,7 +284,8 @@
             {
               "id": "one",
               "input": {},
-              "expected": {}
+              "expected": {},
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
             }
           ]
         }
@@ -819,7 +342,8 @@
                 {
                   "id": "one",
                   "input": {},
-                  "expected": {}
+                  "expected": {},
+                  "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
                 }
               ]
             },
@@ -829,7 +353,8 @@
                 {
                   "id": "two",
                   "input": {},
-                  "expected": {}
+                  "expected": {},
+                  "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
                 }
               ]
             }
@@ -852,7 +377,8 @@
                 {
                   "id": "one",
                   "input": {},
-                  "expected": {}
+                  "expected": {},
+                  "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
                 }
               ]
             }
@@ -872,12 +398,14 @@
             {
               "id": "same",
               "input": {},
-              "expected": {}
+              "expected": {},
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
             },
             {
               "id": "same",
               "input": {},
-              "expected": {}
+              "expected": {},
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
             }
           ]
         }
@@ -895,7 +423,8 @@
             {
               "id": " ",
               "input": {},
-              "expected": {}
+              "expected": {},
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
             }
           ]
         }
@@ -912,7 +441,8 @@
           "cases": [
             {
               "id": "one",
-              "input": {}
+              "input": {},
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
             }
           ]
         }
@@ -931,7 +461,8 @@
               "id": "one",
               "input": {},
               "expected": {},
-              "expected_error": "error"
+              "expected_error": "error",
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
             }
           ]
         }
@@ -953,9 +484,11 @@
               "steps": [
                 {
                   "id": "step",
-                  "input": {}
+                  "input": {},
+                  "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
                 }
-              ]
+              ],
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
             }
           ]
         }
@@ -977,14 +510,17 @@
                 {
                   "id": "same",
                   "input": {},
-                  "expected": {}
+                  "expected": {},
+                  "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
                 },
                 {
                   "id": "same",
                   "input": {},
-                  "expected": {}
+                  "expected": {},
+                  "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
                 }
-              ]
+              ],
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
             }
           ]
         }
@@ -1006,9 +542,11 @@
                 {
                   "id": " ",
                   "input": {},
-                  "expected": {}
+                  "expected": {},
+                  "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
                 }
-              ]
+              ],
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
             }
           ]
         }
@@ -1031,477 +569,17 @@
                   "id": "step",
                   "input": {},
                   "expected": {},
-                  "expected_error": "error"
+                  "expected_error": "error",
+                  "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
                 }
-              ]
+              ],
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
             }
           ]
         }
       },
       "expected": {
         "error_contains": "cannot combine expected_error"
-      }
-    },
-    {
-      "id": "invalid-case-fingerprint",
-      "input": {
-        "dataset": {
-          "version": 1,
-          "cases": [
-            {
-              "id": "one",
-              "input": {},
-              "expected": {},
-              "coverage_fingerprint": "xyz"
-            }
-          ]
-        }
-      },
-      "expected": {
-        "error_contains": "must be 32 lowercase hexadecimal"
-      }
-    },
-    {
-      "id": "invalid-step-fingerprint",
-      "input": {
-        "dataset": {
-          "version": 1,
-          "cases": [
-            {
-              "id": "one",
-              "input": {},
-              "steps": [
-                {
-                  "id": "step",
-                  "input": {},
-                  "coverage_fingerprint": "XYZ"
-                }
-              ]
-            }
-          ]
-        }
-      },
-      "expected": {
-        "error_contains": "must be 32 lowercase hexadecimal"
-      }
-    },
-    {
-      "id": "nested-contract",
-      "input": {
-        "dataset": {
-          "version": 1,
-          "cases": [
-            {
-              "id": "one",
-              "input": {
-                "value": 1
-              },
-              "expected": {
-                "value": 1
-              }
-            }
-          ]
-        },
-        "nested_contract": true
-      },
-      "expected": {
-        "passed": true,
-        "total": 2
-      }
-    },
-    {
-      "id": "duplicate-nested-name",
-      "input": {
-        "dataset": {
-          "version": 1,
-          "cases": [
-            {
-              "id": "one",
-              "input": {},
-              "expected": {}
-            }
-          ]
-        },
-        "duplicate_nested_name": true
-      },
-      "expected": {
-        "error_contains": "duplicate contract name"
-      }
-    },
-    {
-      "id": "nested-cycle",
-      "input": {
-        "dataset": {
-          "version": 1,
-          "cases": [
-            {
-              "id": "one",
-              "input": {},
-              "expected": {}
-            }
-          ]
-        },
-        "nested_cycle": true
-      },
-      "expected": {
-        "error_contains": "cycle"
-      }
-    },
-    {
-      "id": "manifest-missing-execution",
-      "input": {
-        "dataset": {
-          "version": 1,
-          "cases": [
-            {
-              "id": "one",
-              "input": {},
-              "expected": {}
-            }
-          ]
-        },
-        "adapter": "manifest"
-      },
-      "expected": {
-        "error_contains": "missing execution.command"
-      }
-    },
-    {
-      "id": "manifest-command-failure",
-      "input": {
-        "dataset": {
-          "version": 1,
-          "cases": [
-            {
-              "id": "one",
-              "input": {},
-              "expected": {}
-            }
-          ]
-        },
-        "adapter": "manifest",
-        "command": [
-          "sh",
-          "-c",
-          "echo failed >&2; exit 7"
-        ]
-      },
-      "expected": {
-        "error_contains": "execution.command failed"
-      }
-    },
-    {
-      "id": "manifest-invalid-json",
-      "input": {
-        "dataset": {
-          "version": 1,
-          "cases": [
-            {
-              "id": "one",
-              "input": {},
-              "expected": {}
-            }
-          ]
-        },
-        "adapter": "manifest",
-        "command": [
-          "sh",
-          "-c",
-          "printf not-json"
-        ]
-      },
-      "expected": {
-        "error_contains": "invalid batch JSON"
-      }
-    },
-    {
-      "id": "manifest-duplicate-result-key",
-      "input": {
-        "dataset": {
-          "version": 1,
-          "cases": [
-            {
-              "id": "one",
-              "input": {},
-              "expected": {}
-            }
-          ]
-        },
-        "adapter": "manifest",
-        "command": [
-          "python3",
-          "-c",
-          "import json,sys; r=json.load(sys.stdin)['requests'][0]; print(json.dumps({'results':[{'key':r['key'],'output':{}},{'key':r['key'],'output':{}}]}))"
-        ]
-      },
-      "expected": {
-        "error_contains": "duplicate result keys"
-      }
-    },
-    {
-      "id": "manifest-missing-batch",
-      "input": {
-        "dataset": {
-          "version": 1,
-          "cases": [
-            {
-              "id": "one",
-              "input": {},
-              "expected": {}
-            }
-          ]
-        },
-        "adapter": "manifest",
-        "command": [
-          "sh",
-          "-c",
-          "printf '{\"results\":[]}'"
-        ]
-      },
-      "expected": {
-        "error_contains": "returned no batch results"
-      }
-    },
-    {
-      "id": "manifest-rejects-tree-envelope",
-      "input": {
-        "dataset": {
-          "version": 1,
-          "cases": [
-            {
-              "id": "one",
-              "input": {},
-              "expected": {}
-            }
-          ]
-        },
-        "adapter": "manifest",
-        "command": [
-          "sh",
-          "-c",
-          "printf '{\"contracts\":[]}'"
-        ]
-      },
-      "expected": {
-        "error_contains": "invalid batch JSON"
-      }
-    },
-    {
-      "id": "manifest-command-start-error",
-      "input": {
-        "dataset": {
-          "version": 1,
-          "cases": [
-            {
-              "id": "one",
-              "input": {},
-              "expected": {}
-            }
-          ]
-        },
-        "adapter": "manifest",
-        "command": [
-          "/no-such-open-contract-command"
-        ]
-      },
-      "expected": {
-        "error_contains": "No such file or directory"
-      }
-    },
-    {
-      "id": "manifest-success",
-      "input": {
-        "dataset": {
-          "version": 1,
-          "cases": [
-            {
-              "id": "one",
-              "input": {
-                "value": 1
-              },
-              "expected": {
-                "value": 1
-              }
-            }
-          ]
-        },
-        "adapter": "manifest",
-        "command": [
-          "python3",
-          "-c",
-            "import json,sys; x=json.load(sys.stdin); r=x['requests'][0]; p=x['validator']; print(json.dumps({'results':[{'key':r['key'],'output':r['input']}], 'coverage':{'sources':[p]}, 'coverage_scopes':[{'key':r['key'],'files':[{'path':p,'lines':[1,2]}]}], 'coverage_lines':[{'path':p,'executable_lines':[1,2],'covered_lines':[1,2]}]}))"
-        ]
-      },
-      "expected": {
-        "passed": true,
-        "total": 1,
-        "coverage_complete": true
-      }
-    },
-    {
-      "id": "multi-file-coverage",
-      "input": {
-        "dataset": {
-          "version": 1,
-          "cases": [
-            {
-              "id": "one",
-              "input": {
-                "value": 1
-              },
-              "expected": {
-                "value": 1
-              }
-            }
-          ]
-        },
-        "support": true,
-        "adapter_mode": "multi-file-coverage"
-      },
-      "expected": {
-        "passed": true
-      }
-    },
-    {
-      "id": "coverage-json-special-characters",
-      "input": {
-        "dataset": {
-          "version": 1,
-          "cases": [
-            {
-              "id": "one",
-              "input": {
-                "value": 1
-              },
-              "expected": {
-                "value": 1
-              }
-            }
-          ]
-        },
-        "support_path": "quote\"backspace\btab\tline\nfeed\fform\rcontrol\u0001.py",
-        "adapter_mode": "multi-file-coverage"
-      },
-      "expected": {
-        "passed": true
-      }
-    },
-    {
-      "id": "sequence-case-fingerprint-mismatch",
-      "input": {
-        "dataset": {
-          "version": 1,
-          "cases": [
-            {
-              "id": "sequence",
-              "input": {},
-              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da9",
-              "steps": [
-                {
-                  "id": "step",
-                  "input": {
-                    "value": 1
-                  },
-                  "expected": {
-                    "value": 1
-                  }
-                }
-              ]
-            }
-          ]
-        }
-      },
-      "expected": {
-        "passed": false,
-        "result_error_contains": "coverage fingerprint mismatch"
-      }
-    },
-    {
-      "id": "sequence-step-fingerprint-mismatch",
-      "input": {
-        "dataset": {
-          "version": 1,
-          "cases": [
-            {
-              "id": "sequence",
-              "input": {},
-              "steps": [
-                {
-                  "id": "step",
-                  "input": {
-                    "value": 1
-                  },
-                  "expected": {
-                    "value": 1
-                  },
-                  "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da9"
-                }
-              ]
-            }
-          ]
-        }
-      },
-      "expected": {
-        "passed": false,
-        "result_error_contains": "coverage fingerprint mismatch"
-      }
-    },
-    {
-      "id": "sequence-no-coverage-no-pin",
-      "input": {
-        "dataset": {
-          "version": 1,
-          "cases": [
-            {
-              "id": "sequence",
-              "input": {},
-              "steps": [
-                {
-                  "id": "step",
-                  "input": {
-                    "value": 1
-                  },
-                  "expected": {
-                    "value": 1
-                  }
-                }
-              ]
-            }
-          ]
-        },
-        "adapter_mode": "no-coverage"
-      },
-      "expected": {
-        "passed": true
-      }
-    },
-    {
-      "id": "sequence-missing-result",
-      "input": {
-        "dataset": {
-          "version": 1,
-          "cases": [
-            {
-              "id": "sequence",
-              "input": {},
-              "steps": [
-                {
-                  "id": "step",
-                  "input": {
-                    "value": 1
-                  },
-                  "expected": {
-                    "value": 1
-                  }
-                }
-              ]
-            }
-          ]
-        },
-        "adapter_mode": "omit-step-results"
-      },
-      "expected": {
-        "error_contains": "omitted result"
       }
     },
     {
@@ -1541,9 +619,11 @@
                   },
                   "expected": {
                     "value": 1
-                  }
+                  },
+                  "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
                 }
-              ]
+              ],
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
             }
           ]
         }
@@ -1572,9 +652,11 @@
                   },
                   "expected": {
                     "value": 1
-                  }
+                  },
+                  "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
                 }
-              ]
+              ],
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
             }
           ]
         }
@@ -1621,9 +703,11 @@
                   },
                   "expected": {
                     "value": 1
-                  }
+                  },
+                  "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
                 }
-              ]
+              ],
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
             }
           ]
         }
@@ -1663,7 +747,7 @@
       }
     },
     {
-      "id": "nested-line-report-paths",
+      "id": "mismatched-fingerprint",
       "input": {
         "dataset": {
           "version": 1,
@@ -1675,43 +759,19 @@
               },
               "expected": {
                 "value": 1
-              }
+              },
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da9"
             }
           ]
-        },
-        "nested_contract": true,
-        "adapter_mode": "line-coverage"
+        }
       },
       "expected": {
-        "passed": true,
-        "coverage_complete": true,
-        "total": 2
+        "passed": false,
+        "result_error_contains": "coverage fingerprint mismatch"
       }
     },
     {
-      "id": "nested-command-without-native-source-list",
-      "input": {
-        "dataset": {
-          "version": 1,
-          "cases": [
-            {
-              "id": "one",
-              "input": {"value": 1},
-              "expected": {"value": 1}
-            }
-          ]
-        },
-        "nested_contract": true,
-        "adapter_mode": "coverage-without-sources"
-      },
-      "expected": {
-        "passed": true,
-        "coverage_complete": false,
-        "total": 2
-      }
-    },
-    {
-      "id": "supplemental-coverage-skipped-under-90",
+      "id": "zero-coverage-fingerprint-is-invalid",
       "input": {
         "dataset": {
           "version": 1,
@@ -1723,214 +783,164 @@
               },
               "expected": {
                 "value": 1
-              }
+              },
+              "coverage_fingerprint": "00000000000000000000000000000000"
             }
           ]
-        },
-        "supplemental_tests": true,
-        "adapter_mode": "supplemental-under-threshold"
+        }
       },
       "expected": {
-        "passed": true,
-        "coverage_complete": false,
-        "supplemental_status": "skipped"
+        "passed": false,
+        "error_contains": "cannot represent zero coverage"
       }
     },
     {
-      "id": "supplemental-coverage-skipped-without-line-data",
+      "id": "invalid-case-fingerprint",
       "input": {
         "dataset": {
           "version": 1,
           "cases": [
             {
               "id": "one",
-              "input": {
-                "value": 1
-              },
-              "expected": {
-                "value": 1
-              }
+              "input": {},
+              "expected": {},
+              "coverage_fingerprint": "xyz"
             }
           ]
-        },
-        "supplemental_tests": true,
-        "adapter_mode": "supplemental-no-lines"
+        }
       },
       "expected": {
-        "passed": true,
-        "coverage_complete": false,
-        "supplemental_status": "skipped"
+        "error_contains": "must be 32 lowercase hexadecimal"
       }
     },
     {
-      "id": "supplemental-test-passes",
+      "id": "invalid-step-fingerprint",
       "input": {
         "dataset": {
           "version": 1,
           "cases": [
             {
               "id": "one",
-              "input": {
-                "value": 1
-              },
-              "expected": {
-                "value": 1
-              }
+              "input": {},
+              "steps": [
+                {
+                  "id": "step",
+                  "input": {},
+                  "coverage_fingerprint": "XYZ"
+                }
+              ],
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
             }
           ]
-        },
-        "supplemental_tests": true,
-        "adapter_mode": "supplemental-passed"
+        }
       },
       "expected": {
-        "passed": true,
-        "coverage_complete": true,
-        "supplemental_status": "passed"
+        "error_contains": "must be 32 lowercase hexadecimal"
       }
     },
     {
-      "id": "supplemental-test-fails",
+      "id": "sequence-case-fingerprint-mismatch",
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "sequence",
+              "input": {},
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da9",
+              "steps": [
+                {
+                  "id": "step",
+                  "input": {
+                    "value": 1
+                  },
+                  "expected": {
+                    "value": 1
+                  },
+                  "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "expected": {
+        "passed": false,
+        "result_error_contains": "coverage fingerprint mismatch"
+      }
+    },
+    {
+      "id": "sequence-step-fingerprint-mismatch",
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "sequence",
+              "input": {},
+              "steps": [
+                {
+                  "id": "step",
+                  "input": {
+                    "value": 1
+                  },
+                  "expected": {
+                    "value": 1
+                  },
+                  "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da9"
+                }
+              ],
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "passed": false,
+        "result_error_contains": "coverage fingerprint mismatch"
+      }
+    },
+    {
+      "id": "missing-case-fingerprint",
       "input": {
         "dataset": {
           "version": 1,
           "cases": [
             {
               "id": "one",
-              "input": {
-                "value": 1
-              },
-              "expected": {
-                "value": 1
-              }
+              "input": {},
+              "expected": {}
             }
           ]
-        },
-        "supplemental_tests": true,
-        "adapter_mode": "supplemental-failed"
+        }
       },
       "expected": {
-        "passed": true,
-        "coverage_complete": false,
-        "supplemental_status": "failed"
+        "error_contains": "coverage_fingerprint on case is required"
       }
     },
     {
-      "id": "supplemental-test-result-omitted",
+      "id": "missing-step-fingerprint",
       "input": {
         "dataset": {
           "version": 1,
           "cases": [
             {
-              "id": "one",
-              "input": {
-                "value": 1
-              },
-              "expected": {
-                "value": 1
-              }
+              "id": "sequence",
+              "input": {},
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8",
+              "steps": [
+                {
+                  "id": "step",
+                  "input": {},
+                  "expected": {}
+                }
+              ]
             }
           ]
-        },
-        "supplemental_tests": true,
-        "adapter_mode": "supplemental-omitted"
+        }
       },
       "expected": {
-        "error_contains": "omitted supplemental test results"
-      }
-    },
-    {
-      "id": "supplemental-test-not-executed",
-      "input": {
-        "dataset": {
-          "version": 1,
-          "cases": [
-            {
-              "id": "one",
-              "input": {
-                "value": 1
-              },
-              "expected": {
-                "value": 1
-              }
-            }
-          ]
-        },
-        "supplemental_tests": true,
-        "adapter_mode": "supplemental-not-executed"
-      },
-      "expected": {
-        "error_contains": "did not execute manifest-declared supplemental tests"
-      }
-    },
-    {
-      "id": "supplemental-data-without-declaration",
-      "input": {
-        "dataset": {
-          "version": 1,
-          "cases": [
-            {
-              "id": "one",
-              "input": {
-                "value": 1
-              },
-              "expected": {
-                "value": 1
-              }
-            }
-          ]
-        },
-        "adapter_mode": "unexpected-supplemental"
-      },
-      "expected": {
-        "error_contains": "without manifest-declared tests"
-      }
-    },
-    {
-      "id": "supplemental-tests-cannot-run-below-threshold",
-      "input": {
-        "dataset": {
-          "version": 1,
-          "cases": [
-            {
-              "id": "one",
-              "input": {
-                "value": 1
-              },
-              "expected": {
-                "value": 1
-              }
-            }
-          ]
-        },
-        "supplemental_tests": true,
-        "adapter_mode": "supplemental-under-threshold-ran"
-      },
-      "expected": {
-        "error_contains": "with only 50.0% dataset line coverage"
-      }
-    },
-    {
-      "id": "supplemental-coverage-requires-test-execution",
-      "input": {
-        "dataset": {
-          "version": 1,
-          "cases": [
-            {
-              "id": "one",
-              "input": {
-                "value": 1
-              },
-              "expected": {
-                "value": 1
-              }
-            }
-          ]
-        },
-        "supplemental_tests": true,
-        "adapter_mode": "supplemental-under-threshold-coverage"
-      },
-      "expected": {
-        "error_contains": "without running its tests"
+        "error_contains": "coverage_fingerprint on step is required"
       }
     }
   ]

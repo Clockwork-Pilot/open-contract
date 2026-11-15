@@ -3,7 +3,10 @@
   "cases": [
     {
       "id": "simple-runtime-error",
-      "input": {"exit_code": 1, "message": "case output did not match"},
+      "input": {
+        "exit_code": 1,
+        "message": "case output did not match"
+      },
       "expected": {
         "exit_code": 1,
         "message": "case output did not match",
@@ -13,7 +16,10 @@
     },
     {
       "id": "error-cannot-use-success-exit-code",
-      "input": {"exit_code": 0, "message": "unexpected success status"},
+      "input": {
+        "exit_code": 0,
+        "message": "unexpected success status"
+      },
       "expected": {
         "exit_code": 1,
         "message": "unexpected success status",
@@ -23,7 +29,13 @@
     },
     {
       "id": "one-layer-context",
-      "input": {"exit_code": 2, "message": "manifest is invalid", "contexts": ["manifest"]},
+      "input": {
+        "exit_code": 2,
+        "message": "manifest is invalid",
+        "contexts": [
+          "manifest"
+        ]
+      },
       "expected": {
         "exit_code": 2,
         "message": "manifest is invalid",
@@ -36,7 +48,11 @@
       "input": {
         "exit_code": 2,
         "message": "undeclared path",
-        "contexts": ["isolation", "contract execution", "runner"]
+        "contexts": [
+          "isolation",
+          "contract execution",
+          "runner"
+        ]
       },
       "expected": {
         "exit_code": 2,
@@ -47,7 +63,14 @@
     },
     {
       "id": "convert-layer-error-to-shared-error",
-      "input": {"exit_code": 1, "message": "coverage incomplete", "from_tuple": true, "contexts": ["verification"]},
+      "input": {
+        "exit_code": 1,
+        "message": "coverage incomplete",
+        "from_tuple": true,
+        "contexts": [
+          "verification"
+        ]
+      },
       "expected": {
         "exit_code": 1,
         "message": "coverage incomplete",

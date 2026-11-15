@@ -49,8 +49,17 @@ def main() -> int:
 
     artifacts = Path.home() / ".cache" / "open-contract-coverage"
     artifacts.mkdir(parents=True, exist_ok=True)
+    report = artifacts / "predicates-rust.json"
+    binary_record = CRATE.parents[2] / ".coverage" / "bootstrap-contracts" / "predicates-dataset-binary.path"
+    binary_record.parent.mkdir(parents=True, exist_ok=True)
+    report.unlink(missing_ok=True)
+    binary_record.unlink(missing_ok=True)
     target_dir = Path.home() / ".cache" / "open-contract-target" / "predicates"
     environment["CARGO_TARGET_DIR"] = str(target_dir)
+    rustflags = environment.get("RUSTFLAGS", "").strip()
+    environment["RUSTFLAGS"] = (
+        f"{rustflags} --remap-path-prefix={CRATE.resolve()}=."
+    ).strip()
     clean = subprocess.run(
         ["cargo", "llvm-cov", "clean", "--profraw-only", "--manifest-path", str(CRATE / "Cargo.toml")],
         cwd=CRATE,
@@ -59,7 +68,6 @@ def main() -> int:
     )
     if clean.returncode:
         return clean.returncode
-    report = artifacts / "predicates-rust.json"
     command = [
         "cargo", "llvm-cov", "run", "--no-clean", "--manifest-path", str(CRATE / "Cargo.toml"),
         "--bin", "predicate-sandbox", "--json", "--output-path", str(report),
@@ -67,12 +75,17 @@ def main() -> int:
     completed = subprocess.run(command, cwd=CRATE, env=environment, check=False)
     if completed.returncode:
         return completed.returncode
+    binary = target_dir / "debug" / "predicate-sandbox"
+    if not binary.is_file() or not os.access(binary, os.X_OK):
+        print(f"cargo llvm-cov did not produce the predicate runner at {binary}", file=sys.stderr)
+        return 2
+    binary_record.write_text(f"{binary}\n", encoding="utf-8")
     payload = json.loads(report.read_text(encoding="utf-8"))
     files = [file for data in payload.get("data", []) for file in data.get("files", [])]
-    expected_suffix = "/predicates/src/evaluate.rs"
     evaluators = [
         file for file in files
-        if file.get("filename", "").replace("\\", "/").endswith(expected_suffix)
+        if Path(file.get("filename", "")).is_absolute()
+        and resolve_source_path(file.get("filename", "")) == (CRATE / "src" / "evaluate.rs").resolve()
     ]
     if len(evaluators) != 1:
         print("coverage report must contain exactly one Rust predicate evaluator module", file=sys.stderr)
@@ -102,6 +115,13 @@ def main() -> int:
         print(f"Uncovered evaluator lines: {uncovered_lines}", file=sys.stderr)
         print(f"Uncovered evaluator regions (line, column): {uncovered_regions}", file=sys.stderr)
     return 0 if passed else 1
+
+
+def resolve_source_path(filename: str) -> Path:
+    path = Path(filename)
+    if not path.is_absolute():
+        path = CRATE / path
+    return path.resolve()
 
 
 if __name__ == "__main__":

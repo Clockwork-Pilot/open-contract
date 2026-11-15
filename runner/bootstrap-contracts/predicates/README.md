@@ -1,18 +1,15 @@
 # Bootstrap predicate datasets
 
-`predicate-language.schema.json` is the single source for the supported
-predicate operations, JSON data types, comparison and existence rules, and
-representative type samples. `dataset-cases.json` separately holds authored
-predicate cases for syntax, path, and evaluator behavior. The generator reads
-the schema to build the type/operator matrix (including equality, ordering,
-and `exists()` cases), combines it with `dataset-cases.json`, and writes
-`dataset.json`. It also derives each case's `path` metadata from the first
-predicate field reference. The sandboxes evaluate each case using its `json`
-and `predicate` fields and compare the result to `expected`.
+`predicate-language.schema.json` is the single source for supported predicate
+operations, JSON data types, comparison and existence rules, and representative
+type samples. `dataset-cases.json` holds authored cases in the same version 1
+envelope used by the other bootstrap contracts. The generator builds the
+type/operator matrix from the schema, combines it with authored cases, and
+writes `dataset.json`. Each case passes a JSON value and predicate expression
+to the public evaluator and asserts the returned boolean.
 
 The generated dataset contains no AST predicate objects and no JSON-encoded
-predicate expressions. The dataset shape is defined by
-`dataset.schema.json`.
+predicate expressions. Its versioned shape is defined by `dataset.schema.json`.
 
 Generate or verify the checked-in dataset with:
 
@@ -42,6 +39,12 @@ The Rust dataset executable runs all cases through the Rust evaluator under
 The check fails unless every executable evaluator line, function, and region is
 covered. Rust coverage requires `cargo-llvm-cov` and the Rust LLVM tools. Run it
 with `make -C runner/bootstrap-contracts/predicates check-rust-predicate-contract`.
+
+Run only this contract from the Open Contract repository root:
+
+```sh
+make check-predicate-contract
+```
 
 The shared corpus is the conformance source for the Rust predicate contract.
 The Python evaluator under `examples/python` is an example implementation; it

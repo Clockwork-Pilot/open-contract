@@ -102,6 +102,6 @@ Adapters return the normalized per-case line data with the batch; the Rust core
 does not parse language-specific native report formats. The artifact is written
 even when case or coverage checks fail.
 
-The shared `open-contract-errors` package preserves the CLI exit code and adds
+The shared `runner-errors` package preserves the CLI exit code and adds
 runner context to errors returned by contract execution. Its bootstrap contract
 exercises rendering and propagation from its dataset.

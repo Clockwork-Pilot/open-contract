@@ -3,26 +3,103 @@
   "cases": [
     {
       "id": "exact",
-      "input": {"value": 3,
-        "verify": {"actual": {"value": 4}, "expected": {"value": 4}, "valid": true},
-        "verify_also": [
-          {"actual": {"value": 3}, "expected": {"value": 4}, "valid": false},
-          {"actual": {"value": 4}, "expected": {"value": 4}, "predicate": ".value == 4", "valid": true},
-          {"actual": {"value": 4}, "expected": {"value": 4}, "predicate": ".value == 3", "valid": false},
-          {"actual": {"value": 4}, "valid": false}
-        ]
+      "coverage_fingerprint": "0e532881a383afd41849ef26db2effad",
+      "input": {
+        "actual": {
+          "value": 4
+        },
+        "expected": {
+          "value": 4
+        }
       },
-      "expected": {"value": 4}
+      "expected": {
+        "valid": true
+      }
+    },
+    {
+      "id": "exact-additional-1",
+      "coverage_fingerprint": "eb5cd9f4d6f9b92762ee09682c2d31fa",
+      "input": {
+        "actual": {
+          "value": 3
+        },
+        "expected": {
+          "value": 4
+        }
+      },
+      "expected": {
+        "valid": false
+      }
+    },
+    {
+      "id": "exact-additional-2",
+      "coverage_fingerprint": "ddc9aa8f98ffde71f7c402a58b0407de",
+      "input": {
+        "actual": {
+          "value": 4
+        },
+        "expected": {
+          "value": 4
+        },
+        "predicate": ".value == 4"
+      },
+      "expected": {
+        "valid": true
+      }
+    },
+    {
+      "id": "exact-additional-3",
+      "coverage_fingerprint": "74a43f27082ea958d43db4405ca3041c",
+      "input": {
+        "actual": {
+          "value": 4
+        },
+        "expected": {
+          "value": 4
+        },
+        "predicate": ".value == 3"
+      },
+      "expected": {
+        "valid": false
+      }
+    },
+    {
+      "id": "exact-additional-4",
+      "coverage_fingerprint": "76b5229d097c6914b32c20598e56b096",
+      "input": {
+        "actual": {
+          "value": 4
+        }
+      },
+      "expected": {
+        "valid": false
+      }
     },
     {
       "id": "predicate",
-      "input": {"value": 5,
-        "verify": {"actual": {"value": 6}, "predicate": ".value >= 6", "valid": true},
-        "verify_also": [
-          {"actual": {"value": 3}, "predicate": ".value >= 6", "valid": false}
-        ]
+      "coverage_fingerprint": "8bd1763780979807d01ad896d841fc59",
+      "input": {
+        "actual": {
+          "value": 6
+        },
+        "predicate": ".value >= 6"
       },
-      "predicate": ".value >= 6"
+      "expected": {
+        "valid": true
+      }
+    },
+    {
+      "id": "predicate-additional-1",
+      "coverage_fingerprint": "74a43f27082ea958d43db4405ca3041c",
+      "input": {
+        "actual": {
+          "value": 3
+        },
+        "predicate": ".value >= 6"
+      },
+      "expected": {
+        "valid": false
+      }
     }
   ]
 }
