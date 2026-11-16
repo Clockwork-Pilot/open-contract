@@ -1,0 +1,17 @@
+version: "1"
+name: cli-smoke-fixture
+coverage:
+  minimum_line_percent: 0
+files:
+  dataset: dataset.json
+  validator: validator.py
+  supplemental_tests: [tests/check.py]
+filesystem:
+  read:
+    - dataset.json
+    - validator.py
+    - adapter.py
+    - tests/check.py
+  write: []
+execution:
+  command: [python3, adapter.py]

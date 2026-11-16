@@ -1,0 +1,7 @@
+[workspace]
+members = ["parent", "parent/child"]
+resolver = "2"
+
+[workspace.dependencies]
+open-contract-language-rust = { path = "../../contract-languages/rust" }
+serde_json = "1"

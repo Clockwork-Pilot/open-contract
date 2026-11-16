@@ -2,12 +2,12 @@ PYTHON ?= python3
 CARGO ?= cargo
 ISOLATION ?= none
 
-.PHONY: check check-dataset check-open-contract
+.PHONY: check check-greeting check-predicate
 
-check: check-dataset check-open-contract
+check: check-greeting check-predicate
 
-check-dataset:
-	$(PYTHON) check_coverage.py
+check-greeting:
+	$(MAKE) -C greeting check PYTHON="$(PYTHON)" CARGO="$(CARGO)" ISOLATION="$(ISOLATION)"
 
-check-open-contract:
-	PATH="$(HOME)/.cargo/bin:$(PATH)" $(CARGO) run --manifest-path ../../runner/rust/Cargo.toml -- run-manifest contract.yaml --isolation $(ISOLATION)
+check-predicate:
+	$(MAKE) -C predicate check PYTHON="$(PYTHON)" CARGO="$(CARGO)" ISOLATION="$(ISOLATION)"

@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "cases": [
+    {"id":"echo","input":{"value":7},"expected":{"value":7},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"},
+    {"id":"echo-text","input":{"value":"text"},"expected":{"value":"text"},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"},
+    {"id":"sequence","input":{"value":"sequence"},"steps":[{"id":"first","input":{"value":1},"expected":{"value":1},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"},{"id":"second","input":{"value":2},"expected":{"value":2},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"}],"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"}
+  ]
+}

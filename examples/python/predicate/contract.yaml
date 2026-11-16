@@ -1,0 +1,19 @@
+version: "1"
+name: python-predicate-example
+language_package: python
+coverage:
+  minimum_line_percent: 100
+files:
+  dataset: dataset.json
+  validator: validator.py
+  support:
+    - predicate.py
+execution:
+  command: [python3, run_contract.py]
+filesystem:
+  read:
+    - dataset.json
+    - run_contract.py
+    - validator.py
+    - predicate.py
+  write: []

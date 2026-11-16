@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "greets-a-named-person",
+      "input": {
+        "name": "Ada"
+      },
+      "expected": {
+        "greeting": "hello, Ada"
+      },
+      "coverage_fingerprint": "4fdfdb3f539ac8a8314cd4f86d3c2984"
+    },
+    {
+      "id": "rejects-a-missing-name",
+      "input": {},
+      "expected_error": "ValueError: name must be a string",
+      "coverage_fingerprint": "6d4b95a84280f1ace43540e619116ab5"
+    }
+  ]
+}

@@ -81,4 +81,6 @@ Run an individual package check with its corresponding target:
 - `make check-verification-contract`
 - `make check-error-handling-contract`
 - `make check-dataset-generation-contract`
+- `make check-cli-contract`
+- `make check-cli-contract`
 - `make check-bootstrap-dataset-harness` (shared harness crate)

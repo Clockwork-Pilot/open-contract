@@ -155,6 +155,7 @@ name = "open-contract-core"
 version = "0.1.0"
 dependencies = [
  "runner-batch",
+ "runner-cli",
  "runner-errors",
  "runner-isolation",
  "runner-manifest",
@@ -200,6 +201,16 @@ dependencies = [
  "serde_yaml",
  "sha2",
  "tempfile",
+]
+
+[[package]]
+name = "runner-cli"
+version = "0.1.0"
+dependencies = [
+ "runner-batch",
+ "runner-errors",
+ "runner-isolation",
+ "serde_json",
 ]
 
 [[package]]

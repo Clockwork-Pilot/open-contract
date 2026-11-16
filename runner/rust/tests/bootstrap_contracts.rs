@@ -137,7 +137,7 @@ fn write_cross_language_fixture(package: &Path) -> PathBuf {
     std::fs::create_dir_all(&child).unwrap();
     std::fs::write(
         package.join("dataset.json"),
-        r#"{"version":1,"cases":[{"id":"python-case","input":{"value":1},"expected":{"value":1}}]}"#,
+        r#"{"version":1,"cases":[{"id":"python-case","input":{"value":1},"expected":{"value":1},"coverage_fingerprint":"8a484661678bcd54e5d968c1b7e473ec"}]}"#,
     )
     .unwrap();
     std::fs::write(
@@ -170,7 +170,7 @@ filesystem:
     .unwrap();
     std::fs::write(
         child.join("dataset.yaml"),
-        "version: 1\ncases:\n  - id: js-case\n    input: {value: 2}\n    expected: {value: 2}\n",
+        "version: 1\ncases:\n  - id: js-case\n    input: {value: 2}\n    expected: {value: 2}\n    coverage_fingerprint: c0f94adcd6e70930c2224e5cabd6e715\n",
     )
     .unwrap();
     std::fs::write(
@@ -233,8 +233,8 @@ filesystem: {read: [dataset.json, validator.py], write: [reports]}
     assert_ne!(first.root, second.root);
     assert!(first.root.join("dataset.json").is_file());
     assert!(!first.root.join("undeclared-secret.txt").exists());
-    assert_eq!(Backend::Landlock.as_str(), "landlock");
-    assert_eq!(Backend::Bubblewrap.as_str(), "bwrap");
+    assert_eq!(Backend::Landlock.runtime_manifest_name(), Some("landlock"));
+    assert_eq!(Backend::Bubblewrap.runtime_manifest_name(), Some("bwrap"));
 }
 
 #[test]
@@ -315,7 +315,7 @@ fn coverage_proof_reports_declared_source_files_missing_from_native_data() {
     let package = tempfile::tempdir().unwrap();
     std::fs::write(
         package.path().join("dataset.json"),
-        r#"{"version":1,"cases":[{"id":"one","input":{"value":1},"expected":{"value":1}}]}"#,
+        r#"{"version":1,"cases":[{"id":"one","input":{"value":1},"expected":{"value":1},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"}]}"#,
     )
     .unwrap();
     std::fs::write(
@@ -457,6 +457,14 @@ fn cli_saves_report_and_returns_nonzero_when_manifest_coverage_threshold_is_miss
         "def validate(value):\n    if value.get('flag'):\n        result = {'value': value['value']}\n    else:\n        result = {'value': value['value']}\n    return result\n",
     )
     .unwrap();
+    let dataset_path = package.path().join("dataset.json");
+    let dataset = std::fs::read_to_string(&dataset_path)
+        .unwrap()
+        .replace(
+            "8a484661678bcd54e5d968c1b7e473ec",
+            "fe5f23d969b1e30295af14f9551fd338",
+        );
+    std::fs::write(dataset_path, dataset).unwrap();
     let source = std::fs::read_to_string(&manifest).unwrap();
     std::fs::write(
         &manifest,
@@ -478,7 +486,7 @@ fn cli_saves_report_and_returns_nonzero_when_manifest_coverage_threshold_is_miss
     assert_eq!(result.status.code(), Some(1));
     let stdout = String::from_utf8_lossy(&result.stdout);
     let stderr = String::from_utf8_lossy(&result.stderr);
-    assert!(stdout.contains("Dataset cases: 2/2 passed"));
+    assert!(stdout.contains("Dataset cases: 2/2 passed"), "{stdout}");
     assert!(stdout.contains("target lines covered (80.0%, required 100.0%)"));
     assert!(stdout.contains("uncovered lines 3"));
     assert!(stdout.contains("Coverage report: .open-contract/coverage/latest.json"));
@@ -498,7 +506,7 @@ fn manifest_supplemental_coverage_is_separate_and_fails_the_coverage_gate() {
     std::fs::create_dir_all(package.path().join("child/tests")).unwrap();
     std::fs::write(
         package.path().join("dataset.json"),
-        r#"{"version":1,"cases":[{"id":"one","input":{"value":1},"expected":{"value":1}}]}"#,
+        r#"{"version":1,"cases":[{"id":"one","input":{"value":1},"expected":{"value":1},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"}]}"#,
     )
     .unwrap();
     std::fs::write(
@@ -513,7 +521,7 @@ fn manifest_supplemental_coverage_is_separate_and_fails_the_coverage_gate() {
     .unwrap();
     std::fs::write(
         package.path().join("child/dataset.json"),
-        r#"{"version":1,"cases":[{"id":"child-one","input":{"value":2},"expected":{"value":2}}]}"#,
+        r#"{"version":1,"cases":[{"id":"child-one","input":{"value":2},"expected":{"value":2},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"}]}"#,
     )
     .unwrap();
     std::fs::write(
@@ -602,7 +610,7 @@ fn dataset_coverage_fingerprints_match_cases_and_steps() {
           "version": 1,
           "cases": [
             {"id":"case","input":{"value":1},"expected":{"value":1},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"},
-            {"id":"sequence","input":{},"steps":[
+            {"id":"sequence","input":{},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8","steps":[
               {"id":"step","input":{"value":2},"expected":{"value":2},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"}
             ]}
           ]
@@ -678,8 +686,17 @@ fn dataset_coverage_fingerprints_match_cases_and_steps() {
 #[test]
 fn parent_and_nested_contracts_load_json_and_yaml_datasets_in_one_tree() {
     let package = tempfile::tempdir().unwrap();
+    let manifest = write_cross_language_fixture(package.path());
+    let root_dataset = package.path().join("dataset.json");
+    let root_source = std::fs::read_to_string(&root_dataset)
+        .unwrap()
+        .replace(
+            "8a484661678bcd54e5d968c1b7e473ec",
+            "60c6194cbdc58033999a1fb07d147da8",
+        );
+    std::fs::write(root_dataset, root_source).unwrap();
     let report = run_contract_tree(
-        write_cross_language_fixture(package.path()),
+        manifest,
         Backend::None,
         &EchoBatch::default(),
     )

@@ -1,0 +1,23 @@
+version: "1"
+name: rust-parent-example
+language_package: rust
+coverage:
+  minimum_line_percent: 100
+files:
+  dataset: dataset.yaml
+  validator: src/validator.rs
+  support:
+    - src/implementation.rs
+  nested_contracts:
+    - child/contract.yaml
+execution:
+  command: [./contract-command]
+filesystem:
+  read:
+    - dataset.yaml
+    - src/main.rs
+    - src/validator.rs
+    - src/implementation.rs
+    - contract-command
+    - child/contract.yaml
+  write: []

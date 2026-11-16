@@ -22,7 +22,7 @@ overall_status=0
 
 for contract in "$@"; do
     case "$contract" in
-        batch-execution|dataset-generation|error-handling|isolation|manifest|verification)
+        batch-execution|cli|dataset-generation|error-handling|isolation|manifest|verification)
             project=$contract
             check_goal="check-$contract-contract"
             profile=".coverage/bootstrap-contracts/$contract-dataset.profdata"

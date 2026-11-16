@@ -1,0 +1,17 @@
+version: "1"
+name: cli-incomplete-coverage-fixture
+coverage:
+  minimum_line_percent: 0
+files:
+  dataset: dataset.json
+  validator: validator.py
+  support: [adapter.py]
+filesystem:
+  read:
+    - dataset.json
+    - validator.py
+    - adapter.py
+    - adapter.py
+  write: []
+execution:
+  command: [python3, adapter.py]

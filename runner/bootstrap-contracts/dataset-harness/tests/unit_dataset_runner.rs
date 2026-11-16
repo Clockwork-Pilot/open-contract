@@ -31,7 +31,9 @@ fn expect_error(case: &DatasetCase) -> Result<(), String> {
     match nested_dataset(case) {
         Ok(_) => Err(format!("expected load error containing {expected:?}")),
         Err(error) if error.contains(expected) => Ok(()),
-        Err(error) => Err(format!("expected error containing {expected:?}, got {error}")),
+        Err(error) => Err(format!(
+            "expected error containing {expected:?}, got {error}"
+        )),
     }
 }
 
@@ -78,7 +80,9 @@ fn validate_case(_: &Dataset, case: &DatasetCase) -> Result<(), String> {
                 || case.expected != Some(Value::Null)
                 || serialized.contains("\"setup\"")
             {
-                return Err("default fields or explicit null expected value were not preserved".into());
+                return Err(
+                    "default fields or explicit null expected value were not preserved".into(),
+                );
             }
             Ok(())
         }
@@ -111,7 +115,9 @@ fn validate_case(_: &Dataset, case: &DatasetCase) -> Result<(), String> {
             let (_directory, path) = nested_dataset_file(case)?;
             let expected = case.input["error"].as_str().unwrap_or_default();
             match run_dataset(path, |_, _| Ok(())) {
-                Ok(_) => Err(format!("expected run_dataset error containing {expected:?}")),
+                Ok(_) => Err(format!(
+                    "expected run_dataset error containing {expected:?}"
+                )),
                 Err(error) if error.contains(expected) => Ok(()),
                 Err(error) => Err(format!("unexpected run_dataset error: {error}")),
             }
@@ -131,7 +137,9 @@ fn validate_case(_: &Dataset, case: &DatasetCase) -> Result<(), String> {
             if visited == ["bad", "good"] && error.contains("cases/bad") {
                 Ok(())
             } else {
-                Err(format!("unexpected callback failure behavior: {error}; {visited:?}"))
+                Err(format!(
+                    "unexpected callback failure behavior: {error}; {visited:?}"
+                ))
             }
         }
         other => Err(format!("unknown operation {other:?}")),

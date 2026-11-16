@@ -1,0 +1,12 @@
+version: 1
+cases:
+  - id: greets-a-named-person
+    input:
+      name: Ada
+    expected:
+      greeting: "hello, Ada"
+    coverage_fingerprint: "c58f2a25e2aaa9bc0402f6f91edbda35"
+  - id: rejects-a-missing-name
+    input: {}
+    expected_error: "TypeError: name must be a string"
+    coverage_fingerprint: "6c51f3d5d7525d340135f87bcfb94fbb"

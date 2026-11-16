@@ -35,5 +35,6 @@ the support package root; the runner provides its isolated location through
 `OPEN_CONTRACT_LANGUAGE_PATH`. No support file list or host path belongs in the
 manifest.
 
-Run the interface tests with `python3 -m pytest` from this directory. They test
-the adapter protocol and are separate from contract dataset coverage.
+Run the interface tests with `make -C contract-languages/python test` from the
+`open-contract` directory. They test the adapter protocol and are separate
+from contract dataset coverage.

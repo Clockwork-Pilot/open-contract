@@ -1,4 +1,4 @@
-"""Python predicate example contract implementation."""
+"""Public predicate function exercised by this Open Contract dataset."""
 
 from __future__ import annotations
 

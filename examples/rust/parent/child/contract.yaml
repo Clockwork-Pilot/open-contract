@@ -1,0 +1,20 @@
+version: "1"
+name: rust-child-example
+language_package: rust
+coverage:
+  minimum_line_percent: 100
+files:
+  dataset: dataset.yaml
+  validator: src/validator.rs
+  support:
+    - src/implementation.rs
+execution:
+  command: [./contract-command]
+filesystem:
+  read:
+    - dataset.yaml
+    - src/main.rs
+    - src/validator.rs
+    - src/implementation.rs
+    - contract-command
+  write: []

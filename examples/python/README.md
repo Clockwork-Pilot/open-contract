@@ -1,19 +1,13 @@
-# Python predicate example
+# Python Open Contract examples
 
-This example implements the predicate contract in Python. The dataset drives
-the implementation, and Open Contract's Rust verifier checks each returned
-boolean against its expected value.
-The manifest uses the generic Python language adapter; the example has no
-contract-specific batch runner.
+This directory contains two independent Python contracts:
 
-Run both the dataset coverage check and the contract through the Rust runner:
+- [`greeting`](greeting/README.md) is a small validator example.
+- [`predicate`](predicate/README.md) exercises a predicate evaluator with a
+  472-case dataset.
+
+Run both examples from the Open Contract root:
 
 ```sh
 make -C examples/python check
 ```
-
-Set `ISOLATION=landlock` or `ISOLATION=bwrap` to select an available backend.
-
-The dataset is copied from the Rust bootstrap conformance corpus and uses the
-same predicate cases. The Python implementation is an example, not the bootstrap contract
-implementation.

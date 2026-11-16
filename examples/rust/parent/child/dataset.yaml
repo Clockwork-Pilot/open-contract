@@ -1,0 +1,23 @@
+version: 1
+cases:
+  - id: sum
+    input:
+      values: [2, 3, 5]
+    expected:
+      total: 10
+    coverage_fingerprint: "aec0178c09df37ab8b54e2e03d72c8df"
+  - id: values-is-not-an-array
+    input:
+      values: "not-an-array"
+    expected_error: "values must be an array"
+    coverage_fingerprint: "54f68fc3c51697aca02c4c2366bdbb50"
+  - id: values-contain-a-non-integer
+    input:
+      values: [1, "not-an-integer"]
+    expected_error: "values must contain integers"
+    coverage_fingerprint: "c8ba0d1228563d7aa23124396ca33a66"
+  - id: sum-overflows
+    input:
+      values: [9223372036854775807, 1]
+    expected_error: "sum overflow"
+    coverage_fingerprint: "c8ba0d1228563d7aa23124396ca33a66"

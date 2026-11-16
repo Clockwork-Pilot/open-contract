@@ -1,4 +1,4 @@
-"""Contract-owned entrypoint for the Python predicate example."""
+"""Contract-owned entrypoint for the Python greeting example."""
 
 from __future__ import annotations
 

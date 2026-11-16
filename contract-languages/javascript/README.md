@@ -39,5 +39,10 @@ the support package root; the runner provides its isolated location through
 `OPEN_CONTRACT_LANGUAGE_PATH`. No support file list or host path belongs in the
 manifest.
 
-Run the interface tests with `npm test` from this directory. They exercise the
-importable adapter protocol and do not contribute to contract dataset coverage.
+Run the interface tests with `make -C contract-languages/javascript test` from
+the `open-contract` directory. They exercise the importable adapter protocol
+and do not contribute to contract dataset coverage.
+
+Run the end-to-end contract example with `make check-javascript-example` from
+the `open-contract` directory. It installs the JavaScript adapter dependencies,
+then runs a complete contract manifest through the Rust runner.

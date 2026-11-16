@@ -1,0 +1,16 @@
+[package]
+name = "runner-cli"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+
+[dependencies]
+runner-batch = { path = "../batch-execution" }
+runner-isolation = { path = "../isolation" }
+runner-errors = { path = "../error-handling" }
+serde_json = "1"
+
+[dev-dependencies]
+tempfile = "3"
+bootstrap-dataset-harness = { path = "../dataset-harness" }
+runner-verification = { path = "../verification" }

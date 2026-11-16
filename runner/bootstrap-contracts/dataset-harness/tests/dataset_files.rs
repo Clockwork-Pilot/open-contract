@@ -45,7 +45,10 @@ fn missing_fingerprint_becomes_zero_sentinel_without_skipping_case() {
     let mut called = false;
     run_dataset(fixture("missing-fingerprint.json"), |_, case| {
         called = true;
-        assert_eq!(case.coverage_fingerprint.as_deref(), Some("00000000000000000000000000000000"));
+        assert_eq!(
+            case.coverage_fingerprint.as_deref(),
+            Some("00000000000000000000000000000000")
+        );
         Ok(())
     })
     .expect("missing fingerprint must not prevent dataset execution");
