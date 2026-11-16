@@ -58,13 +58,13 @@ pub(crate) fn validate_case(
     case: &DatasetCase,
 ) -> Result<PathBuf, String> {
     if case.input["operation"] == "stage-contract-tree" {
-        let expected = case.expected_value()?;
         dataset_setup::run_staging_failure(
             case.id.as_str(),
             case.setup,
             plan,
             &case.input,
-            expected,
+            case.expected.as_ref(),
+            case.predicate.as_deref(),
         )?;
         return Ok(package.to_path_buf());
     }

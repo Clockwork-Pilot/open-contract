@@ -1,23 +1,26 @@
 version: 1
-targets:
-  - id: sequences
-    kind: custom
-    cases:
-      - id: create-read-and-inspect
-        input: {requested_id: 17}
-        steps:
-          - id: create
-            input: {operation: create, id: {$input: /requested_id}}
-            capture: {saved_id: /id}
-            expected: {id: 17}
-          - id: read
-            input: {operation: read, id: {$capture: saved_id}}
-            predicate: '.found == true'
-          - parallel:
-              - id: status
-                input: {operation: status, id: {$capture: saved_id}}
-                expected: {active: true}
-              - id: metadata
-                input: {operation: metadata, id: {$capture: saved_id}}
-                expected: {id: 17}
-                predicate: '.label == "sample"'
+cases:
+  - id: independent-checks
+    steps:
+      - id: accepts-small-value
+        input: {value: 4}
+        expected: {accepted: true}
+        predicate: .accepted == true
+        coverage_fingerprint: 1123456789abcdef0123456789abcdef
+      - id: rejects-negative-value
+        input: {value: -1}
+        expected: {accepted: false}
+        predicate: .accepted == false
+        coverage_fingerprint: 2123456789abcdef0123456789abcdef
+      - id: checks-boundary-values
+        input: {value: 0}
+        expected: {accepted: true}
+        parallel: true
+        setup: prepare-boundary-check
+        coverage_fingerprint: 3123456789abcdef0123456789abcdef
+      - id: checks-next-boundary
+        input: {value: 1}
+        expected: {accepted: true}
+        parallel: true
+        setup: prepare-boundary-check
+        coverage_fingerprint: 4123456789abcdef0123456789abcdef

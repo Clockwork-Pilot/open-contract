@@ -21,7 +21,9 @@ make -C runner/bootstrap-contracts/predicates check-generated-dataset
 The Rust evaluator in `src/evaluate.rs` is the predicate contract implementation. It
 accepts predicate strings and evaluates them against the complete input JSON value. Expressions support dotted shorthand paths, JSON
 scalar literals, comparison operators (`==`, `!=`, `>`, `>=`, `<`, `<=`), boolean
-operators (`NOT`, `AND`, `OR`), parentheses, and `exists()`. Paths use native
+operators (`NOT`, `AND`, `OR`), parentheses, `exists()`, and
+`contains(field, 'substring')` for case-sensitive substring checks on string
+fields. `contains()` returns false for missing, null, or non-string fields. Paths use native
 dotted notation, including numeric array indexes: `.payload.items.0.name` and
 `exists(.events.2.name)`. Bracketed JSON strings address keys that need quoting,
 such as `.payload.items.0["a/b"]` or `.record["key.with.dots"]`. There is no

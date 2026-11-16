@@ -8,5 +8,6 @@ cases:
     coverage_fingerprint: "0639062e58881b91ba2045cb5b47e6d6"
   - id: missing-name
     input: {}
-    expected_error: "name must be a string"
+    expected: {}
+    predicate: "contains(.error, 'name must be a string')"
     coverage_fingerprint: "2092264e6aa7eebf22d27099d1a0afdf"

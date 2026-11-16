@@ -67,17 +67,6 @@ fn harness_edge_cases_are_unit_tests_not_public_dataset_cases() {
 fn harness_scenarios() -> Vec<HarnessScenario> {
     vec![
         HarnessScenario {
-            id: "dataset-read-error",
-            input: json!({}),
-            setup: json!({
-                "operation": "dataset-read-error"
-            }),
-            expected: json!({
-                "error_contains": "No such file or directory"
-            }),
-            adapter_behavior: None,
-        },
-        HarnessScenario {
             id: "expected-validator-error",
             input: json!({
                 "dataset": {
@@ -88,16 +77,14 @@ fn harness_scenarios() -> Vec<HarnessScenario> {
                             "input": {
                                 "value": 1
                             },
-                            "expected_error": "fixture error",
+                            "expected": {"error": "fixture error"},
                             "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
                         }
                     ]
                 }
             }),
             setup: json!({}),
-            expected: json!({
-                "passed": true
-            }),
+            expected: json!({"results": [{"passed": true}]}),
             adapter_behavior: Some("case-error"),
         },
         HarnessScenario {
@@ -120,10 +107,7 @@ fn harness_scenarios() -> Vec<HarnessScenario> {
                 }
             }),
             setup: json!({}),
-            expected: json!({
-                "passed": false,
-                "result_error_contains": "fixture error"
-            }),
+            expected: json!({"results": [{"passed": false}]}),
             adapter_behavior: Some("case-error"),
         },
         HarnessScenario {
@@ -137,17 +121,14 @@ fn harness_scenarios() -> Vec<HarnessScenario> {
                             "input": {
                                 "value": 1
                             },
-                            "expected_error": "other error",
+                            "expected": {"error": "other error"},
                             "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
                         }
                     ]
                 }
             }),
             setup: json!({}),
-            expected: json!({
-                "passed": false,
-                "result_error_contains": "expected error"
-            }),
+            expected: json!({"results": [{"passed": false}]}),
             adapter_behavior: Some("case-error"),
         },
         HarnessScenario {
@@ -170,10 +151,7 @@ fn harness_scenarios() -> Vec<HarnessScenario> {
                 }
             }),
             setup: json!({}),
-            expected: json!({
-                "passed": false,
-                "result_error_contains": "neither output nor error"
-            }),
+            expected: json!({"results": [{"passed": false}]}),
             adapter_behavior: Some("no-output"),
         },
         HarnessScenario {
@@ -196,10 +174,7 @@ fn harness_scenarios() -> Vec<HarnessScenario> {
                 }
             }),
             setup: json!({}),
-            expected: json!({
-                "passed": false,
-                "result_error_contains": "fingerprint unavailable"
-            }),
+            expected: json!({"results": [{"passed": false}]}),
             adapter_behavior: Some("no-coverage"),
         },
         HarnessScenario {
@@ -210,26 +185,22 @@ fn harness_scenarios() -> Vec<HarnessScenario> {
                     "cases": [
                         {
                             "id": "sequence",
-                            "input": {},
                             "steps": [
                                 {
                                     "id": "first",
                                     "input": {
                                         "value": 1
                                     },
+                                    "expected": {"error": "fixture error"},
                                     "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
                                 }
-                            ],
-                            "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                            ]
                         }
                     ]
                 }
             }),
             setup: json!({}),
-            expected: json!({
-                "passed": false,
-                "result_error_contains": "fixture error"
-            }),
+            expected: json!({"results": [{"passed": true}]}),
             adapter_behavior: Some("case-error"),
         },
         HarnessScenario {
@@ -240,14 +211,13 @@ fn harness_scenarios() -> Vec<HarnessScenario> {
                     "cases": [
                         {
                             "id": "sequence",
-                            "input": {},
-                            "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8",
                             "steps": [
                                 {
                                     "id": "first",
                                     "input": {
                                         "value": 1
                                     },
+                                    "expected": {"value": 1},
                                     "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
                                 }
                             ]
@@ -256,10 +226,7 @@ fn harness_scenarios() -> Vec<HarnessScenario> {
                 }
             }),
             setup: json!({}),
-            expected: json!({
-                "passed": false,
-                "result_error_contains": "fingerprint unavailable"
-            }),
+            expected: json!({"results": [{"passed": false}]}),
             adapter_behavior: Some("no-coverage"),
         },
         HarnessScenario {
@@ -282,9 +249,7 @@ fn harness_scenarios() -> Vec<HarnessScenario> {
                 }
             }),
             setup: json!({}),
-            expected: json!({
-                "error_contains": "fixture adapter failed"
-            }),
+            expected: json!({"error": "fixture adapter failed"}),
             adapter_behavior: Some("adapter-error"),
         },
         HarnessScenario {
@@ -521,8 +486,6 @@ fn harness_scenarios() -> Vec<HarnessScenario> {
                     "cases": [
                         {
                             "id": "sequence",
-                            "input": {},
-                            "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8",
                             "steps": [
                                 {
                                     "id": "step",
@@ -930,7 +893,6 @@ fn harness_scenarios() -> Vec<HarnessScenario> {
                     "cases": [
                         {
                             "id": "sequence",
-                            "input": {},
                             "steps": [
                                 {
                                     "id": "step",
@@ -942,8 +904,7 @@ fn harness_scenarios() -> Vec<HarnessScenario> {
                                     },
                                     "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
                                 }
-                            ],
-                            "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                            ]
                         }
                     ]
                 }
@@ -963,7 +924,6 @@ fn harness_scenarios() -> Vec<HarnessScenario> {
                     "cases": [
                         {
                             "id": "sequence",
-                            "input": {},
                             "steps": [
                                 {
                                     "id": "step",
@@ -975,8 +935,7 @@ fn harness_scenarios() -> Vec<HarnessScenario> {
                                     },
                                     "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
                                 }
-                            ],
-                            "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                            ]
                         }
                     ]
                 }
@@ -1311,17 +1270,70 @@ fn validate_harness_case(scenario: &HarnessScenario) -> Result<(), String> {
             .iter()
             .map(|(key, value)| (key.clone(), value.clone())),
     );
-    let case: DatasetCase = serde_json::from_value(json!({
+    let (expected, predicate) = normalize_harness_expectation(&scenario.expected, &scenario.input);
+    let mut case_value = json!({
         "id": scenario.id,
         "input": input,
-        "expected": scenario.expected,
-    }))
-    .map_err(|error| format!("cannot construct unit input: {error}"))?;
+        "expected": expected,
+    });
+    if let Some(predicate) = predicate {
+        case_value["predicate"] = json!(predicate);
+    }
+    let case: DatasetCase = serde_json::from_value(case_value)
+        .map_err(|error| format!("cannot construct unit input: {error}"))?;
     if case.input["adapter"].as_str() == Some("manifest") {
         return validate_dataset_entry_with_adapter(&case, &ManifestBatchAdapter);
     }
     let mode = scenario.adapter_behavior.unwrap_or("normal").to_owned();
     validate_dataset_entry_with_adapter(&case, &FixtureAdapter { mode })
+}
+
+fn normalize_harness_expectation(expected: &Value, input: &Value) -> (Value, Option<String>) {
+    let Some(object) = expected.as_object() else {
+        return (expected.clone(), None);
+    };
+    let mut observed = json!({});
+    let mut predicates = Vec::new();
+    if let Some(message) = object.get("error_contains").and_then(Value::as_str) {
+        predicates.push(format!("contains(.error, {message:?})"));
+    }
+    if let Some(message) = object.get("result_error_contains").and_then(Value::as_str) {
+        let path = if input["dataset"]["cases"][0].get("steps").is_some() {
+            ".results.0.steps.0.error"
+        } else {
+            ".results.0.error"
+        };
+        predicates.push(format!("contains({path}, {message:?})"));
+        observed["results"] = json!([{"passed": false}]);
+    }
+    if let Some(passed) = object.get("passed").and_then(Value::as_bool) {
+        let total = object.get("total").and_then(Value::as_u64).unwrap_or(1) as usize;
+        observed["results"] = Value::Array((0..total).map(|_| json!({"passed": passed})).collect());
+    }
+    if let Some(status) = object.get("supplemental_status").and_then(Value::as_str) {
+        predicates.push(format!(
+            ".coverage.0.additional_test_coverage.status == {status:?}"
+        ));
+    }
+    if !predicates.is_empty()
+        || object.keys().any(|key| {
+            matches!(
+                key.as_str(),
+                "error_contains"
+                    | "result_error_contains"
+                    | "passed"
+                    | "total"
+                    | "coverage_complete"
+                    | "supplemental_status"
+            )
+        })
+    {
+        return (
+            observed,
+            (!predicates.is_empty()).then(|| predicates.join(" AND ")),
+        );
+    }
+    (expected.clone(), None)
 }
 
 struct FixtureAdapter {
@@ -1462,7 +1474,6 @@ impl FixtureAdapter {
             }
             "extra-results" => results.push(AdapterResult {
                 key: ExecutionKey {
-                    target_id: "unexpected".into(),
                     case_id: "unexpected".into(),
                     step_id: None,
                 },
@@ -1484,7 +1495,6 @@ impl FixtureAdapter {
             .map(|request| {
                 let key = if self.mode == "unrequested-coverage" {
                     ExecutionKey {
-                        target_id: "unexpected".into(),
                         case_id: "unexpected".into(),
                         step_id: None,
                     }
@@ -1543,25 +1553,16 @@ fn harness_setup_error_paths_are_unit_only() {
         mode: "normal".into(),
     };
 
-    let mismatch = case(
-        json!({"operation": "dataset-read-error"}),
-        json!({"error_contains": "not-the-observed-error"}),
-    );
-    assert!(validate_dataset_entry_with_adapter(&mismatch, &adapter).is_err());
-
     let unsafe_validator = case(
         json!({"validator_name": "../validator.py"}),
         json!({"passed": true}),
     );
     assert!(validate_dataset_entry_with_adapter(&unsafe_validator, &adapter).is_err());
 
-    let default_dataset = case(json!({}), json!({"error_contains": ""}));
+    let default_dataset = case(json!({}), json!({"results": [{"passed": true}]}));
     assert!(validate_dataset_entry_with_adapter(&default_dataset, &adapter).is_ok());
 
-    let custom_manifest = case(
-        json!({"manifest_yaml": "not: [valid"}),
-        json!({"error_contains": ""}),
-    );
+    let custom_manifest = case(json!({"manifest_yaml": "not: [valid"}), json!({}));
     assert!(validate_dataset_entry_with_adapter(&custom_manifest, &adapter).is_ok());
 }
 

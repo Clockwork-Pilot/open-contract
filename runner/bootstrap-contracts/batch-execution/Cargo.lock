@@ -196,6 +196,7 @@ dependencies = [
  "bootstrap-dataset-harness",
  "libc",
  "runner-manifest",
+ "runner-predicates",
  "serde",
  "serde_json",
  "serde_yaml",

@@ -7,863 +7,616 @@ cases:
   expected:
     exit_code: 2
     stdout: ''
-    stderr: |
-      open-contract-core: usage: open-contract-core <run-manifest|show-isolation-plan> <contract.yaml> --isolation <none|bwrap|landlock> [--isolation-runtime <path>] [--coverage-report <path>]
-  coverage_fingerprint: '51512d9907a2446ba3dd2ea2c38f4c91'
+    stderr: 'open-contract-core: usage: open-contract-core <run-manifest|show-isolation-plan> <contract.yaml> --isolation <none|bwrap|landlock> [--isolation-runtime <path>] [--coverage-report <path>]
+
+      '
+  coverage_fingerprint: 51512d9907a2446ba3dd2ea2c38f4c91
 - id: unknown-subcommand-is-rejected
   setup: false
   input:
-    args: ["execute"]
+    args:
+    - execute
   expected:
     exit_code: 2
     stdout: ''
-    stderr: |
-      open-contract-core: usage: open-contract-core <run-manifest|show-isolation-plan> <contract.yaml> --isolation <none|bwrap|landlock> [--isolation-runtime <path>] [--coverage-report <path>]
-  coverage_fingerprint: '51512d9907a2446ba3dd2ea2c38f4c91'
+    stderr: 'open-contract-core: usage: open-contract-core <run-manifest|show-isolation-plan> <contract.yaml> --isolation <none|bwrap|landlock> [--isolation-runtime <path>] [--coverage-report <path>]
+
+      '
+  coverage_fingerprint: 51512d9907a2446ba3dd2ea2c38f4c91
 - id: show-plan-requires-manifest
   setup: false
   input:
-    args: ["show-isolation-plan"]
+    args:
+    - show-isolation-plan
   expected:
     exit_code: 2
     stdout: ''
-    stderr: |
-      open-contract-core: missing manifest path
-  coverage_fingerprint: '0660d808bc9416fcf95772e1e5c501d6'
+    stderr: 'open-contract-core: missing manifest path
+
+      '
+  coverage_fingerprint: 0660d808bc9416fcf95772e1e5c501d6
 - id: run-manifest-requires-manifest
   setup: false
   input:
-    args: ["run-manifest"]
+    args:
+    - run-manifest
   expected:
     exit_code: 2
     stdout: ''
-    stderr: |
-      open-contract-core: missing manifest path
-  coverage_fingerprint: '5fbb2ee67dc69f4a8937cbf981af272c'
+    stderr: 'open-contract-core: missing manifest path
+
+      '
+  coverage_fingerprint: 5fbb2ee67dc69f4a8937cbf981af272c
 - id: run-manifest-requires-isolation
   setup: false
   input:
-    args: ["run-manifest", "missing.yaml"]
+    args:
+    - run-manifest
+    - missing.yaml
   expected:
     exit_code: 2
     stdout: ''
-    stderr: |
-      open-contract-core: --isolation is required
-  coverage_fingerprint: '183bfe98a3c0754282a2980def7e90c3'
+    stderr: 'open-contract-core: --isolation is required
+
+      '
+  coverage_fingerprint: 183bfe98a3c0754282a2980def7e90c3
 - id: rejects-unknown-option
   setup: false
   input:
-    args: ["run-manifest", "missing.yaml", "--isolation", "none", "--unknown"]
+    args:
+    - run-manifest
+    - missing.yaml
+    - --isolation
+    - none
+    - --unknown
   expected:
     exit_code: 2
     stdout: ''
-    stderr: |
-      open-contract-core: unknown argument: --unknown
-  coverage_fingerprint: '5109229e545652974b7dce8cb12c4209'
+    stderr: 'open-contract-core: unknown argument: --unknown
+
+      '
+  coverage_fingerprint: a1f517351773abe24a04e027e40465c3
 - id: rejects-invalid-isolation-backend
   setup: false
   input:
-    args: ["run-manifest", "missing.yaml", "--isolation", "invalid"]
+    args:
+    - run-manifest
+    - missing.yaml
+    - --isolation
+    - invalid
   expected:
     exit_code: 2
     stdout: ''
-    stderr: |
-      open-contract-core: invalid isolation backend "invalid"; expected none, bwrap, or landlock
-  coverage_fingerprint: 'ab83e35af1f62471bbd2a2ee6833e101'
+    stderr: 'open-contract-core: invalid isolation backend "invalid"; expected none, bwrap, or landlock
+
+      '
+  coverage_fingerprint: 11d341777dd54438cd49cd64e7e06ae9
 - id: rejects-runtime-with-no-isolation
   setup: false
   input:
-    args: ["run-manifest", "missing.yaml", "--isolation", "none", "--isolation-runtime", "runtime.yaml"]
+    args:
+    - run-manifest
+    - missing.yaml
+    - --isolation
+    - none
+    - --isolation-runtime
+    - runtime.yaml
   expected:
     exit_code: 2
     stdout: ''
-    stderr: |
-      open-contract-core: --isolation-runtime cannot be used with --isolation none
-  coverage_fingerprint: 'faaaebd152727e31180254668fc80535'
+    stderr: 'open-contract-core: --isolation-runtime cannot be used with --isolation none
+
+      '
+  coverage_fingerprint: 143952d90a40ff69195c4337ed63072d
 - id: show-plan-requires-isolation-backend
   setup: false
   input:
-    args: ["show-isolation-plan", "missing.yaml"]
+    args:
+    - show-isolation-plan
+    - missing.yaml
   expected:
     exit_code: 2
     stdout: ''
-    stderr: |
-      open-contract-core: --isolation is required
-  coverage_fingerprint: '18a4840d44d040b73e4ce8ac8d693f22'
+    stderr: 'open-contract-core: --isolation is required
+
+      '
+  coverage_fingerprint: 18a4840d44d040b73e4ce8ac8d693f22
 - id: show-plan-requires-isolation-value
   setup: false
   input:
-    args: ["show-isolation-plan", "missing.yaml", "--isolation"]
+    args:
+    - show-isolation-plan
+    - missing.yaml
+    - --isolation
   expected:
     exit_code: 2
     stdout: ''
-    stderr: |
-      open-contract-core: missing isolation backend
-  coverage_fingerprint: '5204e3bff8f785eb144f15ff55704133'
+    stderr: 'open-contract-core: missing isolation backend
+
+      '
+  coverage_fingerprint: 5204e3bff8f785eb144f15ff55704133
 - id: show-plan-rejects-invalid-backend
   setup: false
   input:
-    args: ["show-isolation-plan", "missing.yaml", "--isolation", "invalid"]
+    args:
+    - show-isolation-plan
+    - missing.yaml
+    - --isolation
+    - invalid
   expected:
     exit_code: 2
     stdout: ''
-    stderr: |
-      open-contract-core: invalid isolation backend "invalid"; expected none, bwrap, or landlock
-  coverage_fingerprint: '0c7e7c4abe8ea3d27c552356695a4218'
+    stderr: 'open-contract-core: invalid isolation backend "invalid"; expected none, bwrap, or landlock
+
+      '
+  coverage_fingerprint: 98dc36986fa85c6ff06761b3d8fe0da6
 - id: isolation-option-requires-value
   setup: false
   input:
-    args: ["run-manifest", "missing.yaml", "--isolation"]
+    args:
+    - run-manifest
+    - missing.yaml
+    - --isolation
   expected:
     exit_code: 2
     stdout: ''
-    stderr: |
-      open-contract-core: missing isolation backend
-  coverage_fingerprint: '336c99f5c3c7946b634380700901908f'
+    stderr: 'open-contract-core: missing isolation backend
+
+      '
+  coverage_fingerprint: 336c99f5c3c7946b634380700901908f
 - id: coverage-option-requires-path
   setup: false
   input:
-    args: ["run-manifest", "missing.yaml", "--isolation", "none", "--coverage-report"]
+    args:
+    - run-manifest
+    - missing.yaml
+    - --isolation
+    - none
+    - --coverage-report
   expected:
     exit_code: 2
     stdout: ''
-    stderr: |
-      open-contract-core: missing coverage report path
-  coverage_fingerprint: '53ecfe6027302fb7e846eb6b20c1aab2'
+    stderr: 'open-contract-core: missing coverage report path
+
+      '
+  coverage_fingerprint: 7c3ef3e993a02ca0642476cce0b50f10
 - id: runtime-option-requires-path
   setup: false
   input:
-    args: ["run-manifest", "missing.yaml", "--isolation", "landlock", "--isolation-runtime"]
+    args:
+    - run-manifest
+    - missing.yaml
+    - --isolation
+    - landlock
+    - --isolation-runtime
   expected:
     exit_code: 2
     stdout: ''
-    stderr: |
-      open-contract-core: missing isolation runtime path
-  coverage_fingerprint: 'e841db69476bdcca165d71cd8c6e1bc0'
+    stderr: 'open-contract-core: missing isolation runtime path
+
+      '
+  coverage_fingerprint: 433c70db2678fadf95268b01997a25b7
 - id: runs-the-complete-contract-input
   setup: true
   input:
-    args: ["run-manifest", "contract.yaml", "--isolation", "none", "--coverage-report", "coverage.json"]
+    args:
+    - run-manifest
+    - contract.yaml
+    - --isolation
+    - none
+    - --coverage-report
+    - coverage.json
     files:
-      contract.yaml: |
-        version: "1"
-        name: cli-smoke-fixture
-        coverage:
-          minimum_line_percent: 0
-        files:
-          dataset: dataset.json
-          validator: validator.py
-          supplemental_tests: [tests/check.py]
-        filesystem:
-          read: [dataset.json, validator.py, adapter.py, tests/check.py]
-          write: []
-        execution:
-          command: [python3, adapter.py]
-      dataset.json: '{"version":1,"cases":[{"id":"echo","input":{"value":7},"expected":{"value":7},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"},{"id":"echo-text","input":{"value":"text"},"expected":{"value":"text"},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"},{"id":"sequence","input":{"value":"sequence"},"steps":[{"id":"first","input":{"value":1},"expected":{"value":1},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"},{"id":"second","input":{"value":2},"expected":{"value":2},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"}],"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"}]}'
-      validator.py: |
-        def validate(value):
-            return value
-      adapter.py: |
-        import json
-        import sys
-        request = json.load(sys.stdin)
-        results = []
-        scopes = []
-        for item in request["requests"]:
-            results.append({"key": item["key"], "output": item["input"]})
-            scopes.append({"key": item["key"], "files": [{"path": "validator.py", "lines": [1]}]})
-        print(json.dumps({
-            "results": results,
-            "coverage": {"sources": ["validator.py"]},
-            "coverage_scopes": scopes,
-            "coverage_lines": [{"path": "validator.py", "executable_lines": [1], "covered_lines": [1]}],
-            "additional_test_coverage": {"executed": True, "passed": True, "native_report": {"format": "fixture"}},
-            "additional_coverage_lines": [{"path": "validator.py", "executable_lines": [1], "covered_lines": [1]}]
-        }))
-      tests/check.py: |
-        def run():
-            return True
+      contract.yaml: "version: \"1\"\nname: cli-smoke-fixture\ncoverage:\n  minimum_line_percent: 0\nfiles:\n  dataset: dataset.json\n  validator: validator.py\n  supplemental_tests: [tests/check.py]\nfilesystem:\n  read: [dataset.json, validator.py, adapter.py, tests/check.py]\n  write: []\nexecution:\n  command: [python3, adapter.py]\n"
+      dataset.json: '{"version":1,"cases":[{"id":"echo","input":{"value":7},"expected":{"value":7},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"},{"id":"echo-text","input":{"value":"text"},"expected":{"value":"text"},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"},{"id":"sequence","steps":[{"id":"first","input":{"value":1},"expected":{"value":1},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"},{"id":"second","input":{"value":2},"expected":{"value":2},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"}]}]}'
+      validator.py: "def validate(value):\n    return value\n"
+      adapter.py: "import json\nimport sys\nrequest = json.load(sys.stdin)\nresults = []\nscopes = []\nfor item in request[\"requests\"]:\n    results.append({\"key\": item[\"key\"], \"output\": item[\"input\"]})\n    scopes.append({\"key\": item[\"key\"], \"files\": [{\"path\": \"validator.py\", \"lines\": [1]}]})\nprint(json.dumps({\n    \"results\": results,\n    \"coverage\": {\"sources\": [\"validator.py\"]},\n    \"coverage_scopes\": scopes,\n    \"coverage_lines\": [{\"path\": \"validator.py\", \"executable_lines\": [1], \"covered_lines\": [1]}],\n    \"additional_test_coverage\": {\"executed\": True, \"passed\": True, \"native_report\": {\"format\": \"fixture\"}},\n    \"additional_coverage_lines\": [{\"path\": \"validator.py\", \"executable_lines\": [1], \"covered_lines\": [1]}]\n}))\n"
+      tests/check.py: "def run():\n    return True\n"
   expected:
     exit_code: 0
-    stdout: |
-      Dataset cases: 3/3 passed across 1 contract(s)
+    stdout: 'Dataset cases: 3/3 passed across 1 contract(s)
+
       Coverage report: coverage.json
+
+      '
     coverage_report:
       contracts:
       - contract: cli-smoke-fixture
         report:
-          sources: [validator.py]
+          sources:
+          - validator.py
     stderr: ''
-  coverage_fingerprint: 'f64862affe70cc84e2635bfedcdf85cd'
+  coverage_fingerprint: 10f1388f45d65894d305a787336ebd23
 - id: reports-incomplete-contract-coverage
   setup: true
   input:
-    args: ["run-manifest", "contract.yaml", "--isolation", "none", "--coverage-report", "coverage.json"]
+    args:
+    - run-manifest
+    - contract.yaml
+    - --isolation
+    - none
+    - --coverage-report
+    - coverage.json
     files:
-      contract.yaml: |
-        version: "1"
-        name: cli-incomplete-coverage-fixture
-        coverage:
-          minimum_line_percent: 0
-        files:
-          dataset: dataset.json
-          validator: validator.py
-        filesystem:
-          read: [dataset.json, validator.py, adapter.py]
-          write: []
-        execution:
-          command: [python3, adapter.py]
+      contract.yaml: "version: \"1\"\nname: cli-incomplete-coverage-fixture\ncoverage:\n  minimum_line_percent: 0\nfiles:\n  dataset: dataset.json\n  validator: validator.py\nfilesystem:\n  read: [dataset.json, validator.py, adapter.py]\n  write: []\nexecution:\n  command: [python3, adapter.py]\n"
       dataset.json: '{"version":1,"cases":[{"id":"without-coverage","input":{"value":8},"expected":{"value":8},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"}]}'
-      validator.py: |
-        def validate(value):
-            return value
-      adapter.py: |
-        import json
-        import sys
-        request = json.load(sys.stdin)
-        results = []
-        scopes = []
-        for item in request["requests"]:
-            results.append({"key": item["key"], "output": item["input"]})
-            scopes.append({"key": item["key"], "files": [{"path": "validator.py", "lines": [1]}]})
-        print(json.dumps({
-            "results": results,
-            "coverage": {"sources": []},
-            "coverage_scopes": scopes,
-            "coverage_lines": [{"path": "validator.py", "executable_lines": [1], "covered_lines": [1]}],
-        }))
+      validator.py: "def validate(value):\n    return value\n"
+      adapter.py: "import json\nimport sys\nrequest = json.load(sys.stdin)\nresults = []\nscopes = []\nfor item in request[\"requests\"]:\n    results.append({\"key\": item[\"key\"], \"output\": item[\"input\"]})\n    scopes.append({\"key\": item[\"key\"], \"files\": [{\"path\": \"validator.py\", \"lines\": [1]}]})\nprint(json.dumps({\n    \"results\": results,\n    \"coverage\": {\"sources\": []},\n    \"coverage_scopes\": scopes,\n    \"coverage_lines\": [{\"path\": \"validator.py\", \"executable_lines\": [1], \"covered_lines\": [1]}],\n}))\n"
   expected:
     exit_code: 1
-    stdout: |
-      Dataset cases: 1/1 passed across 1 contract(s)
+    stdout: 'Dataset cases: 1/1 passed across 1 contract(s)
+
       Coverage report: coverage.json
-    stderr: |
-      open-contract-core: coverage requirements not met; see adapter coverage report
-  coverage_fingerprint: '9fedfd1b31e3cec7a4521f5b28b64835'
+
+      '
+    stderr: 'open-contract-core: coverage requirements not met; see adapter coverage report
+
+      '
+  coverage_fingerprint: 5e587de13e3803b6578f73cc821def18
 - id: reports-coverage-write-failure
   setup: true
   input:
-    args: ["run-manifest", "contract.yaml", "--isolation", "none", "--coverage-report", "coverage.json"]
+    args:
+    - run-manifest
+    - contract.yaml
+    - --isolation
+    - none
+    - --coverage-report
+    - coverage.json
     files:
-      contract.yaml: |
-        version: "1"
-        name: cli-smoke-fixture
-        coverage:
-          minimum_line_percent: 0
-        files:
-          dataset: dataset.json
-          validator: validator.py
-          supplemental_tests: [tests/check.py]
-        filesystem:
-          read: [dataset.json, validator.py, adapter.py, tests/check.py]
-          write: []
-        execution:
-          command: [python3, adapter.py]
-      dataset.json: '{"version":1,"cases":[{"id":"echo","input":{"value":7},"expected":{"value":7},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"},{"id":"echo-text","input":{"value":"text"},"expected":{"value":"text"},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"},{"id":"sequence","input":{"value":"sequence"},"steps":[{"id":"first","input":{"value":1},"expected":{"value":1},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"},{"id":"second","input":{"value":2},"expected":{"value":2},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"}],"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"}]}'
-      validator.py: |
-        def validate(value):
-            return value
-      adapter.py: |
-        import json
-        import sys
-        request = json.load(sys.stdin)
-        results = []
-        scopes = []
-        for item in request["requests"]:
-            results.append({"key": item["key"], "output": item["input"]})
-            scopes.append({"key": item["key"], "files": [{"path": "validator.py", "lines": [1]}]})
-        print(json.dumps({
-            "results": results,
-            "coverage": {"sources": ["validator.py"]},
-            "coverage_scopes": scopes,
-            "coverage_lines": [{"path": "validator.py", "executable_lines": [1], "covered_lines": [1]}],
-            "additional_test_coverage": {"executed": True, "passed": True, "native_report": {"format": "fixture"}},
-            "additional_coverage_lines": [{"path": "validator.py", "executable_lines": [1], "covered_lines": [1]}]
-        }))
-      tests/check.py: |
-        def run():
-            return True
+      contract.yaml: "version: \"1\"\nname: cli-smoke-fixture\ncoverage:\n  minimum_line_percent: 0\nfiles:\n  dataset: dataset.json\n  validator: validator.py\n  supplemental_tests: [tests/check.py]\nfilesystem:\n  read: [dataset.json, validator.py, adapter.py, tests/check.py]\n  write: []\nexecution:\n  command: [python3, adapter.py]\n"
+      dataset.json: '{"version":1,"cases":[{"id":"echo","input":{"value":7},"expected":{"value":7},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"},{"id":"echo-text","input":{"value":"text"},"expected":{"value":"text"},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"},{"id":"sequence","steps":[{"id":"first","input":{"value":1},"expected":{"value":1},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"},{"id":"second","input":{"value":2},"expected":{"value":2},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"}]}]}'
+      validator.py: "def validate(value):\n    return value\n"
+      adapter.py: "import json\nimport sys\nrequest = json.load(sys.stdin)\nresults = []\nscopes = []\nfor item in request[\"requests\"]:\n    results.append({\"key\": item[\"key\"], \"output\": item[\"input\"]})\n    scopes.append({\"key\": item[\"key\"], \"files\": [{\"path\": \"validator.py\", \"lines\": [1]}]})\nprint(json.dumps({\n    \"results\": results,\n    \"coverage\": {\"sources\": [\"validator.py\"]},\n    \"coverage_scopes\": scopes,\n    \"coverage_lines\": [{\"path\": \"validator.py\", \"executable_lines\": [1], \"covered_lines\": [1]}],\n    \"additional_test_coverage\": {\"executed\": True, \"passed\": True, \"native_report\": {\"format\": \"fixture\"}},\n    \"additional_coverage_lines\": [{\"path\": \"validator.py\", \"executable_lines\": [1], \"covered_lines\": [1]}]\n}))\n"
+      tests/check.py: "def run():\n    return True\n"
       coverage.json/child: block report output path
   expected:
     exit_code: 2
     stdout: ''
-    stderr: |
-      open-contract-core: cannot write coverage report coverage.json: Is a directory (os error 21)
-  coverage_fingerprint: 'b81e1da5078f773d63e976632aa9ea49'
+    stderr: 'open-contract-core: cannot write coverage report coverage.json: Is a directory (os error 21)
+
+      '
+  coverage_fingerprint: 40abab890005efaa9ded8c0af266967c
 - id: reports-contract-execution-failure
   setup: true
   input:
-    args: ["run-manifest", "contract.yaml", "--isolation", "none", "--coverage-report", "coverage.json"]
+    args:
+    - run-manifest
+    - contract.yaml
+    - --isolation
+    - none
+    - --coverage-report
+    - coverage.json
     files:
-      contract.yaml: |
-        version: "1"
-        name: cli-smoke-fixture
-        coverage:
-          minimum_line_percent: 0
-        files:
-          dataset: dataset.json
-          validator: validator.py
-          supplemental_tests: [tests/check.py]
-        filesystem:
-          read: [dataset.json, validator.py, adapter.py, tests/check.py]
-          write: []
-        execution:
-          command: [cli-command-that-does-not-exist]
-      dataset.json: '{"version":1,"cases":[{"id":"echo","input":{"value":7},"expected":{"value":7},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"},{"id":"echo-text","input":{"value":"text"},"expected":{"value":"text"},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"},{"id":"sequence","input":{"value":"sequence"},"steps":[{"id":"first","input":{"value":1},"expected":{"value":1},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"},{"id":"second","input":{"value":2},"expected":{"value":2},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"}],"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"}]}'
-      validator.py: |
-        def validate(value):
-            return value
-      adapter.py: |
-        import json
-        import sys
-        request = json.load(sys.stdin)
-        results = []
-        scopes = []
-        for item in request["requests"]:
-            results.append({"key": item["key"], "output": item["input"]})
-            scopes.append({"key": item["key"], "files": [{"path": "validator.py", "lines": [1]}]})
-        print(json.dumps({
-            "results": results,
-            "coverage": {"sources": ["validator.py"]},
-            "coverage_scopes": scopes,
-            "coverage_lines": [{"path": "validator.py", "executable_lines": [1], "covered_lines": [1]}],
-            "additional_test_coverage": {"executed": True, "passed": True, "native_report": {"format": "fixture"}},
-            "additional_coverage_lines": [{"path": "validator.py", "executable_lines": [1], "covered_lines": [1]}]
-        }))
-      tests/check.py: |
-        def run():
-            return True
+      contract.yaml: "version: \"1\"\nname: cli-smoke-fixture\ncoverage:\n  minimum_line_percent: 0\nfiles:\n  dataset: dataset.json\n  validator: validator.py\n  supplemental_tests: [tests/check.py]\nfilesystem:\n  read: [dataset.json, validator.py, adapter.py, tests/check.py]\n  write: []\nexecution:\n  command: [cli-command-that-does-not-exist]\n"
+      dataset.json: '{"version":1,"cases":[{"id":"echo","input":{"value":7},"expected":{"value":7},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"},{"id":"echo-text","input":{"value":"text"},"expected":{"value":"text"},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"},{"id":"sequence","steps":[{"id":"first","input":{"value":1},"expected":{"value":1},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"},{"id":"second","input":{"value":2},"expected":{"value":2},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"}]}]}'
+      validator.py: "def validate(value):\n    return value\n"
+      adapter.py: "import json\nimport sys\nrequest = json.load(sys.stdin)\nresults = []\nscopes = []\nfor item in request[\"requests\"]:\n    results.append({\"key\": item[\"key\"], \"output\": item[\"input\"]})\n    scopes.append({\"key\": item[\"key\"], \"files\": [{\"path\": \"validator.py\", \"lines\": [1]}]})\nprint(json.dumps({\n    \"results\": results,\n    \"coverage\": {\"sources\": [\"validator.py\"]},\n    \"coverage_scopes\": scopes,\n    \"coverage_lines\": [{\"path\": \"validator.py\", \"executable_lines\": [1], \"covered_lines\": [1]}],\n    \"additional_test_coverage\": {\"executed\": True, \"passed\": True, \"native_report\": {\"format\": \"fixture\"}},\n    \"additional_coverage_lines\": [{\"path\": \"validator.py\", \"executable_lines\": [1], \"covered_lines\": [1]}]\n}))\n"
+      tests/check.py: "def run():\n    return True\n"
   expected:
     exit_code: 2
     stdout: ''
-    stderr: |
-      open-contract-core: contract execution: No such file or directory (os error 2)
-  coverage_fingerprint: '2c78ef59b9d35062a230132a2b6de355'
+    stderr: 'open-contract-core: contract execution: No such file or directory (os error 2)
+
+      '
+  coverage_fingerprint: 20fa860e47f7e24ac999754dfcf3cffc
 - id: reports-dataset-case-failure
   setup: true
   input:
-    args: ["run-manifest", "contract.yaml", "--isolation", "none", "--coverage-report", "coverage.json"]
+    args:
+    - run-manifest
+    - contract.yaml
+    - --isolation
+    - none
+    - --coverage-report
+    - coverage.json
     files:
-      contract.yaml: |
-        version: "1"
-        name: cli-smoke-fixture
-        coverage:
-          minimum_line_percent: 0
-        files:
-          dataset: dataset.json
-          validator: validator.py
-          supplemental_tests: [tests/check.py]
-        filesystem:
-          read: [dataset.json, validator.py, adapter.py, tests/check.py]
-          write: []
-        execution:
-          command: [python3, adapter.py]
-      dataset.json: '{"version":1,"cases":[{"id":"echo","input":7,"expected":99,"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"},{"id":"echo-text","input":{"value":"text"},"expected":{"value":"text"},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"},{"id":"sequence","input":{"value":"sequence"},"steps":[{"id":"first","input":{"value":1},"expected":{"value":1},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"},{"id":"second","input":{"value":2},"expected":{"value":2},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"}],"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"}]}'
-      validator.py: |
-        def validate(value):
-            return value
-      adapter.py: |
-        import json
-        import sys
-        request = json.load(sys.stdin)
-        results = []
-        scopes = []
-        for item in request["requests"]:
-            results.append({"key": item["key"], "output": item["input"]})
-            scopes.append({"key": item["key"], "files": [{"path": "validator.py", "lines": [1]}]})
-        print(json.dumps({
-            "results": results,
-            "coverage": {"sources": ["validator.py"]},
-            "coverage_scopes": scopes,
-            "coverage_lines": [{"path": "validator.py", "executable_lines": [1], "covered_lines": [1]}],
-            "additional_test_coverage": {"executed": True, "passed": True, "native_report": {"format": "fixture"}},
-            "additional_coverage_lines": [{"path": "validator.py", "executable_lines": [1], "covered_lines": [1]}]
-        }))
-      tests/check.py: |
-        def run():
-            return True
+      contract.yaml: "version: \"1\"\nname: cli-smoke-fixture\ncoverage:\n  minimum_line_percent: 0\nfiles:\n  dataset: dataset.json\n  validator: validator.py\n  supplemental_tests: [tests/check.py]\nfilesystem:\n  read: [dataset.json, validator.py, adapter.py, tests/check.py]\n  write: []\nexecution:\n  command: [python3, adapter.py]\n"
+      dataset.json: '{"version":1,"cases":[{"id":"echo","input":7,"expected":99,"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"},{"id":"echo-text","input":{"value":"text"},"expected":{"value":"text"},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"},{"id":"sequence","steps":[{"id":"first","input":{"value":1},"expected":{"value":1},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"},{"id":"second","input":{"value":2},"expected":{"value":2},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"}]}]}'
+      validator.py: "def validate(value):\n    return value\n"
+      adapter.py: "import json\nimport sys\nrequest = json.load(sys.stdin)\nresults = []\nscopes = []\nfor item in request[\"requests\"]:\n    results.append({\"key\": item[\"key\"], \"output\": item[\"input\"]})\n    scopes.append({\"key\": item[\"key\"], \"files\": [{\"path\": \"validator.py\", \"lines\": [1]}]})\nprint(json.dumps({\n    \"results\": results,\n    \"coverage\": {\"sources\": [\"validator.py\"]},\n    \"coverage_scopes\": scopes,\n    \"coverage_lines\": [{\"path\": \"validator.py\", \"executable_lines\": [1], \"covered_lines\": [1]}],\n    \"additional_test_coverage\": {\"executed\": True, \"passed\": True, \"native_report\": {\"format\": \"fixture\"}},\n    \"additional_coverage_lines\": [{\"path\": \"validator.py\", \"executable_lines\": [1], \"covered_lines\": [1]}]\n}))\n"
+      tests/check.py: "def run():\n    return True\n"
   expected:
     exit_code: 1
-    stdout: |
-      Dataset cases: 2/3 passed across 1 contract(s)
-        FAIL cli-smoke-fixture/default/echo: output did not equal expected value
-          actual: 7
-      Coverage report: coverage.json
-    stderr: |
-      open-contract-core: 2/3 dataset cases passed across 1 contract(s)
-  coverage_fingerprint: 'b2d2489987f2ae66847979fff615edc6'
+    stdout: "Dataset cases: 2/3 passed across 1 contract(s)\n  FAIL cli-smoke-fixture/echo: output did not match expected subset\n    actual: 7\nCoverage report: coverage.json\n"
+    stderr: 'open-contract-core: 2/3 dataset cases passed across 1 contract(s)
+
+      '
+  coverage_fingerprint: 47b0bc06faa4c2f12fe40f160f76cef4
 - id: reports-supplemental-test-failure
   setup: true
   input:
-    args: ["run-manifest", "contract.yaml", "--isolation", "none", "--coverage-report", "coverage.json"]
+    args:
+    - run-manifest
+    - contract.yaml
+    - --isolation
+    - none
+    - --coverage-report
+    - coverage.json
     files:
-      contract.yaml: |
-        version: "1"
-        name: cli-smoke-fixture
-        coverage:
-          minimum_line_percent: 0
-        files:
-          dataset: dataset.json
-          validator: validator.py
-          supplemental_tests: [tests/check.py]
-        filesystem:
-          read: [dataset.json, validator.py, adapter.py, tests/check.py]
-          write: []
-        execution:
-          command: [python3, adapter.py]
-      dataset.json: '{"version":1,"cases":[{"id":"echo","input":{"value":7},"expected":{"value":7},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"},{"id":"echo-text","input":{"value":"text"},"expected":{"value":"text"},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"},{"id":"sequence","input":{"value":"sequence"},"steps":[{"id":"first","input":{"value":1},"expected":{"value":1},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"},{"id":"second","input":{"value":2},"expected":{"value":2},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"}],"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"}]}'
-      validator.py: |
-        def validate(value):
-            return value
-      adapter.py: |
-        import json
-        import sys
-        request = json.load(sys.stdin)
-        results = []
-        scopes = []
-        for item in request["requests"]:
-            results.append({"key": item["key"], "output": item["input"]})
-            scopes.append({"key": item["key"], "files": [{"path": "validator.py", "lines": [1]}]})
-        print(json.dumps({
-            "results": results,
-            "coverage": {"sources": ["validator.py"]},
-            "coverage_scopes": scopes,
-            "coverage_lines": [{"path": "validator.py", "executable_lines": [1], "covered_lines": [1]}],
-            "additional_test_coverage": {"executed": True, "passed": False, "error": "supplemental check failed", "native_report": {"format": "fixture", "error": "supplemental check failed"}},
-            "additional_coverage_lines": [{"path": "validator.py", "executable_lines": [1], "covered_lines": [1]}]
-        }))
-      tests/check.py: |
-        def run():
-            return True
+      contract.yaml: "version: \"1\"\nname: cli-smoke-fixture\ncoverage:\n  minimum_line_percent: 0\nfiles:\n  dataset: dataset.json\n  validator: validator.py\n  supplemental_tests: [tests/check.py]\nfilesystem:\n  read: [dataset.json, validator.py, adapter.py, tests/check.py]\n  write: []\nexecution:\n  command: [python3, adapter.py]\n"
+      dataset.json: '{"version":1,"cases":[{"id":"echo","input":{"value":7},"expected":{"value":7},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"},{"id":"echo-text","input":{"value":"text"},"expected":{"value":"text"},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"},{"id":"sequence","steps":[{"id":"first","input":{"value":1},"expected":{"value":1},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"},{"id":"second","input":{"value":2},"expected":{"value":2},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"}]}]}'
+      validator.py: "def validate(value):\n    return value\n"
+      adapter.py: "import json\nimport sys\nrequest = json.load(sys.stdin)\nresults = []\nscopes = []\nfor item in request[\"requests\"]:\n    results.append({\"key\": item[\"key\"], \"output\": item[\"input\"]})\n    scopes.append({\"key\": item[\"key\"], \"files\": [{\"path\": \"validator.py\", \"lines\": [1]}]})\nprint(json.dumps({\n    \"results\": results,\n    \"coverage\": {\"sources\": [\"validator.py\"]},\n    \"coverage_scopes\": scopes,\n    \"coverage_lines\": [{\"path\": \"validator.py\", \"executable_lines\": [1], \"covered_lines\": [1]}],\n    \"additional_test_coverage\": {\"executed\": True, \"passed\": False, \"error\": \"supplemental check failed\", \"native_report\": {\"format\": \"fixture\", \"error\": \"supplemental check failed\"}},\n    \"additional_coverage_lines\": [{\"path\": \"validator.py\", \"executable_lines\": [1], \"covered_lines\": [1]}]\n}))\n"
+      tests/check.py: "def run():\n    return True\n"
   expected:
     exit_code: 1
-    stdout: |
-      Dataset cases: 3/3 passed across 1 contract(s)
+    stdout: 'Dataset cases: 3/3 passed across 1 contract(s)
+
       Coverage report: coverage.json
-    stderr: |
-      open-contract-core: coverage requirements not met; see adapter coverage report
-  coverage_fingerprint: '9fedfd1b31e3cec7a4521f5b28b64835'
+
+      '
+    stderr: 'open-contract-core: coverage requirements not met; see adapter coverage report
+
+      '
+  coverage_fingerprint: 91536d3ebfcfa0f344f18a3c0fbd7652
 - id: reports-coverage-directory-creation-failure
   setup: true
   input:
-    args: ["run-manifest", "contract.yaml", "--isolation", "none", "--coverage-report", "blocked/report.json"]
+    args:
+    - run-manifest
+    - contract.yaml
+    - --isolation
+    - none
+    - --coverage-report
+    - blocked/report.json
     files:
-      contract.yaml: |
-        version: "1"
-        name: cli-smoke-fixture
-        coverage:
-          minimum_line_percent: 0
-        files:
-          dataset: dataset.json
-          validator: validator.py
-          supplemental_tests: [tests/check.py]
-        filesystem:
-          read: [dataset.json, validator.py, adapter.py, tests/check.py]
-          write: []
-        execution:
-          command: [python3, adapter.py]
-      dataset.json: '{"version":1,"cases":[{"id":"echo","input":{"value":7},"expected":{"value":7},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"},{"id":"echo-text","input":{"value":"text"},"expected":{"value":"text"},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"},{"id":"sequence","input":{"value":"sequence"},"steps":[{"id":"first","input":{"value":1},"expected":{"value":1},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"},{"id":"second","input":{"value":2},"expected":{"value":2},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"}],"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"}]}'
-      validator.py: |
-        def validate(value):
-            return value
-      adapter.py: |
-        import json
-        import sys
-        request = json.load(sys.stdin)
-        results = []
-        scopes = []
-        for item in request["requests"]:
-            results.append({"key": item["key"], "output": item["input"]})
-            scopes.append({"key": item["key"], "files": [{"path": "validator.py", "lines": [1]}]})
-        print(json.dumps({
-            "results": results,
-            "coverage": {"sources": ["validator.py"]},
-            "coverage_scopes": scopes,
-            "coverage_lines": [{"path": "validator.py", "executable_lines": [1], "covered_lines": [1]}],
-            "additional_test_coverage": {"executed": True, "passed": True, "native_report": {"format": "fixture"}},
-            "additional_coverage_lines": [{"path": "validator.py", "executable_lines": [1], "covered_lines": [1]}]
-        }))
-      tests/check.py: |
-        def run():
-            return True
+      contract.yaml: "version: \"1\"\nname: cli-smoke-fixture\ncoverage:\n  minimum_line_percent: 0\nfiles:\n  dataset: dataset.json\n  validator: validator.py\n  supplemental_tests: [tests/check.py]\nfilesystem:\n  read: [dataset.json, validator.py, adapter.py, tests/check.py]\n  write: []\nexecution:\n  command: [python3, adapter.py]\n"
+      dataset.json: '{"version":1,"cases":[{"id":"echo","input":{"value":7},"expected":{"value":7},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"},{"id":"echo-text","input":{"value":"text"},"expected":{"value":"text"},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"},{"id":"sequence","steps":[{"id":"first","input":{"value":1},"expected":{"value":1},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"},{"id":"second","input":{"value":2},"expected":{"value":2},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"}]}]}'
+      validator.py: "def validate(value):\n    return value\n"
+      adapter.py: "import json\nimport sys\nrequest = json.load(sys.stdin)\nresults = []\nscopes = []\nfor item in request[\"requests\"]:\n    results.append({\"key\": item[\"key\"], \"output\": item[\"input\"]})\n    scopes.append({\"key\": item[\"key\"], \"files\": [{\"path\": \"validator.py\", \"lines\": [1]}]})\nprint(json.dumps({\n    \"results\": results,\n    \"coverage\": {\"sources\": [\"validator.py\"]},\n    \"coverage_scopes\": scopes,\n    \"coverage_lines\": [{\"path\": \"validator.py\", \"executable_lines\": [1], \"covered_lines\": [1]}],\n    \"additional_test_coverage\": {\"executed\": True, \"passed\": True, \"native_report\": {\"format\": \"fixture\"}},\n    \"additional_coverage_lines\": [{\"path\": \"validator.py\", \"executable_lines\": [1], \"covered_lines\": [1]}]\n}))\n"
+      tests/check.py: "def run():\n    return True\n"
       blocked: an existing file blocks the report directory
   expected:
     exit_code: 2
     stdout: ''
-    stderr: |
-      open-contract-core: cannot create coverage report directory blocked: File exists (os error 17)
-  coverage_fingerprint: '727d31b4c38529d00eea69eb41fec7f1'
+    stderr: 'open-contract-core: cannot create coverage report directory blocked: File exists (os error 17)
+
+      '
+  coverage_fingerprint: 74907b3037016736f0afea3fef1bc41a
 - id: run-manifest-rejects-missing-manifest-with-bwrap
   setup: false
   input:
-    args: ["run-manifest", "missing.yaml", "--isolation", "bwrap"]
+    args:
+    - run-manifest
+    - missing.yaml
+    - --isolation
+    - bwrap
   expected:
     exit_code: 2
     stdout: ''
-    stderr: |
-      open-contract-core: contract execution: No such file or directory (os error 2)
-  coverage_fingerprint: '4670501d0bb1f420b71c9368439d9ad6'
+    stderr: 'open-contract-core: contract execution: No such file or directory (os error 2)
+
+      '
+  coverage_fingerprint: 2a78aa37e45f1cbca7e0b05698cc50a3
 - id: show-plan-rejects-unknown-option
   setup: false
   input:
-    args: ["show-isolation-plan", "missing.yaml", "--isolation", "none", "--unexpected"]
+    args:
+    - show-isolation-plan
+    - missing.yaml
+    - --isolation
+    - none
+    - --unexpected
   expected:
     exit_code: 2
     stdout: ''
-    stderr: |
-      open-contract-core: unknown argument: --unexpected
-  coverage_fingerprint: 'd72e4ce94196b3cbb8dcd649992cecad'
+    stderr: 'open-contract-core: unknown argument: --unexpected
+
+      '
+  coverage_fingerprint: eb1e69eb4a04873770442a8cf09289d1
 - id: show-plan-requires-runtime-value
   setup: false
   input:
-    args: ["show-isolation-plan", "missing.yaml", "--isolation", "landlock", "--isolation-runtime"]
+    args:
+    - show-isolation-plan
+    - missing.yaml
+    - --isolation
+    - landlock
+    - --isolation-runtime
   expected:
     exit_code: 2
     stdout: ''
-    stderr: |
-      open-contract-core: missing isolation runtime path
-  coverage_fingerprint: 'c95ebf501ec8274d94e4cd56dcbf0c26'
+    stderr: 'open-contract-core: missing isolation runtime path
+
+      '
+  coverage_fingerprint: 7da6f53c213983b94d0e04476814ebf7
 - id: show-plan-rejects-runtime-with-no-isolation
   setup: false
   input:
-    args: ["show-isolation-plan", "missing.yaml", "--isolation", "none", "--isolation-runtime", "runtime.yaml"]
+    args:
+    - show-isolation-plan
+    - missing.yaml
+    - --isolation
+    - none
+    - --isolation-runtime
+    - runtime.yaml
   expected:
     exit_code: 2
     stdout: ''
-    stderr: |
-      open-contract-core: --isolation-runtime cannot be used with --isolation none
-  coverage_fingerprint: '5246d9e3473f3d2feb542f25bfb6446b'
+    stderr: 'open-contract-core: --isolation-runtime cannot be used with --isolation none
+
+      '
+  coverage_fingerprint: 1bd5d7cb60bac0981b69563042d9197a
 - id: show-plan-runtime-path-with-landlock
   setup: false
   input:
-    args: ["show-isolation-plan", "missing.yaml", "--isolation", "landlock", "--isolation-runtime", "runtime.yaml"]
+    args:
+    - show-isolation-plan
+    - missing.yaml
+    - --isolation
+    - landlock
+    - --isolation-runtime
+    - runtime.yaml
   expected:
     exit_code: 2
     stdout: ''
-    stderr: |
-      open-contract-core: isolation plan: No such file or directory (os error 2)
-  coverage_fingerprint: '1d437647b6b11918974f6aa404161df7'
+    stderr: 'open-contract-core: isolation plan: No such file or directory (os error 2)
+
+      '
+  coverage_fingerprint: ecfa8bf7f13913e105cbeb3fba26520c
 - id: show-plan-prints-a-valid-plan
   setup: true
   input:
-    args: ["show-isolation-plan", "contract.yaml", "--isolation", "none"]
+    args:
+    - show-isolation-plan
+    - contract.yaml
+    - --isolation
+    - none
     files:
-      contract.yaml: |
-        version: "1"
-        name: cli-show-plan-fixture
-        coverage:
-          minimum_line_percent: 0
-        files:
-          dataset: dataset.json
-          validator: validator.py
-        filesystem:
-          read: [dataset.json, validator.py, adapter.py]
-          write: []
-        execution:
-          command: [python3, adapter.py]
+      contract.yaml: "version: \"1\"\nname: cli-show-plan-fixture\ncoverage:\n  minimum_line_percent: 0\nfiles:\n  dataset: dataset.json\n  validator: validator.py\nfilesystem:\n  read: [dataset.json, validator.py, adapter.py]\n  write: []\nexecution:\n  command: [python3, adapter.py]\n"
       dataset.json: '{"version":1,"cases":[{"id":"one","input":{"value":1},"expected":{"value":1},"coverage_fingerprint":"11111111111111111111111111111111"}]}'
-      validator.py: |
-        def validate(value):
-            return value
-      adapter.py: |
-        import json
+      validator.py: "def validate(value):\n    return value\n"
+      adapter.py: 'import json
+
         import sys
+
         request = json.load(sys.stdin)
+
         print(json.dumps({"results": []}))
-  predicate: '.exit_code == 0 AND .stderr == "" AND .stdout != ""'
-  coverage_fingerprint: '6a8a6aebd2aa57f43aed5e9f41ee2e81'
+
+        '
+  predicate: .exit_code == 0 AND .stderr == "" AND .stdout != ""
+  expected: {}
+  coverage_fingerprint: 0443130ed7cf54f2fe77932571d66436
 - id: reports-validator-error-without-actual-output
   setup: true
   input:
-    args: ["run-manifest", "contract.yaml", "--isolation", "none", "--coverage-report", "coverage.json"]
+    args:
+    - run-manifest
+    - contract.yaml
+    - --isolation
+    - none
+    - --coverage-report
+    - coverage.json
     files:
-      contract.yaml: |
-        version: "1"
-        name: cli-validator-error-fixture
-        coverage:
-          minimum_line_percent: 0
-        files:
-          dataset: dataset.json
-          validator: validator.py
-        filesystem:
-          read: [dataset.json, validator.py, adapter.py]
-          write: []
-        execution:
-          command: [python3, adapter.py]
+      contract.yaml: "version: \"1\"\nname: cli-validator-error-fixture\ncoverage:\n  minimum_line_percent: 0\nfiles:\n  dataset: dataset.json\n  validator: validator.py\nfilesystem:\n  read: [dataset.json, validator.py, adapter.py]\n  write: []\nexecution:\n  command: [python3, adapter.py]\n"
       dataset.json: '{"version":1,"cases":[{"id":"invalid","input":{"value":-1},"expected":{"accepted":true},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"}]}'
-      validator.py: |
-        def validate(value):
-            return value
-      adapter.py: |
-        import json
-        import sys
-        request = json.load(sys.stdin)
-        item = request["requests"][0]
-        print(json.dumps({
-            "results": [{"key": item["key"], "error": "ValueError: invalid input"}],
-            "coverage": {"sources": ["validator.py"]},
-            "coverage_scopes": [{"key": item["key"], "files": [{"path": "validator.py", "lines": [1]}]}],
-            "coverage_lines": [{"path": "validator.py", "executable_lines": [1], "covered_lines": [1]}]
-        }))
+      validator.py: "def validate(value):\n    return value\n"
+      adapter.py: "import json\nimport sys\nrequest = json.load(sys.stdin)\nitem = request[\"requests\"][0]\nprint(json.dumps({\n    \"results\": [{\"key\": item[\"key\"], \"error\": \"ValueError: invalid input\"}],\n    \"coverage\": {\"sources\": [\"validator.py\"]},\n    \"coverage_scopes\": [{\"key\": item[\"key\"], \"files\": [{\"path\": \"validator.py\", \"lines\": [1]}]}],\n    \"coverage_lines\": [{\"path\": \"validator.py\", \"executable_lines\": [1], \"covered_lines\": [1]}]\n}))\n"
   expected:
     exit_code: 1
-    stdout: |
-      Dataset cases: 0/1 passed across 1 contract(s)
-        FAIL cli-validator-error-fixture/default/invalid: ValueError: invalid input
-          actual: {"error":"ValueError: invalid input"}
-      Coverage report: coverage.json
-    stderr: |
-      open-contract-core: 0/1 dataset cases passed across 1 contract(s)
-  coverage_fingerprint: 'b2d2489987f2ae66847979fff615edc6'
+    stdout: "Dataset cases: 0/1 passed across 1 contract(s)\n  FAIL cli-validator-error-fixture/invalid: output did not match expected subset\n    actual: {\"error\":\"ValueError: invalid input\"}\nCoverage report: coverage.json\n"
+    stderr: 'open-contract-core: 0/1 dataset cases passed across 1 contract(s)
+
+      '
+  coverage_fingerprint: 47b0bc06faa4c2f12fe40f160f76cef4
 - id: reports-result-fingerprint-mismatch
   setup: true
   input:
-    args: ["run-manifest", "contract.yaml", "--isolation", "none", "--coverage-report", "coverage.json"]
+    args:
+    - run-manifest
+    - contract.yaml
+    - --isolation
+    - none
+    - --coverage-report
+    - coverage.json
     files:
-      contract.yaml: |
-        version: "1"
-        name: cli-smoke-fixture
-        coverage:
-          minimum_line_percent: 0
-        files:
-          dataset: dataset.json
-          validator: validator.py
-          supplemental_tests: [tests/check.py]
-        filesystem:
-          read: [dataset.json, validator.py, adapter.py, tests/check.py]
-          write: []
-        execution:
-          command: [python3, adapter.py]
+      contract.yaml: "version: \"1\"\nname: cli-smoke-fixture\ncoverage:\n  minimum_line_percent: 0\nfiles:\n  dataset: dataset.json\n  validator: validator.py\n  supplemental_tests: [tests/check.py]\nfilesystem:\n  read: [dataset.json, validator.py, adapter.py, tests/check.py]\n  write: []\nexecution:\n  command: [python3, adapter.py]\n"
       dataset.json: '{"version":1,"cases":[{"id":"echo","input":{"value":7},"expected":{"value":7},"coverage_fingerprint":"11111111111111111111111111111111"}]}'
-      validator.py: |
-        def validate(value):
-            return value
-      adapter.py: |
-        import json
-        import sys
-        request = json.load(sys.stdin)
-        results = []
-        scopes = []
-        for item in request["requests"]:
-            results.append({"key": item["key"], "output": item["input"]})
-            scopes.append({"key": item["key"], "files": [{"path": "validator.py", "lines": [1]}]})
-        print(json.dumps({
-            "results": results,
-            "coverage": {"sources": ["validator.py"]},
-            "coverage_scopes": scopes,
-            "coverage_lines": [{"path": "validator.py", "executable_lines": [1], "covered_lines": [1]}],
-            "additional_test_coverage": {"executed": True, "passed": True, "native_report": {"format": "fixture"}},
-            "additional_coverage_lines": [{"path": "validator.py", "executable_lines": [1], "covered_lines": [1]}]
-        }))
-      tests/check.py: |
-        def run():
-            return True
+      validator.py: "def validate(value):\n    return value\n"
+      adapter.py: "import json\nimport sys\nrequest = json.load(sys.stdin)\nresults = []\nscopes = []\nfor item in request[\"requests\"]:\n    results.append({\"key\": item[\"key\"], \"output\": item[\"input\"]})\n    scopes.append({\"key\": item[\"key\"], \"files\": [{\"path\": \"validator.py\", \"lines\": [1]}]})\nprint(json.dumps({\n    \"results\": results,\n    \"coverage\": {\"sources\": [\"validator.py\"]},\n    \"coverage_scopes\": scopes,\n    \"coverage_lines\": [{\"path\": \"validator.py\", \"executable_lines\": [1], \"covered_lines\": [1]}],\n    \"additional_test_coverage\": {\"executed\": True, \"passed\": True, \"native_report\": {\"format\": \"fixture\"}},\n    \"additional_coverage_lines\": [{\"path\": \"validator.py\", \"executable_lines\": [1], \"covered_lines\": [1]}]\n}))\n"
+      tests/check.py: "def run():\n    return True\n"
   expected:
     exit_code: 1
-    stdout: |
-      Dataset cases: 0/1 passed across 1 contract(s)
-        FAIL cli-smoke-fixture/default/echo: cli-smoke-fixture/default/echo: coverage fingerprint mismatch: expected 11111111111111111111111111111111, observed 60c6194cbdc58033999a1fb07d147da8
-          actual: {"value":7}
-      Coverage report: coverage.json
-    stderr: |
-      open-contract-core: 0/1 dataset cases passed across 1 contract(s)
-  coverage_fingerprint: 'b2d2489987f2ae66847979fff615edc6'
+    stdout: "Dataset cases: 0/1 passed across 1 contract(s)\n  FAIL cli-smoke-fixture/echo: cli-smoke-fixture/echo: coverage fingerprint mismatch: expected 11111111111111111111111111111111, observed 60c6194cbdc58033999a1fb07d147da8\n    actual: {\"value\":7}\nCoverage report: coverage.json\n"
+    stderr: 'open-contract-core: 0/1 dataset cases passed across 1 contract(s)
+
+      '
+  coverage_fingerprint: 47b0bc06faa4c2f12fe40f160f76cef4
 - id: reports-step-fingerprint-mismatch
   setup: true
   input:
-    args: ["run-manifest", "contract.yaml", "--isolation", "none", "--coverage-report", "coverage.json"]
+    args:
+    - run-manifest
+    - contract.yaml
+    - --isolation
+    - none
+    - --coverage-report
+    - coverage.json
     files:
-      contract.yaml: |
-        version: "1"
-        name: cli-smoke-fixture
-        coverage:
-          minimum_line_percent: 0
-        files:
-          dataset: dataset.json
-          validator: validator.py
-          supplemental_tests: [tests/check.py]
-        filesystem:
-          read: [dataset.json, validator.py, adapter.py, tests/check.py]
-          write: []
-        execution:
-          command: [python3, adapter.py]
-      dataset.json: '{"version":1,"cases":[{"id":"sequence","input":{"value":"sequence"},"steps":[{"id":"one","input":{"value":1},"expected":{"value":1},"coverage_fingerprint":"11111111111111111111111111111111"}],"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"}]}'
-      validator.py: |
-        def validate(value):
-            return value
-      adapter.py: |
-        import json
-        import sys
-        request = json.load(sys.stdin)
-        results = []
-        scopes = []
-        for item in request["requests"]:
-            results.append({"key": item["key"], "output": item["input"]})
-            scopes.append({"key": item["key"], "files": [{"path": "validator.py", "lines": [1]}]})
-        print(json.dumps({
-            "results": results,
-            "coverage": {"sources": ["validator.py"]},
-            "coverage_scopes": scopes,
-            "coverage_lines": [{"path": "validator.py", "executable_lines": [1], "covered_lines": [1]}],
-            "additional_test_coverage": {"executed": True, "passed": True, "native_report": {"format": "fixture"}},
-            "additional_coverage_lines": [{"path": "validator.py", "executable_lines": [1], "covered_lines": [1]}]
-        }))
-      tests/check.py: |
-        def run():
-            return True
+      contract.yaml: "version: \"1\"\nname: cli-smoke-fixture\ncoverage:\n  minimum_line_percent: 0\nfiles:\n  dataset: dataset.json\n  validator: validator.py\n  supplemental_tests: [tests/check.py]\nfilesystem:\n  read: [dataset.json, validator.py, adapter.py, tests/check.py]\n  write: []\nexecution:\n  command: [python3, adapter.py]\n"
+      dataset.json: '{"version":1,"cases":[{"id":"sequence","steps":[{"id":"one","input":{"value":1},"expected":{"value":1},"coverage_fingerprint":"11111111111111111111111111111111"}]}]}'
+      validator.py: "def validate(value):\n    return value\n"
+      adapter.py: "import json\nimport sys\nrequest = json.load(sys.stdin)\nresults = []\nscopes = []\nfor item in request[\"requests\"]:\n    results.append({\"key\": item[\"key\"], \"output\": item[\"input\"]})\n    scopes.append({\"key\": item[\"key\"], \"files\": [{\"path\": \"validator.py\", \"lines\": [1]}]})\nprint(json.dumps({\n    \"results\": results,\n    \"coverage\": {\"sources\": [\"validator.py\"]},\n    \"coverage_scopes\": scopes,\n    \"coverage_lines\": [{\"path\": \"validator.py\", \"executable_lines\": [1], \"covered_lines\": [1]}],\n    \"additional_test_coverage\": {\"executed\": True, \"passed\": True, \"native_report\": {\"format\": \"fixture\"}},\n    \"additional_coverage_lines\": [{\"path\": \"validator.py\", \"executable_lines\": [1], \"covered_lines\": [1]}]\n}))\n"
+      tests/check.py: "def run():\n    return True\n"
   expected:
     exit_code: 1
-    stdout: |
-      Dataset cases: 0/1 passed across 1 contract(s)
-        FAIL cli-smoke-fixture/default/sequence: cli-smoke-fixture/default/sequence/one: coverage fingerprint mismatch: expected 11111111111111111111111111111111, observed 60c6194cbdc58033999a1fb07d147da8
-          actual: {"captures":{},"checks":[{"id":"one","matched_by":null,"passed":false}],"input":{"value":"sequence"},"steps":{"one":{"value":1}}}
-      Coverage report: coverage.json
-    stderr: |
-      open-contract-core: 0/1 dataset cases passed across 1 contract(s)
-  coverage_fingerprint: 'b2d2489987f2ae66847979fff615edc6'
+    stdout: "Dataset cases: 0/1 passed across 1 contract(s)\n  FAIL cli-smoke-fixture/sequence: cli-smoke-fixture/sequence step one: coverage fingerprint mismatch: expected 11111111111111111111111111111111, observed 60c6194cbdc58033999a1fb07d147da8\n    actual: null\nCoverage report: coverage.json\n"
+    stderr: 'open-contract-core: 0/1 dataset cases passed across 1 contract(s)
+
+      '
+  coverage_fingerprint: 47b0bc06faa4c2f12fe40f160f76cef4
 - id: reports-missing-coverage-scope
   setup: true
   input:
-    args: ["run-manifest", "contract.yaml", "--isolation", "none", "--coverage-report", "coverage.json"]
+    args:
+    - run-manifest
+    - contract.yaml
+    - --isolation
+    - none
+    - --coverage-report
+    - coverage.json
     files:
-      contract.yaml: |
-        version: "1"
-        name: cli-smoke-fixture
-        coverage:
-          minimum_line_percent: 0
-        files:
-          dataset: dataset.json
-          validator: validator.py
-          supplemental_tests: [tests/check.py]
-        filesystem:
-          read: [dataset.json, validator.py, adapter.py, tests/check.py]
-          write: []
-        execution:
-          command: [python3, adapter.py]
-      dataset.json: '{"version":1,"cases":[{"id":"echo","input":{"value":7},"expected":{"value":7},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"},{"id":"echo-text","input":{"value":"text"},"expected":{"value":"text"},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"},{"id":"sequence","input":{"value":"sequence"},"steps":[{"id":"first","input":{"value":1},"expected":{"value":1},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"},{"id":"second","input":{"value":2},"expected":{"value":2},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"}],"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"}]}'
-      validator.py: |
-        def validate(value):
-            return value
-      adapter.py: |
-        import json
-        import sys
-        request = json.load(sys.stdin)
-        results = []
-        scopes = []
-        for item in request["requests"]:
-            results.append({"key": item["key"], "output": item["input"]})
-            scopes.append({"key": item["key"], "files": [{"path": "validator.py", "lines": [1]}]})
-        print(json.dumps({
-            "results": results,
-            "coverage": {"sources": ["validator.py"]},
-            "coverage_scopes": [],
-            "coverage_lines": [{"path": "validator.py", "executable_lines": [1], "covered_lines": [1]}],
-            "additional_test_coverage": {"executed": True, "passed": True, "native_report": {"format": "fixture"}},
-            "additional_coverage_lines": [{"path": "validator.py", "executable_lines": [1], "covered_lines": [1]}]
-        }))
-      tests/check.py: |
-        def run():
-            return True
+      contract.yaml: "version: \"1\"\nname: cli-smoke-fixture\ncoverage:\n  minimum_line_percent: 0\nfiles:\n  dataset: dataset.json\n  validator: validator.py\n  supplemental_tests: [tests/check.py]\nfilesystem:\n  read: [dataset.json, validator.py, adapter.py, tests/check.py]\n  write: []\nexecution:\n  command: [python3, adapter.py]\n"
+      dataset.json: '{"version":1,"cases":[{"id":"echo","input":{"value":7},"expected":{"value":7},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"},{"id":"echo-text","input":{"value":"text"},"expected":{"value":"text"},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"},{"id":"sequence","steps":[{"id":"first","input":{"value":1},"expected":{"value":1},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"},{"id":"second","input":{"value":2},"expected":{"value":2},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"}]}]}'
+      validator.py: "def validate(value):\n    return value\n"
+      adapter.py: "import json\nimport sys\nrequest = json.load(sys.stdin)\nresults = []\nscopes = []\nfor item in request[\"requests\"]:\n    results.append({\"key\": item[\"key\"], \"output\": item[\"input\"]})\n    scopes.append({\"key\": item[\"key\"], \"files\": [{\"path\": \"validator.py\", \"lines\": [1]}]})\nprint(json.dumps({\n    \"results\": results,\n    \"coverage\": {\"sources\": [\"validator.py\"]},\n    \"coverage_scopes\": [],\n    \"coverage_lines\": [{\"path\": \"validator.py\", \"executable_lines\": [1], \"covered_lines\": [1]}],\n    \"additional_test_coverage\": {\"executed\": True, \"passed\": True, \"native_report\": {\"format\": \"fixture\"}},\n    \"additional_coverage_lines\": [{\"path\": \"validator.py\", \"executable_lines\": [1], \"covered_lines\": [1]}]\n}))\n"
+      tests/check.py: "def run():\n    return True\n"
   expected:
     exit_code: 1
-    stdout: |
-      Dataset cases: 0/3 passed across 1 contract(s)
-        FAIL cli-smoke-fixture/default/echo: cli-smoke-fixture/default/echo: coverage fingerprint unavailable for ExecutionKey { target_id: "default", case_id: "echo", step_id: None }
-          actual: {"value":7}
-        FAIL cli-smoke-fixture/default/echo-text: cli-smoke-fixture/default/echo-text: coverage fingerprint unavailable for ExecutionKey { target_id: "default", case_id: "echo-text", step_id: None }
-          actual: {"value":"text"}
-        FAIL cli-smoke-fixture/default/sequence: cli-smoke-fixture/default/sequence/first: coverage fingerprint unavailable for ExecutionKey { target_id: "default", case_id: "sequence", step_id: Some("first") }
-          actual: {"captures":{},"checks":[{"id":"first","matched_by":null,"passed":false},{"id":"second","matched_by":null,"passed":false}],"input":{"value":"sequence"},"steps":{"first":{"value":1},"second":{"value":2}}}
-      Coverage report: coverage.json
-    stderr: |
-      open-contract-core: 0/3 dataset cases passed across 1 contract(s)
-  coverage_fingerprint: 'b2d2489987f2ae66847979fff615edc6'
+    stdout: "Dataset cases: 0/3 passed across 1 contract(s)\n  FAIL cli-smoke-fixture/echo: cli-smoke-fixture/echo: coverage fingerprint unavailable for ExecutionKey { case_id: \"echo\", step_id: None }\n    actual: {\"value\":7}\n  FAIL cli-smoke-fixture/echo-text: cli-smoke-fixture/echo-text: coverage fingerprint unavailable for ExecutionKey { case_id: \"echo-text\", step_id: None }\n    actual: {\"value\":\"text\"}\n  FAIL cli-smoke-fixture/sequence: cli-smoke-fixture/sequence step first: coverage fingerprint unavailable for ExecutionKey { case_id: \"sequence\", step_id: Some(\"first\") }\n    actual: null\nCoverage report: coverage.json\n"
+    stderr: 'open-contract-core: 0/3 dataset cases passed across 1 contract(s)
+
+      '
+  coverage_fingerprint: 47b0bc06faa4c2f12fe40f160f76cef4
 - id: reports-below-target-coverage-threshold
   setup: true
   input:
-    args: ["run-manifest", "contract.yaml", "--isolation", "none", "--coverage-report", "coverage.json"]
+    args:
+    - run-manifest
+    - contract.yaml
+    - --isolation
+    - none
+    - --coverage-report
+    - coverage.json
     files:
-      contract.yaml: |
-        version: "1"
-        name: cli-smoke-fixture
-        coverage:
-          minimum_line_percent: 100
-        files:
-          dataset: dataset.json
-          validator: validator.py
-        filesystem:
-          read: [dataset.json, validator.py, adapter.py]
-          write: []
-        execution:
-          command: [python3, adapter.py]
-      dataset.json: '{"version":1,"cases":[{"id":"echo","input":{"value":7},"expected":{"value":7},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"},{"id":"echo-text","input":{"value":"text"},"expected":{"value":"text"},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"},{"id":"sequence","input":{"value":"sequence"},"steps":[{"id":"first","input":{"value":1},"expected":{"value":1},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"},{"id":"second","input":{"value":2},"expected":{"value":2},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"}],"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"}]}'
-      validator.py: |
-        def validate(value):
-            return value
-      adapter.py: |
-        import json
-        import sys
-        request = json.load(sys.stdin)
-        results = []
-        scopes = []
-        for item in request["requests"]:
-            results.append({"key": item["key"], "output": item["input"]})
-            scopes.append({"key": item["key"], "files": [{"path": "validator.py", "lines": [1]}]})
-        print(json.dumps({
-            "results": results,
-            "coverage": {"sources": ["validator.py"]},
-            "coverage_scopes": scopes,
-            "coverage_lines": [{"path": "validator.py", "executable_lines": [1, 2], "covered_lines": [1]}]
-        }))
+      contract.yaml: "version: \"1\"\nname: cli-smoke-fixture\ncoverage:\n  minimum_line_percent: 100\nfiles:\n  dataset: dataset.json\n  validator: validator.py\nfilesystem:\n  read: [dataset.json, validator.py, adapter.py]\n  write: []\nexecution:\n  command: [python3, adapter.py]\n"
+      dataset.json: '{"version":1,"cases":[{"id":"echo","input":{"value":7},"expected":{"value":7},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"},{"id":"echo-text","input":{"value":"text"},"expected":{"value":"text"},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"},{"id":"sequence","steps":[{"id":"first","input":{"value":1},"expected":{"value":1},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"},{"id":"second","input":{"value":2},"expected":{"value":2},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"}]}]}'
+      validator.py: "def validate(value):\n    return value\n"
+      adapter.py: "import json\nimport sys\nrequest = json.load(sys.stdin)\nresults = []\nscopes = []\nfor item in request[\"requests\"]:\n    results.append({\"key\": item[\"key\"], \"output\": item[\"input\"]})\n    scopes.append({\"key\": item[\"key\"], \"files\": [{\"path\": \"validator.py\", \"lines\": [1]}]})\nprint(json.dumps({\n    \"results\": results,\n    \"coverage\": {\"sources\": [\"validator.py\"]},\n    \"coverage_scopes\": scopes,\n    \"coverage_lines\": [{\"path\": \"validator.py\", \"executable_lines\": [1, 2], \"covered_lines\": [1]}]\n}))\n"
   expected:
     exit_code: 1
-    stdout: |
-      Dataset cases: 3/3 passed across 1 contract(s)
+    stdout: 'Dataset cases: 3/3 passed across 1 contract(s)
+
       Coverage report: coverage.json
-    stderr: |
-      open-contract-core: coverage requirements not met; see adapter coverage report
-  coverage_fingerprint: '9fedfd1b31e3cec7a4521f5b28b64835'
+
+      '
+    stderr: 'open-contract-core: coverage requirements not met; see adapter coverage report
+
+      '
+  coverage_fingerprint: 3fae487baf7dc388df17e9137f733191
 - id: resolves-relative-coverage-scope-path
   setup: true
   input:
-    args: ["run-manifest", "contract.yaml", "--isolation", "none", "--coverage-report", "coverage.json"]
+    args:
+    - run-manifest
+    - contract.yaml
+    - --isolation
+    - none
+    - --coverage-report
+    - coverage.json
     files:
-      contract.yaml: |
-        version: "1"
-        name: cli-smoke-fixture
-        coverage:
-          minimum_line_percent: 0
-        files:
-          dataset: dataset.json
-          validator: src/validator.py
-        filesystem:
-          read: [dataset.json, src/validator.py, adapter.py]
-          write: []
-        execution:
-          command: [python3, adapter.py]
-      dataset.json: '{"version":1,"cases":[{"id":"echo","input":{"value":7},"expected":{"value":7},"coverage_fingerprint":"623f274301d10a832a64050f46eac5ff"},{"id":"echo-text","input":{"value":"text"},"expected":{"value":"text"},"coverage_fingerprint":"623f274301d10a832a64050f46eac5ff"},{"id":"sequence","input":{"value":"sequence"},"steps":[{"id":"first","input":{"value":1},"expected":{"value":1},"coverage_fingerprint":"623f274301d10a832a64050f46eac5ff"},{"id":"second","input":{"value":2},"expected":{"value":2},"coverage_fingerprint":"623f274301d10a832a64050f46eac5ff"}],"coverage_fingerprint":"623f274301d10a832a64050f46eac5ff"}]}'
-      adapter.py: |
-        import json
-        import sys
-        request = json.load(sys.stdin)
-        results = []
-        scopes = []
-        for item in request["requests"]:
-            results.append({"key": item["key"], "output": item["input"]})
-            scopes.append({"key": item["key"], "files": [{"path": "src/validator.py", "lines": [1]}]})
-        print(json.dumps({
-            "results": results,
-            "coverage": {"sources": ["src/validator.py"]},
-            "coverage_scopes": scopes,
-            "coverage_lines": [{"path": "src/validator.py", "executable_lines": [1, 2], "covered_lines": [1]}]
-        }))
-      src/validator.py: |
-        def validate(value):
-            return value
+      contract.yaml: "version: \"1\"\nname: cli-smoke-fixture\ncoverage:\n  minimum_line_percent: 0\nfiles:\n  dataset: dataset.json\n  validator: src/validator.py\nfilesystem:\n  read: [dataset.json, src/validator.py, adapter.py]\n  write: []\nexecution:\n  command: [python3, adapter.py]\n"
+      dataset.json: '{"version":1,"cases":[{"id":"echo","input":{"value":7},"expected":{"value":7},"coverage_fingerprint":"623f274301d10a832a64050f46eac5ff"},{"id":"echo-text","input":{"value":"text"},"expected":{"value":"text"},"coverage_fingerprint":"623f274301d10a832a64050f46eac5ff"},{"id":"sequence","steps":[{"id":"first","input":{"value":1},"expected":{"value":1},"coverage_fingerprint":"623f274301d10a832a64050f46eac5ff"},{"id":"second","input":{"value":2},"expected":{"value":2},"coverage_fingerprint":"623f274301d10a832a64050f46eac5ff"}]}]}'
+      adapter.py: "import json\nimport sys\nrequest = json.load(sys.stdin)\nresults = []\nscopes = []\nfor item in request[\"requests\"]:\n    results.append({\"key\": item[\"key\"], \"output\": item[\"input\"]})\n    scopes.append({\"key\": item[\"key\"], \"files\": [{\"path\": \"src/validator.py\", \"lines\": [1]}]})\nprint(json.dumps({\n    \"results\": results,\n    \"coverage\": {\"sources\": [\"src/validator.py\"]},\n    \"coverage_scopes\": scopes,\n    \"coverage_lines\": [{\"path\": \"src/validator.py\", \"executable_lines\": [1, 2], \"covered_lines\": [1]}]\n}))\n"
+      src/validator.py: "def validate(value):\n    return value\n"
   expected:
     exit_code: 0
-    stdout: |
-      Dataset cases: 3/3 passed across 1 contract(s)
+    stdout: 'Dataset cases: 3/3 passed across 1 contract(s)
+
       Coverage report: coverage.json
+
+      '
     stderr: ''
-  coverage_fingerprint: 'f64862affe70cc84e2635bfedcdf85cd'
+  coverage_fingerprint: 10f1388f45d65894d305a787336ebd23

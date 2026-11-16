@@ -3,8 +3,7 @@ use std::fs;
 pub(crate) fn exercise_copy_error_paths() -> Result<(), String> {
     let package = tempfile::tempdir().map_err(|error| error.to_string())?;
     let staging_plan = runner_manifest::ManifestPlan::load(
-        std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("isolation-package.fixture.yaml"),
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("isolation-package.fixture.yaml"),
     )
     .map_err(|error| error.to_string())?;
     let mut existing_write_plan = staging_plan.clone();
@@ -144,8 +143,7 @@ pub(crate) fn exercise_copy_error_paths() -> Result<(), String> {
         .map_err(|error| error.to_string())?;
 
         let mut plan = runner_manifest::ManifestPlan::load(
-            std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-                .join("isolation-package.fixture.yaml"),
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("isolation-package.fixture.yaml"),
         )
         .map_err(|error| error.to_string())?;
         plan.package_root = package_copy.path().to_path_buf();

@@ -3,7 +3,7 @@
   "cases": [
     {
       "id": "exact",
-      "coverage_fingerprint": "0e532881a383afd41849ef26db2effad",
+      "coverage_fingerprint": "ee8c2d1964b57d548f641ff487b7be42",
       "input": {
         "actual": {
           "value": 4
@@ -12,13 +12,11 @@
           "value": 4
         }
       },
-      "expected": {
-        "valid": true
-      }
+      "expected": "expected"
     },
     {
       "id": "exact-additional-1",
-      "coverage_fingerprint": "eb5cd9f4d6f9b92762ee09682c2d31fa",
+      "coverage_fingerprint": "ea9bcce2a8c86ef8fad7824c65df1214",
       "input": {
         "actual": {
           "value": 3
@@ -28,12 +26,12 @@
         }
       },
       "expected": {
-        "valid": false
+        "error": "output did not match expected subset"
       }
     },
     {
       "id": "exact-additional-2",
-      "coverage_fingerprint": "ddc9aa8f98ffde71f7c402a58b0407de",
+      "coverage_fingerprint": "63917e2cf5301dfcc6196cd3ea16b1e1",
       "input": {
         "actual": {
           "value": 4
@@ -43,13 +41,11 @@
         },
         "predicate": ".value == 4"
       },
-      "expected": {
-        "valid": true
-      }
+      "expected": "expected_and_predicate"
     },
     {
       "id": "exact-additional-3",
-      "coverage_fingerprint": "74a43f27082ea958d43db4405ca3041c",
+      "coverage_fingerprint": "8d55782a72ea130ddd56b4324e83023b",
       "input": {
         "actual": {
           "value": 4
@@ -60,46 +56,169 @@
         "predicate": ".value == 3"
       },
       "expected": {
-        "valid": false
+        "error": "output did not satisfy predicate"
       }
     },
     {
       "id": "exact-additional-4",
-      "coverage_fingerprint": "76b5229d097c6914b32c20598e56b096",
+      "coverage_fingerprint": "e2a0971f8bd8848ea782c836ad3164d1",
       "input": {
         "actual": {
           "value": 4
         }
       },
       "expected": {
-        "valid": false
+        "error": "expected output is required"
       }
     },
     {
       "id": "predicate",
-      "coverage_fingerprint": "8bd1763780979807d01ad896d841fc59",
+      "coverage_fingerprint": "63917e2cf5301dfcc6196cd3ea16b1e1",
       "input": {
         "actual": {
           "value": 6
         },
-        "predicate": ".value >= 6"
+        "predicate": ".value >= 6",
+        "expected": {
+          "value": 6
+        }
       },
-      "expected": {
-        "valid": true
-      }
+      "expected": "expected_and_predicate"
     },
     {
       "id": "predicate-additional-1",
-      "coverage_fingerprint": "74a43f27082ea958d43db4405ca3041c",
+      "coverage_fingerprint": "8d55782a72ea130ddd56b4324e83023b",
       "input": {
         "actual": {
           "value": 3
         },
-        "predicate": ".value >= 6"
+        "predicate": ".value >= 6",
+        "expected": {
+          "value": 3
+        }
       },
       "expected": {
-        "valid": false
+        "error": "output did not satisfy predicate"
       }
+    },
+    {
+      "id": "expected-object-is-recursive-subset",
+      "input": {
+        "actual": {
+          "error": {
+            "code": "E_INPUT",
+            "message": "invalid name"
+          },
+          "request_id": "req-42"
+        },
+        "expected": {
+          "error": {
+            "code": "E_INPUT"
+          }
+        },
+        "predicate": ".error.message == 'invalid name'"
+      },
+      "expected": "expected_and_predicate",
+      "coverage_fingerprint": "63917e2cf5301dfcc6196cd3ea16b1e1"
+    },
+    {
+      "id": "expected-subset-missing-key-fails",
+      "input": {
+        "actual": {
+          "error": {
+            "message": "invalid name"
+          }
+        },
+        "expected": {
+          "error": {
+            "code": "E_INPUT"
+          }
+        }
+      },
+      "expected": {
+        "error": "output did not match expected subset"
+      },
+      "coverage_fingerprint": "14539696042dd7a7a1a1ebfdaeecd7b5"
+    },
+    {
+      "id": "expected-array-recurses-through-objects",
+      "input": {
+        "actual": {
+          "items": [
+            {
+              "id": 1,
+              "name": "Ada"
+            },
+            {
+              "id": 2,
+              "name": "Lin"
+            }
+          ]
+        },
+        "expected": {
+          "items": [
+            {
+              "id": 1
+            },
+            {
+              "id": 2
+            }
+          ]
+        },
+        "predicate": ".items.0.id == 1"
+      },
+      "expected": "expected_and_predicate",
+      "coverage_fingerprint": "887fb940d8a1738a16d9fa3ba1649369"
+    },
+    {
+      "id": "expected-array-length-remains-exact",
+      "input": {
+        "actual": {
+          "items": [
+            {
+              "id": 1
+            },
+            {
+              "id": 2
+            }
+          ]
+        },
+        "expected": {
+          "items": [
+            {
+              "id": 1
+            }
+          ]
+        }
+      },
+      "expected": {
+        "error": "output did not match expected subset"
+      },
+      "coverage_fingerprint": "e53249a2eae2ccb4b2df3979208fd348"
+    },
+    {
+      "id": "empty-expected-object-matches-object",
+      "input": {
+        "actual": {
+          "extra": {
+            "value": 1
+          }
+        },
+        "expected": {}
+      },
+      "expected": "expected",
+      "coverage_fingerprint": "73550a53376d6f03b93401db6d1d1d35"
+    },
+    {
+      "id": "expected-scalar-stays-exact",
+      "input": {
+        "actual": 1,
+        "expected": true
+      },
+      "expected": {
+        "error": "output did not match expected subset"
+      },
+      "coverage_fingerprint": "5b6177ca15497684ea119e6e88d378b7"
     }
   ]
 }

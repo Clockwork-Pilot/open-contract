@@ -152,7 +152,8 @@ fn run_manifest_case(input: &Value, setup_case: Option<&str>) -> Result<bool, St
                 let outside = temp.path().join("private");
                 std::fs::create_dir(&outside).map_err(|error| error.to_string())?;
                 let permissions = std::fs::Permissions::from_mode(0o000);
-                std::fs::set_permissions(&outside, permissions).map_err(|error| error.to_string())?;
+                std::fs::set_permissions(&outside, permissions)
+                    .map_err(|error| error.to_string())?;
                 symlink(&outside, root.join("blocked")).map_err(|error| error.to_string())?;
                 permission_restore = Some(outside);
             }

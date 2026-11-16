@@ -30,20 +30,26 @@ contracts are not placeholder copies of code hidden in the application.
 
 ## Why contracts
 
-A contract makes the behavior to exercise explicit in its manifest and
-dataset. A dataset describes the contract's public inputs and observable
-expectations: input values, exact outputs, predicates, expected validator
-errors, and sequences of public calls. It should not encode how the test
-harness creates files, fabricates adapter responses, or arranges internal
-fixtures. Open Contract runs each contract inside the filesystem boundary
-declared by its manifest.
+A consumer dataset case describes one call to the contract's public
+interface. Its `input` is passed unchanged to the public validator; sibling
+`expected` and optional `predicate` describe the result the validator actually
+returns. The language adapter invokes the validator with that input and
+returns its result. The Rust runner checks the result against `expected` and
+then evaluates the optional predicate. A returned error is part of that
+observable result and is checked in the same way.
+
+Dataset cases do not define fixtures, harness operations, or alternate
+execution layers. When a test harness needs to prepare an external condition,
+keep setup in validator-side code selected by the case ID and run it before
+the public call. Then make the same public call with the dataset's actual
+input and check the result it produces. Setup must not fabricate the result
+or bypass the public interface. Open Contract runs each contract inside the
+filesystem boundary declared by its manifest.
 
 Dataset cases are the primary behavior checks because they describe what a
 contract user can provide and observe. Use ordinary unit tests for internal
-conditions that cannot be reached through that public interface, such as
-fabricated adapter failures or harness setup errors. Unit tests may reuse
-dataset inputs as regression examples, while keeping harness controls out of
-the public dataset.
+conditions the public interface cannot expose; those tests do not add dataset
+coverage. Unit tests may reuse dataset inputs as regression examples.
 
 ## Run contracts
 

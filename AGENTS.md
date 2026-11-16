@@ -49,6 +49,17 @@ not consumer-specific contracts.
 - Contract file paths are package-relative. Each execution stages or mounts the
   contract at a fresh randomized root, so contracts must not rely on stable
   absolute paths.
+- Consumer Open Contract datasets have a version and one root `cases` list.
+  Each case is either one call (`id`, `input`, `expected`, optional sibling
+  `predicate`, optional `setup` fixture ID, and `coverage_fingerprint`) or an
+  ordered `steps` list containing those call fields. `input` is the actual
+  value passed to the public validator. `setup` is passed to the validator as
+  context and must not replace or change that input. Dataset fields must not
+  describe fixtures, harness operations, or alternate execution layers.
+  Adjacent steps marked `parallel: true` form a concurrent group; other steps
+  execute in order. There is no sequence-level input, expected result,
+  predicate, or fingerprint. The runner checks each call's returned result
+  against its sibling `expected` and optional `predicate`.
 - Keep the runner generic; consumer projects provide their own contracts and
   project-specific dependencies.
 - Keep bootstrap predicate contracts as the dataset predicate semantics and
@@ -71,16 +82,12 @@ not consumer-specific contracts.
   coverage cannot make up for a dataset gap. Keep raw LLVM profiles and other
   generated coverage artifacts under the Open Contract root `.coverage/`,
   never inside a bootstrap package.
-- A dataset validator may perform case-specific test setup before invoking the
-  public implementation. A case may declare `setup: true` outside `input`, and
-  the validator may map its ID to setup that prepares external conditions the
-  public input cannot create, such as environment values, temporary files, a
-  fake executable, or a controlled OS result. Setup must then pass the case's
-  actual `input` to the public function and check its actual result against
-  `expected` or the result predicate. Setup must not replace that call, invent
-  a result, or call implementation internals to claim dataset coverage. Keep
-  fixture data and setup controls outside the public input; do not add
-  harness-only operations or placeholder inputs to datasets.
+- For bootstrap datasets that support the `setup` marker, it is the only
+  dataset-level harness control: `setup: true` and the case ID select setup
+  that runs before the public call. Setup must not replace that call, invent a
+  result, or call implementation internals to claim dataset coverage. Keep
+  bootstrap setup controls outside `input`; do not add harness-only
+  operations or placeholder inputs.
 - When developing a contract toward 100% coverage, run its dataset with the
   coverage report, inspect uncovered files and lines, and map each gap to a
   behavior. If LLVM reports missing lines but its LCOV file has no line entries,
@@ -114,14 +121,14 @@ not consumer-specific contracts.
 - Require adapters to report normalized per-file executable and covered lines
   for dataset execution, while preserving native reports as optional debug data.
   Keep explicit supplemental-test results and line coverage in a separate report.
-- Pin observed dataset coverage with `coverage_fingerprint` on every relevant
-  dataset case and step. After a run, inspect each case and step's covered files,
-  lines, observed fingerprint, expected fingerprint, and baseline match in the
-  runner output or `--coverage-report`. A mismatch fails the case and reports
-  both expected and observed fingerprints. Review the scope's covered lines and
-  whether it adds meaningful coverage before updating its dataset fingerprint;
-  do not refresh fingerprints blindly. Sequence cases pin the combined step
-  coverage, and each step may pin its own coverage independently.
+- Pin observed dataset coverage with a required nonzero 32-character lowercase
+  hexadecimal `coverage_fingerprint` on every direct call and every step. After
+  a run, inspect the call's covered files, lines, observed fingerprint,
+  expected fingerprint, and baseline match in the runner output or
+  `--coverage-report`. A mismatch fails that call and reports both values.
+  Review the scope's covered lines before updating a fingerprint; do not
+  refresh fingerprints blindly. Parallel steps share their group's coverage
+  scope and each still pins its own fingerprint.
 - Implement predicate semantics in the Rust predicate contract and run its
   shared predicate dataset against that Rust implementation.
 - Dogfood Open Contract when its Rust core can run and verify a repository

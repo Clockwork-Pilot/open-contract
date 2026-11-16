@@ -816,6 +816,96 @@
       "expected": false
     },
     {
+      "id": "contains-matches-error-fragment",
+      "input": {
+        "json": {
+          "error": "ValueError: name must be a string"
+        },
+        "predicate": "contains(.error, 'name must be a string')"
+      },
+      "expected": true
+    },
+    {
+      "id": "contains-does-not-match-fragment",
+      "input": {
+        "json": {
+          "error": "ValueError: name must be a string"
+        },
+        "predicate": "contains(.error, 'array required')"
+      },
+      "expected": false
+    },
+    {
+      "id": "contains-escaped-quote-in-fragment",
+      "input": {
+        "json": {
+          "message": "can't continue"
+        },
+        "predicate": "contains(.message, 'can\\'t')"
+      },
+      "expected": true
+    },
+    {
+      "id": "contains-missing-field-is-false",
+      "input": {
+        "json": {},
+        "predicate": "contains(.error, 'failure')"
+      },
+      "expected": false
+    },
+    {
+      "id": "contains-non-string-field-is-false",
+      "input": {
+        "json": {
+          "error": {
+            "message": "failure"
+          }
+        },
+        "predicate": "contains(.error, 'failure')"
+      },
+      "expected": false
+    },
+    {
+      "id": "contains-rejects-non-string-needle",
+      "input": {
+        "json": {
+          "error": "failure"
+        },
+        "predicate": "contains(.error, 1)"
+      },
+      "expected": false
+    },
+    {
+      "id": "contains-rejects-extra-arguments",
+      "input": {
+        "json": {
+          "error": "failure"
+        },
+        "predicate": "contains(.error, 'fail', 'ure')"
+      },
+      "expected": false
+    },
+    {
+      "id": "contains-rejects-unterminated-string",
+      "input": {
+        "json": {
+          "error": "failure"
+        },
+        "predicate": "contains(.error, 'fail)"
+      },
+      "expected": false
+    },
+    {
+      "id": "contains-rejects-missing-comma",
+      "input": {
+        "json": {
+          "error": "failure"
+        },
+        "predicate": "contains(.error 'failure')"
+      },
+      "expected": false
+    },
+    {
       "id": "type-missing-equal-missing",
       "input": {
         "json": {},

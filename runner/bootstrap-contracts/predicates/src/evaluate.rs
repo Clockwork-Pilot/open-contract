@@ -81,6 +81,20 @@ pub(crate) fn eval_expression(record: &Value, expression: &str) -> bool {
                 && !v.as_array().is_some_and(Vec::is_empty)
         });
     }
+    if let Some(arguments) = expression
+        .strip_prefix("contains(")
+        .and_then(|value| value.strip_suffix(')'))
+    {
+        let Some((field, needle)) = split_function_arguments(arguments) else {
+            return false;
+        };
+        let Some(Value::String(needle)) = parse_expression_literal(needle.trim()) else {
+            return false;
+        };
+        return resolve_expression_field(record, field.trim())
+            .and_then(Value::as_str)
+            .is_some_and(|value| value.contains(&needle));
+    }
     for (symbol, operator) in [
         (" == ", ComparisonOperator::Equal),
         (" != ", ComparisonOperator::NotEqual),
@@ -122,6 +136,35 @@ pub(crate) fn eval_expression(record: &Value, expression: &str) -> bool {
         }
     }
     false
+}
+
+fn split_function_arguments(arguments: &str) -> Option<(&str, &str)> {
+    let (mut quoted, mut escaped, mut comma) = (false, false, None);
+    for (index, ch) in arguments.char_indices() {
+        if quoted {
+            if escaped {
+                escaped = false;
+            } else if ch == '\\' {
+                escaped = true;
+            } else if ch == '\'' {
+                quoted = false;
+            }
+        } else if ch == '\'' {
+            quoted = true;
+        } else if ch == ',' {
+            if comma.is_some() {
+                return None;
+            }
+            comma = Some(index);
+        }
+    }
+    if quoted || escaped {
+        return None;
+    }
+    let comma = comma?;
+    let (field, text) = arguments.split_at(comma);
+    let text = &text[1..];
+    (!field.trim().is_empty() && !text.trim().is_empty()).then_some((field, text))
 }
 
 #[derive(Clone, Copy)]

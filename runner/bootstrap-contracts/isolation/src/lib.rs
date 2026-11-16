@@ -242,11 +242,14 @@ fn copy_entry_with(
     destination: &Path,
     read_directory: &mut dyn FnMut(
         &Path,
-    ) -> std::io::Result<Vec<std::io::Result<(std::ffi::OsString, PathBuf)>>>,
+    ) -> std::io::Result<
+        Vec<std::io::Result<(std::ffi::OsString, PathBuf)>>,
+    >,
 ) -> Result<(), String> {
-    let resolved = source
-        .canonicalize()
-        .map_err(|e| format!("{}: {e}", source.display()))?;
+    let resolved = source.canonicalize().map_err(|e| {
+        let display_path = source.strip_prefix(package_root).unwrap_or(source);
+        format!("{}: {e}", display_path.display())
+    })?;
     let root = package_root.canonicalize().map_err(|e| e.to_string())?;
     if !resolved.starts_with(&root) {
         return Err(format!(

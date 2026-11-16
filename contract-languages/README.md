@@ -1,9 +1,14 @@
 # Contract language adapters
 
-Language adapters receive the flattened request batch from the Rust runner and
-return keyed validator results plus language-native coverage data. They invoke
-the contract's validator; the runner owns isolation, expected-value checks, and
-predicates.
+Language adapters receive flattened calls from the Rust runner and invoke the
+contract's public validator with the real `input` plus a context object. The
+context contains `case_id`, optional `step_id`, optional `setup` fixture ID,
+and the `parallel` marker. Adapters execute unmarked calls and steps in order;
+adjacent `parallel: true` steps in one case form a concurrent group. They
+return one raw output or error per request, keyed by case and step, plus
+language-native coverage data. They do not interpret setup IDs or replace
+public calls with harness operations. The Rust runner checks each result
+against that call's sibling `expected` and optional `predicate` after execution.
 
 Available adapters:
 

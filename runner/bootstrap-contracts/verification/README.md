@@ -1,8 +1,11 @@
 # Output verification bootstrap contract
 
-This package's dataset exercises the Rust runner's expected-output matching
-and predicate verification after contract execution. The Rust dataset
-executable is `src/main.rs`; coverage comes from running its
+This package's dataset exercises the public `match_output` function. Within
+`input`, `actual`, `expected`, and optional `predicate` are the function
+arguments. The case-level `expected` records the function's actual result:
+`"expected"`, `"expected_and_predicate"`, or an `{ "error": ... }` object.
+This keeps the matcher's expected argument distinct from its returned result.
+The Rust dataset executable is `src/main.rs`; coverage comes from running its
 dataset, not from unit tests.
 
 The Rust runner verifies validator outputs. Contract-language support under

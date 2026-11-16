@@ -11,11 +11,11 @@ Nested manifests listed by a parent are staged under the same randomized root. T
 
 The Rust coordinator invokes each contract's declared `execution.command` once
 with the complete flattened batch for that contract. The command receives one
-contract-local JSON document on stdin, with case and step identities and no
-expected outputs or predicates:
+contract-local JSON document on stdin, with case and step identities, optional setup IDs, and no expected outputs or
+predicates:
 
 ```json
-{"contract":"example","package":".","validator":"src/validator.py","coverage_sources":["src/validator.py"],"requests":[{"key":{"target_id":"default","case_id":"case-1","step_id":null},"kind":"custom","config":{},"input":{"value":1}}]}
+{"contract":"example","package":".","validator":"src/validator.py","coverage_sources":["src/validator.py"],"requests":[{"key":{"case_id":"case-1","step_id":null},"input":{"value":1},"setup":null,"parallel":false}]}
 ```
 
 The contract-owned command imports its language support package and validator,
@@ -23,7 +23,9 @@ then returns one JSON document on stdout. Its `results` preserve request keys
 and contain either `output` or `error`; `coverage` carries the native report
 and exercised source paths. The support package is an importable interface, not
 a second CLI or runner. Rust owns dataset and step traversal, expected-output
-matching, predicate evaluation, coverage enforcement, and reporting.
+matching, predicate evaluation, coverage enforcement, and reporting. Adjacent
+steps marked `parallel: true` are grouped into one concurrent adapter request;
+other steps run sequentially.
 
 The manifest declares the contract command and, when needed, one logical
 `language_package` identifier. Runner configuration resolves that identifier

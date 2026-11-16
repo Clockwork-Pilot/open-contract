@@ -7,6 +7,7 @@ license = "MIT"
 [dependencies]
 bootstrap-dataset-harness = { path = "../dataset-harness" }
 runner-manifest = { path = "../manifest" }
+runner-predicates = { path = "../predicates" }
 tempfile = "3"
 serde_json = "1"
 serde = { version = "1", features = ["derive"] }

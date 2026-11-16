@@ -73,8 +73,8 @@ fn validate(case: &DatasetCase) -> Result<(), String> {
         "stdout": actual.stdout,
         "stderr": actual.stderr,
     });
-    let expected = case.expected.as_ref();
-    if expected.is_some_and(|value| value.get("coverage_report").is_some()) {
+    let expected = case.expected_value()?;
+    if expected.get("coverage_report").is_some() {
         let report_arg = arguments
             .windows(2)
             .find(|pair| pair[0] == "--coverage-report")
@@ -89,22 +89,7 @@ fn validate(case: &DatasetCase) -> Result<(), String> {
             .map_err(|error| format!("CLI coverage report is not JSON: {error}"))?;
         actual_value["coverage_report"] = report;
     }
-    if let Some(expected) = expected {
-        if expected["exit_code"].as_u64() != Some(actual.exit_code as u64)
-            || expected["stdout"].as_str() != Some(actual.stdout.as_str())
-            || expected["stderr"].as_str() != Some(actual.stderr.as_str())
-            || expected
-                .get("coverage_report")
-                .is_some_and(|report| actual_value.get("coverage_report") != Some(report))
-        {
-            return Err(format!(
-                "complete CLI result differed; expected {expected}, got {actual_value}"
-            ));
-        }
-    }
-    if let Some(predicate) = case.predicate.as_deref() {
-        match_output(&actual_value, None, Some(predicate))
-            .map_err(|error| format!("complete CLI result did not satisfy predicate: {error}"))?;
-    }
+    match_output(&actual_value, Some(expected), case.predicate.as_deref())
+        .map_err(|error| format!("complete CLI result did not match: {error}; actual: {actual_value}"))?;
     Ok(())
 }

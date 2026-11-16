@@ -1,9 +1,8 @@
 use crate::backend::{
     canonicalize_runner_root, collect_output, collect_output_with_wait, create_landlock_ruleset,
-    create_landlock_ruleset_with, install_landlock, install_landlock_with,
-    landlock_pre_exec, landlock_rules, landlock_rules_with_open,
-    open_landlock_rule_path, run, runtime_command_roots_for_executable, runtime_with_root_path,
-    LandlockCall,
+    create_landlock_ruleset_with, install_landlock, install_landlock_with, landlock_pre_exec,
+    landlock_rules, landlock_rules_with_open, open_landlock_rule_path, run,
+    runtime_command_roots_for_executable, runtime_with_root_path, LandlockCall,
 };
 use crate::Backend;
 use std::fs;
@@ -197,7 +196,7 @@ pub(crate) fn exercise_backend_error_paths() -> Result<(), String> {
             Err(std::io::Error::other("injected wait failure"))
         };
         collect_output_with_wait(&mut child, b"", &mut wait)
-        .expect_err("injected wait failure must propagate")
+            .expect_err("injected wait failure must propagate")
     };
     assert!(wait_error.contains("injected wait failure"));
 

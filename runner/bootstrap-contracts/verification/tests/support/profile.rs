@@ -28,9 +28,8 @@ pub(super) fn snapshot() -> Result<Vec<u8>, String> {
 pub(super) fn restore_aggregate(snapshots: &[(String, Vec<u8>)]) -> Result<(), String> {
     unsafe { __llvm_profile_reset_counters() };
     for (id, bytes) in snapshots {
-        let result = unsafe {
-            __llvm_profile_merge_from_buffer(bytes.as_ptr().cast(), bytes.len() as u64)
-        };
+        let result =
+            unsafe { __llvm_profile_merge_from_buffer(bytes.as_ptr().cast(), bytes.len() as u64) };
         if result != 0 {
             return Err(format!(
                 "LLVM profile merge failed for case {id:?} with status {result}"

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-def validate(value: dict[str, object]) -> dict[str, str]:
+def validate(value: dict[str, object], _context: dict[str, object]) -> dict[str, str]:
     name = value.get("name")
     if not isinstance(name, str):
         raise ValueError("name must be a string")

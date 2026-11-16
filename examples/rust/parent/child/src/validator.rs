@@ -1,5 +1,5 @@
 use serde_json::Value;
 
-pub fn validate_case(item: &Value) -> Result<Value, String> {
-    super::implementation::sum(&item["input"])
+pub fn validate_case(input: &Value, _context: &Value) -> Result<Value, String> {
+    super::implementation::sum(input)
 }

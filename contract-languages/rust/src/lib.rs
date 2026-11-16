@@ -13,16 +13,12 @@ use std::path::{Path, PathBuf};
 pub mod coverage_snapshot;
 
 /// Invoke a Rust validator for each flattened request and return the adapter
-/// protocol object expected by the Open Contract runner.
-///
-/// The callback receives the complete request (`key`, `input`, and optional
-/// step metadata), so the contract can use case and step identifiers for
-/// setup while still passing the request's real input to its public function.
-/// Requests are invoked in order. Expected values and result predicates are
-/// intentionally not interpreted here.
+/// protocol object expected by the Open Contract runner. The callback receives
+/// the real input and a context containing case/step identity and optional
+/// setup metadata. Parallel steps in one adjacent group run concurrently.
 pub fn run_dataset(
     request: &Value,
-    mut validate: impl FnMut(&Value) -> Result<Value, String>,
+    validate: impl Fn(&Value, &Value) -> Result<Value, String> + Sync,
 ) -> Result<Value, String> {
     let requests = request
         .get("requests")
@@ -57,25 +53,60 @@ pub fn run_dataset(
     #[cfg(coverage)]
     let mut snapshots = Vec::with_capacity(requests.len());
     for item in requests {
-        let key = item
-            .get("key")
+        item.get("key")
             .ok_or_else(|| "batch request entry is missing key".to_string())?;
         item.get("input")
             .ok_or_else(|| "batch request entry is missing input".to_string())?;
+    }
+    let mut index = 0;
+    while index < requests.len() {
+        let first = &requests[index];
+        let case_id = first["key"]["case_id"]
+            .as_str()
+            .ok_or_else(|| "batch request key is missing case_id".to_string())?;
+        let mut end = index + 1;
+        if first["parallel"].as_bool() == Some(true) {
+            while end < requests.len()
+                && requests[end]["key"]["case_id"].as_str() == Some(case_id)
+                && requests[end]["parallel"].as_bool() == Some(true)
+            {
+                end += 1;
+            }
+        }
         #[cfg(coverage)]
         unsafe {
             coverage_snapshot::reset_counters();
         }
-        let result = match validate(item) {
-            Ok(output) => json!({ "key": key, "output": output }),
-            Err(error) => json!({ "key": key, "error": error }),
+        let group_results = if end - index > 1 {
+            std::thread::scope(|scope| {
+                let handles = requests[index..end]
+                    .iter()
+                    .map(|item| scope.spawn(|| invoke_validator(&validate, item)))
+                    .collect::<Vec<_>>();
+                handles
+                    .into_iter()
+                    .map(|handle| {
+                        handle
+                            .join()
+                            .map_err(|_| "parallel validator call panicked".to_string())
+                    })
+                    .collect::<Result<Vec<_>, _>>()
+            })?
+        } else {
+            vec![invoke_validator(&validate, first)]
         };
         #[cfg(coverage)]
-        snapshots.push((
-            serde_json::to_string(key).map_err(|error| error.to_string())?,
-            coverage_snapshot::snapshot()?,
-        ));
-        results.push(result);
+        {
+            let snapshot = coverage_snapshot::snapshot()?;
+            for item in &requests[index..end] {
+                snapshots.push((
+                    serde_json::to_string(&item["key"]).map_err(|error| error.to_string())?,
+                    snapshot.clone(),
+                ));
+            }
+        }
+        results.extend(group_results);
+        index = end;
     }
 
     #[cfg(coverage)]
@@ -91,6 +122,22 @@ pub fn run_dataset(
         "coverage_scopes": coverage.scopes,
         "coverage_lines": coverage.lines,
     }))
+}
+
+fn invoke_validator(
+    validate: &(impl Fn(&Value, &Value) -> Result<Value, String> + Sync),
+    item: &Value,
+) -> Value {
+    let context = json!({
+        "case_id": item["key"]["case_id"],
+        "step_id": item["key"]["step_id"],
+        "setup": item["setup"],
+        "parallel": item["parallel"].as_bool().unwrap_or(false),
+    });
+    match validate(&item["input"], &context) {
+        Ok(output) => json!({ "key": item["key"], "output": output }),
+        Err(error) => json!({ "key": item["key"], "error": error }),
+    }
 }
 
 #[cfg(not(coverage))]
@@ -321,39 +368,57 @@ mod llvm_coverage {
     }
 
     fn coverage_line_files(report: &Value, root: &Path, declared: &[String]) -> Vec<Value> {
-        let mut result = files(report).filter_map(|file| {
-            let filename = file.get("filename")?.as_str()?;
-            let path = package_relative(filename, root, declared)?;
-            if !declared.iter().any(|source| {
-                path == *source
-                    || path.starts_with(&format!("{}/", source.trim_end_matches('/')))
-            }) {
-                return None;
-            }
-            let mut line_counts = std::collections::BTreeMap::<u32, Vec<u64>>::new();
-            for segment in file.get("segments").and_then(Value::as_array).into_iter().flatten() {
-                let Some(values) = segment.as_array() else { continue };
-                if values.len() < 4 { continue; }
-                let Some(line) = values[0].as_u64().and_then(|n| u32::try_from(n).ok()) else { continue };
-                if values[3].as_bool().unwrap_or(false) {
-                    line_counts.entry(line).or_default().push(values[2].as_u64().unwrap_or(0));
+        let mut result = files(report)
+            .filter_map(|file| {
+                let filename = file.get("filename")?.as_str()?;
+                let path = package_relative(filename, root, declared)?;
+                if !declared.iter().any(|source| {
+                    path == *source
+                        || path.starts_with(&format!("{}/", source.trim_end_matches('/')))
+                }) {
+                    return None;
                 }
-            }
-            let executable = line_counts.keys().copied().collect::<Vec<_>>();
-            // LLVM emits multiple executable segments for a line when it has
-            // multiple regions. Count that source line as covered only when
-            // all executable regions on it ran; otherwise line coverage is
-            // overstated compared with llvm-cov's own summary.
-            let covered = line_counts
-                .iter()
-                .filter_map(|(line, counts)| counts.iter().all(|count| *count > 0).then_some(*line))
-                .collect::<Vec<_>>();
-            Some(json!({
-                "path": path,
-                "executable_lines": executable,
-                "covered_lines": covered
-            }))
-        }).collect::<Vec<_>>();
+                let mut line_counts = std::collections::BTreeMap::<u32, Vec<u64>>::new();
+                for segment in file
+                    .get("segments")
+                    .and_then(Value::as_array)
+                    .into_iter()
+                    .flatten()
+                {
+                    let Some(values) = segment.as_array() else {
+                        continue;
+                    };
+                    if values.len() < 4 {
+                        continue;
+                    }
+                    let Some(line) = values[0].as_u64().and_then(|n| u32::try_from(n).ok()) else {
+                        continue;
+                    };
+                    if values[3].as_bool().unwrap_or(false) {
+                        line_counts
+                            .entry(line)
+                            .or_default()
+                            .push(values[2].as_u64().unwrap_or(0));
+                    }
+                }
+                let executable = line_counts.keys().copied().collect::<Vec<_>>();
+                // LLVM emits multiple executable segments for a line when it has
+                // multiple regions. Count that source line as covered only when
+                // all executable regions on it ran; otherwise line coverage is
+                // overstated compared with llvm-cov's own summary.
+                let covered = line_counts
+                    .iter()
+                    .filter_map(|(line, counts)| {
+                        counts.iter().all(|count| *count > 0).then_some(*line)
+                    })
+                    .collect::<Vec<_>>();
+                Some(json!({
+                    "path": path,
+                    "executable_lines": executable,
+                    "covered_lines": covered
+                }))
+            })
+            .collect::<Vec<_>>();
         result.sort_by(|left, right| left["path"].as_str().cmp(&right["path"].as_str()));
         result
     }
@@ -391,22 +456,29 @@ mod tests {
     use serde_json::{json, Value};
 
     #[test]
-    fn invokes_requests_in_order_and_preserves_keys_and_outputs() {
+    fn invokes_sequential_requests_with_public_input_and_setup_context() {
         let request = json!({
             "coverage_sources": ["src/validator.rs"],
             "requests": [
-                {"key":{"target_id":"t","case_id":"one","step_id":null},"input":{"value":1}},
-                {"key":{"target_id":"t","case_id":"two","step_id":"check"},"input":{"value":2}}
+                {"key":{"case_id":"one","step_id":null},"input":{"value":1},"setup":"fixture-one","parallel":false},
+                {"key":{"case_id":"two","step_id":"check"},"input":{"value":2},"setup":null,"parallel":false}
             ]
         });
-        let mut visited = Vec::new();
-        let report = run_dataset(&request, |item| {
-            visited.push(item["key"]["case_id"].as_str().unwrap().to_owned());
-            Ok(item["input"].clone())
+        let visited = std::sync::Mutex::new(Vec::new());
+        let report = run_dataset(&request, |input, context| {
+            visited
+                .lock()
+                .unwrap()
+                .push(context["case_id"].as_str().unwrap().to_owned());
+            if context["case_id"] == "one" {
+                assert_eq!(context["setup"], "fixture-one");
+                assert_eq!(input, &json!({"value":1}));
+            }
+            Ok(input.clone())
         })
         .unwrap();
 
-        assert_eq!(visited, ["one", "two"]);
+        assert_eq!(*visited.lock().unwrap(), ["one", "two"]);
         assert_eq!(report["results"][0]["key"]["case_id"], "one");
         assert_eq!(report["results"][0]["output"], json!({"value":1}));
         assert_eq!(report["results"][1]["key"]["step_id"], "check");
@@ -414,13 +486,32 @@ mod tests {
     }
 
     #[test]
+    fn invokes_marked_steps_concurrently_and_keeps_result_keys() {
+        let request = json!({"requests":[
+            {"key":{"case_id":"flow","step_id":"left"},"input":{"value":1},"parallel":true},
+            {"key":{"case_id":"flow","step_id":"right"},"input":{"value":2},"parallel":true}
+        ]});
+        let barrier = std::sync::Barrier::new(2);
+        let report = run_dataset(&request, |input, context| {
+            assert_eq!(context["parallel"], true);
+            barrier.wait();
+            Ok(input.clone())
+        })
+        .unwrap();
+
+        assert_eq!(report["results"].as_array().unwrap().len(), 2);
+        assert_eq!(report["results"][0]["key"]["step_id"], "left");
+        assert_eq!(report["results"][1]["key"]["step_id"], "right");
+    }
+
+    #[test]
     fn returns_validator_errors_as_keyed_results_and_continues() {
         let request = json!({"requests":[
-            {"key":{"target_id":"t","case_id":"bad","step_id":null},"input":{}},
-            {"key":{"target_id":"t","case_id":"good","step_id":null},"input":{}}
+            {"key":{"case_id":"bad","step_id":null},"input":{},"parallel":false},
+            {"key":{"case_id":"good","step_id":null},"input":{},"parallel":false}
         ]});
-        let report = run_dataset(&request, |item| {
-            if item["key"]["case_id"] == "bad" {
+        let report = run_dataset(&request, |_, context| {
+            if context["case_id"] == "bad" {
                 Err("invalid input".into())
             } else {
                 Ok(Value::Null)

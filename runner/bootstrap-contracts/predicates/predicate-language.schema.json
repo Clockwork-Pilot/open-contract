@@ -13,8 +13,9 @@
       "not-expression": "NOT not-expression | comparison",
       "comparison": "primary (comparison-operator primary)?",
       "comparison-operator": "== | != | > | >= | < | <=",
-      "primary": "field-reference | scalar-literal | exists-call | '(' expression ')'",
+      "primary": "field-reference | scalar-literal | exists-call | contains-call | '(' expression ')'",
       "exists-call": "exists '(' field-reference ')'",
+      "contains-call": "contains '(' field-reference ',' string-literal ')'",
       "field-reference": "dot-field-reference | bracket-field-reference",
       "dot-field-reference": "'.' dot-segment ('.' dot-segment | '[' JSON-string ']')*",
       "bracket-field-reference": "'[' JSON-string ']' ('.' dot-segment | '[' JSON-string ']')*",
@@ -84,6 +85,21 @@
             "emptyArray"
           ],
           "trueFor": "otherwisePresent"
+        },
+        {
+          "name": "contains",
+          "arity": 2,
+          "arguments": [
+            "field-reference",
+            "string-literal"
+          ],
+          "resultType": "boolean",
+          "operation": "stringContains",
+          "falseFor": [
+            "missingField",
+            "null",
+            "nonStringValue"
+          ]
         }
       ]
     },

@@ -72,10 +72,10 @@ fn run(mut args: impl Iterator<Item = String>, stdout: &mut String) -> Result<()
     write_adapter_coverage_reports(&coverage_report, &report)?;
     stdout.push_str(&concise_summary(&report));
     stdout.push_str(&format!("Coverage report: {}\n", coverage_report.display()));
-    if report.passed() != report.total() {
-        return Err((1, format!("{}/{} dataset cases passed across {} contract(s)", report.passed(), report.total(), report.coverage.len())).into());
+    if report_passed(&report) != report_total(&report) {
+        return Err((1, format!("{}/{} dataset cases passed across {} contract(s)", report_passed(&report), report_total(&report), report.coverage.len())).into());
     }
-    if !report.coverage_complete() {
+    if !report_coverage_complete(&report) {
         return Err((1, "coverage requirements not met; see adapter coverage report".into()).into());
     }
     Ok(())
@@ -154,15 +154,14 @@ fn write_adapter_coverage_reports(
 fn concise_summary(report: &BatchReport) -> String {
     let mut output = format!(
         "Dataset cases: {}/{} passed across {} contract(s)\n",
-        report.passed(),
-        report.total(),
+        report_passed(report),
+        report_total(report),
         report.coverage.len()
     );
     for result in report.results.iter().filter(|result| !result.passed) {
         output.push_str(&format!(
-            "  FAIL {}/{}/{}: {}\n",
+            "  FAIL {}/{}: {}\n",
             result.contract,
-            result.target_id,
             result.case_id,
             result
                 .error
@@ -175,6 +174,33 @@ fn concise_summary(report: &BatchReport) -> String {
         ));
     }
     output
+}
+
+fn report_passed(report: &BatchReport) -> usize {
+    report.results.iter().filter(|result| result.passed).count()
+}
+
+fn report_total(report: &BatchReport) -> usize {
+    report.results.len()
+}
+
+fn report_coverage_complete(report: &BatchReport) -> bool {
+    !report.coverage.is_empty()
+        && report.coverage.iter().all(|record| {
+            record.missing_sources.is_empty()
+                && record.additional_test_coverage["passed"] != false
+                && record.line_threshold_met
+        })
+        && !report.results.is_empty()
+        && report.results.iter().all(|result| {
+            let valid_scope = |coverage: &Option<runner_batch::CoverageFingerprint>| {
+                coverage.as_ref().is_some_and(|coverage| {
+                    !coverage.files.is_empty() && coverage.baseline_matches != Some(false)
+                })
+            };
+            valid_scope(&result.coverage)
+                && result.steps.iter().all(|step| valid_scope(&step.coverage))
+        })
 }
 
 fn parse_backend(value: &str) -> Result<Backend, ContractError> {

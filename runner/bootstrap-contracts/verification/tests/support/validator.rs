@@ -52,19 +52,33 @@ fn validate_case(case: &DatasetCase) -> Result<(), String> {
     let actual = &input["actual"];
     let expected = input.get("expected");
     let predicate = input.get("predicate").and_then(Value::as_str);
-    let expected_valid = case.expected_value()?["valid"]
-        .as_bool()
-        .ok_or_else(|| "expected.valid must be boolean".to_string())?;
     let result = match_output(actual, expected, predicate);
-    if result.is_ok() != expected_valid {
-        return Err(format!("validity mismatch; expected {expected_valid}"));
-    }
-    if let Ok(matched) = result {
-        match (expected, predicate, matched) {
-            (Some(_), None, MatchKind::Exact) | (None, Some(_), MatchKind::Predicate) => {}
-            (Some(_), Some(_), MatchKind::ExpectedAndPredicate) => {}
-            _ => return Err("verifier returned an unexpected match kind".into()),
-        }
+    let actual_result = match result {
+        Ok(MatchKind::Expected) => serde_json::json!("expected"),
+        Ok(MatchKind::ExpectedAndPredicate) => serde_json::json!("expected_and_predicate"),
+        Err(error) => serde_json::json!({ "error": error }),
+    };
+    let expected_result = case.expected_value()?;
+    if !matches_result(&actual_result, expected_result) {
+        return Err(format!("result mismatch; actual: {actual_result}"));
     }
     Ok(())
+}
+
+fn matches_result(actual: &Value, expected: &Value) -> bool {
+    match (actual, expected) {
+        (Value::Object(actual), Value::Object(expected)) => expected.iter().all(|(key, value)| {
+            actual
+                .get(key)
+                .is_some_and(|actual_value| matches_result(actual_value, value))
+        }),
+        (Value::Array(actual), Value::Array(expected)) => {
+            actual.len() == expected.len()
+                && actual
+                    .iter()
+                    .zip(expected)
+                    .all(|(a, e)| matches_result(a, e))
+        }
+        _ => actual == expected,
+    }
 }

@@ -8,16 +8,16 @@ from pathlib import Path
 LANGUAGE_PACKAGE = Path(__file__).parents[1] / "src"
 
 
-def run_adapter(tmp_path, supplemental_tests, validator_source=None):
+def run_adapter(tmp_path, supplemental_tests, validator_source=None, requests=None):
     (tmp_path / "validator.py").write_text(
-        validator_source or "def validate(value):\n    return {\"value\": value}\n", encoding="utf-8"
+        validator_source or "def validate(value, context):\n    return {\"value\": value}\n", encoding="utf-8"
     )
     request = {
         "validator": "validator.py",
         "package": ".",
         "coverage_sources": ["validator.py"],
         "supplemental_tests": supplemental_tests,
-        "requests": [{"key": {"case": "one"}, "input": 3}],
+        "requests": requests or [{"key": {"case_id": "one", "step_id": None}, "input": 3}],
     }
     entrypoint = tmp_path / "contract_entry.py"
     entrypoint.write_text(
@@ -44,7 +44,7 @@ def run_adapter(tmp_path, supplemental_tests, validator_source=None):
 
 def test_supplemental_tests_report_separately_from_dataset_coverage(tmp_path):
     (tmp_path / "supplemental.py").write_text(
-        "from validator import validate\n\ndef run():\n    assert validate(4) == {\"value\": 4}\n",
+        "from validator import validate\n\ndef run():\n    assert validate(4, {}) == {\"value\": 4}\n",
         encoding="utf-8",
     )
 
@@ -68,7 +68,7 @@ def test_supplemental_test_failure_is_reported_without_changing_dataset_result(t
 
     assert result.returncode == 0, result.stderr
     report = json.loads(result.stdout)
-    assert report["results"] == [{"key": {"case": "one"}, "output": {"value": 3}}]
+    assert report["results"] == [{"key": {"case_id": "one", "step_id": None}, "output": {"value": 3}}]
     assert report["additional_test_coverage"]["status"] == "failed"
     assert "deliberate failure" in report["additional_test_coverage"]["error"]
 
@@ -83,7 +83,7 @@ def test_supplemental_tests_are_skipped_below_dataset_coverage_threshold(tmp_pat
     result = run_adapter(
         tmp_path,
         ["supplemental.py"],
-        "def validate(value):\n    if value:\n        return {'value': value}\n    return {'empty': True}\n",
+        "def validate(value, context):\n    if value:\n        return {'value': value}\n    return {'empty': True}\n",
     )
 
     assert result.returncode == 0, result.stderr
@@ -91,3 +91,29 @@ def test_supplemental_tests_are_skipped_below_dataset_coverage_threshold(tmp_pat
     assert report["additional_test_coverage"]["status"] == "skipped"
     assert report["additional_test_coverage"]["executed"] is False
     assert not marker.exists()
+
+
+def test_parallel_steps_receive_setup_context_and_share_coverage(tmp_path):
+    source = (
+        "from threading import Barrier\n"
+        "barrier = Barrier(2)\n"
+        "def validate(value, context):\n"
+        "    assert context['setup'] == 'fixture'\n"
+        "    assert context['parallel'] is True\n"
+        "    barrier.wait(timeout=5)\n"
+        "    return {'value': value}\n"
+    )
+    requests = [
+        {"key": {"case_id": "flow", "step_id": step}, "input": value,
+         "setup": "fixture", "parallel": True}
+        for step, value in (("left", 1), ("right", 2))
+    ]
+
+    result = run_adapter(tmp_path, [], source, requests)
+
+    assert result.returncode == 0, result.stderr
+    report = json.loads(result.stdout)
+    assert [entry["output"] for entry in report["results"]] == [
+        {"value": 1}, {"value": 2}
+    ]
+    assert report["coverage_scopes"][0]["files"] == report["coverage_scopes"][1]["files"]

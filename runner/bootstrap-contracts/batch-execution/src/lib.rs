@@ -7,57 +7,53 @@ use sha2::{Digest, Sha256};
 use std::fs;
 use std::path::{Path, PathBuf};
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Dataset {
     pub version: u32,
-    pub kind: Option<String>,
-    pub config: Option<Value>,
-    pub cases: Option<Vec<CaseSpec>>,
-    pub targets: Option<Vec<TargetSpec>>,
-}
-
-#[derive(Clone, Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct TargetSpec {
-    pub id: String,
-    pub kind: Option<String>,
-    pub config: Option<Value>,
-    #[serde(default)]
     pub cases: Vec<CaseSpec>,
 }
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(untagged)]
+pub enum CaseSpec {
+    Call(CallSpec),
+    Sequence(SequenceSpec),
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
-pub struct CaseSpec {
+pub struct CallSpec {
     pub id: String,
     pub input: Value,
-    pub expected: Option<Value>,
-    #[serde(default)]
-    pub expected_error: Option<String>,
+    pub expected: Value,
     pub predicate: Option<String>,
-    #[serde(default)]
     pub coverage_fingerprint: Option<String>,
-    #[serde(default)]
+    pub setup: Option<String>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct SequenceSpec {
+    pub id: String,
     pub steps: Vec<StepSpec>,
 }
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct StepSpec {
     pub id: String,
     pub input: Value,
-    pub expected: Option<Value>,
-    #[serde(default)]
-    pub expected_error: Option<String>,
+    pub expected: Value,
     pub predicate: Option<String>,
-    #[serde(default)]
     pub coverage_fingerprint: Option<String>,
+    pub setup: Option<String>,
+    #[serde(default)]
+    pub parallel: bool,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, Eq, PartialEq, Hash)]
 pub struct ExecutionKey {
-    pub target_id: String,
     pub case_id: String,
     pub step_id: Option<String>,
 }
@@ -65,9 +61,9 @@ pub struct ExecutionKey {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ExecutionRequest {
     pub key: ExecutionKey,
-    pub kind: Option<String>,
-    pub config: Option<Value>,
     pub input: Value,
+    pub setup: Option<String>,
+    pub parallel: bool,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -215,13 +211,6 @@ pub fn show_isolation_plan(
     Ok(output)
 }
 
-#[cfg(test)]
-extern crate self as runner_batch;
-
-#[cfg(test)]
-#[path = "../tests/unit_dataset_runner.rs"]
-mod dataset_runner_test;
-
 /// Contract command contract: each command receives one complete flattened
 /// dataset batch and returns raw outputs/errors and coverage. Rust owns matching
 /// and predicate verification after the batch.
@@ -300,7 +289,6 @@ pub struct StepResult {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ContractResult {
     pub contract: String,
-    pub target_id: String,
     pub case_id: String,
     pub output: Option<Value>,
     pub passed: bool,
@@ -339,33 +327,6 @@ pub struct BatchReport {
     /// Raw native reports from the root and every child run in this shared
     /// isolation. Adapters own merging reports whose formats are language-specific.
     pub coverage: Vec<CoverageRecord>,
-}
-
-impl BatchReport {
-    pub fn passed(&self) -> usize {
-        self.results.iter().filter(|r| r.passed).count()
-    }
-    pub fn total(&self) -> usize {
-        self.results.len()
-    }
-    pub fn coverage_complete(&self) -> bool {
-        !self.coverage.is_empty()
-            && self.coverage.iter().all(|record| {
-                record.missing_sources.is_empty()
-                    && record.additional_test_coverage["passed"] != false
-                    && record.line_threshold_met
-            })
-            && !self.results.is_empty()
-            && self.results.iter().all(|result| {
-                let valid_scope = |coverage: &Option<CoverageFingerprint>| {
-                    coverage.as_ref().is_some_and(|coverage| {
-                        !coverage.files.is_empty() && coverage.baseline_matches != Some(false)
-                    })
-                };
-                valid_scope(&result.coverage)
-                    && result.steps.iter().all(|step| valid_scope(&step.coverage))
-            })
-    }
 }
 
 pub fn run_contract_tree(
@@ -854,32 +815,14 @@ fn coverage_for_key(
     (Some(coverage), mismatch)
 }
 
-fn coverage_for_files(
-    files: Vec<CoverageFile>,
-    expected: Option<&str>,
-) -> (Option<CoverageFingerprint>, Option<String>) {
+fn coverage_for_files(files: Vec<CoverageFile>) -> Option<CoverageFingerprint> {
     let files = merge_coverage_files(files);
-    if expected.is_some() && files.iter().all(|file| file.lines.is_empty()) {
-        return (
-            None,
-            Some("coverage fingerprint has zero covered lines".into()),
-        );
-    }
-    let mut coverage = CoverageFingerprint {
+    Some(CoverageFingerprint {
         fingerprint: coverage_hash(&files),
         files,
         expected_fingerprint: None,
         baseline_matches: None,
-    };
-    compare_fingerprint(&mut coverage, expected);
-    let mismatch = (coverage.baseline_matches == Some(false)).then(|| {
-        format!(
-            "coverage fingerprint mismatch: expected {}, observed {}",
-            coverage.expected_fingerprint.as_deref().unwrap_or_default(),
-            coverage.fingerprint
-        )
-    });
-    (Some(coverage), mismatch)
+    })
 }
 
 fn compare_fingerprint(coverage: &mut CoverageFingerprint, expected: Option<&str>) {
@@ -903,8 +846,8 @@ pub fn load_dataset(path: &Path) -> Result<Dataset, String> {
 
 #[derive(Clone)]
 enum Check {
-    Case { target: String, case: CaseSpec },
-    Sequence { target: String, case: CaseSpec },
+    Call(CallSpec),
+    Sequence(SequenceSpec),
 }
 
 fn flatten_dataset(dataset: &Dataset) -> Result<(Vec<ExecutionRequest>, Vec<Check>), String> {
@@ -913,105 +856,61 @@ fn flatten_dataset(dataset: &Dataset) -> Result<(Vec<ExecutionRequest>, Vec<Chec
     }
     let mut requests = Vec::new();
     let mut checks = Vec::new();
-    let targets = match (&dataset.cases, &dataset.targets) {
-        (Some(cases), None) => vec![TargetSpec {
-            id: "default".into(),
-            kind: dataset.kind.clone(),
-            config: dataset.config.clone(),
-            cases: cases.clone(),
-        }],
-        (None, Some(targets)) => targets.clone(),
-        _ => return Err("dataset must contain exactly one of cases or targets".into()),
-    };
-    let mut target_ids = std::collections::HashSet::new();
-    for target in targets {
-        if target.id.trim().is_empty() || !target_ids.insert(target.id.clone()) {
+    let mut case_ids = std::collections::HashSet::new();
+    for case in &dataset.cases {
+        let case_id = match case {
+            CaseSpec::Call(call) => &call.id,
+            CaseSpec::Sequence(sequence) => &sequence.id,
+        };
+        if case_id.trim().is_empty() || !case_ids.insert(case_id.clone()) {
             return Err(format!(
-                "target ID must be non-empty and unique: {:?}",
-                target.id
+                "case ID must be non-empty and unique: {:?}",
+                case_id
             ));
         }
-        let mut case_ids = std::collections::HashSet::new();
-        for case in target.cases {
-            if case.id.trim().is_empty() || !case_ids.insert(case.id.clone()) {
-                return Err(format!(
-                    "case ID must be non-empty and unique in target {}: {:?}",
-                    target.id, case.id
-                ));
-            }
-            if case.steps.is_empty()
-                && case.expected.is_none()
-                && case.predicate.is_none()
-                && case.expected_error.is_none()
-            {
-                return Err(format!(
-                    "case {}/{} must contain expected or predicate",
-                    target.id, case.id
-                ));
-            }
-            if case.expected_error.is_some()
-                && (case.expected.is_some() || case.predicate.is_some())
-            {
-                return Err(format!(
-                    "case {}/{} cannot combine expected_error with expected or predicate",
-                    target.id, case.id
-                ));
-            }
-            if !case.steps.is_empty() && case.expected_error.is_some() {
-                return Err(format!(
-                    "sequence case {}/{} cannot contain expected_error",
-                    target.id, case.id
-                ));
-            }
-            validate_fingerprint(&case.coverage_fingerprint, "case")?;
-            if case.steps.is_empty() {
+        match case {
+            CaseSpec::Call(call) => {
+                validate_fingerprint(&call.coverage_fingerprint, "case")?;
+                validate_setup(&call.setup)?;
                 requests.push(ExecutionRequest {
                     key: ExecutionKey {
-                        target_id: target.id.clone(),
-                        case_id: case.id.clone(),
+                        case_id: call.id.clone(),
                         step_id: None,
                     },
-                    kind: target.kind.clone(),
-                    config: target.config.clone(),
-                    input: case.input.clone(),
+                    input: call.input.clone(),
+                    setup: call.setup.clone(),
+                    parallel: false,
                 });
-                checks.push(Check::Case {
-                    target: target.id.clone(),
-                    case,
-                });
-            } else {
+                checks.push(Check::Call(call.clone()));
+            }
+            CaseSpec::Sequence(sequence) => {
+                if sequence.steps.is_empty() {
+                    return Err(format!(
+                        "sequence {} must include at least one step",
+                        sequence.id
+                    ));
+                }
                 let mut step_ids = std::collections::HashSet::new();
-                for step in &case.steps {
+                for step in &sequence.steps {
                     if step.id.trim().is_empty() || !step_ids.insert(step.id.clone()) {
                         return Err(format!(
-                            "step ID must be non-empty and unique in case {}/{}: {:?}",
-                            target.id, case.id, step.id
-                        ));
-                    }
-                    if step.expected_error.is_some()
-                        && (step.expected.is_some() || step.predicate.is_some())
-                    {
-                        return Err(format!(
-                            "step {}/{}/{} cannot combine expected_error with expected or predicate",
-                            target.id, case.id, step.id
+                            "step ID must be non-empty and unique in case {}: {:?}",
+                            sequence.id, step.id
                         ));
                     }
                     validate_fingerprint(&step.coverage_fingerprint, "step")?;
+                    validate_setup(&step.setup)?;
                     requests.push(ExecutionRequest {
                         key: ExecutionKey {
-                            target_id: target.id.clone(),
-                            case_id: case.id.clone(),
+                            case_id: sequence.id.clone(),
                             step_id: Some(step.id.clone()),
                         },
-                        kind: target.kind.clone(),
-                        config: target.config.clone(),
                         input: step.input.clone(),
+                        setup: step.setup.clone(),
+                        parallel: step.parallel,
                     });
                 }
-                checks.push(Check::Sequence {
-                    target: target.id.clone(),
-                    case,
-                });
+                checks.push(Check::Sequence(sequence.clone()));
             }
         }
     }
@@ -1019,6 +918,16 @@ fn flatten_dataset(dataset: &Dataset) -> Result<(Vec<ExecutionRequest>, Vec<Chec
         return Err("dataset must include at least one case or step".into());
     }
     Ok((requests, checks))
+}
+
+fn validate_setup(setup: &Option<String>) -> Result<(), String> {
+    if setup
+        .as_deref()
+        .is_some_and(|value| value.trim().is_empty())
+    {
+        return Err("setup must be a non-empty fixture ID when provided".into());
+    }
+    Ok(())
 }
 
 fn validate_fingerprint(value: &Option<String>, scope: &str) -> Result<(), String> {
@@ -1063,29 +972,23 @@ fn verify_dataset(
     let mut cases = Vec::new();
     for check in checks {
         match check {
-            Check::Case { target, case } => {
+            Check::Call(case) => {
                 let key = ExecutionKey {
-                    target_id: target.clone(),
                     case_id: case.id.clone(),
                     step_id: None,
                 };
                 let result = outputs
                     .remove(&key)
-                    .ok_or_else(|| format!("adapter omitted result for {}/{}", target, case.id))?;
-                let (passed, matched_by, error) = evaluate_result(
-                    &result,
-                    case.expected.as_ref(),
-                    case.predicate.as_deref(),
-                    case.expected_error.as_deref(),
-                );
+                    .ok_or_else(|| format!("adapter omitted result for {}", case.id))?;
+                let (passed, matched_by, error) =
+                    evaluate_result(&result, &case.expected, case.predicate.as_deref());
                 let (coverage, coverage_error) =
                     coverage_for_key(coverage_scopes, &key, case.coverage_fingerprint.as_deref());
-                let coverage_error = coverage_error
-                    .map(|error| format!("{}/{}/{}: {error}", manifest.name, target, case.id));
+                let coverage_error =
+                    coverage_error.map(|error| format!("{}/{}: {error}", manifest.name, case.id));
                 let passed = passed && coverage_error.is_none();
                 cases.push(ContractResult {
                     contract: manifest.name.clone(),
-                    target_id: target,
                     case_id: case.id,
                     output: displayed_result(&result),
                     passed,
@@ -1095,69 +998,36 @@ fn verify_dataset(
                     coverage,
                 });
             }
-            Check::Sequence { target, case } => {
-                let mut step_outputs = serde_json::Map::new();
-                let mut step_checks = Vec::new();
+            Check::Sequence(case) => {
                 let mut step_results = Vec::new();
                 let mut steps_passed = true;
                 let mut first_error = None;
                 let mut case_coverage_files = Vec::new();
-                let mut all_steps_covered = true;
                 for step in &case.steps {
                     let key = ExecutionKey {
-                        target_id: target.clone(),
                         case_id: case.id.clone(),
                         step_id: Some(step.id.clone()),
                     };
                     let result = outputs.remove(&key).ok_or_else(|| {
-                        format!(
-                            "adapter omitted result for {}/{}/{}",
-                            target, case.id, step.id
-                        )
+                        format!("adapter omitted result for {}/{}", case.id, step.id)
                     })?;
-                    let (passed, matched_by, error) = if step.expected.is_none()
-                        && step.predicate.is_none()
-                        && step.expected_error.is_none()
-                    {
-                        (result.error.is_none(), None, result.error.clone())
-                    } else {
-                        evaluate_result(
-                            &result,
-                            step.expected.as_ref(),
-                            step.predicate.as_deref(),
-                            step.expected_error.as_deref(),
-                        )
-                    };
+                    let (passed, matched_by, error) =
+                        evaluate_result(&result, &step.expected, step.predicate.as_deref());
                     let (coverage, coverage_error) = coverage_for_key(
                         coverage_scopes,
                         &key,
                         step.coverage_fingerprint.as_deref(),
                     );
-                    let coverage_error = coverage_error.map(|error| {
-                        format!(
-                            "{}/{}/{}/{}: {error}",
-                            manifest.name, target, case.id, step.id
-                        )
-                    });
                     if let Some(observed) = &coverage {
                         case_coverage_files.extend(observed.files.clone());
-                    } else {
-                        all_steps_covered = false;
                     }
                     let step_passed = passed && coverage_error.is_none();
                     steps_passed &= step_passed;
                     if first_error.is_none() {
-                        first_error = error.clone().or(coverage_error.clone());
+                        first_error = error.clone().or(coverage_error.clone()).map(|message| {
+                            format!("{}/{} step {}: {message}", manifest.name, case.id, step.id)
+                        });
                     }
-                    step_checks.push(json!({
-                        "id": step.id,
-                        "passed": step_passed,
-                        "matched_by": if step_passed { matched_by.clone() } else { None },
-                    }));
-                    step_outputs.insert(
-                        step.id.clone(),
-                        displayed_result(&result).unwrap_or(Value::Null),
-                    );
                     step_results.push(StepResult {
                         id: step.id.clone(),
                         output: displayed_result(&result),
@@ -1167,52 +1037,16 @@ fn verify_dataset(
                         coverage,
                     });
                 }
-                let case_coverage = if all_steps_covered {
-                    coverage_for_files(case_coverage_files, case.coverage_fingerprint.as_deref())
-                } else {
-                    (
-                        None,
-                        Some("coverage fingerprint unavailable for one or more steps".into()),
-                    )
-                };
-                let case_coverage = (
-                    case_coverage.0,
-                    case_coverage
-                        .1
-                        .map(|error| format!("{}/{}/{}: {error}", manifest.name, target, case.id)),
-                );
-                let actual = json!({
-                    "input": case.input,
-                    "steps": step_outputs,
-                    "captures": {},
-                    "checks": step_checks,
-                });
-                let (case_passed, matched_by, case_error) = if case.expected.is_none()
-                    && case.predicate.is_none()
-                    && case.expected_error.is_none()
-                {
-                    (true, None, None)
-                } else {
-                    match match_output(&actual, case.expected.as_ref(), case.predicate.as_deref()) {
-                        Ok(MatchKind::Exact) => (true, Some("exact".into()), None),
-                        Ok(MatchKind::Predicate) => (true, Some("predicate".into()), None),
-                        Ok(MatchKind::ExpectedAndPredicate) => {
-                            (true, Some("expected+predicate".into()), None)
-                        }
-                        Err(error) => (false, None, Some(error)),
-                    }
-                };
-                let passed = steps_passed && case_passed && case_coverage.1.is_none();
+                let case_coverage = coverage_for_files(case_coverage_files);
                 cases.push(ContractResult {
                     contract: manifest.name.clone(),
-                    target_id: target,
                     case_id: case.id,
-                    output: Some(actual),
-                    passed,
-                    matched_by: if passed { matched_by } else { None },
-                    error: first_error.or(case_error).or(case_coverage.1),
+                    output: None,
+                    passed: steps_passed,
+                    matched_by: None,
+                    error: first_error,
                     steps: step_results,
-                    coverage: case_coverage.0,
+                    coverage: case_coverage,
                 });
             }
         }
@@ -1225,42 +1059,18 @@ fn verify_dataset(
 
 fn evaluate_result(
     result: &AdapterResult,
-    expected: Option<&Value>,
+    expected: &Value,
     predicate: Option<&str>,
-    expected_error: Option<&str>,
 ) -> (bool, Option<String>, Option<String>) {
-    if let Some(error) = &result.error {
-        if let Some(expected_error) = expected_error {
-            if error == expected_error {
-                return (true, Some("expected-error".into()), None);
-            }
-            return (
-                false,
-                None,
-                Some(format!("expected error {expected_error:?}, got {error:?}")),
-            );
-        }
-        return (false, None, Some(error.clone()));
-    }
-    if let Some(expected_error) = expected_error {
-        return (
-            false,
-            None,
-            Some(format!(
-                "expected error {expected_error:?}, but validator returned output"
-            )),
-        );
-    }
-    let Some(output) = &result.output else {
+    let Some(output) = displayed_result(result) else {
         return (
             false,
             None,
             Some("adapter returned neither output nor error".into()),
         );
     };
-    match match_output(output, expected, predicate) {
-        Ok(MatchKind::Exact) => (true, Some("exact".into()), None),
-        Ok(MatchKind::Predicate) => (true, Some("predicate".into()), None),
+    match match_output(&output, Some(expected), predicate) {
+        Ok(MatchKind::Expected) => (true, Some("expected".into()), None),
         Ok(MatchKind::ExpectedAndPredicate) => (true, Some("expected+predicate".into()), None),
         Err(error) => (false, None, Some(error)),
     }
@@ -1289,5 +1099,5 @@ pub fn batch_input(manifest: &Manifest, requests: &[ExecutionRequest]) -> Value 
 }
 
 #[cfg(test)]
-#[path = "../tests/unit_tests.rs"]
+#[path = "../tests/support/unit_tests.rs"]
 mod tests;

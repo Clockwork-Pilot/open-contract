@@ -598,9 +598,12 @@ pub(super) fn checked_working_directory(
     let cwd = working_directory
         .canonicalize()
         .map_err(|error| format!("command working directory is unavailable: {error}"))?;
-    let relative = cwd.strip_prefix(root).map_err(|_| {
-        "command working directory must be inside the staged contract tree".to_string()
-    })?.to_path_buf();
+    let relative = cwd
+        .strip_prefix(root)
+        .map_err(|_| {
+            "command working directory must be inside the staged contract tree".to_string()
+        })?
+        .to_path_buf();
     if !cwd.is_dir() {
         return Err("command working directory must be inside the staged contract tree".into());
     }

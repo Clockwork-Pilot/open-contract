@@ -4,6 +4,7 @@ use runner_batch::{
     ContractBatch, CoverageFile, CoverageScope, ExecutionKey, ManifestBatchAdapter,
 };
 use runner_isolation::{Backend, StagedTree};
+use runner_verification::{match_output, MatchKind};
 use serde_json::{json, Value};
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -75,19 +76,12 @@ fn validate_dataset_entry_with_adapter(
             .as_str()
             .ok_or_else(|| "load_dataset input.path must be a string".to_string())?;
         let path = package.join(relative_path);
-        let error = runner_batch::load_dataset(&path)
-            .err()
-            .ok_or_else(|| "expected the missing dataset read to fail".to_string())?;
-        let needle = expected["error_contains"]
-            .as_str()
-            .ok_or_else(|| "expected.error_contains must be a string".to_string())?;
-        return if error.contains(needle) {
-            Ok(())
-        } else {
-            Err(format!(
-                "expected error containing {needle:?}, got {error:?}"
-            ))
+        let actual = match runner_batch::load_dataset(&path) {
+            Ok(dataset) => serde_json::to_value(dataset)
+                .map_err(|error| format!("serialize loaded dataset: {error}"))?,
+            Err(error) => json!({"error": error}),
         };
+        return check_public_output(&actual, expected, entry.predicate.as_deref());
     }
     let extension = input["extension"].as_str().map_or("json", |value| value);
     let dataset_name = format!("dataset.{extension}");
@@ -108,7 +102,7 @@ fn validate_dataset_entry_with_adapter(
             .map_err(|error| format!("cannot serialize fixture dataset: {error}"))?,
         None => serde_json::to_vec(&json!({
             "version": 1,
-            "cases": [{"id":"case", "input":{"value":1}, "expected":{"value":1}}]
+            "cases": [{"id":"case", "input":{"value":1}, "expected":{"value":1}, "coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"}]
         }))
         .map_err(|error| format!("cannot serialize default dataset: {error}"))?,
     };
@@ -156,34 +150,15 @@ fn validate_dataset_entry_with_adapter(
             Some("landlock") => Backend::Landlock,
             _ => return Err("show-isolation-plan requires a supported backend".into()),
         };
-        let output = match show_isolation_plan(&manifest_path, backend, None) {
-            Ok(output) => output,
-            Err(error) => {
-                if expected["error_contains"]
-                    .as_str()
-                    .is_some_and(|needle| error.contains(needle))
-                {
-                    return Ok(());
-                }
-                return Err(error);
-            }
+        let actual = match show_isolation_plan(&manifest_path, backend, None) {
+            Ok(output) => json!({"plan": output}),
+            Err(error) => json!({"error": error}),
         };
-        for expected_line in expected["contains"]
-            .as_array()
-            .ok_or_else(|| "expected.contains must be an array".to_string())?
-        {
-            let expected_line = expected_line
-                .as_str()
-                .ok_or_else(|| "expected.contains entries must be strings".to_string())?;
-            if !output.contains(expected_line) {
-                return Err(format!("expected plan to contain {expected_line:?}, got {output:?}"));
-            }
-        }
-        return Ok(());
+        return check_public_output(&actual, expected, entry.predicate.as_deref());
     }
 
     let result = run_contract_tree(&manifest_path, Backend::None, adapter);
-    check_expected(result, expected)
+    check_expected(result, expected, entry.predicate.as_deref())
 }
 
 fn add_nested_contract(package: &Path, input: &Value, manifest: &mut Value) -> Result<(), String> {
@@ -243,11 +218,12 @@ fn configure_case_setup(
     manifest: &mut Value,
 ) -> Result<(), String> {
     match id {
-        "dataset-adapter-expected-error"
+        "dataset-adapter-error-expected-as-output"
+        | "dataset-adapter-error-output-mismatch"
         | "dataset-adapter-unexpected-error"
-        | "dataset-adapter-step-error"
-        | "dataset-adapter-step-error-does-not-match"
-        | "dataset-adapter-multiple-step-errors"
+        | "dataset-adapter-step-error-output"
+        | "dataset-adapter-step-predicate-mismatch"
+        | "dataset-adapter-multiple-step-error-outputs"
         | "dataset-adapter-no-output"
         | "dataset-adapter-omits-result"
         | "dataset-adapter-missing-coverage"
@@ -269,8 +245,7 @@ fn configure_case_setup(
         | "dataset-adapter-missing-step-coverage"
         | "dataset-adapter-missing-batch"
         | "dataset-adapter-error"
-        | "dataset-adapter-wrong-expected-error"
-        => Ok(()),
+        | "dataset-adapter-wrong-expected-error" => Ok(()),
         "run-contract-tree-staging-rejects-symlink-escape"
         | "show-isolation-plan-staging-rejects-symlink-escape" => {
             let staged = package.join("staged");
@@ -291,7 +266,10 @@ fn configure_case_setup(
             let child_dataset = serde_json::to_vec(&input["child_dataset"])
                 .map_err(|error| format!("serialize nested dataset fixture: {error}"))?;
             write_bytes(&child.join("dataset.json"), &child_dataset)?;
-            write(child.join("validator.py"), "def validate(value): return value\n")?;
+            write(
+                child.join("validator.py"),
+                "def validate(value): return value\n",
+            )?;
             let child_manifest = input["child_manifest_yaml"]
                 .as_str()
                 .ok_or_else(|| "nested case requires child_manifest_yaml".to_string())?;
@@ -300,7 +278,8 @@ fn configure_case_setup(
         }
         id if id.starts_with("manifest-adapter-") || id.starts_with("supplemental-") => {
             let script = match id {
-                "manifest-adapter-executes-batch" => r#"import json, sys
+                "manifest-adapter-executes-batch" => {
+                    r#"import json, sys
 batch = json.load(sys.stdin)
 requests = batch["requests"]
 print(json.dumps({
@@ -312,13 +291,17 @@ print(json.dumps({
     ],
     "coverage_lines": [{"path": batch["validator"], "executable_lines": [1], "covered_lines": [1]}]
 }))
-"#,
+"#
+                }
                 "manifest-adapter-command-fails" => "import sys\nsys.exit(1)\n",
                 "manifest-adapter-returns-invalid-json" => "print('{')\n",
-                "manifest-adapter-returns-no-results" => "import json\nprint(json.dumps({'results': []}))\n",
+                "manifest-adapter-returns-no-results" => {
+                    "import json\nprint(json.dumps({'results': []}))\n"
+                }
                 "manifest-adapter-missing-execution" => "print('{}')\n",
                 "manifest-adapter-command-cannot-start" => "print('{}')\n",
-                "supplemental-coverage-is-reported" => r#"import json, sys
+                "supplemental-coverage-is-reported" => {
+                    r#"import json, sys
 batch = json.load(sys.stdin)
 requests = batch["requests"]
 print(json.dumps({
@@ -332,40 +315,61 @@ print(json.dumps({
     "additional_test_coverage": {"executed": True, "passed": True, "native_report": {"format": "fixture"}},
     "additional_coverage_lines": [{"path": batch["validator"], "executable_lines": [1, 2], "covered_lines": [2]}]
 }))
-"#,
-                "supplemental-tests-low-dataset-coverage" => r#"import json, sys
+"#
+                }
+                "supplemental-tests-low-dataset-coverage" => {
+                    r#"import json, sys
 batch=json.load(sys.stdin); requests=batch["requests"]; src=batch["validator"]
 print(json.dumps({"results":[{"key":r["key"],"output":r["input"]} for r in requests],"coverage":{"sources":[src]},"coverage_scopes":[{"key":r["key"],"files":[{"path":src,"lines":[1]}]} for r in requests],"coverage_lines":[{"path":src,"executable_lines":[1,2],"covered_lines":[1]}],"additional_test_coverage":{"executed":True,"passed":True}}))
-"#,
-                "supplemental-coverage-without-tests" => r#"import json, sys
+"#
+                }
+                "supplemental-coverage-without-tests" => {
+                    r#"import json, sys
 batch=json.load(sys.stdin); requests=batch["requests"]; src=batch["validator"]
 print(json.dumps({"results":[{"key":r["key"],"output":r["input"]} for r in requests],"coverage":{"sources":[src]},"coverage_scopes":[{"key":r["key"],"files":[{"path":src,"lines":[1]}]} for r in requests],"coverage_lines":[{"path":src,"executable_lines":[1],"covered_lines":[1]}],"additional_test_coverage":{"executed":True,"passed":True}}))
-"#,
-                "supplemental-coverage-missing-report" => r#"import json, sys
+"#
+                }
+                "supplemental-coverage-missing-report" => {
+                    r#"import json, sys
 batch=json.load(sys.stdin); requests=batch["requests"]; src=batch["validator"]
 print(json.dumps({"results":[{"key":r["key"],"output":r["input"]} for r in requests],"coverage":{"sources":[src]},"coverage_scopes":[{"key":r["key"],"files":[{"path":src,"lines":[1]}]} for r in requests],"coverage_lines":[{"path":src,"executable_lines":[1],"covered_lines":[1]}]}))
-"#,
-                "supplemental-tests-failed" => r#"import json, sys
+"#
+                }
+                "supplemental-tests-failed" => {
+                    r#"import json, sys
 batch=json.load(sys.stdin); requests=batch["requests"]; src=batch["validator"]
 print(json.dumps({"results":[{"key":r["key"],"output":r["input"]} for r in requests],"coverage":{"sources":[src]},"coverage_scopes":[{"key":r["key"],"files":[{"path":src,"lines":[1]}]} for r in requests],"coverage_lines":[{"path":src,"executable_lines":[1],"covered_lines":[1]}],"additional_test_coverage":{"executed":True,"passed":False,"error":"supplemental test failure"}}))
-"#,
-                "supplemental-tests-skipped" => r#"import json, sys
+"#
+                }
+                "supplemental-tests-skipped" => {
+                    r#"import json, sys
 batch=json.load(sys.stdin); requests=batch["requests"]; src=batch["validator"]
 print(json.dumps({"results":[{"key":r["key"],"output":r["input"]} for r in requests],"coverage":{"sources":[src]},"coverage_scopes":[{"key":r["key"],"files":[{"path":src,"lines":[1]}]} for r in requests],"coverage_lines":[{"path":src,"executable_lines":[1,2],"covered_lines":[1]}]}))
-"#,
-                "supplemental-tests-no-executable-lines" => r#"import json, sys
+"#
+                }
+                "supplemental-tests-no-executable-lines" => {
+                    r#"import json, sys
 batch=json.load(sys.stdin); requests=batch["requests"]; src=batch["validator"]
 print(json.dumps({"results":[{"key":r["key"],"output":r["input"]} for r in requests],"coverage":{"sources":[src]},"coverage_scopes":[{"key":r["key"],"files":[{"path":src,"lines":[1]}]} for r in requests],"coverage_lines":[]}))
-"#,
-                "supplemental-tests-coverage-without-run" => r#"import json, sys
+"#
+                }
+                "supplemental-tests-coverage-without-run" => {
+                    r#"import json, sys
 batch=json.load(sys.stdin); requests=batch["requests"]; src=batch["validator"]
 print(json.dumps({"results":[{"key":r["key"],"output":r["input"]} for r in requests],"coverage":{"sources":[src]},"coverage_scopes":[{"key":r["key"],"files":[{"path":src,"lines":[1]}]} for r in requests],"coverage_lines":[{"path":src,"executable_lines":[1,2],"covered_lines":[1]}],"additional_coverage_lines":[{"path":src,"executable_lines":[1,2],"covered_lines":[2]}]}))
-"#,
-                "supplemental-tests-not-executed" => r#"import json, sys
+"#
+                }
+                "supplemental-tests-not-executed" => {
+                    r#"import json, sys
 batch=json.load(sys.stdin); requests=batch["requests"]; src=batch["validator"]
 print(json.dumps({"results":[{"key":r["key"],"output":r["input"]} for r in requests],"coverage":{"sources":[src]},"coverage_scopes":[{"key":r["key"],"files":[{"path":src,"lines":[1]}]} for r in requests],"coverage_lines":[{"path":src,"executable_lines":[1],"covered_lines":[1]}],"additional_test_coverage":{"executed":False,"passed":True}}))
-"#,
-                _ => return Err(format!("no adapter fixture is defined for dataset case {id:?}")),
+"#
+                }
+                _ => {
+                    return Err(format!(
+                        "no adapter fixture is defined for dataset case {id:?}"
+                    ))
+                }
             };
             let adapter = "adapter.runner";
             write(package.join(adapter), script)?;
@@ -377,10 +381,14 @@ print(json.dumps({"results":[{"key":r["key"],"output":r["input"]} for r in reque
                     .ok_or_else(|| "fixture read list must be an array".to_string())?
                     .push(json!("tests/supplemental.py"));
             }
-            if id.starts_with("supplemental-tests-") || id == "supplemental-coverage-missing-report" {
+            if id.starts_with("supplemental-tests-") || id == "supplemental-coverage-missing-report"
+            {
                 fs::create_dir_all(package.join("tests"))
                     .map_err(|error| format!("create supplemental test directory: {error}"))?;
-                write(package.join("tests/supplemental.py"), "def run(): return True\n")?;
+                write(
+                    package.join("tests/supplemental.py"),
+                    "def run(): return True\n",
+                )?;
                 manifest["files"]["supplemental_tests"] = json!(["tests/supplemental.py"]);
                 manifest["filesystem"]["read"] = json!([
                     "dataset.json",
@@ -404,68 +412,27 @@ print(json.dumps({"results":[{"key":r["key"],"output":r["input"]} for r in reque
 fn check_expected(
     result: Result<runner_batch::BatchReport, String>,
     expected: &Value,
+    predicate: Option<&str>,
 ) -> Result<(), String> {
-    if let Some(needle) = expected["error_contains"].as_str() {
-        let observed = match result {
-            Err(error) => error,
-            Ok(report) => report
-                .results
-                .iter()
-                .find_map(|result| result.error.clone())
-                .ok_or_else(|| "expected an error, but the batch run succeeded".to_string())?,
-        };
-        return if observed.contains(needle) {
-            Ok(())
-        } else {
-            Err(format!(
-                "expected error containing {needle:?}, got {observed:?}"
-            ))
-        };
+    let actual = match result {
+        Ok(report) => serde_json::to_value(report)
+            .map_err(|error| format!("serialize batch report: {error}"))?,
+        Err(error) => json!({"error": error}),
+    };
+    check_public_output(&actual, expected, predicate)
+}
+
+fn check_public_output(
+    actual: &Value,
+    expected: &Value,
+    predicate: Option<&str>,
+) -> Result<(), String> {
+    match match_output(actual, Some(expected), predicate) {
+        Ok(MatchKind::Expected | MatchKind::ExpectedAndPredicate) => Ok(()),
+        Err(error) => Err(format!(
+            "public output did not match: {error}; actual: {actual}"
+        )),
     }
-    let report = result?;
-    let expected_passed = expected["passed"]
-        .as_bool()
-        .ok_or_else(|| "expected.passed must be a boolean".to_string())?;
-    let passed = report.passed() == report.total();
-    if passed != expected_passed {
-        return Err(format!(
-            "expected passed={expected_passed}, got {}/{} cases passed",
-            report.passed(),
-            report.total()
-        ));
-    }
-    if let Some(total) = expected["total"].as_u64() {
-        if report.total() != total as usize {
-            return Err(format!(
-                "expected {} results, got {}",
-                total,
-                report.total()
-            ));
-        }
-    }
-    if let Some(coverage_complete) = expected["coverage_complete"].as_bool() {
-        if report.coverage_complete() != coverage_complete {
-            return Err(format!(
-                "expected coverage_complete={coverage_complete}, got {}",
-                report.coverage_complete()
-            ));
-        }
-    }
-    #[cfg(test)]
-    tests::check_supplemental_status(&report, expected)?;
-    if let Some(needle) = expected["result_error_contains"].as_str() {
-        let observed = report
-            .results
-            .iter()
-            .find_map(|result| result.error.as_deref())
-            .ok_or_else(|| "expected a result error, but none was returned".to_string())?;
-        if !observed.contains(needle) {
-            return Err(format!(
-                "expected result error containing {needle:?}, got {observed:?}"
-            ));
-        }
-    }
-    Ok(())
 }
 
 /// Deterministic adapter used only to drive the bootstrap contract's public
@@ -484,13 +451,15 @@ impl BatchAdapter for ScenarioDatasetAdapter {
         batches: &[ContractBatch],
     ) -> Result<Vec<AdapterBatch>, String> {
         let mut outputs = IdentityDatasetAdapter.execute_tree(tree, backend, batches)?;
-        for batch in &mut outputs {
+        for (contract_batch, batch) in batches.iter().zip(&mut outputs) {
             for result in &mut batch.results {
                 match self.id.as_str() {
-                    "dataset-adapter-expected-error"
+                    "dataset-adapter-error-expected-as-output"
+                    | "dataset-adapter-error-output-mismatch"
                     | "dataset-adapter-unexpected-error"
-                    | "dataset-adapter-step-error"
-                    | "dataset-adapter-step-error-does-not-match" => {
+                    | "dataset-adapter-step-error-output"
+                    | "dataset-adapter-step-predicate-mismatch"
+                    | "dataset-adapter-multiple-step-error-outputs" => {
                         result.output = None;
                         result.error = Some("fixture failure".into());
                     }
@@ -502,6 +471,22 @@ impl BatchAdapter for ScenarioDatasetAdapter {
                 }
             }
             match self.id.as_str() {
+                "dataset-adapter-preserves-input-and-context" => {
+                    for result in &mut batch.results {
+                        let request = contract_batch
+                            .requests
+                            .iter()
+                            .find(|request| request.key == result.key)
+                            .ok_or_else(|| {
+                                "scenario adapter received an unknown result key".to_string()
+                            })?;
+                        result.output = Some(json!({
+                            "input": request.input,
+                            "setup": request.setup,
+                            "parallel": request.parallel,
+                        }));
+                    }
+                }
                 "dataset-adapter-omits-result" => batch.results.clear(),
                 "dataset-adapter-missing-coverage" => batch.coverage_scopes.clear(),
                 "dataset-adapter-duplicate-result" => {
@@ -511,7 +496,6 @@ impl BatchAdapter for ScenarioDatasetAdapter {
                 }
                 "dataset-adapter-extra-result" => batch.results.push(AdapterResult {
                     key: ExecutionKey {
-                        target_id: "unrequested".into(),
                         case_id: "unrequested".into(),
                         step_id: None,
                     },
@@ -543,7 +527,11 @@ impl BatchAdapter for ScenarioDatasetAdapter {
                 }
                 "dataset-adapter-multiple-coverage-lines" => {
                     if let Some(scope) = batch.coverage_scopes.first_mut() {
-                        if let Some(file) = scope.files.iter_mut().find(|file| file.path == "support.py") {
+                        if let Some(file) = scope
+                            .files
+                            .iter_mut()
+                            .find(|file| file.path == "support.py")
+                        {
                             file.lines = vec![1, 2];
                         }
                     }
@@ -555,7 +543,7 @@ impl BatchAdapter for ScenarioDatasetAdapter {
                 }
                 "dataset-adapter-unrequested-coverage" => {
                     if let Some(scope) = batch.coverage_scopes.first_mut() {
-                        scope.key.target_id = "unrequested".into();
+                        scope.key.case_id = "unrequested".into();
                     }
                 }
                 "dataset-adapter-duplicate-coverage" => {
@@ -586,7 +574,9 @@ impl BatchAdapter for ScenarioDatasetAdapter {
                 }
                 "dataset-adapter-no-line-coverage" => batch.coverage_lines.clear(),
                 "dataset-adapter-missing-step-coverage" => {
-                    batch.coverage_scopes.retain(|scope| scope.key.step_id.is_none());
+                    batch
+                        .coverage_scopes
+                        .retain(|scope| scope.key.step_id.is_none());
                 }
                 "dataset-adapter-wrong-expected-error" => {
                     for result in &mut batch.results {
@@ -638,14 +628,19 @@ impl BatchAdapter for IdentityDatasetAdapter {
                         key: request.key.clone(),
                         files: std::iter::once(&batch.manifest.manifest.files.validator)
                             .chain(batch.manifest.manifest.files.support.iter())
-                            .map(|path| CoverageFile { path: path.clone(), lines: vec![1] })
+                            .map(|path| CoverageFile {
+                                path: path.clone(),
+                                lines: vec![1],
+                            })
                             .collect(),
                     })
                     .collect(),
                 coverage_lines: std::iter::once(&batch.manifest.manifest.files.validator)
                     .chain(batch.manifest.manifest.files.support.iter())
                     .map(|path| runner_batch::CoverageLineFile {
-                        path: path.clone(), executable_lines: vec![1], covered_lines: vec![1],
+                        path: path.clone(),
+                        executable_lines: vec![1],
+                        covered_lines: vec![1],
                     })
                     .collect(),
                 ..AdapterBatch::default()

@@ -178,7 +178,8 @@ pub(super) fn run_staging_failure(
     setup_enabled: bool,
     plan: &runner_manifest::ManifestPlan,
     input: &serde_json::Value,
-    expected: &serde_json::Value,
+    expected: Option<&serde_json::Value>,
+    predicate: Option<&str>,
 ) -> Result<(), String> {
     let mut plan = plan.clone();
     let temporary = if setup_enabled {
@@ -192,7 +193,7 @@ pub(super) fn run_staging_failure(
         std::fs::write(&not_a_directory, "file").map_err(|error| error.to_string())?;
         let _temporary_directory =
             EnvironmentGuard::set("TMPDIR", not_a_directory.into_os_string());
-        let result = run_staging_case(&mut plan, input, expected);
+        let result = run_staging_case(&mut plan, input, expected, predicate);
         drop(_temporary_directory);
         return result;
     } else {
@@ -202,19 +203,22 @@ pub(super) fn run_staging_failure(
         None::<tempfile::TempDir>
     };
     let _temporary = temporary;
-    run_staging_case(&mut plan, input, expected)
+    run_staging_case(&mut plan, input, expected, predicate)
 }
 
 fn run_staging_case(
     plan: &mut runner_manifest::ManifestPlan,
     input: &serde_json::Value,
-    expected: &serde_json::Value,
+    expected: Option<&serde_json::Value>,
+    predicate: Option<&str>,
 ) -> Result<(), String> {
     apply_staging_manifest_input(plan, input)?;
     match runner_isolation::StagedTree::create(plan) {
         Ok(tree) => {
+            let expected =
+                expected.ok_or_else(|| "staging succeeded without expected output".to_string())?;
             if expected["created"] != true {
-                return Err("staging succeeded but expected.error_contains was declared".into());
+                return Err("staging succeeded but expected.created was not true".into());
             }
             let writes = &input["manifest"]["filesystem"]["write"];
             if let Some(writes) = writes.as_array() {
@@ -230,9 +234,25 @@ fn run_staging_case(
             Ok(())
         }
         Err(error) => {
-            let needle = expected["error_contains"]
-                .as_str()
-                .ok_or_else(|| "expected.error_contains must be a string".to_string())?;
+            if let Some(predicate) = predicate {
+                let actual = serde_json::json!({ "error": error });
+                let expected = expected
+                    .ok_or_else(|| "public staging error has no expected result".to_string())?;
+                if &actual != expected {
+                    return Err(format!(
+                        "public staging result mismatch; expected: {expected}; actual: {actual}"
+                    ));
+                }
+                if runner_predicates::evaluate_predicate(&actual, predicate) {
+                    return Ok(());
+                }
+                return Err(format!(
+                    "public staging error did not satisfy predicate; actual: {actual}"
+                ));
+            }
+            let needle = expected
+                .and_then(|value| value["error_contains"].as_str())
+                .ok_or_else(|| "staging failed without an expected error predicate".to_string())?;
             if error.contains(needle) {
                 Ok(())
             } else {

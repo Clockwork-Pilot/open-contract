@@ -26,17 +26,53 @@ path is exercised when running consumer contracts. The batch bootstrap
 contract focuses on public batch behavior. Unit tests are reserved for internal
 behaviors the public batch interface cannot expose.
 
-Datasets use format version 1 and may be JSON or YAML. Prefer YAML for
-hand-authored datasets. Cases and steps can specify exact expected output,
-predicates, or an expected validator error. A sequence can also check its
-aggregate output. Each case and step that pins `coverage_fingerprint` uses the
-first 128 bits of SHA-256 over sorted package-relative covered files and lines.
-Every case and step must declare a nonzero `coverage_fingerprint`; missing,
-malformed, zero, and mismatched values fail. Repeated fingerprints are allowed:
-they mean those inputs covered the same source lines, while still permitting
-distinct behavior checks on those inputs. They do not increase the union of
-covered source lines, so use the dataset coverage report to see whether new
-cases add line coverage.
+Datasets use format version 1 and may be JSON or YAML. The shared shape has
+only a root `cases` list. A case is either one validator call or an ordered
+`steps` list. Each call has real `input`, sibling `expected`, an optional
+sibling `predicate`, and a required nonzero 32-character lowercase
+`coverage_fingerprint`. `setup` is an optional fixture ID passed to the
+validator as context; it does not replace or change `input`.
+
+Steps execute in order. A run of adjacent steps with `parallel: true` is one
+parallel group; the language adapter runs that group concurrently and returns
+one keyed result for every step. Each step still owns its expected result,
+predicate, setup ID, and fingerprint. There is no sequence-level input,
+expected result, predicate, or fingerprint.
+
+`expected` matches a recursive subset of the returned JSON object. A
+`predicate` is complementary: when present, it is checked against the full
+result after the expected subset matches. Validator errors are ordinary result
+data under `{"error": "..."}`. Each fingerprint is the first 128 bits of
+SHA-256 over sorted package-relative covered files and lines. Missing,
+malformed, zero, and mismatched values fail. Repeated fingerprints are allowed
+and do not add new covered lines.
+
+```yaml
+version: 1
+cases:
+  - id: direct-call
+    input: {value: 4}
+    expected: {accepted: true}
+    predicate: .accepted == true
+    setup: seed-fixture
+    coverage_fingerprint: 0123456789abcdef0123456789abcdef
+  - id: related-calls
+    steps:
+      - id: left
+        input: {value: 2}
+        expected: {result: 2}
+        parallel: true
+        coverage_fingerprint: 1123456789abcdef0123456789abcdef
+      - id: right
+        input: {value: 3}
+        expected: {result: 3}
+        parallel: true
+        coverage_fingerprint: 2123456789abcdef0123456789abcdef
+      - id: follow-up
+        input: {value: 5}
+        expected: {result: 5}
+        coverage_fingerprint: 3123456789abcdef0123456789abcdef
+```
 
 Run only this contract's dataset and coverage checker from the Open Contract
 repository root:

@@ -5,11 +5,12 @@ entrypoint. It is not a contract runner: it does not parse manifests, create
 isolation, compare expected values, or evaluate predicates.
 
 A contract command imports `run_dataset`, supplies a loader for its own
-`validate(input)` function, and returns the resulting JSON object to the Rust
-runner. `run_dataset` iterates the flattened batch once, preserves each
-contract/case/step key, captures validator errors as results, and reports
-Python coverage. Rust verifies expected values and predicates after commands
-finish.
+`validate(input, context)` function, and returns the resulting JSON object to
+the Rust runner. Context contains `case_id`, optional `step_id`, optional
+`setup`, and `parallel`. `run_dataset` preserves each request key, captures
+validator errors as results, and reports Python coverage. Adjacent
+`parallel: true` steps in one case run concurrently and share a coverage scope.
+Rust verifies expected values and predicates after commands finish.
 
 ```python
 import json

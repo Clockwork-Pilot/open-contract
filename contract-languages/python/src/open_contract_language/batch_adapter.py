@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+from concurrent.futures import ThreadPoolExecutor
 import importlib.util
 import inspect
 import json
@@ -33,7 +34,7 @@ def run_dataset(request, validator_loader=None):
     except ImportError as exc:
         return {"results": [], "coverage": None, "error": f"coverage unavailable: {exc}"}
 
-    coverage = Coverage(data_file=None, branch=True, config_file=False)
+    coverage = Coverage(data_file=None, branch=True, config_file=False, concurrency=["thread"])
     results = []
     keys_by_context = {}
     setup_context = "open-contract:setup"
@@ -47,23 +48,32 @@ def run_dataset(request, validator_loader=None):
                 loaded = validator_loader() if validator_loader else _load_validator(validator, root)
                 executor = loaded if callable(loaded) else getattr(loaded, "validate", None)
                 if not callable(executor):
-                    raise TypeError("validator loader must return validate(input)")
+                    raise TypeError("validator loader must return validate(input, context)")
             except Exception as exc:
                 for item in request.get("requests", []):
                     results.append({"key": item["key"], "error": f"{type(exc).__name__}: {exc}"})
             else:
-                for item in request.get("requests", []):
-                    context = _coverage_context(item["key"])
-                    keys_by_context[context] = item["key"]
-                    coverage.switch_context(context)
-                    try:
-                        output = executor(item["input"])
-                        if inspect.isawaitable(output):
-                            output = asyncio.run(output)
-                        output = json.loads(json.dumps(output, ensure_ascii=False, allow_nan=False))
-                        results.append({"key": item["key"], "output": output})
-                    except Exception as exc:
-                        results.append({"key": item["key"], "error": f"{type(exc).__name__}: {exc}"})
+                requests = request.get("requests", [])
+                index = 0
+                while index < len(requests):
+                    first = requests[index]
+                    group = [first]
+                    if first.get("parallel") is True:
+                        case_id = first["key"]["case_id"]
+                        for candidate in requests[index + 1:]:
+                            if candidate["key"]["case_id"] != case_id or candidate.get("parallel") is not True:
+                                break
+                            group.append(candidate)
+                    context = _coverage_context([item["key"] for item in group])
+                    keys_by_context[context] = [item["key"] for item in group]
+                    if len(group) > 1:
+                        with ThreadPoolExecutor() as pool:
+                            results.extend(pool.map(
+                                lambda item: _execute_request(executor, item, coverage, context), group
+                            ))
+                    else:
+                        results.append(_execute_request(executor, first, coverage, context))
+                    index += len(group)
     finally:
         coverage.stop()
 
@@ -83,7 +93,7 @@ def run_dataset(request, validator_loader=None):
     )
     native = {"format": "coverage.py", "sources": sorted(files), "files": files}
     scopes = []
-    for context, key in keys_by_context.items():
+    for context, keys in keys_by_context.items():
         scoped_files = []
         for name, lines_by_context in contexts_by_file.items():
             source = Path(name).resolve()
@@ -98,7 +108,7 @@ def run_dataset(request, validator_loader=None):
             )
             if lines:
                 scoped_files.append({"path": relative, "lines": lines})
-        scopes.append({"key": key, "files": scoped_files})
+        scopes.extend({"key": key, "files": scoped_files} for key in keys)
     additional_report = None
     additional_coverage_lines = []
     supplemental_tests = request.get("supplemental_tests", [])
@@ -126,8 +136,26 @@ def run_dataset(request, validator_loader=None):
     }
 
 
-def _coverage_context(key):
-    return "open-contract:" + json.dumps(key, sort_keys=True, separators=(",", ":"))
+def _coverage_context(keys):
+    return "open-contract:" + json.dumps(keys, sort_keys=True, separators=(",", ":"))
+
+
+def _execute_request(executor, item, coverage, coverage_context):
+    context = {
+        "case_id": item["key"]["case_id"],
+        "step_id": item["key"].get("step_id"),
+        "setup": item.get("setup"),
+        "parallel": item.get("parallel", False),
+    }
+    try:
+        coverage.switch_context(coverage_context)
+        output = executor(item["input"], context)
+        if inspect.isawaitable(output):
+            output = asyncio.run(output)
+        output = json.loads(json.dumps(output, ensure_ascii=False, allow_nan=False))
+        return {"key": item["key"], "output": output}
+    except Exception as exc:
+        return {"key": item["key"], "error": f"{type(exc).__name__}: {exc}"}
 
 
 def _is_declared_source(path, declared):
@@ -245,5 +273,5 @@ def _load_validator(path: Path, root: Path):
     spec.loader.exec_module(module)
     function = getattr(module, "validate", None)
     if not callable(function):
-        raise ValueError("validator module must export validate(input)")
+        raise ValueError("validator module must export validate(input, context)")
     return function
