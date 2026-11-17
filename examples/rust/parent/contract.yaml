@@ -11,7 +11,11 @@ files:
   nested_contracts:
     - child/contract.yaml
 execution:
-  command: [./contract-command]
+  command:
+    - env
+    - TMPDIR=.open-contract-work
+    - LLVM_PROFILE_FILE=.open-contract-work/%m-%p.profraw
+    - ./contract-command
 filesystem:
   read:
     - dataset.yaml
@@ -20,4 +24,6 @@ filesystem:
     - src/implementation.rs
     - contract-command
     - child/contract.yaml
-  write: []
+    - .open-contract-work
+  write:
+    - .open-contract-work

@@ -1,4 +1,5 @@
 **/__pycache__/
+.deps/
 .pytest_cache/
 .coverage*
 build/

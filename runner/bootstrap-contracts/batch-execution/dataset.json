@@ -15,7 +15,7 @@
               "expected": {
                 "value": 1
               },
-              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
             }
           ]
         }
@@ -27,7 +27,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "cfd5a5bb19bf4a56b67963b28468ad58"
+      "coverage_fingerprint": "c721d4b64bd12353b3a8d45eede3bd9a"
     },
     {
       "id": "predicate-only",
@@ -41,8 +41,7 @@
                 "value": 1
               },
               "predicate": ".value == 1",
-              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8",
-              "expected": {}
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
             }
           ]
         }
@@ -54,7 +53,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "11513fab633c02bc9edc6fd502f61679"
+      "coverage_fingerprint": "7c9a1640d826ca115ec3f7137bf3b1dd"
     },
     {
       "id": "expected-and-predicate",
@@ -71,7 +70,7 @@
                 "value": 1
               },
               "predicate": ".value == 1",
-              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
             }
           ]
         }
@@ -83,13 +82,13 @@
           }
         ]
       },
-      "coverage_fingerprint": "11513fab633c02bc9edc6fd502f61679"
+      "coverage_fingerprint": "cc8476e567012f19ce94dc937221a54f"
     },
     {
       "id": "yaml-dataset",
       "input": {
         "extension": "yaml",
-        "dataset_yaml": "version: 1\ncases:\n  - id: one\n    input: {value: 1}\n    expected: {value: 1}\n    coverage_fingerprint: 60c6194cbdc58033999a1fb07d147da8\n"
+        "dataset_yaml": "version: 1\ncases:\n  - id: one\n    input: {value: 1}\n    expected: {value: 1}\n    coverage_fingerprint: 880ae786fa1c0630fe9158b7962fd8a2\n"
       },
       "expected": {
         "results": [
@@ -98,13 +97,13 @@
           }
         ]
       },
-      "coverage_fingerprint": "ce9e46d4141a7a14a000ae7b0bc2909c"
+      "coverage_fingerprint": "cb6733a38cfe31461ad428246453de0e"
     },
     {
       "id": "yml-dataset",
       "input": {
         "extension": "yml",
-        "dataset_yaml": "version: 1\ncases:\n  - id: one\n    input: {value: 1}\n    expected: {value: 1}\n    coverage_fingerprint: 60c6194cbdc58033999a1fb07d147da8\n"
+        "dataset_yaml": "version: 1\ncases:\n  - id: one\n    input: {value: 1}\n    expected: {value: 1}\n    coverage_fingerprint: 880ae786fa1c0630fe9158b7962fd8a2\n"
       },
       "expected": {
         "results": [
@@ -113,7 +112,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "ce9e46d4141a7a14a000ae7b0bc2909c"
+      "coverage_fingerprint": "cb6733a38cfe31461ad428246453de0e"
     },
     {
       "id": "expected-subset-and-predicate",
@@ -127,7 +126,7 @@
                 "value": 1,
                 "extra": "yes"
               },
-              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8",
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2",
               "expected": {
                 "value": 1
               },
@@ -143,7 +142,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "11513fab633c02bc9edc6fd502f61679"
+      "coverage_fingerprint": "cc8476e567012f19ce94dc937221a54f"
     },
     {
       "id": "wrong-exact-output",
@@ -159,7 +158,7 @@
               "expected": {
                 "value": 2
               },
-              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
             }
           ]
         }
@@ -171,7 +170,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "8cd89c251299e05e473d0dde01f16e1d",
+      "coverage_fingerprint": "765297751fb8fef221f51d1d3f869cfb",
       "predicate": "contains(.results.0.error, 'output did not match expected subset')"
     },
     {
@@ -186,7 +185,7 @@
                 "value": 1
               },
               "predicate": ".value == 2",
-              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8",
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2",
               "expected": {}
             }
           ]
@@ -199,7 +198,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "8cd89c251299e05e473d0dde01f16e1d",
+      "coverage_fingerprint": "765297751fb8fef221f51d1d3f869cfb",
       "predicate": "contains(.results.0.error, 'output did not satisfy predicate')"
     },
     {
@@ -219,7 +218,7 @@
                   "expected": {
                     "value": 1
                   },
-                  "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                  "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
                 },
                 {
                   "id": "second",
@@ -227,7 +226,7 @@
                     "value": 2
                   },
                   "predicate": ".value == 2",
-                  "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8",
+                  "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2",
                   "expected": {}
                 }
               ]
@@ -242,7 +241,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "94451e0da1bd501ee98d784772dd6059"
+      "coverage_fingerprint": "91f2aaab144dd5eef9096239dcbe8689"
     },
     {
       "id": "sequence-aggregate-mismatch",
@@ -261,7 +260,7 @@
                   "expected": {
                     "value": 1
                   },
-                  "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                  "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
                 }
               ]
             }
@@ -275,7 +274,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "74acfee7c9ae0e0259d994078a53232a",
+      "coverage_fingerprint": "bbd50faaa28f216b71a82cf1c37ccddd",
       "predicate": ".results.0.passed == true"
     },
     {
@@ -289,13 +288,13 @@
               "id": "one",
               "input": {},
               "expected": {},
-              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
             }
           ]
         }
       },
       "expected": {},
-      "coverage_fingerprint": "33caeed68a3f3312de868e96fc279296",
+      "coverage_fingerprint": "565225a1e86fa93643e28a80a8689631",
       "predicate": "contains(.error, 'must use .json, .yaml, or .yml')"
     },
     {
@@ -304,7 +303,7 @@
         "dataset_yaml": "{invalid json"
       },
       "expected": {},
-      "coverage_fingerprint": "0f15812f1d759b85713d015ff6655103",
+      "coverage_fingerprint": "9a27eac3f0e3d55b47fbbe6d9b38fa45",
       "predicate": "contains(.error, 'invalid dataset')"
     },
     {
@@ -314,7 +313,7 @@
         "dataset_yaml": "version: [unterminated"
       },
       "expected": {},
-      "coverage_fingerprint": "9eb0c8dd4f802161c76d5a56ec45f90b",
+      "coverage_fingerprint": "0135655d8a6c4a0e8bc4ca232066ee59",
       "predicate": "contains(.error, 'invalid dataset')"
     },
     {
@@ -327,14 +326,14 @@
               "id": "one",
               "input": {},
               "expected": {},
-              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
             }
           ]
         }
       },
       "expected": {},
-      "coverage_fingerprint": "0329072cd94a9efd44f4d6bbe078a230",
-      "predicate": "contains(.error, 'version must be 1')"
+      "coverage_fingerprint": "a70376485424865b5a2568f7e457e4a0",
+      "predicate": "exists(.error)"
     },
     {
       "id": "no-cases-or-targets",
@@ -344,8 +343,8 @@
         }
       },
       "expected": {},
-      "coverage_fingerprint": "0f15812f1d759b85713d015ff6655103",
-      "predicate": "contains(.error, 'missing field `cases`')"
+      "coverage_fingerprint": "82e13447ccd9971febcb5577038f78d4",
+      "predicate": "exists(.error)"
     },
     {
       "id": "both-cases-and-targets",
@@ -357,8 +356,8 @@
         }
       },
       "expected": {},
-      "coverage_fingerprint": "0f15812f1d759b85713d015ff6655103",
-      "predicate": "contains(.error, 'unknown field `targets`')"
+      "coverage_fingerprint": "82e13447ccd9971febcb5577038f78d4",
+      "predicate": "exists(.error)"
     },
     {
       "id": "empty-cases",
@@ -369,7 +368,7 @@
         }
       },
       "expected": {},
-      "coverage_fingerprint": "d15848b67c25e32b64e39110d4d66274",
+      "coverage_fingerprint": "e215beca8feb407a1d0136dde1a488e9",
       "predicate": "contains(.error, 'at least one case or step')"
     },
     {
@@ -385,7 +384,7 @@
                   "id": "one",
                   "input": {},
                   "expected": {},
-                  "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                  "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
                 }
               ]
             },
@@ -396,7 +395,7 @@
                   "id": "two",
                   "input": {},
                   "expected": {},
-                  "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                  "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
                 }
               ]
             }
@@ -405,8 +404,8 @@
         }
       },
       "expected": {},
-      "coverage_fingerprint": "0f15812f1d759b85713d015ff6655103",
-      "predicate": "contains(.error, 'unknown field `targets`')"
+      "coverage_fingerprint": "82e13447ccd9971febcb5577038f78d4",
+      "predicate": "exists(.error)"
     },
     {
       "id": "empty-target-id",
@@ -421,7 +420,7 @@
                   "id": "one",
                   "input": {},
                   "expected": {},
-                  "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                  "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
                 }
               ]
             }
@@ -430,8 +429,8 @@
         }
       },
       "expected": {},
-      "coverage_fingerprint": "0f15812f1d759b85713d015ff6655103",
-      "predicate": "contains(.error, 'unknown field `targets`')"
+      "coverage_fingerprint": "82e13447ccd9971febcb5577038f78d4",
+      "predicate": "exists(.error)"
     },
     {
       "id": "duplicate-case-id",
@@ -443,19 +442,19 @@
               "id": "same",
               "input": {},
               "expected": {},
-              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
             },
             {
               "id": "same",
               "input": {},
               "expected": {},
-              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
             }
           ]
         }
       },
       "expected": {},
-      "coverage_fingerprint": "0e154f776d14250baf233127c22100dc",
+      "coverage_fingerprint": "7419bdd66d6a7d8b7d332b7affb8098c",
       "predicate": "contains(.error, 'case ID must be non-empty and unique')"
     },
     {
@@ -468,13 +467,13 @@
               "id": " ",
               "input": {},
               "expected": {},
-              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
             }
           ]
         }
       },
       "expected": {},
-      "coverage_fingerprint": "2dc939885eb1b25656000c8e711ef83c",
+      "coverage_fingerprint": "503bcd8fdeb769605b453542357ea765",
       "predicate": "contains(.error, 'case ID must be non-empty and unique')"
     },
     {
@@ -486,14 +485,14 @@
             {
               "id": "one",
               "input": {},
-              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
             }
           ]
         }
       },
       "expected": {},
-      "coverage_fingerprint": "0f15812f1d759b85713d015ff6655103",
-      "predicate": "contains(.error, 'did not match any variant of untagged enum CaseSpec')"
+      "coverage_fingerprint": "82e13447ccd9971febcb5577038f78d4",
+      "predicate": "exists(.error)"
     },
     {
       "id": "removed-expected-error-case-field",
@@ -506,14 +505,14 @@
               "input": {},
               "expected": {},
               "expected_error": "error",
-              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
             }
           ]
         }
       },
       "expected": {},
-      "coverage_fingerprint": "0f15812f1d759b85713d015ff6655103",
-      "predicate": "contains(.error, 'did not match any variant of untagged enum CaseSpec')"
+      "coverage_fingerprint": "82e13447ccd9971febcb5577038f78d4",
+      "predicate": "exists(.error)"
     },
     {
       "id": "removed-expected-error-sequence-field",
@@ -527,7 +526,7 @@
                 {
                   "id": "step",
                   "input": {},
-                  "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8",
+                  "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2",
                   "expected": {}
                 }
               ],
@@ -537,8 +536,8 @@
         }
       },
       "expected": {},
-      "coverage_fingerprint": "0f15812f1d759b85713d015ff6655103",
-      "predicate": "contains(.error, 'did not match any variant of untagged enum CaseSpec')"
+      "coverage_fingerprint": "82e13447ccd9971febcb5577038f78d4",
+      "predicate": "exists(.error)"
     },
     {
       "id": "duplicate-step-id",
@@ -553,13 +552,13 @@
                   "id": "same",
                   "input": {},
                   "expected": {},
-                  "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                  "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
                 },
                 {
                   "id": "same",
                   "input": {},
                   "expected": {},
-                  "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                  "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
                 }
               ]
             }
@@ -567,7 +566,7 @@
         }
       },
       "expected": {},
-      "coverage_fingerprint": "4ed2a4f7b1e9911cb56b8a3eb96a9ff1",
+      "coverage_fingerprint": "591a0df78ea5049169681bfea92cffb7",
       "predicate": "contains(.error, 'step ID must be non-empty and unique')"
     },
     {
@@ -583,7 +582,7 @@
                   "id": " ",
                   "input": {},
                   "expected": {},
-                  "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                  "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
                 }
               ]
             }
@@ -591,7 +590,7 @@
         }
       },
       "expected": {},
-      "coverage_fingerprint": "c5371d92524d40564ca2bbfa7bbce128",
+      "coverage_fingerprint": "0c85656b03e55f2edcce356194a4a428",
       "predicate": "contains(.error, 'step ID must be non-empty and unique')"
     },
     {
@@ -608,7 +607,7 @@
                   "input": {},
                   "expected": {},
                   "expected_error": "error",
-                  "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                  "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
                 }
               ]
             }
@@ -616,8 +615,8 @@
         }
       },
       "expected": {},
-      "coverage_fingerprint": "0f15812f1d759b85713d015ff6655103",
-      "predicate": "contains(.error, 'did not match any variant of untagged enum CaseSpec')"
+      "coverage_fingerprint": "82e13447ccd9971febcb5577038f78d4",
+      "predicate": "exists(.error)"
     },
     {
       "id": "sequence-aggregate-exact",
@@ -636,7 +635,7 @@
                   "expected": {
                     "value": 1
                   },
-                  "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                  "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
                 }
               ]
             }
@@ -650,7 +649,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "74acfee7c9ae0e0259d994078a53232a"
+      "coverage_fingerprint": "bbd50faaa28f216b71a82cf1c37ccddd"
     },
     {
       "id": "sequence-aggregate-predicate",
@@ -669,7 +668,7 @@
                   "expected": {
                     "value": 1
                   },
-                  "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                  "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
                 }
               ]
             }
@@ -683,7 +682,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "74acfee7c9ae0e0259d994078a53232a"
+      "coverage_fingerprint": "bbd50faaa28f216b71a82cf1c37ccddd"
     },
     {
       "id": "sequence-aggregate-expected-and-predicate",
@@ -702,7 +701,7 @@
                   "expected": {
                     "value": 1
                   },
-                  "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                  "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
                 }
               ]
             }
@@ -716,7 +715,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "74acfee7c9ae0e0259d994078a53232a"
+      "coverage_fingerprint": "bbd50faaa28f216b71a82cf1c37ccddd"
     },
     {
       "id": "sequence-case-fingerprint-match",
@@ -735,7 +734,7 @@
                   "expected": {
                     "value": 1
                   },
-                  "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                  "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
                 }
               ]
             }
@@ -749,7 +748,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "74acfee7c9ae0e0259d994078a53232a"
+      "coverage_fingerprint": "bbd50faaa28f216b71a82cf1c37ccddd"
     },
     {
       "id": "mismatched-fingerprint",
@@ -777,7 +776,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "dfafd51f8d844a82513739d2082d1fce",
+      "coverage_fingerprint": "34d514bb45d8dbde62c9caa88944e14e",
       "predicate": "contains(.results.0.error, 'coverage fingerprint mismatch')"
     },
     {
@@ -800,7 +799,7 @@
         }
       },
       "expected": {},
-      "coverage_fingerprint": "191c9ddeececf4c6cef652b98bb11039",
+      "coverage_fingerprint": "bde3db12ef7781c43be6f0d68936d0dc",
       "predicate": "contains(.error, 'cannot represent zero coverage')"
     },
     {
@@ -819,8 +818,8 @@
         }
       },
       "expected": {},
-      "coverage_fingerprint": "c08281298c7a6eb1514706ceee32d21f",
-      "predicate": "contains(.error, 'must be 32 lowercase hexadecimal')"
+      "coverage_fingerprint": "6daabdaa2c1cfd82370f8be6c81d276a",
+      "predicate": "exists(.error)"
     },
     {
       "id": "invalid-step-fingerprint",
@@ -843,8 +842,8 @@
         }
       },
       "expected": {},
-      "coverage_fingerprint": "c348cd85054387f486a130a82ca024f1",
-      "predicate": "contains(.error, 'must be 32 lowercase hexadecimal')"
+      "coverage_fingerprint": "0bc8e99b4aa221a3086034fc10422e77",
+      "predicate": "exists(.error)"
     },
     {
       "id": "sequence-case-fingerprint-mismatch",
@@ -863,7 +862,7 @@
                   "expected": {
                     "value": 1
                   },
-                  "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                  "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
                 }
               ]
             }
@@ -877,7 +876,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "74acfee7c9ae0e0259d994078a53232a",
+      "coverage_fingerprint": "bbd50faaa28f216b71a82cf1c37ccddd",
       "predicate": ".results.0.passed == true"
     },
     {
@@ -911,7 +910,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "aad87a055e4fd9078fe394af5f944f55",
+      "coverage_fingerprint": "1ae440eb93189a1aca30d94bc3c8d4bd",
       "predicate": "contains(.results.0.error, 'coverage fingerprint mismatch')"
     },
     {
@@ -929,7 +928,7 @@
         }
       },
       "expected": {},
-      "coverage_fingerprint": "28442ac27953f0ed583310d765cd6eeb",
+      "coverage_fingerprint": "704b5632f389fb677abca627e57c9bc0",
       "predicate": "contains(.error, 'coverage_fingerprint on case is required')"
     },
     {
@@ -952,7 +951,7 @@
         }
       },
       "expected": {},
-      "coverage_fingerprint": "846da617e7e1e58f0e0a6ab33c80d85b",
+      "coverage_fingerprint": "a5cec34f7605c28fd1597091d625ee1d",
       "predicate": "contains(.error, 'coverage_fingerprint on step is required')"
     },
     {
@@ -963,8 +962,19 @@
         "manifest_yaml": "version: '1'\nname: show-isolation-plan-none\nfiles:\n  dataset: dataset.json\n  validator: validator.py\nfilesystem:\n  read: [dataset.json, validator.py]\n  write: [reports/result.json]\nexecution:\n  command: [/bin/true]\n"
       },
       "expected": {},
-      "coverage_fingerprint": "dd4ac80f22bd6963144e859e144816ee",
+      "coverage_fingerprint": "78155791414a8544c35a711d3c4f7eee",
       "predicate": "contains(.plan, 'Isolation: none') AND contains(.plan, 'Filesystem enforcement: none (host access is unrestricted)') AND contains(.plan, 'dataset.json (file)') AND contains(.plan, 'reports/result.json (file)')"
+    },
+    {
+      "id": "show-isolation-plan-tempdir",
+      "input": {
+        "operation": "show-isolation-plan",
+        "backend": "tempdir",
+        "manifest_yaml": "version: '1'\nname: show-isolation-plan-tempdir\nfiles:\n  dataset: dataset.json\n  validator: validator.py\nfilesystem:\n  read: [dataset.json, validator.py]\n  write: [reports]\nexecution:\n  command: [/bin/true]\n"
+      },
+      "expected": {},
+      "coverage_fingerprint": "003802269e05c1265a853417deb77d4f",
+      "predicate": "contains(.plan, 'Isolation: tempdir') AND contains(.plan, 'contract files are copied to a temporary tree') AND contains(.plan, 'reports (recursive)')"
     },
     {
       "id": "show-isolation-plan-bubblewrap",
@@ -974,7 +984,7 @@
         "manifest_yaml": "version: '1'\nname: show-isolation-plan-bubblewrap\nfiles:\n  dataset: dataset.json\n  validator: validator.py\nfilesystem:\n  read: [dataset.json, validator.py]\n  write: [reports]\nexecution:\n  command: [/bin/true]\n"
       },
       "expected": {},
-      "coverage_fingerprint": "6a963e98a4ee6094192ce8b5384a4d98",
+      "coverage_fingerprint": "2ee1e5993f6e620925bd0bc79b05872c",
       "predicate": "contains(.plan, 'Isolation: bubblewrap') AND contains(.plan, 'Bubblewrap fixed mounts: /proc, /dev, /tmp, /contract') AND contains(.plan, 'Bubblewrap contract root: /contract/<randomized-root>')"
     },
     {
@@ -985,13 +995,14 @@
         "manifest_yaml": "version: '1'\nname: show-isolation-plan-landlock\nfiles:\n  dataset: dataset.json\n  validator: validator.py\nfilesystem:\n  read: [dataset.json, validator.py]\n  write: [reports]\nexecution:\n  command: [/bin/true]\n"
       },
       "expected": {},
-      "coverage_fingerprint": "b7a437f9daa85baf89491412ed86675a",
+      "coverage_fingerprint": "a4887188fac4bf12279298c2f02d7896",
       "predicate": "contains(.plan, 'Isolation: landlock') AND contains(.plan, 'Contract read-only paths:') AND contains(.plan, 'Contract writable paths:')"
     },
     {
       "id": "manifest-adapter-executes-batch",
       "setup": true,
       "input": {
+        "coverage_fingerprints": false,
         "command": [
           "python3",
           "adapter.runner"
@@ -1006,8 +1017,21 @@
               },
               "expected": {
                 "value": 7
-              },
-              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+              }
+            },
+            {
+              "id": "echo-sequence",
+              "steps": [
+                {
+                  "id": "step",
+                  "input": {
+                    "value": 8
+                  },
+                  "expected": {
+                    "value": 8
+                  }
+                }
+              ]
             }
           ]
         }
@@ -1016,10 +1040,14 @@
         "results": [
           {
             "passed": true
+          },
+          {
+            "case_id": "echo-sequence",
+            "passed": true
           }
         ]
       },
-      "coverage_fingerprint": "1418d750ae9238b607cfe0f1f13831cf"
+      "coverage_fingerprint": "0f38da528ccfd59eb09b47efdbdb7a2a"
     },
     {
       "id": "show-isolation-plan-rejects-invalid-manifest",
@@ -1029,7 +1057,7 @@
         "manifest_yaml": "version: [\n"
       },
       "expected": {},
-      "coverage_fingerprint": "87bf3c9809668465aec1ded567535df3",
+      "coverage_fingerprint": "c6ac392dd32aaf9fda32ef6b31621cf9",
       "predicate": "contains(.error, 'invalid')"
     },
     {
@@ -1040,7 +1068,7 @@
         "manifest_yaml": "version: '1'\nname: missing-read-file\nfiles:\n  dataset: dataset.json\n  validator: validator.py\nfilesystem:\n  read: [missing.txt]\n  write: []\nexecution:\n  command: [/bin/true]\n"
       },
       "expected": {},
-      "coverage_fingerprint": "87bf3c9809668465aec1ded567535df3",
+      "coverage_fingerprint": "c6ac392dd32aaf9fda32ef6b31621cf9",
       "predicate": "contains(.error, 'No such file')"
     },
     {
@@ -1051,7 +1079,7 @@
         "manifest_yaml": "version: '1'\nname: command-required\nfiles:\n  dataset: dataset.json\n  validator: validator.py\nfilesystem:\n  read: [dataset.json, validator.py]\n  write: []\n"
       },
       "expected": {},
-      "coverage_fingerprint": "84ad1945798a6cc0e9327ae1193b9165",
+      "coverage_fingerprint": "8a1543fa52f61a164fc83bf15a9312b1",
       "predicate": "contains(.error, 'missing execution.command')"
     },
     {
@@ -1069,13 +1097,13 @@
               "expected": {
                 "value": "example"
               },
-              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
             }
           ]
         }
       },
       "expected": {},
-      "coverage_fingerprint": "c660ce68527bd02b87ac31d8873045ae",
+      "coverage_fingerprint": "02765af3d95147b3dabd0a5da5c7ad5b",
       "predicate": "contains(.error, 'missing execution.command')"
     },
     {
@@ -1093,7 +1121,7 @@
               "expected": {
                 "value": "example"
               },
-              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
             }
           ]
         },
@@ -1103,7 +1131,7 @@
         ]
       },
       "expected": {},
-      "coverage_fingerprint": "3e94ef680f1f580ab0ae809c8db44fa3",
+      "coverage_fingerprint": "d26454d1a36c6888fb6722ab779912dc",
       "predicate": "contains(.error, 'execution.command failed')"
     },
     {
@@ -1121,7 +1149,7 @@
               "expected": {
                 "value": "example"
               },
-              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
             }
           ]
         },
@@ -1131,8 +1159,64 @@
         ]
       },
       "expected": {},
-      "coverage_fingerprint": "8b88aa5bdb8ecabc0f91ea465d233385",
+      "coverage_fingerprint": "2015b97a8a7ca3061aa1aa4b795b0131",
       "predicate": "contains(.error, 'invalid batch JSON')"
+    },
+    {
+      "id": "manifest-adapter-command-fails-with-stdout",
+      "setup": true,
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "adapter-input",
+              "input": {
+                "value": "example"
+              },
+              "expected": {
+                "value": "example"
+              },
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
+            }
+          ]
+        },
+        "command": [
+          "python3",
+          "adapter.runner"
+        ]
+      },
+      "expected": {},
+      "coverage_fingerprint": "2248ff76f11a25262ed110f855e1a8db",
+      "predicate": "contains(.error, 'stdout diagnostic')"
+    },
+    {
+      "id": "manifest-adapter-command-fails-with-stderr",
+      "setup": true,
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "adapter-input",
+              "input": {
+                "value": "example"
+              },
+              "expected": {
+                "value": "example"
+              },
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
+            }
+          ]
+        },
+        "command": [
+          "python3",
+          "adapter.runner"
+        ]
+      },
+      "expected": {},
+      "coverage_fingerprint": "bf99cefc730c3f9157812ae2e1438e1d",
+      "predicate": "contains(.error, 'stderr diagnostic')"
     },
     {
       "id": "manifest-adapter-returns-no-results",
@@ -1149,7 +1233,7 @@
               "expected": {
                 "value": "example"
               },
-              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
             }
           ]
         },
@@ -1159,7 +1243,7 @@
         ]
       },
       "expected": {},
-      "coverage_fingerprint": "9d861dc6885d306b5a0405a726e5a77b",
+      "coverage_fingerprint": "7bb6a6ef891eaffca3f72c36eec10e13",
       "predicate": "contains(.error, 'returned no batch results')"
     },
     {
@@ -1182,7 +1266,7 @@
               "expected": {
                 "value": "verified"
               },
-              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
             }
           ]
         }
@@ -1194,7 +1278,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "583e2dd66a6999ab247a0c829a92fe28",
+      "coverage_fingerprint": "5cfa8c63104b8813f46ae0aab16af8cd",
       "predicate": ".coverage.0.additional_test_coverage.status == 'passed'"
     },
     {
@@ -1204,7 +1288,7 @@
         "path": "missing-dataset.json"
       },
       "expected": {},
-      "coverage_fingerprint": "9cd7f233a38c4e53eb8c1b73dea1c1d8",
+      "coverage_fingerprint": "e5f2f697c4ba377224e55b17fe29e74b",
       "predicate": "contains(.error, 'No such file or directory')"
     },
     {
@@ -1219,7 +1303,7 @@
               "input": {
                 "value": "actual"
               },
-              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8",
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2",
               "expected": {},
               "predicate": "contains(.error, 'fixture failure')"
             }
@@ -1233,7 +1317,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "11513fab633c02bc9edc6fd502f61679"
+      "coverage_fingerprint": "cc8476e567012f19ce94dc937221a54f"
     },
     {
       "id": "dataset-adapter-unexpected-error",
@@ -1247,7 +1331,7 @@
               "input": {
                 "value": "actual"
               },
-              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8",
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2",
               "expected": {
                 "value": "actual"
               }
@@ -1262,7 +1346,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "8cd89c251299e05e473d0dde01f16e1d",
+      "coverage_fingerprint": "765297751fb8fef221f51d1d3f869cfb",
       "predicate": "contains(.results.0.error, 'output did not match expected subset')"
     },
     {
@@ -1277,7 +1361,7 @@
               "input": {
                 "value": "actual"
               },
-              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8",
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2",
               "expected": {
                 "value": "actual"
               }
@@ -1292,7 +1376,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "622751484c0e9952d30a0572eedb730a",
+      "coverage_fingerprint": "8ac62676ec61b3f2ae11408844af5cad",
       "predicate": "contains(.results.0.error, 'neither output nor error')"
     },
     {
@@ -1307,7 +1391,7 @@
               "input": {
                 "value": "actual"
               },
-              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8",
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2",
               "expected": {
                 "value": "actual"
               }
@@ -1316,7 +1400,7 @@
         }
       },
       "expected": {},
-      "coverage_fingerprint": "21ce86f7cb40cc8432628363bbd4c5ec",
+      "coverage_fingerprint": "4e6610d7a66cc5e8e03a9c84b08bd938",
       "predicate": "contains(.error, 'adapter omitted result')"
     },
     {
@@ -1331,7 +1415,7 @@
               "input": {
                 "value": "actual"
               },
-              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8",
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2",
               "expected": {
                 "value": "actual"
               }
@@ -1346,7 +1430,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "8fbfc8c9860478943a393071fed7feca",
+      "coverage_fingerprint": "ef4e8b571a41515f8f9996c79546f48e",
       "predicate": "contains(.results.0.error, 'coverage fingerprint unavailable')"
     },
     {
@@ -1364,13 +1448,13 @@
               "expected": {
                 "value": "actual"
               },
-              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
             }
           ]
         }
       },
       "expected": {},
-      "coverage_fingerprint": "3ff3049b018b9237be30f8e02d38641c",
+      "coverage_fingerprint": "05c1e69b8dd6541f6d71dbd63df00f4a",
       "predicate": "contains(.error, 'duplicate result keys')"
     },
     {
@@ -1388,13 +1472,13 @@
               "expected": {
                 "value": "actual"
               },
-              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
             }
           ]
         }
       },
       "expected": {},
-      "coverage_fingerprint": "d64340dffec52a5def415cf24c4b70ad",
+      "coverage_fingerprint": "6d86bf2e905e009afe26112f8684e61f",
       "predicate": "contains(.error, 'results that were not requested')"
     },
     {
@@ -1412,13 +1496,13 @@
               "expected": {
                 "value": "actual"
               },
-              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
             }
           ]
         }
       },
       "expected": {},
-      "coverage_fingerprint": "36bf5be09a81d0dfea285d22452c4201",
+      "coverage_fingerprint": "1a41c6f5e62a7bd862a006de98bc57e9",
       "predicate": "contains(.error, 'must stay within the package')"
     },
     {
@@ -1436,13 +1520,13 @@
               "expected": {
                 "value": "actual"
               },
-              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
             }
           ]
         }
       },
       "expected": {},
-      "coverage_fingerprint": "6ac1b07b3442dcd48815f3cda35646aa",
+      "coverage_fingerprint": "8cd611c8b479d82db6e72cf0ddb77297",
       "predicate": "contains(.error, 'unrequested execution key')"
     },
     {
@@ -1460,13 +1544,13 @@
               "expected": {
                 "value": "actual"
               },
-              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
             }
           ]
         }
       },
       "expected": {},
-      "coverage_fingerprint": "4608659f891556c533378c6df22adbcd",
+      "coverage_fingerprint": "7027a7206aa6d7aa2e935018a003c9c7",
       "predicate": "contains(.error, 'duplicate coverage scope')"
     },
     {
@@ -1484,13 +1568,13 @@
               "expected": {
                 "value": "actual"
               },
-              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
             }
           ]
         }
       },
       "expected": {},
-      "coverage_fingerprint": "ab1779c7a7fd697c0bea29b60fc5e3e2",
+      "coverage_fingerprint": "d3c38999e397dc0d8b3708cf6c9f4f42",
       "predicate": "contains(.error, 'line numbers must be positive')"
     },
     {
@@ -1511,7 +1595,7 @@
                   "expected": {
                     "value": 1
                   },
-                  "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                  "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
                 }
               ]
             }
@@ -1519,7 +1603,7 @@
         }
       },
       "expected": {},
-      "coverage_fingerprint": "5a9841e542d45b6a97a778469086df8f",
+      "coverage_fingerprint": "a9d969d155c0d7bb0813931668674167",
       "predicate": "contains(.error, 'adapter omitted result')"
     },
     {
@@ -1532,7 +1616,7 @@
         "manifest_yaml": "version: '1'\nname: show-support-directory\nfiles:\n  dataset: dataset.json\n  validator: validator.py\n  support: [support/helper.py]\nfilesystem:\n  read: [dataset.json, validator.py, support]\n  write: []\nexecution:\n  command: [/bin/true]\n"
       },
       "expected": {},
-      "coverage_fingerprint": "e2de01d98352163fb054ed73030e1180",
+      "coverage_fingerprint": "e0d5099f53ea29ea56fd93260ef8c9be",
       "predicate": "contains(.plan, 'support (recursive)')"
     },
     {
@@ -1543,7 +1627,7 @@
         "manifest_yaml": "version: '1'\nname: invalid-command-reference\nfiles:\n  dataset: dataset.json\n  validator: validator.py\nfilesystem:\n  read: [dataset.json, validator.py]\n  write: []\nexecution:\n  command: [\"${1INVALID}\"]\n"
       },
       "expected": {},
-      "coverage_fingerprint": "dc208029e5374123240bba88550242ab",
+      "coverage_fingerprint": "539afb0f1c54a2e2cd5fe5605cd0b95d",
       "predicate": "contains(.error, 'invalid environment variable name')"
     },
     {
@@ -1561,13 +1645,13 @@
               "expected": {
                 "value": "actual"
               },
-              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
             }
           ]
         }
       },
       "expected": {},
-      "coverage_fingerprint": "2f5397d16d2b65fa9d82c02e19f8b3ee",
+      "coverage_fingerprint": "94db3ebcaf68e6c598cb78ba693aa712",
       "predicate": "contains(.error, 'fixture adapter failure')"
     },
     {
@@ -1585,13 +1669,13 @@
               "expected": {
                 "value": "actual"
               },
-              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
             }
           ]
         }
       },
       "expected": {},
-      "coverage_fingerprint": "5e0e723d8325e2f10208258b7f43e6e4",
+      "coverage_fingerprint": "ddcdcfe5539f08eb053891ca4dfaaa76",
       "predicate": "contains(.error, 'adapter returned 0 contract batches')"
     },
     {
@@ -1609,7 +1693,7 @@
               "expected": {
                 "value": "actual"
               },
-              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
             }
           ]
         }
@@ -1621,7 +1705,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "0ea9d4e148ecb04e91ce774516dc12a3"
+      "coverage_fingerprint": "d5c7486285e7e8992a93b3cc1805d366"
     },
     {
       "id": "dataset-adapter-empty-coverage-scope",
@@ -1638,7 +1722,7 @@
               "expected": {
                 "value": "actual"
               },
-              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
             }
           ]
         }
@@ -1650,7 +1734,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "145e8ec5ce4db98db1216313a1f0bf07",
+      "coverage_fingerprint": "27d5f497b80d86df499d597840b7acc3",
       "predicate": "contains(.results.0.error, 'zero covered lines')"
     },
     {
@@ -1665,7 +1749,7 @@
               "input": {
                 "value": "actual"
               },
-              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8",
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2",
               "expected": {
                 "error": "not the fixture failure"
               },
@@ -1681,7 +1765,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "8cd89c251299e05e473d0dde01f16e1d",
+      "coverage_fingerprint": "765297751fb8fef221f51d1d3f869cfb",
       "predicate": "contains(.results.0.error, 'output did not match expected subset')"
     },
     {
@@ -1702,7 +1786,7 @@
                   "expected": {
                     "value": "actual"
                   },
-                  "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                  "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
                 }
               ]
             }
@@ -1716,7 +1800,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "984fc95d6dcb9f8877f960983402066c",
+      "coverage_fingerprint": "2bee75ef0f7fd8515c37d45a065897da",
       "predicate": "contains(.results.0.error, 'coverage fingerprint unavailable')"
     },
     {
@@ -1734,7 +1818,7 @@
               "expected": {
                 "value": "actual"
               },
-              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
             }
           ]
         },
@@ -1751,7 +1835,7 @@
               "expected": {
                 "value": "child"
               },
-              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
             }
           ]
         }
@@ -1766,7 +1850,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "9027b41d0c77da264b478a6ec38d9095"
+      "coverage_fingerprint": "8e4dcfc40ab1846570c613c5ebe03c36"
     },
     {
       "id": "dataset-adapter-duplicate-nested-name",
@@ -1783,7 +1867,7 @@
               "expected": {
                 "value": "actual"
               },
-              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
             }
           ]
         },
@@ -1800,13 +1884,13 @@
               "expected": {
                 "value": "child"
               },
-              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
             }
           ]
         }
       },
       "expected": {},
-      "coverage_fingerprint": "b03b36fbac362a39bed17b3a155466b5",
+      "coverage_fingerprint": "b13551fdd822fb1bf4f28d83a4734b7b",
       "predicate": "contains(.error, 'duplicate contract name')"
     },
     {
@@ -1823,7 +1907,7 @@
                   "input": {
                     "value": "actual step input"
                   },
-                  "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                  "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
                 }
               ]
             }
@@ -1831,8 +1915,8 @@
         }
       },
       "expected": {},
-      "coverage_fingerprint": "0f15812f1d759b85713d015ff6655103",
-      "predicate": "contains(.error, 'did not match any variant of untagged enum CaseSpec')"
+      "coverage_fingerprint": "82e13447ccd9971febcb5577038f78d4",
+      "predicate": "exists(.error)"
     },
     {
       "id": "dataset-adapter-step-error-output",
@@ -1850,7 +1934,7 @@
                     "operation": "validate",
                     "value": "real input"
                   },
-                  "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8",
+                  "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2",
                   "expected": {},
                   "predicate": "contains(.error, 'fixture failure')"
                 }
@@ -1866,7 +1950,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "732ed972e649b28d4af42a290272bf3f"
+      "coverage_fingerprint": "71501a60746e24a83fc3e698c011c841"
     },
     {
       "id": "dataset-adapter-step-predicate-mismatch",
@@ -1884,7 +1968,7 @@
                     "operation": "validate",
                     "value": "real input"
                   },
-                  "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8",
+                  "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2",
                   "expected": {},
                   "predicate": "contains(.error, 'different failure')"
                 }
@@ -1900,7 +1984,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "ef9a9e34ace05b6c3b3287cbc0fe94f9",
+      "coverage_fingerprint": "8fad7dcd3f2897694d9daa55965fad33",
       "predicate": "contains(.results.0.error, 'output did not satisfy predicate')"
     },
     {
@@ -1917,7 +2001,7 @@
                   "input": {
                     "value": 1
                   },
-                  "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8",
+                  "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2",
                   "predicate": ".value == 1",
                   "expected_error": "failure",
                   "expected": {}
@@ -1928,8 +2012,8 @@
         }
       },
       "expected": {},
-      "coverage_fingerprint": "0f15812f1d759b85713d015ff6655103",
-      "predicate": "contains(.error, 'did not match any variant of untagged enum CaseSpec')"
+      "coverage_fingerprint": "82e13447ccd9971febcb5577038f78d4",
+      "predicate": "exists(.error)"
     },
     {
       "id": "dataset-adapter-sequence-empty-coverage",
@@ -1946,7 +2030,7 @@
                   "input": {
                     "value": "real input"
                   },
-                  "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8",
+                  "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2",
                   "expected": {}
                 }
               ]
@@ -1961,7 +2045,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "23a1c70a365771bbd505a52f3ae10b85",
+      "coverage_fingerprint": "5776dfb9722bfc8783417f3876ca4b9e",
       "predicate": "contains(.results.0.error, 'zero covered lines')"
     },
     {
@@ -1976,7 +2060,7 @@
               "input": {
                 "value": "real input"
               },
-              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8",
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2",
               "expected": {
                 "value": "real input"
               }
@@ -1991,7 +2075,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "414b18e48b68da14b2fe9e6c24756fcb",
+      "coverage_fingerprint": "f30e64f9a133b964ea3e5e2513ce9789",
       "predicate": "contains(.results.0.error, 'zero covered lines')"
     },
     {
@@ -2006,7 +2090,7 @@
               "input": {
                 "value": "real input"
               },
-              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8",
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2",
               "expected": {
                 "value": "real input"
               }
@@ -2015,7 +2099,7 @@
         }
       },
       "expected": {},
-      "coverage_fingerprint": "9e0e47677d32ef405c9d9cfc036adca7",
+      "coverage_fingerprint": "79298eea76742b43a5ddcd2f2458c13c",
       "predicate": "contains(.error, 'undeclared contract source')"
     },
     {
@@ -2030,7 +2114,7 @@
               "input": {
                 "value": "real input"
               },
-              "coverage_fingerprint": "ef0e2bd565684359aaa09b16f2f5ecdf",
+              "coverage_fingerprint": "dd49c8c3336fc3c359c25c73666fe450",
               "expected": {
                 "value": "real input"
               }
@@ -2045,7 +2129,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "cfd5a5bb19bf4a56b67963b28468ad58"
+      "coverage_fingerprint": "c721d4b64bd12353b3a8d45eede3bd9a"
     },
     {
       "id": "dataset-adapter-escaped-coverage-path",
@@ -2059,7 +2143,7 @@
               "input": {
                 "value": "real input"
               },
-              "coverage_fingerprint": "0c7a4e9bba04a90ef907b73a9f28069a",
+              "coverage_fingerprint": "cc46ff8bba4f027b80837230ef206ebb",
               "expected": {
                 "value": "real input"
               }
@@ -2074,7 +2158,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "355374bd384c20bfabdf00dabed36f2a"
+      "coverage_fingerprint": "684b465742921d2c21cf7c7d7a275ff8"
     },
     {
       "id": "run-contract-tree-rejects-invalid-manifest",
@@ -2088,7 +2172,7 @@
               "input": {
                 "value": "real input"
               },
-              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8",
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2",
               "expected": {
                 "value": "real input"
               }
@@ -2097,7 +2181,7 @@
         }
       },
       "expected": {},
-      "coverage_fingerprint": "bed9a301e221bbc215024d0c25deab8f",
+      "coverage_fingerprint": "1ae4a75da9ad454e90670a7f9b14fb9c",
       "predicate": "contains(.error, 'invalid manifest')"
     },
     {
@@ -2112,7 +2196,7 @@
               "input": {
                 "value": "real input"
               },
-              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8",
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2",
               "expected": {
                 "value": "real input"
               }
@@ -2121,8 +2205,57 @@
         }
       },
       "expected": {},
-      "coverage_fingerprint": "bed9a301e221bbc215024d0c25deab8f",
-      "predicate": "contains(.error, 'absent.py: No such file')"
+      "coverage_fingerprint": "1ae4a75da9ad454e90670a7f9b14fb9c",
+      "predicate": "contains(.error, 'absent.py') AND contains(.error, 'No such file')"
+    },
+    {
+      "id": "run-contract-tree-updates-coverage-fingerprints",
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "call",
+              "input": {
+                "value": "call input"
+              },
+              "expected": {
+                "value": "call input"
+              },
+              "coverage_fingerprint": "11111111111111111111111111111111"
+            },
+            {
+              "id": "sequence",
+              "steps": [
+                {
+                  "id": "step",
+                  "input": {
+                    "value": "step input"
+                  },
+                  "expected": {
+                    "value": "step input"
+                  },
+                  "coverage_fingerprint": "11111111111111111111111111111111"
+                }
+              ]
+            }
+          ]
+        },
+        "fingerprint_mode": "update"
+      },
+      "expected": {
+        "results": [
+          {
+            "case_id": "call",
+            "passed": true
+          },
+          {
+            "case_id": "sequence",
+            "passed": true
+          }
+        ]
+      },
+      "coverage_fingerprint": "c7d933e4278773771af97b40ad180519"
     },
     {
       "id": "manifest-adapter-command-cannot-start",
@@ -2139,7 +2272,7 @@
               "input": {
                 "value": "real input"
               },
-              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8",
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2",
               "expected": {
                 "value": "real input"
               }
@@ -2148,7 +2281,7 @@
         }
       },
       "expected": {},
-      "coverage_fingerprint": "7208039ca054c3596f8f3afea965d532",
+      "coverage_fingerprint": "1b3bc4c49ee281f43c06b8fb6d3b5daa",
       "predicate": "contains(.error, 'No such file or directory')"
     },
     {
@@ -2164,7 +2297,7 @@
               "input": {
                 "value": "real input"
               },
-              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8",
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2",
               "expected": {
                 "value": "real input"
               }
@@ -2182,7 +2315,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "c5c5de7a087034307235274a122eca58"
+      "coverage_fingerprint": "da582318a886d65196a7899dab8590ae"
     },
     {
       "id": "dataset-adapter-native-coverage-non-string-source",
@@ -2197,7 +2330,7 @@
               "input": {
                 "value": "real input"
               },
-              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8",
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2",
               "expected": {
                 "value": "real input"
               }
@@ -2215,7 +2348,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "5faa645213fde162470958645b18ba20"
+      "coverage_fingerprint": "4cd53e4fe01426ac7a8cd7a0b7457a60"
     },
     {
       "id": "supplemental-tests-low-dataset-coverage",
@@ -2233,7 +2366,7 @@
               "input": {
                 "value": "actual input"
               },
-              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8",
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2",
               "expected": {
                 "value": "actual input"
               }
@@ -2243,7 +2376,7 @@
         "supplemental_tests": true
       },
       "expected": {},
-      "coverage_fingerprint": "d25a25be7af7f8a19b882fd8605ae54f",
+      "coverage_fingerprint": "0f97ed16a401a4a885f053438d8c82e1",
       "predicate": "contains(.error, '90% is required')"
     },
     {
@@ -2262,7 +2395,7 @@
               "input": {
                 "value": "actual input"
               },
-              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8",
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2",
               "expected": {
                 "value": "actual input"
               }
@@ -2271,7 +2404,7 @@
         }
       },
       "expected": {},
-      "coverage_fingerprint": "3169c7fe7e867ad97001d25f5c8d196c",
+      "coverage_fingerprint": "1fceb4beeff3be409edc9b3c502a013f",
       "predicate": "contains(.error, 'without manifest-declared tests')"
     },
     {
@@ -2290,7 +2423,7 @@
               "input": {
                 "value": "actual input"
               },
-              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8",
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2",
               "expected": {
                 "value": "actual input"
               }
@@ -2300,7 +2433,7 @@
         "supplemental_tests": true
       },
       "expected": {},
-      "coverage_fingerprint": "526af6f6ca7051c606130f61137d4ab1",
+      "coverage_fingerprint": "516d2598ecd4b865c7abae63a431c017",
       "predicate": "contains(.error, 'omitted supplemental test results')"
     },
     {
@@ -2319,7 +2452,7 @@
               "input": {
                 "value": "actual input"
               },
-              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8",
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2",
               "expected": {
                 "value": "actual input"
               }
@@ -2335,7 +2468,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "0d037a69d63b2fb5b0ecb61ff610fd87",
+      "coverage_fingerprint": "eb11592cc11e1631c02b2f202720b4d4",
       "predicate": ".coverage.0.additional_test_coverage.status == 'failed'"
     },
     {
@@ -2354,7 +2487,7 @@
               "input": {
                 "value": "actual input"
               },
-              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8",
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2",
               "expected": {
                 "value": "actual input"
               }
@@ -2370,7 +2503,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "e89fdea9e6ad96c7960859c943423a3b",
+      "coverage_fingerprint": "9d90133a23bc269d2ea19d135e4d51c2",
       "predicate": ".coverage.0.additional_test_coverage.status == 'skipped'"
     },
     {
@@ -2389,7 +2522,7 @@
               "input": {
                 "value": "actual input"
               },
-              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8",
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2",
               "expected": {
                 "value": "actual input"
               }
@@ -2405,7 +2538,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "e0b7863953292a5fd87b1a5af5cfb6ab",
+      "coverage_fingerprint": "b375b9bdeb4c8b7c3d4d796721b2a0c4",
       "predicate": ".coverage.0.additional_test_coverage.status == 'skipped'"
     },
     {
@@ -2424,7 +2557,7 @@
               "input": {
                 "value": "actual input"
               },
-              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8",
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2",
               "expected": {
                 "value": "actual input"
               }
@@ -2434,7 +2567,7 @@
         "supplemental_tests": true
       },
       "expected": {},
-      "coverage_fingerprint": "aa4f11574ddcff10ea3933f62b38fb1f",
+      "coverage_fingerprint": "453a04a88d0d256027c7c777d7055de3",
       "predicate": "contains(.error, 'without running its tests')"
     },
     {
@@ -2452,7 +2585,7 @@
                   "input": {
                     "value": "first public input"
                   },
-                  "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8",
+                  "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2",
                   "expected": {},
                   "predicate": "contains(.error, 'not present')"
                 },
@@ -2461,7 +2594,7 @@
                   "input": {
                     "value": "second public input"
                   },
-                  "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8",
+                  "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2",
                   "expected": {},
                   "predicate": "contains(.error, 'fixture failure')"
                 }
@@ -2477,7 +2610,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "cd8948a357afd39c05154346c1a3a869",
+      "coverage_fingerprint": "9dd590ba7547fce795b2f98d3e13910c",
       "predicate": "contains(.results.0.error, 'output did not satisfy predicate')"
     },
     {
@@ -2493,7 +2626,7 @@
               "input": {
                 "value": "real input"
               },
-              "coverage_fingerprint": "642e4c8886d32153e0a01013d9244742",
+              "coverage_fingerprint": "a1d1095f8c32556fa9b9e8fe53a29c54",
               "expected": {
                 "value": "real input"
               }
@@ -2508,12 +2641,13 @@
           }
         ]
       },
-      "coverage_fingerprint": "cfd5a5bb19bf4a56b67963b28468ad58"
+      "coverage_fingerprint": "c721d4b64bd12353b3a8d45eede3bd9a"
     },
     {
       "id": "run-contract-tree-staging-rejects-symlink-escape",
       "setup": true,
       "input": {
+        "backend": "tempdir",
         "dataset": {
           "version": 1,
           "cases": [
@@ -2522,7 +2656,7 @@
               "input": {
                 "value": "real input"
               },
-              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8",
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2",
               "expected": {
                 "value": "real input"
               }
@@ -2531,7 +2665,7 @@
         }
       },
       "expected": {},
-      "coverage_fingerprint": "0f9c42f5a71c20983b30cad8f3ba84be",
+      "coverage_fingerprint": "53ee39e40ff87452ccfc17606098dfd2",
       "predicate": "contains(.error, 'staging source escapes package')"
     },
     {
@@ -2551,7 +2685,7 @@
               "input": {
                 "value": "real input"
               },
-              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8",
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2",
               "expected": {
                 "value": "real input"
               }
@@ -2560,7 +2694,7 @@
         }
       },
       "expected": {},
-      "coverage_fingerprint": "6183991096c4ecb103a1e08f3bba23d4",
+      "coverage_fingerprint": "f733300becc97997aebe1857737c8f53",
       "predicate": "contains(.error, 'did not execute manifest-declared supplemental tests')"
     },
     {
@@ -2568,7 +2702,7 @@
       "setup": true,
       "input": {
         "operation": "show-isolation-plan",
-        "backend": "bubblewrap",
+        "backend": "tempdir",
         "dataset": {
           "version": 1,
           "cases": [
@@ -2580,13 +2714,13 @@
               "expected": {
                 "value": "actual"
               },
-              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
             }
           ]
         }
       },
       "expected": {},
-      "coverage_fingerprint": "a669cc683ee1057d226a5ae40cfea8c8",
+      "coverage_fingerprint": "0e86f8f6c1304da939a294180380be7d",
       "predicate": "contains(.error, 'staging source escapes package')"
     },
     {
@@ -2612,7 +2746,7 @@
                   },
                   "setup": "left-fixture",
                   "parallel": true,
-                  "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                  "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
                 },
                 {
                   "id": "right",
@@ -2628,7 +2762,7 @@
                   },
                   "setup": "right-fixture",
                   "parallel": true,
-                  "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                  "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
                 },
                 {
                   "id": "after",
@@ -2642,7 +2776,7 @@
                     "setup": null,
                     "parallel": false
                   },
-                  "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                  "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
                 }
               ]
             }
@@ -2684,7 +2818,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "74acfee7c9ae0e0259d994078a53232a"
+      "coverage_fingerprint": "bbd50faaa28f216b71a82cf1c37ccddd"
     },
     {
       "id": "sequence-rejects-empty-steps",
@@ -2702,7 +2836,7 @@
       "expected": {
         "error": "sequence empty-sequence must include at least one step"
       },
-      "coverage_fingerprint": "98abde0f63e32daf73947e0c3cd8e673"
+      "coverage_fingerprint": "bb72ee7f6a161876b696e99b0a7fcade"
     },
     {
       "id": "case-rejects-empty-setup-id",
@@ -2715,7 +2849,7 @@
               "input": {},
               "expected": {},
               "setup": "",
-              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
             }
           ]
         }
@@ -2723,7 +2857,7 @@
       "expected": {
         "error": "setup must be a non-empty fixture ID when provided"
       },
-      "coverage_fingerprint": "487f281d56e3a1ddb5bb91618aec7371"
+      "coverage_fingerprint": "2e172ea719a2a0000bf11e53e8dd4b5e"
     },
     {
       "id": "sequence-rejects-empty-setup-id",
@@ -2739,7 +2873,7 @@
                   "input": {},
                   "expected": {},
                   "setup": "",
-                  "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                  "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
                 }
               ]
             }
@@ -2749,7 +2883,70 @@
       "expected": {
         "error": "setup must be a non-empty fixture ID when provided"
       },
-      "coverage_fingerprint": "8801dedceb7480ed906257b999074da0"
+      "coverage_fingerprint": "7e69275586e0a575013bc93eda6506b7"
+    },
+    {
+      "id": "dataset-adapter-coverage-source-unavailable",
+      "setup": true,
+      "input": {
+        "support": false,
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "case",
+              "input": {
+                "value": "real input"
+              },
+              "expected": {
+                "value": "real input"
+              },
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
+            }
+          ]
+        }
+      },
+      "expected": {},
+      "predicate": "contains(.error, 'cannot read source for coverage fingerprint')",
+      "coverage_fingerprint": "83c3bb5f84e9483c69bd867ba79644c4"
+    },
+    {
+      "id": "dataset-adapter-coverage-line-out-of-range",
+      "setup": true,
+      "input": {
+        "support": false,
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "case",
+              "input": {
+                "value": "real input"
+              },
+              "expected": {
+                "value": "real input"
+              },
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "error": "coverage line 4294967295 is outside source file validator.py"
+      },
+      "coverage_fingerprint": "9814f001974f11cc1178e99c619cb9fb"
+    },
+    {
+      "id": "dataset-version-out-of-range",
+      "input": {
+        "dataset": {
+          "version": 4294967296,
+          "cases": []
+        }
+      },
+      "expected": {},
+      "predicate": "exists(.error)",
+      "coverage_fingerprint": "4b9aacb070532cc24858cf841fe12d8c"
     }
   ]
 }

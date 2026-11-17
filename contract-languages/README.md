@@ -10,6 +10,12 @@ language-native coverage data. They do not interpret setup IDs or replace
 public calls with harness operations. The Rust runner checks each result
 against that call's sibling `expected` and optional `predicate` after execution.
 
+The runner may set `coverage_fingerprints` to `false` in the batch request for
+diagnostic runs. Adapters then omit per-call `coverage_scopes`, while still
+returning aggregate `coverage` and `coverage_lines`; the runner keeps aggregate
+coverage-threshold checks active. If the field is absent or `true`, adapters
+collect per-call scopes as usual.
+
 Available adapters:
 
 - [`javascript`](javascript/README.md)

@@ -15,7 +15,7 @@ fn dataset_contract_cases_are_reused_as_unit_inputs() {
         };
         let parsed = serde_json::from_value::<Dataset>(value.clone());
         let Ok(inner) = parsed else { continue };
-        let Ok((requests, checks)) = flatten_dataset(&inner) else {
+        let Ok((requests, checks)) = flatten_dataset_with_fingerprints(&inner, true) else {
             continue;
         };
         assert!(
@@ -83,9 +83,54 @@ fn coverage_scope_validation_rejects_missing_and_invalid_fingerprints() {
         path: "validator.py".into(),
         lines: vec![],
     }];
-    let coverage = coverage_for_files(files).unwrap();
-    assert_eq!(coverage.fingerprint, coverage_hash(&[]));
+    let root = tempfile::tempdir().unwrap();
+    std::fs::write(root.path().join("validator.py"), "").unwrap();
+    let coverage = coverage_for_files(files, &std::collections::HashMap::new()).unwrap();
+    assert_eq!(
+        coverage.fingerprint,
+        coverage_hash_from_source_lines(&[], &std::collections::HashMap::new())
+    );
     assert!(coverage.expected_fingerprint.is_none());
+}
+
+#[test]
+fn coverage_fingerprint_hashes_line_text_without_line_numbers() {
+    let root = tempfile::tempdir().unwrap();
+    let path = root.path().join("validator.rs");
+    std::fs::write(&path, "first\nsecond\n").unwrap();
+    let before = coverage_hash(
+        &[CoverageFile {
+            path: "validator.rs".into(),
+            lines: vec![1, 2],
+        }],
+        root.path(),
+    )
+    .unwrap()
+    .0;
+
+    std::fs::write(&path, "// inserted line\nfirst\nsecond\n").unwrap();
+    let after = coverage_hash(
+        &[CoverageFile {
+            path: "validator.rs".into(),
+            lines: vec![2, 3],
+        }],
+        root.path(),
+    )
+    .unwrap()
+    .0;
+    assert_eq!(before, after);
+
+    std::fs::write(&path, "// inserted line\nfirst changed\nsecond\n").unwrap();
+    let changed = coverage_hash(
+        &[CoverageFile {
+            path: "validator.rs".into(),
+            lines: vec![2, 3],
+        }],
+        root.path(),
+    )
+    .unwrap()
+    .0;
+    assert_ne!(after, changed);
 }
 
 #[test]

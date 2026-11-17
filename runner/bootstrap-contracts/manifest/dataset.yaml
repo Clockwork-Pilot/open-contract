@@ -1,44 +1,60 @@
 version: 1
 cases:
+  - id: allowlist-matches-exact-path
+    coverage_fingerprint: "106777dfd55569f90f3252e5f14b9ffd"
+    input: {"operation": "allowlist", "path": "data", "allowed": ["data"]}
+    expected: {"valid": true}
+  - id: allowlist-matches-child-path
+    coverage_fingerprint: "c23a24305779bb53c5960c7bd131dbb8"
+    input: {"operation": "allowlist", "path": "data/input.json", "allowed": ["data"]}
+    expected: {"valid": true}
+  - id: allowlist-rejects-sibling-prefix
+    coverage_fingerprint: "c23a24305779bb53c5960c7bd131dbb8"
+    input: {"operation": "allowlist", "path": "database/input.json", "allowed": ["data"]}
+    expected: {"valid": false}
+  - id: allowlist-rejects-unlisted-path
+    coverage_fingerprint: "c23a24305779bb53c5960c7bd131dbb8"
+    input: {"operation": "allowlist", "path": "elsewhere", "allowed": ["data"]}
+    expected: {"valid": false}
   - id: package-relative-path
-    coverage_fingerprint: "03ea2eb9a79fd0bf83742da054c2caa1"
+    coverage_fingerprint: "e561ded91a4fc200f7e1894519785b68"
     input: {"operation": "path", "path": "validator.py"}
     predicate: ".valid == true"
     expected: {"valid": true}
   - id: empty-path
-    coverage_fingerprint: "c083d0bb843cf93fe3e31e617b27f9c0"
+    coverage_fingerprint: "6250e908748f574bc14bb599a429f8e0"
     input: {"operation": "path", "path": ""}
     expected: {"valid": false}
   - id: rejects-absolute-package-path
-    coverage_fingerprint: "225e567890d45a71b88da3723b830a4a"
+    coverage_fingerprint: "2b549f1ba48d87cbac1d325080663cd7"
     input: {"operation": "path", "path": "/outside/private.txt"}
     expected: {"valid": false}
   - id: backslash-path
-    coverage_fingerprint: "225e567890d45a71b88da3723b830a4a"
+    coverage_fingerprint: "2b549f1ba48d87cbac1d325080663cd7"
     input: {"operation": "path", "path": "folder\\\\file"}
     expected: {"valid": false}
   - id: parent-path
-    coverage_fingerprint: "8df0660a2b7205c5de14363a4bac8c65"
+    coverage_fingerprint: "7ccf59e1092f1d86369b4c94e52a3198"
     input: {"operation": "path", "path": "../escape"}
     expected: {"valid": false}
   - id: empty-component
-    coverage_fingerprint: "7eab446b989833c119e6c928e3e5fb99"
+    coverage_fingerprint: "f42526c6f7f53843afa19c5b5f9b445f"
     input: {"operation": "path", "path": "folder//file"}
     expected: {"valid": false}
   - id: dot-component
-    coverage_fingerprint: "7eab446b989833c119e6c928e3e5fb99"
+    coverage_fingerprint: "f42526c6f7f53843afa19c5b5f9b445f"
     input: {"operation": "path", "path": "folder/./file"}
     expected: {"valid": false}
   - id: dot-path
-    coverage_fingerprint: "8df0660a2b7205c5de14363a4bac8c65"
+    coverage_fingerprint: "7ccf59e1092f1d86369b4c94e52a3198"
     input: {"operation": "path", "path": "."}
     expected: {"valid": false}
   - id: drive-prefix
-    coverage_fingerprint: "a812d588cd8a97eefc1600313b287cc9"
+    coverage_fingerprint: "83225b4a0e082086fcdfaad36a35474e"
     input: {"operation": "path", "path": "C:/secret"}
     expected: {"valid": false}
   - id: valid-manifest-with-support-and-nested-contract
-    coverage_fingerprint: "bc2c00a7f1476c370f63f1b31719091a"
+    coverage_fingerprint: "8bde6e0f3e063ee1a1743c3b690eca45"
     input:
       operation: "manifest"
       yaml: |
@@ -48,7 +64,7 @@ cases:
         filesystem: {read: [dataset.json, validator.py, support, child/contract.yaml], write: [reports/deep/result.json]}
     expected: {"valid": true}
   - id: invalid-line-coverage-threshold
-    coverage_fingerprint: "948c27dced40b75d7558e00e1fdbfe07"
+    coverage_fingerprint: "ac8afad379bf002a8370258a3d4becea"
     input:
       operation: "manifest"
       yaml: |
@@ -59,7 +75,7 @@ cases:
         filesystem: {read: [dataset.json, validator.py], write: []}
     expected: {"valid": false}
   - id: valid-manifest-with-explicit-supplemental-tests
-    coverage_fingerprint: "f76044f7118e33bfb9c31b8ef2e9032a"
+    coverage_fingerprint: "035b5e43c777596ea719c490ad491aaf"
     input:
       operation: "manifest"
       yaml: |
@@ -69,7 +85,7 @@ cases:
         filesystem: {read: [dataset.json, validator.py, tests/extra.rs], write: []}
     expected: {"valid": true}
   - id: valid-manifest-with-execution-command
-    coverage_fingerprint: "fd54375b8e70697a7a0f9bce8bf0d2ba"
+    coverage_fingerprint: "7fbc0c7edf209497f5ce8803a9b1835c"
     input:
       operation: "manifest"
       yaml: |
@@ -80,7 +96,7 @@ cases:
         filesystem: {read: [dataset.json, validator.py], write: []}
     expected: {"valid": true}
   - id: accepts-logical-language-package-reference
-    coverage_fingerprint: "e5c088c5b5088189037e05e2a9855213"
+    coverage_fingerprint: "698e4c3028ad0cdea6514b71be5e15c5"
     input:
       operation: "manifest"
       yaml: |
@@ -92,7 +108,7 @@ cases:
         filesystem: {read: [dataset.json, validator.py], write: []}
     expected: {"valid": true}
   - id: rejects-empty-language-package-reference
-    coverage_fingerprint: "6ab1e3b1b8e74332aa1b392d50c5d44b"
+    coverage_fingerprint: "ac1ba0ade5bda3d32089f2014d0897ce"
     input:
       operation: "manifest"
       yaml: |
@@ -103,7 +119,7 @@ cases:
         filesystem: {read: [dataset.json, validator.py], write: []}
     expected: {"valid": false}
   - id: rejects-path-as-language-package-reference
-    coverage_fingerprint: "6ab1e3b1b8e74332aa1b392d50c5d44b"
+    coverage_fingerprint: "ac1ba0ade5bda3d32089f2014d0897ce"
     input:
       operation: "manifest"
       yaml: |
@@ -114,7 +130,7 @@ cases:
         filesystem: {read: [dataset.json, validator.py], write: []}
     expected: {"valid": false}
   - id: empty-execution-command
-    coverage_fingerprint: "9ac2fd12a468f4629f6df28686211d99"
+    coverage_fingerprint: "ae11a0ba7dd721d4e7dc94c9af5215b0"
     input:
       operation: "manifest"
       yaml: |
@@ -125,7 +141,7 @@ cases:
         filesystem: {read: [dataset.json, validator.py], write: []}
     expected: {"valid": false}
   - id: blank-execution-command
-    coverage_fingerprint: "9ac2fd12a468f4629f6df28686211d99"
+    coverage_fingerprint: "ae11a0ba7dd721d4e7dc94c9af5215b0"
     input:
       operation: "manifest"
       yaml: |
@@ -136,7 +152,7 @@ cases:
         filesystem: {read: [dataset.json, validator.py], write: []}
     expected: {"valid": false}
   - id: unsupported-manifest-version
-    coverage_fingerprint: "cc55f476dcb2c0fc2ca4b7638653a058"
+    coverage_fingerprint: "e97b396b8aacca6237f64fb39f4b247f"
     input:
       operation: "manifest"
       yaml: |
@@ -146,7 +162,7 @@ cases:
         filesystem: {read: [dataset.json, validator.py], write: []}
     expected: {"valid": false}
   - id: blank-manifest-name
-    coverage_fingerprint: "d6fd75b6d690993d3910967a8982bad3"
+    coverage_fingerprint: "4e308377658a14a8f89771f13e33bf88"
     input:
       operation: "manifest"
       yaml: |
@@ -156,7 +172,7 @@ cases:
         filesystem: {read: [dataset.json, validator.py], write: []}
     expected: {"valid": false}
   - id: missing-readable-path
-    coverage_fingerprint: "992a6dd8c1a0957cb3d9935a76a00b63"
+    coverage_fingerprint: "81589381707bef36f114b0aba6984085"
     input:
       operation: "manifest"
       yaml: |
@@ -165,18 +181,89 @@ cases:
         files: {dataset: dataset.json, validator: validator.py}
         filesystem: {read: [dataset.json, validator.py, missing.json], write: []}
     expected: {"valid": false}
-  - id: invalid-write-path
-    coverage_fingerprint: "3d753aa7d9af3162e3cf8bda49aea9a6"
+  - id: accepts-absolute-write-path
+    coverage_fingerprint: "29c1dc9c811f0777748b5643cf1b2e67"
     input:
       operation: "manifest"
       yaml: |
         version: '1'
         name: sample
         files: {dataset: dataset.json, validator: validator.py}
-        filesystem: {read: [dataset.json, validator.py], write: [/tmp/out]}
+        filesystem: {read: [dataset.json, validator.py], write: [/tmp/open-contract-write-report.json]}
+    expected: {"valid": true}
+  - id: accepts-absolute-read-path
+    coverage_fingerprint: "ad9e6327227f01940d6b206205b675c7"
+    input:
+      operation: "manifest"
+      yaml: |
+        version: '1'
+        name: sample
+        files: {dataset: dataset.json, validator: validator.py}
+        filesystem: {read: [/, dataset.json, validator.py], write: []}
+    expected: {"valid": true}
+  - id: rejects-empty-filesystem-path
+    coverage_fingerprint: "e593267e093344328ec6a19bca4b615a"
+    input:
+      operation: "manifest"
+      yaml: |
+        version: '1'
+        name: sample
+        files: {dataset: dataset.json, validator: validator.py}
+        filesystem: {read: ['', dataset.json, validator.py], write: []}
     expected: {"valid": false}
+  - id: rejects-nul-filesystem-path
+    coverage_fingerprint: "69905030671b000ac54e92c5a211349c"
+    input:
+      operation: "manifest"
+      yaml: |
+        version: '1'
+        name: sample
+        files: {dataset: dataset.json, validator: validator.py}
+        filesystem: {read: ["\\0", dataset.json, validator.py], write: []}
+    expected: {"valid": false}
+  - id: accepts-relative-read-path-outside-package
+    coverage_fingerprint: "832357609662d4dbc96287ebbe43ed6e"
+    setup: true
+    input:
+      operation: "manifest"
+      yaml: |
+        version: '1'
+        name: sample
+        files: {dataset: dataset.json, validator: validator.py}
+        filesystem: {read: [../outside.json, dataset.json, validator.py], write: []}
+    expected: {"valid": true}
+  - id: accepts-relative-write-path-outside-package
+    coverage_fingerprint: "67998cf78cba3d3c8f1732984887e3ad"
+    input:
+      operation: "manifest"
+      yaml: |
+        version: '1'
+        name: sample
+        files: {dataset: dataset.json, validator: validator.py}
+        filesystem: {read: [dataset.json, validator.py], write: [../outside/report.json]}
+    expected: {"valid": true}
+  - id: accepts-normalized-relative-write-path
+    coverage_fingerprint: "8f7cbeef20de8dc601a9431ba7c2c295"
+    input:
+      operation: "manifest"
+      yaml: |
+        version: '1'
+        name: sample
+        files: {dataset: dataset.json, validator: validator.py}
+        filesystem: {read: [dataset.json, validator.py], write: [nested/../reports/report.json]}
+    expected: {"valid": true}
+  - id: accepts-current-directory-write-path
+    coverage_fingerprint: "b2442e946d2fd31d454ce916778e64bf"
+    input:
+      operation: "manifest"
+      yaml: |
+        version: '1'
+        name: sample
+        files: {dataset: dataset.json, validator: validator.py}
+        filesystem: {read: [dataset.json, validator.py], write: ['.']}
+    expected: {"valid": true}
   - id: undeclared-validator-read
-    coverage_fingerprint: "4f510a488deeccf095e7efdf5cdacddb"
+    coverage_fingerprint: "ae09c7de8526b023f781693b8b7531a2"
     input:
       operation: "manifest"
       yaml: |
@@ -186,7 +273,7 @@ cases:
         filesystem: {read: [dataset.json], write: []}
     expected: {"valid": false}
   - id: missing-dataset-file
-    coverage_fingerprint: "dbb0d85e75c8dd11f85c6d3f1e69b0db"
+    coverage_fingerprint: "69905030671b000ac54e92c5a211349c"
     input:
       operation: "manifest"
       yaml: |
@@ -196,7 +283,7 @@ cases:
         filesystem: {read: [missing.json, validator.py], write: []}
     expected: {"valid": false}
   - id: directory-is-not-a-manifest-file
-    coverage_fingerprint: "34d4580f38c9de4d6332f897628dddcb"
+    coverage_fingerprint: "9fa5f33c44ea4cb7c6c39fa1337f5f1e"
     input:
       operation: "manifest"
       yaml: |
@@ -206,14 +293,14 @@ cases:
         filesystem: {read: [directory, validator.py], write: []}
     expected: {"valid": false}
   - id: malformed-manifest-yaml
-    coverage_fingerprint: "5338d24420354685ce7fcf6552e1633a"
+    coverage_fingerprint: "2ee163302105a19bd0a55ff426fd9ea5"
     input:
       operation: "manifest"
       yaml: |
         not: [valid: yaml
     expected: {"valid": false}
   - id: read-path-symlink-escape
-    coverage_fingerprint: "64eb9608975169328e0579ed4c5c9128"
+    coverage_fingerprint: "a4ff6d40941bb644aecaf0bed6d7ee61"
     setup: true
     input:
       operation: "manifest"
@@ -223,8 +310,19 @@ cases:
         files: {dataset: escape, validator: validator.py}
         filesystem: {read: [escape, validator.py], write: []}
     expected: {"valid": false}
+  - id: declared-file-symlink-escape
+    coverage_fingerprint: "d3776d604a5c66ae6460b22b94999c12"
+    setup: true
+    input:
+      operation: "manifest"
+      yaml: |
+        version: '1'
+        name: sample
+        files: {dataset: escape, validator: validator.py}
+        filesystem: {read: [/, validator.py], write: []}
+    expected: {"valid": false}
   - id: write-path-symlink-escape
-    coverage_fingerprint: "ea3bbee4c3755e220bbf350a41b25bda"
+    coverage_fingerprint: "59e973c5e61a806b87888c14fa79943c"
     setup: true
     input:
       operation: "manifest"
@@ -235,23 +333,23 @@ cases:
         filesystem: {read: [dataset.json, validator.py], write: [escape/outside.txt]}
     expected: {"valid": false}
   - id: missing-manifest-path
-    coverage_fingerprint: "3099c1519ba8b9c876bbbdc761410743"
+    coverage_fingerprint: "776c1aeb37ee3833ecf8c28725265bb5"
     input: {"operation": "missing-manifest", "path": "missing-contract.yaml"}
     expected: {"valid": false}
   - id: directory-is-not-a-manifest
-    coverage_fingerprint: "85839f4d77711f08e66f48680890f9d0"
+    coverage_fingerprint: "deeaa45d0d943fb20b1bb89998e28698"
     input: {"operation": "directory-manifest", "path": "."}
     expected: {"valid": false}
   - id: filesystem-root-is-not-a-manifest-package
-    coverage_fingerprint: "85839f4d77711f08e66f48680890f9d0"
+    coverage_fingerprint: "deeaa45d0d943fb20b1bb89998e28698"
     input: {"operation": "root-manifest", "path": "/"}
     expected: {"valid": false}
   - id: filesystem-root-string-is-not-a-manifest-package
-    coverage_fingerprint: "85839f4d77711f08e66f48680890f9d0"
+    coverage_fingerprint: "deeaa45d0d943fb20b1bb89998e28698"
     input: {"operation": "string-manifest", "path": "/"}
     expected: {"valid": false}
   - id: invalid-readable-package-path
-    coverage_fingerprint: "e947cb5cbee85fe55e60660af0ac276b"
+    coverage_fingerprint: "b0c14aea704203898bcacd10a6ee6858"
     input:
       operation: "manifest"
       yaml: |
@@ -261,7 +359,7 @@ cases:
         filesystem: {read: [../secret, dataset.json, validator.py], write: []}
     expected: {"valid": false}
   - id: invalid-declared-file-path
-    coverage_fingerprint: "e491f7a3601af928c59adc70e59b11f8"
+    coverage_fingerprint: "73e1f454778a6658dc2f8365b1bbb472"
     input:
       operation: "manifest"
       yaml: |
@@ -271,7 +369,7 @@ cases:
         filesystem: {read: [dataset.json, validator.py], write: []}
     expected: {"valid": false}
   - id: rejects-package-name-with-separator
-    coverage_fingerprint: "3eb879aa60cd5f8a55567daccbdf2fb8"
+    coverage_fingerprint: "a0a4e51814b22596ac78564c0cde3da2"
     input:
       operation: "manifest"
       yaml: |
@@ -282,7 +380,7 @@ cases:
         filesystem: {read: [dataset.json, validator.py], write: []}
     expected: {"valid": false}
   - id: declared-file-missing-outside-read-list
-    coverage_fingerprint: "11d034fb08373a767f8e7175320cee26"
+    coverage_fingerprint: "ba63fa4611eb2f95f9153475c20dfaa1"
     input:
       operation: "manifest"
       yaml: |
@@ -292,7 +390,7 @@ cases:
         filesystem: {read: [dataset.json, validator.py], write: []}
     expected: {"valid": false}
   - id: write-path-dangling-symlink
-    coverage_fingerprint: "d14f3d3cbe85e4f31728cfa1b3875ec9"
+    coverage_fingerprint: "8eacd7ce750ce81abb7357237cd26ab7"
     setup: true
     input:
       operation: "manifest"
@@ -303,7 +401,7 @@ cases:
         filesystem: {read: [dataset.json, validator.py], write: [dangling/new-file]}
     expected: {"valid": false}
   - id: write-path-existing-directory
-    coverage_fingerprint: "4f60dfb568fcffa8e8a9a7357083146b"
+    coverage_fingerprint: "410fa60e8f3321ae597da23c19162973"
     input:
       operation: "manifest"
       yaml: |
@@ -313,7 +411,7 @@ cases:
         filesystem: {read: [dataset.json, validator.py], write: [directory]}
     expected: {"valid": true}
   - id: write-path-inaccessible-ancestor
-    coverage_fingerprint: "ea3bbee4c3755e220bbf350a41b25bda"
+    coverage_fingerprint: "355d71ef1d45fb7842a6c47ba882b6fb"
     setup: true
     input:
       operation: "manifest"
@@ -324,7 +422,7 @@ cases:
         filesystem: {read: [dataset.json, validator.py], write: [blocked/new-file]}
     expected: {"valid": false}
   - id: write-path-parent-is-file
-    coverage_fingerprint: "ea3bbee4c3755e220bbf350a41b25bda"
+    coverage_fingerprint: "355d71ef1d45fb7842a6c47ba882b6fb"
     input:
       operation: "manifest"
       yaml: |

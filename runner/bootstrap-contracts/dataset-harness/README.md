@@ -46,8 +46,10 @@ case profiles with a bounded worker pool. Set `OPEN_CONTRACT_COVERAGE_WORKERS`
 to a positive integer to choose the pool size; by default it uses up to four
 workers, limited by the available CPU count.
 
-Fingerprints include covered executable source lines under the contract's
-`src` directory. A missing, malformed, zero, or mismatched pin fails the
+Fingerprints hash covered source text under the contract's `src` directory:
+the relative file path and exact covered line contents in source order, without
+line numbers. Adding unrelated lines above covered code leaves the hash stable;
+editing covered text changes it. A missing, malformed, zero, or mismatched pin fails the
 check and reports the runtime fingerprint. Copy the reported 32-character
 lowercase hexadecimal value into the matching case, then rerun the check. A
 pin is optional while authoring a case, but required for a passing coverage

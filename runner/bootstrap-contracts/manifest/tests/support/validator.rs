@@ -1,5 +1,5 @@
 use bootstrap_dataset_harness::{run_dataset, DatasetCase};
-use runner_manifest::{validate_package_path, ManifestPlan};
+use runner_manifest::{is_allowed, validate_package_path, ManifestPlan};
 use runner_verification::match_output;
 use serde_json::{json, Value};
 use std::path::PathBuf;
@@ -61,6 +61,23 @@ fn validate_case(package: &PathBuf, case: &DatasetCase) -> Result<(), String> {
                 .ok_or_else(|| "input.path must be a string".to_string())?;
             validate_package_path(path).is_ok()
         }
+        "allowlist" => {
+            let path = input["path"]
+                .as_str()
+                .ok_or_else(|| "input.path must be a string".to_string())?;
+            let allowed = input["allowed"]
+                .as_array()
+                .ok_or_else(|| "input.allowed must be an array".to_string())?
+                .iter()
+                .map(|entry| {
+                    entry
+                        .as_str()
+                        .map(str::to_owned)
+                        .ok_or_else(|| "input.allowed entries must be strings".to_string())
+                })
+                .collect::<Result<Vec<_>, _>>()?;
+            is_allowed(path, &allowed)
+        }
         "manifest" => run_manifest_case(input, setup_case)?,
         "missing-manifest" => {
             let path = input["path"]
@@ -96,9 +113,11 @@ fn manifest_setup_case(case_id: &str, setup: bool) -> Result<Option<&str>, Strin
     let requires_setup = matches!(
         case_id,
         "read-path-symlink-escape"
+            | "declared-file-symlink-escape"
             | "write-path-symlink-escape"
             | "write-path-dangling-symlink"
             | "write-path-inaccessible-ancestor"
+            | "accepts-relative-read-path-outside-package"
     );
     if setup != requires_setup {
         return Err(format!(
@@ -135,7 +154,7 @@ fn run_manifest_case(input: &Value, setup_case: Option<&str>) -> Result<bool, St
 
     let mut permission_restore = None;
     match setup_case {
-        Some("read-path-symlink-escape" | "write-path-symlink-escape") => {
+        Some("read-path-symlink-escape" | "declared-file-symlink-escape") => {
             let outside = temp.path().join("outside.json");
             std::fs::write(&outside, "{}").map_err(|error| error.to_string())?;
             #[cfg(unix)]
@@ -143,6 +162,16 @@ fn run_manifest_case(input: &Value, setup_case: Option<&str>) -> Result<bool, St
                 .map_err(|error| error.to_string())?;
             #[cfg(windows)]
             std::os::windows::fs::symlink_file(&outside, root.join("escape"))
+                .map_err(|error| error.to_string())?;
+        }
+        Some("write-path-symlink-escape") => {
+            let outside = temp.path().join("outside");
+            std::fs::create_dir(&outside).map_err(|error| error.to_string())?;
+            #[cfg(unix)]
+            std::os::unix::fs::symlink(&outside, root.join("escape"))
+                .map_err(|error| error.to_string())?;
+            #[cfg(windows)]
+            std::os::windows::fs::symlink_dir(&outside, root.join("escape"))
                 .map_err(|error| error.to_string())?;
         }
         Some("write-path-inaccessible-ancestor") => {
@@ -168,6 +197,10 @@ fn run_manifest_case(input: &Value, setup_case: Option<&str>) -> Result<bool, St
                 root.join("dangling"),
             )
             .map_err(|error| error.to_string())?;
+        }
+        Some("accepts-relative-read-path-outside-package") => {
+            std::fs::write(temp.path().join("outside.json"), "{}")
+                .map_err(|error| error.to_string())?;
         }
         None => {}
         Some(other) => return Err(format!("unknown manifest setup case {other:?}")),

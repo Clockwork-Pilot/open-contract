@@ -129,6 +129,11 @@ not consumer-specific contracts.
   Review the scope's covered lines before updating a fingerprint; do not
   refresh fingerprints blindly. Parallel steps share their group's coverage
   scope and each still pins its own fingerprint.
+- Treat fingerprints as a dataset coverage duplication metric: repeated
+  fingerprints mean cases reveal the same covered paths and lines, so review
+  whether those cases are redundant and can be deduplicated. A match alone
+  does not prove the inputs or assertions are interchangeable; retain cases
+  that cover distinct behavior.
 - Implement predicate semantics in the Rust predicate contract and run its
   shared predicate dataset against that Rust implementation.
 - Dogfood Open Contract when its Rust core can run and verify a repository
@@ -139,6 +144,23 @@ not consumer-specific contracts.
   reporting case results separately.
 
 ## Isolation
+
+- Declare runtime access in versioned YAML at its owning layer. Shared OS
+  resources belong in `runner/isolation-runtime/<backend>.yaml`; adapter tools,
+  libraries, and dependencies belong in `contract-languages/<language>/runtime.yaml`;
+  contract data, executable files, and writable output paths belong in that
+  contract's manifest.
+- Language dependency installation may populate an ignored package-local
+  `.deps/` directory. Declare it in the language runtime's `profiles.production.files`
+  and use `environment_paths` for tool locations inside those declared files.
+  Keep dependency installation in the language package; example Make goals may
+  invoke it. Do not expose an entire host toolchain to supply a few adapter tools.
+- Do not generate runtime permission manifests in shell scripts or Make recipes,
+  or hide additional access grants in command wrappers. Use the default backend
+  manifest together with the language runtime. An explicit `--isolation-runtime`
+  override must point to a maintained, reviewable YAML configuration; it replaces
+  the backend default, rather than extending it. Troubleshooting fixes must be
+  applied to the owning runtime declaration and checked using normal invocation.
 
 - **Bubblewrap** provides a restricted filesystem view and namespace isolation.
   Keep mounts limited to the contract and required runtime resources.

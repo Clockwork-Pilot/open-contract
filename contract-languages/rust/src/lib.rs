@@ -50,8 +50,16 @@ pub fn run_dataset(
         .unwrap_or_default();
 
     let mut results = Vec::with_capacity(requests.len());
+    let collect_fingerprints = request
+        .get("coverage_fingerprints")
+        .and_then(Value::as_bool)
+        .unwrap_or(true);
     #[cfg(coverage)]
-    let mut snapshots = Vec::with_capacity(requests.len());
+    let mut snapshots = Vec::with_capacity(if collect_fingerprints {
+        requests.len()
+    } else {
+        1
+    });
     for item in requests {
         item.get("key")
             .ok_or_else(|| "batch request entry is missing key".to_string())?;
@@ -74,8 +82,10 @@ pub fn run_dataset(
             }
         }
         #[cfg(coverage)]
-        unsafe {
-            coverage_snapshot::reset_counters();
+        if collect_fingerprints {
+            unsafe {
+                coverage_snapshot::reset_counters();
+            }
         }
         let group_results = if end - index > 1 {
             std::thread::scope(|scope| {
@@ -96,7 +106,7 @@ pub fn run_dataset(
             vec![invoke_validator(&validate, first)]
         };
         #[cfg(coverage)]
-        {
+        if collect_fingerprints {
             let snapshot = coverage_snapshot::snapshot()?;
             for item in &requests[index..end] {
                 snapshots.push((
@@ -110,9 +120,18 @@ pub fn run_dataset(
     }
 
     #[cfg(coverage)]
-    let coverage = llvm_coverage::report(&snapshots, &package_root, &coverage_sources)?;
+    if !collect_fingerprints {
+        snapshots.push(("aggregate".to_string(), coverage_snapshot::snapshot()?));
+    }
+    #[cfg(coverage)]
+    let coverage = llvm_coverage::report(
+        &snapshots,
+        &package_root,
+        &coverage_sources,
+        collect_fingerprints,
+    )?;
     #[cfg(not(coverage))]
-    let _ = (&package_root, &coverage_sources);
+    let _ = (&package_root, &coverage_sources, collect_fingerprints);
     #[cfg(not(coverage))]
     let coverage = unavailable_coverage(&coverage_sources);
 
@@ -174,6 +193,7 @@ mod llvm_coverage {
         snapshots: &[(String, Vec<u8>)],
         package_root: &Path,
         declared_sources: &[String],
+        collect_fingerprints: bool,
     ) -> Result<CoverageReport, String> {
         if snapshots.is_empty() {
             return Err("Rust adapter received an empty request batch".into());
@@ -181,8 +201,8 @@ mod llvm_coverage {
         let temp = TempDirectory::create()?;
         let binary = std::env::current_exe()
             .map_err(|error| format!("cannot resolve Rust contract executable: {error}"))?;
-        let llvm_profdata = tool("LLVM_PROFDATA", "llvm-profdata");
-        let llvm_cov = tool("LLVM_COV", "llvm-cov");
+        let llvm_profdata = tool("LLVM_PROFDATA", "llvm-profdata", package_root);
+        let llvm_cov = tool("LLVM_COV", "llvm-cov", package_root);
         let source_paths = declared_sources
             .iter()
             .map(|source| {
@@ -199,29 +219,39 @@ mod llvm_coverage {
             return Err("Rust adapter requires declared coverage sources".into());
         }
 
-        let mut coverage_scopes = Vec::with_capacity(snapshots.len());
-        for (index, (key, bytes)) in snapshots.iter().enumerate() {
-            let profile = temp.path.join(format!("case-{index}.profraw"));
-            fs::write(&profile, bytes)
-                .map_err(|error| format!("cannot write Rust case profile: {error}"))?;
-            let report = export(
-                &llvm_profdata,
-                &llvm_cov,
-                &profile,
-                &binary,
-                &source_paths,
-                &temp.path,
-                index,
-            )?;
-            let files = coverage_files(&report, package_root, declared_sources);
-            let key: Value = serde_json::from_str(key)
-                .map_err(|error| format!("cannot decode saved request key: {error}"))?;
-            coverage_scopes.push(json!({ "key": key, "files": files }));
+        let mut coverage_scopes = Vec::with_capacity(if collect_fingerprints {
+            snapshots.len()
+        } else {
+            0
+        });
+        if collect_fingerprints {
+            for (index, (key, bytes)) in snapshots.iter().enumerate() {
+                let profile = temp.path.join(format!("case-{index}.profraw"));
+                fs::write(&profile, bytes)
+                    .map_err(|error| format!("cannot write Rust case profile: {error}"))?;
+                let report = export(
+                    &llvm_profdata,
+                    &llvm_cov,
+                    &profile,
+                    &binary,
+                    &source_paths,
+                    &temp.path,
+                    index,
+                )?;
+                let files = coverage_files(&report, package_root, declared_sources);
+                let key: Value = serde_json::from_str(key)
+                    .map_err(|error| format!("cannot decode saved request key: {error}"))?;
+                coverage_scopes.push(json!({ "key": key, "files": files }));
+            }
         }
 
         let aggregate = temp.path.join("aggregate.profraw");
-        super::coverage_snapshot::restore_aggregate(snapshots)?;
-        let aggregate_bytes = super::coverage_snapshot::snapshot()?;
+        let aggregate_bytes = if collect_fingerprints {
+            super::coverage_snapshot::restore_aggregate(snapshots)?;
+            super::coverage_snapshot::snapshot()?
+        } else {
+            snapshots[0].1.clone()
+        };
         fs::write(&aggregate, aggregate_bytes)
             .map_err(|error| format!("cannot write aggregate Rust profile: {error}"))?;
         let aggregate_report = export(
@@ -245,10 +275,15 @@ mod llvm_coverage {
         })
     }
 
-    fn tool(variable: &str, fallback: &str) -> PathBuf {
-        std::env::var_os(variable)
+    fn tool(variable: &str, fallback: &str, package_root: &Path) -> PathBuf {
+        let path = std::env::var_os(variable)
             .map(PathBuf::from)
-            .unwrap_or_else(|| PathBuf::from(fallback))
+            .unwrap_or_else(|| PathBuf::from(fallback));
+        if path.is_absolute() {
+            path
+        } else {
+            package_root.join(path)
+        }
     }
 
     fn export(
@@ -267,7 +302,12 @@ mod llvm_coverage {
             .arg("-o")
             .arg(&indexed)
             .output()
-            .map_err(|error| format!("cannot run llvm-profdata (set LLVM_PROFDATA): {error}"))?;
+            .map_err(|error| {
+                format!(
+                    "cannot run llvm-profdata at {} (set LLVM_PROFDATA): {error}",
+                    llvm_profdata.display()
+                )
+            })?;
         if !merge.status.success() {
             return Err(format!(
                 "llvm-profdata failed: {}",
@@ -282,7 +322,12 @@ mod llvm_coverage {
         command.args(sources);
         let output = command
             .output()
-            .map_err(|error| format!("cannot run llvm-cov (set LLVM_COV): {error}"))?;
+            .map_err(|error| {
+                format!(
+                    "cannot run llvm-cov at {} (set LLVM_COV): {error}",
+                    llvm_cov.display()
+                )
+            })?;
         if !output.status.success() {
             return Err(format!(
                 "llvm-cov export failed: {}",

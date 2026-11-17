@@ -113,21 +113,25 @@ impl ManifestPlan {
         declared_files.extend(manifest.files.support.iter().map(String::as_str));
         declared_files.extend(manifest.files.supplemental_tests.iter().map(String::as_str));
         declared_files.extend(manifest.files.nested_contracts.iter().map(String::as_str));
-        for path in &manifest.filesystem.read {
-            validate_package_path(path)?;
-            resolve_inside(&package_root, path, true)?;
-        }
+        let resolved_read_paths = manifest
+            .filesystem
+            .read
+            .iter()
+            .map(|path| resolve_filesystem_path(&package_root, path, true))
+            .collect::<Result<Vec<_>, _>>()?;
         for path in &manifest.filesystem.write {
-            validate_package_path(path)?;
-            resolve_inside(&package_root, path, false)?;
+            resolve_filesystem_path(&package_root, path, false)?;
         }
         for path in declared_files {
             validate_package_path(path)?;
-            let resolved = resolve_inside(&package_root, path, true)?;
+            let resolved = resolve_inside(&package_root, path)?;
             if !resolved.is_file() {
                 return Err(format!("manifest file is not a regular file: {path}"));
             }
-            if !is_allowed(path, &manifest.filesystem.read) {
+            if !resolved_read_paths
+                .iter()
+                .any(|read_path| resolved.starts_with(read_path))
+            {
                 return Err(format!("manifest file is not readable: {path}"));
             }
         }
@@ -177,6 +181,102 @@ pub fn validate_package_path(raw: &str) -> Result<(), String> {
     Ok(())
 }
 
+/// Resolve a filesystem policy entry relative to a contract's source directory,
+/// or accept an absolute host path. Unlike files named by `files`, filesystem
+/// entries may intentionally refer to shared files outside the contract.
+pub fn resolve_filesystem_path(
+    package_root: &Path,
+    raw: &str,
+    must_exist: bool,
+) -> Result<PathBuf, String> {
+    if raw.is_empty() || raw.contains('\0') {
+        return Err(format!("invalid filesystem path: {raw:?}"));
+    }
+    let path = Path::new(raw);
+    let explicitly_external = path.is_absolute() || relative_path_leaves_package(path);
+    if must_exist {
+        let candidate = if path.is_absolute() {
+            path.to_path_buf()
+        } else {
+            package_root.join(path)
+        };
+        let resolved = candidate
+            .canonicalize()
+            .map_err(|error| format!("cannot resolve filesystem path {raw:?}: {error}"))?;
+        if !explicitly_external && !resolved.starts_with(package_root) {
+            return Err(format!(
+                "filesystem path escapes its package through a symlink: {raw}"
+            ));
+        }
+        return Ok(resolved);
+    }
+
+    let mut ancestor = if path.is_absolute() {
+        PathBuf::new()
+    } else {
+        package_root.to_path_buf()
+    };
+    let mut missing_components = Vec::new();
+    for component in path.components() {
+        match component {
+            Component::RootDir | Component::Prefix(_) => ancestor.push(component.as_os_str()),
+            Component::CurDir => {}
+            Component::ParentDir => {
+                if missing_components.pop().is_none() {
+                    ancestor.pop();
+                }
+            }
+            Component::Normal(name) => {
+                if !missing_components.is_empty() {
+                    missing_components.push(name.to_os_string());
+                    continue;
+                }
+                let next = ancestor.join(name);
+                match fs::symlink_metadata(&next) {
+                    Ok(_) => {
+                        ancestor = next.canonicalize().map_err(|error| {
+                            format!("cannot resolve filesystem path {raw:?}: {error}")
+                        })?;
+                    }
+                    Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+                        missing_components.push(name.to_os_string());
+                    }
+                    Err(error) => {
+                        return Err(format!("cannot inspect filesystem path {raw:?}: {error}"));
+                    }
+                }
+            }
+        }
+    }
+    let mut resolved = ancestor;
+    for component in missing_components {
+        resolved.push(component);
+    }
+    if !explicitly_external && !resolved.starts_with(package_root) {
+        return Err(format!(
+            "filesystem path escapes its package through a symlink: {raw}"
+        ));
+    }
+    Ok(resolved)
+}
+
+fn relative_path_leaves_package(path: &Path) -> bool {
+    let mut depth = 0usize;
+    for component in path.components() {
+        match component {
+            Component::Normal(_) => depth += 1,
+            Component::ParentDir => {
+                if depth == 0 {
+                    return true;
+                }
+                depth -= 1;
+            }
+            Component::CurDir | Component::RootDir | Component::Prefix(_) => {}
+        }
+    }
+    false
+}
+
 pub fn is_allowed(path: &str, allowed: &[String]) -> bool {
     allowed.iter().any(|entry| {
         path == entry
@@ -186,40 +286,11 @@ pub fn is_allowed(path: &str, allowed: &[String]) -> bool {
     })
 }
 
-fn resolve_inside(root: &Path, raw: &str, must_exist: bool) -> Result<PathBuf, String> {
+fn resolve_inside(root: &Path, raw: &str) -> Result<PathBuf, String> {
     let candidate = root.join(raw);
-    let resolved = if must_exist {
-        candidate
-            .canonicalize()
-            .map_err(|e| format!("{raw}: {e}"))?
-    } else {
-        let mut ancestor = root.to_path_buf();
-        let mut missing_components = Vec::new();
-        let mut missing = false;
-        for component in Path::new(raw).components() {
-            let component = component.as_os_str();
-            if missing {
-                missing_components.push(component.to_os_string());
-                continue;
-            }
-            let next = ancestor.join(component);
-            match fs::symlink_metadata(&next) {
-                Ok(_) => ancestor = next,
-                Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
-                    missing = true;
-                    missing_components.push(component.to_os_string());
-                }
-                Err(error) => {
-                    return Err(format!("cannot inspect package path {raw:?}: {error}"));
-                }
-            }
-        }
-        let mut resolved = canonicalize_path(&ancestor)?;
-        for component in missing_components {
-            resolved.push(component);
-        }
-        resolved
-    };
+    let resolved = candidate
+        .canonicalize()
+        .map_err(|e| format!("{raw}: {e}"))?;
     if !resolved.starts_with(root) {
         return Err(format!(
             "manifest path escapes its package through a symlink: {raw}"

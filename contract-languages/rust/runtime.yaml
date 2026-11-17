@@ -4,3 +4,7 @@ profiles:
     entrypoint: src/lib.rs
     files:
       - src
+      - .deps
+    environment_paths:
+      LLVM_PROFDATA: .deps/bin/llvm-profdata
+      LLVM_COV: .deps/bin/llvm-cov

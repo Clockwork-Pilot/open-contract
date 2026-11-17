@@ -22,10 +22,25 @@ used by the bootstrap coverage checker:
 RUSTFLAGS="-Cinstrument-coverage --cfg=coverage --check-cfg=cfg(coverage)" cargo build
 ```
 
-The adapter looks for `llvm-profdata` and `llvm-cov` on `PATH`. Set
-`LLVM_PROFDATA` and `LLVM_COV` when the matching tools are elsewhere. They must
-match the LLVM version used by the Rust compiler. The process needs a writable
-system temporary directory for short-lived per-case profiles.
+Install the LLVM tools matching the compiler, then install the adapter's
+dependencies from the Open Contract root:
+
+```sh
+rustup component add llvm-tools-preview
+make -C contract-languages/rust install-dependencies
+```
+
+The installation copies `llvm-profdata`, `llvm-cov`, and their LLVM libraries
+from the active toolchain into ignored `.deps/bin` and `.deps/lib` directories.
+It reuses that installation until the selected compiler changes; `RUSTC` selects
+the compiler. `runtime.yaml` declares `.deps` and supplies the tool paths as
+`LLVM_PROFDATA` and `LLVM_COV`. Examples invoke this installation goal themselves.
+No example-generated isolation manifest or host sysroot access is needed.
+
+When used outside the runner, the adapter also accepts `LLVM_PROFDATA` and
+`LLVM_COV`, falling back to tools on `PATH`. They must match the compiler's LLVM
+version. The contract must declare a writable directory for short-lived profiles
+and set `TMPDIR` accordingly.
 
 The contract-owned command reads the request from stdin and writes one adapter
 JSON object to stdout. A minimal entrypoint looks like this:
@@ -50,7 +65,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
-See [`examples/nested`](examples/nested/README.md) for parent and child Rust
+See [`examples/rust`](../../examples/rust/README.md) for parent and child Rust
 contracts using the adapter.
 
 Run the adapter protocol tests from the `open-contract` directory with:

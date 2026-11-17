@@ -5,22 +5,22 @@ cases:
       values: [2, 3, 5]
     expected:
       total: 10
-    coverage_fingerprint: "aec0178c09df37ab8b54e2e03d72c8df"
+    coverage_fingerprint: "c753b86d57ee0c98f7a43542d7ad6def"
   - id: values-is-not-an-array
     input:
       values: "not-an-array"
     expected: {}
     predicate: "contains(.error, 'values must be an array')"
-    coverage_fingerprint: "54f68fc3c51697aca02c4c2366bdbb50"
+    coverage_fingerprint: "e1fc51e26cf01c9ff92520173ad2444b"
   - id: values-contain-a-non-integer
     input:
       values: [1, "not-an-integer"]
     expected: {}
     predicate: "contains(.error, 'values must contain integers')"
-    coverage_fingerprint: "c8ba0d1228563d7aa23124396ca33a66"
+    coverage_fingerprint: "fa6ba97032ceeffb8444635bee18c387"
   - id: sum-overflows
     input:
       values: [9223372036854775807, 1]
     expected: {}
     predicate: "contains(.error, 'sum overflow')"
-    coverage_fingerprint: "c8ba0d1228563d7aa23124396ca33a66"
+    coverage_fingerprint: "fa6ba97032ceeffb8444635bee18c387"

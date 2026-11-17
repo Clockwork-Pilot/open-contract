@@ -1,18 +1,16 @@
-# Rust core
+# Contract runner
 
-The crate keeps four responsibilities separate:
+The runner validates a contract manifest, loads its JSON or YAML dataset, and
+executes the root contract and any declared nested contracts in one run. All
+contracts in the tree use the selected isolation mode. In `tempdir` mode they
+share a temporary staged workspace; in other modes they execute from their
+source locations under the selected filesystem policy. Results remain grouped
+by contract, while coverage is combined in the root report.
 
-1. `manifest` validates a versioned package manifest and produces a backend-neutral plan.
-2. `isolation` stages only declared paths under a fresh temporary root and invokes the selected backend.
-3. `batch` loads JSON or YAML datasets, traverses cases and ordered steps, and sends only flattened validator input requests to the language adapter inside isolation. It retains raw outputs, errors, and coverage reports for root and nested contracts.
-4. `verify` compares outputs with exact expected values or evaluates predicates after execution finishes. It also checks that native coverage reports include every declared validator and support source file.
-
-Nested manifests listed by a parent are staged under the same randomized root. The Rust core starts one isolation session for the complete tree and invokes each listed contract's cases in that session. Child execution therefore inherits the parent's boundary. Child and parent coverage reports are combined in the root report, while their case results remain separate.
-
-The Rust coordinator invokes each contract's declared `execution.command` once
-with the complete flattened batch for that contract. The command receives one
-contract-local JSON document on stdin, with case and step identities, optional setup IDs, and no expected outputs or
-predicates:
+The runner invokes each contract's declared `execution.command` once with the
+complete flattened batch for that contract. The command receives one
+contract-local JSON document on stdin, with case and step identities,
+optional setup IDs, and no expected outputs or predicates:
 
 ```json
 {"contract":"example","package":".","validator":"src/validator.py","coverage_sources":["src/validator.py"],"requests":[{"key":{"case_id":"case-1","step_id":null},"input":{"value":1},"setup":null,"parallel":false}]}
@@ -22,10 +20,48 @@ The contract-owned command imports its language support package and validator,
 then returns one JSON document on stdout. Its `results` preserve request keys
 and contain either `output` or `error`; `coverage` carries the native report
 and exercised source paths. The support package is an importable interface, not
-a second CLI or runner. Rust owns dataset and step traversal, expected-output
-matching, predicate evaluation, coverage enforcement, and reporting. Adjacent
+a second CLI or runner. The runner handles dataset and step traversal,
+expected-output matching, predicate evaluation, coverage enforcement, and
+reporting. Adjacent
 steps marked `parallel: true` are grouped into one concurrent adapter request;
 other steps run sequentially.
+
+## CLI capabilities and configuration
+
+The executable supports two commands:
+
+```sh
+contract-runner run-manifest <contract.yaml> [options]
+contract-runner show-isolation-plan <contract.yaml> [options]
+```
+
+`run-manifest` executes the dataset and writes its coverage report. It accepts
+all options in the table below. `show-isolation-plan` only resolves and prints
+the isolation plan; it accepts `--isolation` and `--isolation-runtime`, but not
+coverage or fingerprint options.
+
+| Option | Command | Purpose |
+| --- | --- | --- |
+| `--isolation <auto\|tempdir\|none\|bwrap\|landlock>` | Both | Select the execution boundary. Defaults to `OPEN_CONTRACT_ISOLATION`, then `auto` if unset. |
+| `--isolation-runtime <path>` | Both | Replace the bundled runtime YAML for `bwrap` or `landlock`. Invalid with `none` and `tempdir`. |
+| `--coverage-report <path>` | `run-manifest` | Write the coverage report. Defaults to `.open-contract/coverage/latest.json`. |
+| `--disable-fingerprints` | `run-manifest` | Skip per-case fingerprint checks while retaining output and aggregate coverage checks. Equivalent to `OPEN_CONTRACT_DISABLE_FINGERPRINTS=1`. |
+| `--update-fingerprints` | `run-manifest` | Rewrite fingerprints after all cases and coverage requirements pass. Cannot be combined with `--disable-fingerprints` or `OPEN_CONTRACT_DISABLE_FINGERPRINTS=1`. |
+
+The runner reads these environment variables from its own process:
+
+| Variable | Used by | Meaning |
+| --- | --- | --- |
+| `OPEN_CONTRACT_ISOLATION` | Both commands | Default isolation choice: `auto`, `tempdir`, `none`, `bwrap`, or `landlock`. An explicit `--isolation` takes precedence. |
+| `OPEN_CONTRACT_DISABLE_FINGERPRINTS` | `run-manifest` | Disable per-case fingerprints when set to `1`, `true`, `yes`, or `on`; `0`, `false`, `no`, or `off` leaves them enabled. Other values are errors. |
+| `OPEN_CONTRACT_LANGUAGE_PACKAGES` | Both commands when resolving a manifest's `language_package` | Optional JSON object mapping logical package IDs to package directories, for example `{"python":"/opt/contracts/python"}`. Without a mapping, the runner resolves packages under `contract-languages/`. |
+
+The runner does not read `OPEN_CONTRACT_LANGUAGE_PATH` from the caller's shell.
+For an isolated adapter command, it sets that variable from the selected
+language runtime's `environment_paths` entry, which points to the resolved
+language support package. Other adapter environment values come from the
+selected isolation runtime YAML. These runtime-provided values are distinct
+from the runner's CLI configuration above.
 
 The manifest declares the contract command and, when needed, one logical
 `language_package` identifier. Runner configuration resolves that identifier
@@ -48,12 +84,29 @@ cargo run --manifest-path runner/rust/Cargo.toml -- run-manifest contract.yaml \
   --coverage-report /tmp/contract-coverage.json
 ```
 
-`none`, `bwrap`, and `landlock` are runtime isolation choices. Contract paths
-remain package-relative, and each run uses a fresh staged root. Rust invokes
-each contract's declared command once for its full batch, including nested
-contracts, while keeping all commands inside the root isolation boundary. The
-logical `language_package` identifier is resolved by runner configuration; it
-does not contain a host path or a list of support files.
+`OPEN_CONTRACT_ISOLATION` supplies the isolation mode when `--isolation` is
+omitted. An explicit command-line value takes precedence. This also applies to
+`show-isolation-plan`:
+
+```sh
+OPEN_CONTRACT_ISOLATION=landlock cargo run --manifest-path runner/rust/Cargo.toml -- \
+  run-manifest contract.yaml
+```
+
+`tempdir`, `none`, `bwrap`, and `landlock` are runtime execution choices.
+`tempdir` preserves the copied-workspace behavior: it copies declared contract
+files to a fresh temporary tree and accepts package-relative read/write paths.
+`none`, `bwrap`, and `landlock` execute from the checkout without copying
+contract files. In those modes, `filesystem.read` and `filesystem.write` paths
+may be relative to the contract directory (including paths leaving it) or
+absolute host paths. `none` applies no filesystem policy; bubblewrap and
+Landlock enforce the declared paths using their native mechanisms.
+
+Nested contracts in a `tempdir` run share one randomized temporary tree. In
+the direct modes, nested contracts remain at their source paths in the
+checkout. Rust invokes each contract's declared command once for its full
+batch. The logical `language_package` identifier is resolved by runner
+configuration; it does not contain a host path or a list of support files.
 
 For `bwrap` and `landlock`, the runner selects the corresponding bundled system
 runtime YAML from `runner/isolation-runtime/<backend>.yaml`. Override that
@@ -72,8 +125,10 @@ Bubblewrap mounts listed paths read-only. Landlock grants read and execute
 access to listed paths. The `command_executable` setting explicitly grants
 access to the executable resolved from `execution.command`, including an
 executable supplied through an environment reference such as `${NODE_BIN}`.
-`--isolation-runtime` is not accepted with
-`--isolation none`.
+`--isolation-runtime` is only accepted with `bwrap` and `landlock`; it is not
+accepted with `none` or `tempdir`. Runtime YAML describes host runtime
+dependencies such as system libraries and executables. Contract-owned or
+shared contract files belong in `filesystem.read`/`filesystem.write`.
 
 `--coverage-report <path>` is optional. It writes each executed contract's raw
 native report, declared and covered source paths, and missing source paths to a
@@ -100,7 +155,15 @@ filesystem:
   read: [dataset.yaml, validator.py, tests/edge_cases.py]
 ```
 
-Adapters return the normalized per-case line data with the batch; the Rust core
+Per-entry fingerprints can be disabled for a diagnostic run with
+`--disable-fingerprints` or `OPEN_CONTRACT_DISABLE_FINGERPRINTS=1`. The runner
+passes this choice to the language adapter, which skips per-entry coverage
+scopes. The runner then skips fingerprint presence, format, and match checks;
+aggregate dataset line coverage and expected-output checks remain active. No
+dataset fields need to be changed. The environment value accepts `1`, `true`,
+`yes`, or `on` to disable, and `0`, `false`, `no`, or `off` to leave checks on.
+
+Adapters return the normalized per-case line data with the batch; the runner
 does not parse language-specific native report formats. The artifact is written
 even when case or coverage checks fail.
 

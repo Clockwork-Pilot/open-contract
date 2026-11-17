@@ -5,9 +5,9 @@ cases:
       name: Ada
     expected:
       greeting: "hello, Ada"
-    coverage_fingerprint: "c58f2a25e2aaa9bc0402f6f91edbda35"
+    coverage_fingerprint: "6f4bb2c22b81a7550de9bb2363f0497f"
   - id: rejects-a-missing-name
     input: {}
     expected: {}
     predicate: "contains(.error, 'TypeError: name must be a string')"
-    coverage_fingerprint: "6c51f3d5d7525d340135f87bcfb94fbb"
+    coverage_fingerprint: "aad606ce213b02851c0f486863f32fcc"

@@ -9,7 +9,11 @@ files:
   support:
     - src/implementation.rs
 execution:
-  command: [./contract-command]
+  command:
+    - env
+    - TMPDIR=.open-contract-work
+    - LLVM_PROFILE_FILE=.open-contract-work/%m-%p.profraw
+    - ./contract-command
 filesystem:
   read:
     - dataset.yaml
@@ -17,4 +21,6 @@ filesystem:
     - src/validator.rs
     - src/implementation.rs
     - contract-command
-  write: []
+    - .open-contract-work
+  write:
+    - .open-contract-work

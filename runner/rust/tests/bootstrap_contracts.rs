@@ -376,7 +376,7 @@ fn cli_writes_optional_file_and_line_coverage_report_for_contract_users() {
     let output_dir = tempfile::tempdir().unwrap();
     let package = tempfile::tempdir().unwrap();
     let report_path = output_dir.path().join("nested/coverage.json");
-    let result = Command::new(env!("CARGO_BIN_EXE_open-contract-core"))
+    let result = Command::new(env!("CARGO_BIN_EXE_contract-runner"))
         .arg("run-manifest")
         .arg(write_cross_language_fixture(package.path()))
         .args(["--isolation", "none", "--coverage-report"])
@@ -458,12 +458,10 @@ fn cli_saves_report_and_returns_nonzero_when_manifest_coverage_threshold_is_miss
     )
     .unwrap();
     let dataset_path = package.path().join("dataset.json");
-    let dataset = std::fs::read_to_string(&dataset_path)
-        .unwrap()
-        .replace(
-            "8a484661678bcd54e5d968c1b7e473ec",
-            "fe5f23d969b1e30295af14f9551fd338",
-        );
+    let dataset = std::fs::read_to_string(&dataset_path).unwrap().replace(
+        "8a484661678bcd54e5d968c1b7e473ec",
+        "fe5f23d969b1e30295af14f9551fd338",
+    );
     std::fs::write(dataset_path, dataset).unwrap();
     let source = std::fs::read_to_string(&manifest).unwrap();
     std::fs::write(
@@ -475,7 +473,7 @@ fn cli_saves_report_and_returns_nonzero_when_manifest_coverage_threshold_is_miss
     )
     .unwrap();
 
-    let result = Command::new(env!("CARGO_BIN_EXE_open-contract-core"))
+    let result = Command::new(env!("CARGO_BIN_EXE_contract-runner"))
         .arg("run-manifest")
         .arg(&manifest)
         .args(["--isolation", "none"])
@@ -688,19 +686,12 @@ fn parent_and_nested_contracts_load_json_and_yaml_datasets_in_one_tree() {
     let package = tempfile::tempdir().unwrap();
     let manifest = write_cross_language_fixture(package.path());
     let root_dataset = package.path().join("dataset.json");
-    let root_source = std::fs::read_to_string(&root_dataset)
-        .unwrap()
-        .replace(
-            "8a484661678bcd54e5d968c1b7e473ec",
-            "60c6194cbdc58033999a1fb07d147da8",
-        );
+    let root_source = std::fs::read_to_string(&root_dataset).unwrap().replace(
+        "8a484661678bcd54e5d968c1b7e473ec",
+        "60c6194cbdc58033999a1fb07d147da8",
+    );
     std::fs::write(root_dataset, root_source).unwrap();
-    let report = run_contract_tree(
-        manifest,
-        Backend::None,
-        &EchoBatch::default(),
-    )
-    .unwrap();
+    let report = run_contract_tree(manifest, Backend::None, &EchoBatch::default()).unwrap();
     assert_eq!(report.passed(), report.total());
     assert_eq!(report.total(), 2);
     assert_eq!(report.coverage.len(), 2);

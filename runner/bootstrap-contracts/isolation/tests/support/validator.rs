@@ -14,7 +14,46 @@ macro_rules! ensure {
 }
 
 pub(crate) fn execute_dataset() -> Result<usize, String> {
-    let package = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let source = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let coverage_root = source.join("../../../.coverage/bootstrap-contracts/isolation-fixtures");
+    std::fs::create_dir_all(&coverage_root).map_err(|error| error.to_string())?;
+    let workspace = tempfile::Builder::new()
+        .prefix("dataset-")
+        .tempdir_in(&coverage_root)
+        .map_err(|error| error.to_string())?;
+    let package = workspace
+        .path()
+        .join("runner/bootstrap-contracts/isolation");
+    for relative in [
+        "isolation-package.fixture.yaml",
+        "dataset.json",
+        "Cargo.toml",
+        "src/lib.rs",
+        "src/backend.rs",
+        "support/helper.py",
+        "nested/contract.yaml",
+        "nested/dataset.json",
+        "nested/validator.py",
+        "private-source.txt",
+    ] {
+        let target = package.join(relative);
+        if let Some(parent) = target.parent() {
+            std::fs::create_dir_all(parent).map_err(|error| error.to_string())?;
+        }
+        std::fs::copy(source.join(relative), target).map_err(|error| error.to_string())?;
+    }
+    // Exercise preservation of existing write files without depending on a prior run.
+    for relative in [
+        "reports/result.json",
+        "reports/nested/result.json",
+        "nested/reports/result.json",
+    ] {
+        let target = package.join(relative);
+        if let Some(parent) = target.parent() {
+            std::fs::create_dir_all(parent).map_err(|error| error.to_string())?;
+        }
+        std::fs::write(target, "").map_err(|error| error.to_string())?;
+    }
     let plan = ManifestPlan::load(package.join("isolation-package.fixture.yaml"))
         .map_err(|error| format!("cannot load isolation manifest: {error}"))?;
     let mut previous_root = None;
@@ -66,6 +105,44 @@ pub(crate) fn validate_case(
             case.expected.as_ref(),
             case.predicate.as_deref(),
         )?;
+        return Ok(package.to_path_buf());
+    }
+    if case.input["operation"] == "stage-backend" {
+        dataset_setup::run_staging_backend(
+            case.id.as_str(),
+            case.setup,
+            plan,
+            &case.input,
+            case.expected.as_ref(),
+            case.predicate.as_deref(),
+        )?;
+        return Ok(package.to_path_buf());
+    }
+    if case.input["operation"] == "auto-backend" {
+        dataset_setup::run_with_case_setup(case.id.as_str(), case.setup, package, || {
+            let runtime = case.input["isolation_runtime"].as_str().map(Path::new);
+            let (backend, attempts) = runner_isolation::auto_backend(runtime);
+            let observed_backend = match backend {
+                Backend::TempDir => "tempdir",
+                Backend::None => "none",
+                Backend::Bubblewrap => "bwrap",
+                Backend::Landlock => "landlock",
+            };
+            let expected = case.expected_value()?;
+            ensure!(
+                expected["backend"].as_str() == Some(observed_backend),
+                "expected auto backend {:?}, observed {observed_backend:?}",
+                expected["backend"]
+            );
+            if let Some(expected_attempts) = expected["failed_probes"].as_u64() {
+                ensure!(
+                    attempts.len() as u64 == expected_attempts,
+                    "expected {expected_attempts} failed probes, observed {}",
+                    attempts.len()
+                );
+            }
+            Ok(())
+        })?;
         return Ok(package.to_path_buf());
     }
     let tree =
@@ -377,7 +454,7 @@ fn check_cycle_and_escape(expected: &Value) -> Result<(), String> {
             .err()
             .ok_or_else(|| "package escape symlink was unexpectedly accepted".to_string())?;
         ensure!(
-            error.contains("escapes package"),
+            error.contains("escapes its package"),
             "unexpected package escape error: {error}"
         );
     }
@@ -393,39 +470,19 @@ fn check_cycle_and_escape(expected: &Value) -> Result<(), String> {
 }
 
 fn check_invalid_paths(mut tree: StagedTree, expected: &Value) -> Result<(), String> {
-    tree.read.push("../outside".into());
+    tree.read.push("..".into());
     let invalid = tree
         .run_command(Backend::Landlock, &tree.root, &["true".into()], b"", None)
         .err()
-        .ok_or_else(|| "parent traversal was unexpectedly accepted".to_string())?;
+        .ok_or_else(|| "relative parent path was unexpectedly accepted".to_string())?;
     ensure!(
-        invalid.contains("invalid staged path"),
+        invalid.contains("staged path escapes package root"),
         "unexpected path error: {invalid}"
     );
     tree.read.pop();
-    #[cfg(unix)]
-    {
-        let outside = tempfile::tempdir().map_err(|error| error.to_string())?;
-        write(outside.path().join("secret"), "secret")?;
-        std::os::unix::fs::symlink(outside.path(), tree.root.join("escape-through-symlink"))
-            .map_err(|error| error.to_string())?;
-        tree.read.push("escape-through-symlink".into());
-        let escaped = tree
-            .run_command(Backend::Landlock, &tree.root, &["true".into()], b"", None)
-            .err()
-            .ok_or_else(|| "resolved package escape was unexpectedly accepted".to_string())?;
-        ensure!(
-            escaped.contains("escapes package root"),
-            "unexpected escape error: {escaped}"
-        );
-    }
     ensure!(
-        expected["parent_traversal_rejected"] == true,
-        "parent traversal expectation is invalid"
-    );
-    ensure!(
-        expected["symlink_escape_rejected"] == true,
-        "symlink escape expectation is invalid"
+        expected["relative_parent_rejected"] == true,
+        "relative parent path expectation is invalid"
     );
     Ok(())
 }
@@ -536,17 +593,35 @@ fn check_command_at(tree: &StagedTree, input: &Value, expected: &Value) -> Resul
         );
         return Ok(());
     }
+    let backend = match input["backend"].as_str().unwrap_or("none") {
+        "none" => Backend::None,
+        "landlock" => Backend::Landlock,
+        "bwrap" => Backend::Bubblewrap,
+        other => return Err(format!("unknown isolation backend {other:?}")),
+    };
+    let command = input["command"]
+        .as_array()
+        .map(|arguments| {
+            arguments
+                .iter()
+                .map(|argument| {
+                    argument
+                        .as_str()
+                        .map(str::to_owned)
+                        .ok_or_else(|| "command input arguments must be strings".to_string())
+                })
+                .collect::<Result<Vec<_>, _>>()
+        })
+        .transpose()?
+        .unwrap_or_else(|| vec!["/bin/pwd".into()]);
+    let output = tree.run_command_at(backend, &working_directory, &command, b"", None)?;
+    ensure!(output.status.success(), "command failed: {}", output.status);
+    if expected["success"] == true {
+        return Ok(());
+    }
     let expected_name = expected["working_directory"]
         .as_str()
         .ok_or_else(|| "expected.working_directory must be a string".to_string())?;
-    let output = tree.run_command_at(
-        Backend::None,
-        &working_directory,
-        &["/bin/pwd".into()],
-        b"",
-        None,
-    )?;
-    ensure!(output.status.success(), "command failed: {}", output.status);
     ensure!(
         Path::new(String::from_utf8_lossy(&output.stdout).trim())
             .file_name()

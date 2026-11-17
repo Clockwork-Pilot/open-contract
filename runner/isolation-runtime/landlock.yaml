@@ -6,6 +6,8 @@ read_only:
   - /usr
   - /lib
   - /lib64
+  # Child processes may open this as an empty stdin stream.
+  - /dev/null
   - /etc/ssl/openssl.cnf
 
 environment:

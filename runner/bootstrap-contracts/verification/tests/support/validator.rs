@@ -56,6 +56,7 @@ fn validate_case(case: &DatasetCase) -> Result<(), String> {
     let actual_result = match result {
         Ok(MatchKind::Expected) => serde_json::json!("expected"),
         Ok(MatchKind::ExpectedAndPredicate) => serde_json::json!("expected_and_predicate"),
+        Ok(MatchKind::Predicate) => serde_json::json!("predicate"),
         Err(error) => serde_json::json!({ "error": error }),
     };
     let expected_result = case.expected_value()?;

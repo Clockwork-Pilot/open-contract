@@ -27,13 +27,16 @@ requires 100% implementation function, instantiation, line, and LLVM region
 coverage from the dataset. Unit-test coverage does not contribute to this
 requirement; use unit tests for implementation details the public dataset
 input cannot exercise. The check also requires every case fingerprint to
-match the lines observed for that case.
+match the covered source text observed for that case.
 
 Open Contract datasets use version 1. Every case and every sequence step must
 declare a matching, nonzero `coverage_fingerprint`. A missing, malformed,
 zero, or stale fingerprint fails. Refresh it when the execution's covered
-source files or lines change. Matching fingerprints may repeat across distinct
-cases: that means the cases cover the same lines, not that they test the same
+source text changes. The hash includes each covered file's contract-relative
+path and the exact text of its covered lines, in source order; it omits line
+numbers. Adding unrelated lines above covered code therefore does not
+invalidate pins. Matching fingerprints may repeat across distinct cases: that
+means the cases cover the same source text, not that they test the same
 behavior. Repeated values add no new line coverage, so use the coverage report
 to assess the dataset's total coverage.
 
@@ -57,8 +60,8 @@ public component being exercised.
 The shared harness reads either JSON (`.json`) or YAML (`.yaml`/`.yml`) and
 owns envelope checks, ordered case execution, and case-qualified errors.
 Each case should declare a `coverage_fingerprint`. The coverage checker runs
-each validator case in isolation, calculates its covered-line fingerprint from
-the runtime report, and reports the observed value for missing or mismatched
+each validator case in isolation, calculates its covered-source-text
+fingerprint from the runtime report, and reports the observed value for missing or mismatched
 pins. The check fails until the implementor copies the reported fingerprint
 into the dataset and reruns it. The checker never edits datasets.
 An omitted fingerprint is reported as the all-zero sentinel

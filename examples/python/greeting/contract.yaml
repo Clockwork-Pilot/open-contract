@@ -10,6 +10,7 @@ execution:
   command: [python3, run_contract.py]
 filesystem:
   read:
+    - .
     - dataset.json
     - run_contract.py
     - validator.py

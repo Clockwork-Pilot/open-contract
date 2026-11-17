@@ -35,6 +35,7 @@ def run_dataset(request, validator_loader=None):
         return {"results": [], "coverage": None, "error": f"coverage unavailable: {exc}"}
 
     coverage = Coverage(data_file=None, branch=True, config_file=False, concurrency=["thread"])
+    collect_fingerprints = request.get("coverage_fingerprints", True) is not False
     results = []
     keys_by_context = {}
     setup_context = "open-contract:setup"
@@ -65,7 +66,8 @@ def run_dataset(request, validator_loader=None):
                                 break
                             group.append(candidate)
                     context = _coverage_context([item["key"] for item in group])
-                    keys_by_context[context] = [item["key"] for item in group]
+                    if collect_fingerprints:
+                        keys_by_context[context] = [item["key"] for item in group]
                     if len(group) > 1:
                         with ThreadPoolExecutor() as pool:
                             results.extend(pool.map(
@@ -93,22 +95,23 @@ def run_dataset(request, validator_loader=None):
     )
     native = {"format": "coverage.py", "sources": sorted(files), "files": files}
     scopes = []
-    for context, keys in keys_by_context.items():
-        scoped_files = []
-        for name, lines_by_context in contexts_by_file.items():
-            source = Path(name).resolve()
-            if not source.is_relative_to(package_root):
-                continue
-            relative = source.relative_to(package_root).as_posix()
-            if not _is_declared_source(relative, coverage_sources):
-                continue
-            lines = sorted(
-                line for line, contexts in lines_by_context.items()
-                if context in contexts or setup_context in contexts
-            )
-            if lines:
-                scoped_files.append({"path": relative, "lines": lines})
-        scopes.extend({"key": key, "files": scoped_files} for key in keys)
+    if collect_fingerprints:
+        for context, keys in keys_by_context.items():
+            scoped_files = []
+            for name, lines_by_context in contexts_by_file.items():
+                source = Path(name).resolve()
+                if not source.is_relative_to(package_root):
+                    continue
+                relative = source.relative_to(package_root).as_posix()
+                if not _is_declared_source(relative, coverage_sources):
+                    continue
+                lines = sorted(
+                    line for line, contexts in lines_by_context.items()
+                    if context in contexts or setup_context in contexts
+                )
+                if lines:
+                    scoped_files.append({"path": relative, "lines": lines})
+            scopes.extend({"key": key, "files": scoped_files} for key in keys)
     additional_report = None
     additional_coverage_lines = []
     supplemental_tests = request.get("supplemental_tests", [])

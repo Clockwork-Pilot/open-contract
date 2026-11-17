@@ -10,6 +10,7 @@ path = "src/main.rs"
 
 [dependencies]
 bootstrap-dataset-harness = { path = "../dataset-harness" }
+jsonschema = { version = "0.61.2", default-features = false, features = ["macros"] }
 runner-isolation = { path = "../isolation" }
 runner-manifest = { path = "../manifest" }
 runner-verification = { path = "../verification" }

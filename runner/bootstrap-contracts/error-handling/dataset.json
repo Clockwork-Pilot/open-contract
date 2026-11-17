@@ -13,7 +13,7 @@
         "rendered": "case output did not match",
         "display": "case output did not match"
       },
-      "coverage_fingerprint": "144bf7d0280be09a5a99b33544c1fdf9"
+      "coverage_fingerprint": "82586260833ad6d8db550905457b2586"
     },
     {
       "id": "error-cannot-use-success-exit-code",
@@ -27,7 +27,7 @@
         "rendered": "unexpected success status",
         "display": "unexpected success status"
       },
-      "coverage_fingerprint": "144bf7d0280be09a5a99b33544c1fdf9"
+      "coverage_fingerprint": "82586260833ad6d8db550905457b2586"
     },
     {
       "id": "one-layer-context",
@@ -44,7 +44,7 @@
         "rendered": "manifest: manifest is invalid",
         "display": "manifest: manifest is invalid"
       },
-      "coverage_fingerprint": "687e231870c8bdf6cad95ccfbd5ef527"
+      "coverage_fingerprint": "f2a415e6e139104aa65a432b4f4602ff"
     },
     {
       "id": "propagate-through-runner-layers",
@@ -63,7 +63,7 @@
         "rendered": "runner: contract execution: isolation: undeclared path",
         "display": "runner: contract execution: isolation: undeclared path"
       },
-      "coverage_fingerprint": "687e231870c8bdf6cad95ccfbd5ef527"
+      "coverage_fingerprint": "f2a415e6e139104aa65a432b4f4602ff"
     },
     {
       "id": "convert-layer-error-to-shared-error",
@@ -81,7 +81,7 @@
         "rendered": "verification: coverage incomplete",
         "display": "verification: coverage incomplete"
       },
-      "coverage_fingerprint": "8a9f5d512cd3c6b44d2958ebdc8cb7c2"
+      "coverage_fingerprint": "757778aa8bc395142d8604d9c1b0b2ab"
     }
   ]
 }

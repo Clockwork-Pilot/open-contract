@@ -26,6 +26,12 @@ It is parsed by `runner-manifest` to describe the package tree being staged; it
 is not an Open Contract manifest and does not configure isolation for this
 contract's own execution.
 
+The validator copies its fixture package into a randomized workspace under
+`.coverage/bootstrap-contracts/isolation-fixtures/` at the repository root.
+Generated `reports/` files stay inside that workspace, which is removed when
+the dataset finishes. Existing-write-file fixtures are prepared explicitly;
+checks do not depend on files left by previous runs.
+
 The coverage check runs only the `dataset` integration-test target and requires
 100% coverage of implementation files under `src`. Validator, fixture, and
 unit-test code do not contribute to that percentage. Use unit tests for internal

@@ -56,6 +56,21 @@ pub(crate) fn exercise_copy_error_paths() -> Result<(), String> {
         return Err("missing package root error was empty".into());
     }
 
+    for missing_source in [
+        package.path().join("missing-inside.txt"),
+        package.path().parent().unwrap().join("missing-outside.txt"),
+    ] {
+        let error = super::copy_entry(
+            &missing_source,
+            package.path(),
+            &package.path().join("missing-source-copy.txt"),
+        )
+        .expect_err("unavailable source must fail canonicalization");
+        if error.is_empty() {
+            return Err("unavailable source error was empty".into());
+        }
+    }
+
     let blocked_parent = package.path().join("blocked-parent");
     fs::write(&blocked_parent, "not a directory").map_err(|error| error.to_string())?;
     if super::copy_entry(

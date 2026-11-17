@@ -7,6 +7,9 @@ use sha2::{Digest, Sha256};
 use std::fs;
 use std::path::{Path, PathBuf};
 
+#[jsonschema::validator(path = "../../../schemas/dataset.v1.schema.json")]
+struct DatasetSchema;
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Dataset {
@@ -26,7 +29,7 @@ pub enum CaseSpec {
 pub struct CallSpec {
     pub id: String,
     pub input: Value,
-    pub expected: Value,
+    pub expected: Option<Value>,
     pub predicate: Option<String>,
     pub coverage_fingerprint: Option<String>,
     pub setup: Option<String>,
@@ -44,7 +47,7 @@ pub struct SequenceSpec {
 pub struct StepSpec {
     pub id: String,
     pub input: Value,
-    pub expected: Value,
+    pub expected: Option<Value>,
     pub predicate: Option<String>,
     pub coverage_fingerprint: Option<String>,
     pub setup: Option<String>,
@@ -129,6 +132,7 @@ pub struct ContractBatch {
     pub manifest: ManifestPlan,
     pub package_prefix: PathBuf,
     pub requests: Vec<ExecutionRequest>,
+    pub coverage_fingerprints: bool,
 }
 
 /// Resolve the filesystem and command plan for a contract tree without
@@ -139,10 +143,11 @@ pub fn show_isolation_plan(
     isolation_runtime: Option<PathBuf>,
 ) -> Result<String, String> {
     let root = ManifestPlan::load(manifest_path)?;
-    let tree = StagedTree::create_with_runtime(&root, isolation_runtime)?;
+    let tree = StagedTree::create_for_backend(&root, backend, isolation_runtime)?;
     let mut output = String::new();
 
     let backend_name = match backend {
+        Backend::TempDir => "tempdir",
         Backend::None => "none",
         Backend::Bubblewrap => "bubblewrap",
         Backend::Landlock => "landlock",
@@ -150,6 +155,10 @@ pub fn show_isolation_plan(
     output.push_str(&format!("Isolation: {backend_name}\n"));
     if backend == Backend::None {
         output.push_str("Filesystem enforcement: none (host access is unrestricted)\n");
+    } else if backend == Backend::TempDir {
+        output.push_str(
+            "Filesystem enforcement: none (contract files are copied to a temporary tree)\n",
+        );
     }
     output.push_str("Contract read-only paths:\n");
     for path in &tree.read {
@@ -242,9 +251,13 @@ impl BatchAdapter for ManifestBatchAdapter {
                     format!("contract {} is missing execution.command", manifest.name)
                 })?;
                 let package_root = tree.root.join(&batch.package_prefix);
-                let input = batch_input(manifest, &batch.requests)
-                    .to_string()
-                    .into_bytes();
+                let input = if batch.coverage_fingerprints {
+                    batch_input(manifest, &batch.requests)
+                } else {
+                    batch_input_with_fingerprints(manifest, &batch.requests, false)
+                }
+                .to_string()
+                .into_bytes();
                 let output = tree.run_command_at(
                     backend,
                     &package_root,
@@ -253,11 +266,20 @@ impl BatchAdapter for ManifestBatchAdapter {
                     manifest.language_package.as_deref(),
                 )?;
                 if !output.status.success() {
+                    let stderr = String::from_utf8_lossy(&output.stderr).trim().to_owned();
+                    let stdout = String::from_utf8_lossy(&output.stdout).trim().to_owned();
+                    let diagnostic = if stderr.is_empty() {
+                        if stdout.is_empty() {
+                            "command produced no stdout or stderr"
+                        } else {
+                            &stdout
+                        }
+                    } else {
+                        &stderr
+                    };
                     return Err(format!(
-                        "contract {} execution.command failed ({}): {}",
-                        manifest.name,
-                        output.status,
-                        String::from_utf8_lossy(&output.stderr).trim()
+                        "contract {} execution.command failed ({}): {diagnostic}",
+                        manifest.name, output.status
                     ));
                 }
                 decode_batch_output(&output.stdout, &manifest.name)
@@ -303,6 +325,8 @@ pub struct ContractResult {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CoverageRecord {
     pub contract: String,
+    #[serde(skip)]
+    pub dataset_path: PathBuf,
     pub minimum_line_percent: f64,
     pub dataset_covered_lines: usize,
     pub dataset_executable_lines: usize,
@@ -345,8 +369,53 @@ pub fn run_contract_tree_with_runtime(
     isolation_runtime: Option<PathBuf>,
     adapter: &dyn BatchAdapter,
 ) -> Result<BatchReport, String> {
+    run_contract_tree_with_options(manifest_path, backend, isolation_runtime, true, adapter)
+}
+
+/// Run a contract tree with optional per-entry coverage fingerprint checks.
+/// Aggregate dataset line coverage is always collected.
+pub fn run_contract_tree_with_options(
+    manifest_path: impl AsRef<Path>,
+    backend: Backend,
+    isolation_runtime: Option<PathBuf>,
+    coverage_fingerprints: bool,
+    adapter: &dyn BatchAdapter,
+) -> Result<BatchReport, String> {
+    run_contract_tree_with_fingerprint_mode(
+        manifest_path,
+        backend,
+        isolation_runtime,
+        if coverage_fingerprints {
+            FingerprintMode::Check
+        } else {
+            FingerprintMode::Disabled
+        },
+        adapter,
+    )
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum FingerprintMode {
+    Disabled,
+    Check,
+    Update,
+}
+
+/// Run a contract tree while checking fingerprints, updating them, or
+/// disabling per-entry collection. Aggregate dataset line coverage is always
+/// collected.
+pub fn run_contract_tree_with_fingerprint_mode(
+    manifest_path: impl AsRef<Path>,
+    backend: Backend,
+    isolation_runtime: Option<PathBuf>,
+    fingerprint_mode: FingerprintMode,
+    adapter: &dyn BatchAdapter,
+) -> Result<BatchReport, String> {
+    let coverage_fingerprints = fingerprint_mode != FingerprintMode::Disabled;
+    let require_fingerprints = fingerprint_mode == FingerprintMode::Check;
+    let compare_fingerprints = fingerprint_mode == FingerprintMode::Check;
     let root = ManifestPlan::load(manifest_path)?;
-    let tree = StagedTree::create_with_runtime(&root, isolation_runtime)?;
+    let tree = StagedTree::create_for_backend(&root, backend, isolation_runtime)?;
     let mut batches = Vec::new();
     let mut checks_by_contract = Vec::new();
     let mut names = std::collections::HashSet::new();
@@ -359,11 +428,12 @@ pub fn run_contract_tree_with_runtime(
         }
         let data_path = manifest.package_root.join(&manifest.manifest.files.dataset);
         let dataset = load_dataset(&data_path)?;
-        let (requests, checks) = flatten_dataset(&dataset)?;
+        let (requests, checks) = flatten_dataset_with_fingerprints(&dataset, require_fingerprints)?;
         batches.push(ContractBatch {
             manifest: manifest.clone(),
             package_prefix: package_prefix.to_path_buf(),
             requests,
+            coverage_fingerprints,
         });
         checks_by_contract.push(checks);
     }
@@ -399,7 +469,16 @@ pub fn run_contract_tree_with_runtime(
         let line_threshold_met = combined_executable_lines > 0
             && combined_percent + f64::EPSILON >= minimum_line_percent;
         let outputs = index_results(adapter_batch.results)?;
-        let coverage_scopes = index_coverage_scopes(batch, adapter_batch.coverage_scopes)?;
+        let mut fingerprint_source_lines = std::collections::HashMap::new();
+        let coverage_scopes = if coverage_fingerprints {
+            index_coverage_scopes(
+                batch,
+                adapter_batch.coverage_scopes,
+                &mut fingerprint_source_lines,
+            )?
+        } else {
+            std::collections::HashMap::new()
+        };
         let declared_sources = declared_sources(batch);
         let covered_sources = adapter_batch
             .coverage
@@ -418,6 +497,10 @@ pub fn run_contract_tree_with_runtime(
             .collect();
         report.coverage.push(CoverageRecord {
             contract: batch.manifest.manifest.name.clone(),
+            dataset_path: batch
+                .manifest
+                .package_root
+                .join(&batch.manifest.manifest.files.dataset),
             minimum_line_percent,
             dataset_covered_lines,
             dataset_executable_lines,
@@ -441,6 +524,9 @@ pub fn run_contract_tree_with_runtime(
             checks,
             outputs,
             &coverage_scopes,
+            &fingerprint_source_lines,
+            coverage_fingerprints,
+            compare_fingerprints,
         )?);
     }
     Ok(report)
@@ -658,6 +744,10 @@ fn coverage_line_json(files: &[CoverageLineFile]) -> Vec<Value> {
 fn index_coverage_scopes(
     batch: &ContractBatch,
     scopes: Vec<CoverageScope>,
+    fingerprint_source_lines: &mut std::collections::HashMap<
+        String,
+        std::collections::BTreeMap<u32, String>,
+    >,
 ) -> Result<std::collections::HashMap<ExecutionKey, CoverageFingerprint>, String> {
     let expected_keys = batch
         .requests
@@ -684,7 +774,13 @@ fn index_coverage_scopes(
             }
         }
         let files = canonical_coverage_files(scope.files)?;
-        let fingerprint = coverage_hash(&files);
+        let (fingerprint, source_lines) = coverage_hash(&files, &batch.manifest.package_root)?;
+        for (path, lines) in source_lines {
+            fingerprint_source_lines
+                .entry(path)
+                .or_default()
+                .extend(lines);
+        }
         let record = CoverageFingerprint {
             files,
             fingerprint,
@@ -730,27 +826,85 @@ fn merge_coverage_files(files: Vec<CoverageFile>) -> Vec<CoverageFile> {
         .collect()
 }
 
-fn coverage_hash(files: &[CoverageFile]) -> String {
-    let encoded = coverage_files_json(files);
+fn coverage_hash(
+    files: &[CoverageFile],
+    package_root: &Path,
+) -> Result<
+    (
+        String,
+        std::collections::HashMap<String, std::collections::BTreeMap<u32, String>>,
+    ),
+    String,
+> {
+    let mut sources = Vec::with_capacity(files.len());
+    let mut source_lines = std::collections::HashMap::new();
+    for file in files {
+        let source_path = package_root.join(&file.path);
+        let source = fs::read_to_string(&source_path).map_err(|error| {
+            format!(
+                "cannot read source for coverage fingerprint {}: {error}",
+                source_path.display()
+            )
+        })?;
+        let source_file_lines = source.lines().collect::<Vec<_>>();
+        let mut covered_lines = Vec::with_capacity(file.lines.len());
+        let mut lines_by_number = std::collections::BTreeMap::new();
+        for line_number in &file.lines {
+            let Some(line) = line_number
+                .checked_sub(1)
+                .and_then(|index| source_file_lines.get(index as usize))
+            else {
+                return Err(format!(
+                    "coverage line {line_number} is outside source file {}",
+                    file.path
+                ));
+            };
+            covered_lines.push((*line).to_owned());
+            lines_by_number.insert(*line_number, (*line).to_owned());
+        }
+        source_lines.insert(file.path.clone(), lines_by_number);
+        sources.push((file.path.clone(), covered_lines));
+    }
+    let encoded = coverage_source_lines_json(&sources);
+    let digest = Sha256::digest(encoded);
+    Ok((format!("{:x}", digest)[..32].to_owned(), source_lines))
+}
+
+fn coverage_hash_from_source_lines(
+    files: &[CoverageFile],
+    source_lines: &std::collections::HashMap<String, std::collections::BTreeMap<u32, String>>,
+) -> String {
+    let sources = files
+        .iter()
+        .map(|file| {
+            let lines = file
+                .lines
+                .iter()
+                .map(|number| source_lines[&file.path][number].clone())
+                .collect();
+            (file.path.clone(), lines)
+        })
+        .collect::<Vec<_>>();
+    let encoded = coverage_source_lines_json(&sources);
     let digest = Sha256::digest(encoded);
     format!("{:x}", digest)[..32].to_owned()
 }
 
-fn coverage_files_json(files: &[CoverageFile]) -> Vec<u8> {
+fn coverage_source_lines_json(sources: &[(String, Vec<String>)]) -> Vec<u8> {
     let mut encoded = Vec::new();
     encoded.push(b'[');
-    for (file_index, file) in files.iter().enumerate() {
+    for (file_index, (path, lines)) in sources.iter().enumerate() {
         if file_index > 0 {
             encoded.push(b',');
         }
         encoded.extend_from_slice(b"{\"path\":");
-        push_json_string(&mut encoded, &file.path);
+        push_json_string(&mut encoded, path);
         encoded.extend_from_slice(b",\"lines\":[");
-        for (line_index, line) in file.lines.iter().enumerate() {
+        for (line_index, line) in lines.iter().enumerate() {
             if line_index > 0 {
                 encoded.push(b',');
             }
-            encoded.extend_from_slice(line.to_string().as_bytes());
+            push_json_string(&mut encoded, line);
         }
         encoded.extend_from_slice(b"]}");
     }
@@ -788,6 +942,7 @@ fn coverage_for_key(
     scopes: &std::collections::HashMap<ExecutionKey, CoverageFingerprint>,
     key: &ExecutionKey,
     expected: Option<&str>,
+    compare_expected: bool,
 ) -> (Option<CoverageFingerprint>, Option<String>) {
     let Some(mut coverage) = scopes.get(key).cloned() else {
         return (
@@ -804,7 +959,11 @@ fn coverage_for_key(
             )),
         );
     }
-    compare_fingerprint(&mut coverage, expected);
+    if compare_expected {
+        compare_fingerprint(&mut coverage, expected);
+    } else {
+        coverage.expected_fingerprint = expected.map(str::to_owned);
+    }
     let mismatch = (coverage.baseline_matches == Some(false)).then(|| {
         format!(
             "coverage fingerprint mismatch: expected {}, observed {}",
@@ -815,10 +974,13 @@ fn coverage_for_key(
     (Some(coverage), mismatch)
 }
 
-fn coverage_for_files(files: Vec<CoverageFile>) -> Option<CoverageFingerprint> {
+fn coverage_for_files(
+    files: Vec<CoverageFile>,
+    source_lines: &std::collections::HashMap<String, std::collections::BTreeMap<u32, String>>,
+) -> Option<CoverageFingerprint> {
     let files = merge_coverage_files(files);
     Some(CoverageFingerprint {
-        fingerprint: coverage_hash(&files),
+        fingerprint: coverage_hash_from_source_lines(&files, source_lines),
         files,
         expected_fingerprint: None,
         baseline_matches: None,
@@ -832,16 +994,25 @@ fn compare_fingerprint(coverage: &mut CoverageFingerprint, expected: Option<&str
 
 pub fn load_dataset(path: &Path) -> Result<Dataset, String> {
     let bytes = fs::read(path).map_err(|e| e.to_string())?;
-    match path.extension().and_then(|extension| extension.to_str()) {
+    let value: Value = match path.extension().and_then(|extension| extension.to_str()) {
         Some("json") => serde_json::from_slice(&bytes)
-            .map_err(|e| format!("invalid dataset {}: {e}", path.display())),
+            .map_err(|e| format!("invalid dataset {}: {e}", path.display()))?,
         Some("yaml" | "yml") => serde_yaml::from_slice(&bytes)
-            .map_err(|e| format!("invalid dataset {}: {e}", path.display())),
+            .map_err(|e| format!("invalid dataset {}: {e}", path.display()))?,
         _ => Err(format!(
             "dataset must use .json, .yaml, or .yml: {}",
             path.display()
-        )),
-    }
+        ))?,
+    };
+    validate_dataset_schema(&value)
+        .map_err(|error| format!("invalid dataset {}: {error}", path.display()))?;
+    serde_json::from_value(value).map_err(|e| format!("invalid dataset {}: {e}", path.display()))
+}
+
+fn validate_dataset_schema(value: &Value) -> Result<(), String> {
+    DatasetSchema::iter_errors(value)
+        .next()
+        .map_or(Ok(()), |error| Err(error.to_string()))
 }
 
 #[derive(Clone)]
@@ -850,7 +1021,10 @@ enum Check {
     Sequence(SequenceSpec),
 }
 
-fn flatten_dataset(dataset: &Dataset) -> Result<(Vec<ExecutionRequest>, Vec<Check>), String> {
+fn flatten_dataset_with_fingerprints(
+    dataset: &Dataset,
+    coverage_fingerprints: bool,
+) -> Result<(Vec<ExecutionRequest>, Vec<Check>), String> {
     if dataset.version != 1 {
         return Err("dataset version must be 1".into());
     }
@@ -870,7 +1044,9 @@ fn flatten_dataset(dataset: &Dataset) -> Result<(Vec<ExecutionRequest>, Vec<Chec
         }
         match case {
             CaseSpec::Call(call) => {
-                validate_fingerprint(&call.coverage_fingerprint, "case")?;
+                if coverage_fingerprints {
+                    validate_fingerprint(&call.coverage_fingerprint, "case")?;
+                }
                 validate_setup(&call.setup)?;
                 requests.push(ExecutionRequest {
                     key: ExecutionKey {
@@ -898,7 +1074,9 @@ fn flatten_dataset(dataset: &Dataset) -> Result<(Vec<ExecutionRequest>, Vec<Chec
                             sequence.id, step.id
                         ));
                     }
-                    validate_fingerprint(&step.coverage_fingerprint, "step")?;
+                    if coverage_fingerprints {
+                        validate_fingerprint(&step.coverage_fingerprint, "step")?;
+                    }
                     validate_setup(&step.setup)?;
                     requests.push(ExecutionRequest {
                         key: ExecutionKey {
@@ -968,6 +1146,12 @@ fn verify_dataset(
     checks: Vec<Check>,
     mut outputs: std::collections::HashMap<ExecutionKey, AdapterResult>,
     coverage_scopes: &std::collections::HashMap<ExecutionKey, CoverageFingerprint>,
+    fingerprint_source_lines: &std::collections::HashMap<
+        String,
+        std::collections::BTreeMap<u32, String>,
+    >,
+    coverage_fingerprints: bool,
+    compare_fingerprints: bool,
 ) -> Result<Vec<ContractResult>, String> {
     let mut cases = Vec::new();
     for check in checks {
@@ -981,9 +1165,17 @@ fn verify_dataset(
                     .remove(&key)
                     .ok_or_else(|| format!("adapter omitted result for {}", case.id))?;
                 let (passed, matched_by, error) =
-                    evaluate_result(&result, &case.expected, case.predicate.as_deref());
-                let (coverage, coverage_error) =
-                    coverage_for_key(coverage_scopes, &key, case.coverage_fingerprint.as_deref());
+                    evaluate_result(&result, case.expected.as_ref(), case.predicate.as_deref());
+                let (coverage, coverage_error) = if coverage_fingerprints {
+                    coverage_for_key(
+                        coverage_scopes,
+                        &key,
+                        case.coverage_fingerprint.as_deref(),
+                        compare_fingerprints,
+                    )
+                } else {
+                    (None, None)
+                };
                 let coverage_error =
                     coverage_error.map(|error| format!("{}/{}: {error}", manifest.name, case.id));
                 let passed = passed && coverage_error.is_none();
@@ -1012,12 +1204,17 @@ fn verify_dataset(
                         format!("adapter omitted result for {}/{}", case.id, step.id)
                     })?;
                     let (passed, matched_by, error) =
-                        evaluate_result(&result, &step.expected, step.predicate.as_deref());
-                    let (coverage, coverage_error) = coverage_for_key(
-                        coverage_scopes,
-                        &key,
-                        step.coverage_fingerprint.as_deref(),
-                    );
+                        evaluate_result(&result, step.expected.as_ref(), step.predicate.as_deref());
+                    let (coverage, coverage_error) = if coverage_fingerprints {
+                        coverage_for_key(
+                            coverage_scopes,
+                            &key,
+                            step.coverage_fingerprint.as_deref(),
+                            compare_fingerprints,
+                        )
+                    } else {
+                        (None, None)
+                    };
                     if let Some(observed) = &coverage {
                         case_coverage_files.extend(observed.files.clone());
                     }
@@ -1037,7 +1234,8 @@ fn verify_dataset(
                         coverage,
                     });
                 }
-                let case_coverage = coverage_for_files(case_coverage_files);
+                let case_coverage =
+                    coverage_for_files(case_coverage_files, fingerprint_source_lines);
                 cases.push(ContractResult {
                     contract: manifest.name.clone(),
                     case_id: case.id,
@@ -1059,7 +1257,7 @@ fn verify_dataset(
 
 fn evaluate_result(
     result: &AdapterResult,
-    expected: &Value,
+    expected: Option<&Value>,
     predicate: Option<&str>,
 ) -> (bool, Option<String>, Option<String>) {
     let Some(output) = displayed_result(result) else {
@@ -1069,9 +1267,10 @@ fn evaluate_result(
             Some("adapter returned neither output nor error".into()),
         );
     };
-    match match_output(&output, Some(expected), predicate) {
+    match match_output(&output, expected, predicate) {
         Ok(MatchKind::Expected) => (true, Some("expected".into()), None),
         Ok(MatchKind::ExpectedAndPredicate) => (true, Some("expected+predicate".into()), None),
+        Ok(MatchKind::Predicate) => (true, Some("predicate".into()), None),
         Err(error) => (false, None, Some(error)),
     }
 }
@@ -1085,17 +1284,31 @@ fn displayed_result(result: &AdapterResult) -> Option<Value> {
 
 /// Contract-local JSON batch envelope. Paths remain relative to that contract.
 pub fn batch_input(manifest: &Manifest, requests: &[ExecutionRequest]) -> Value {
+    batch_input_with_fingerprints(manifest, requests, true)
+}
+
+/// Build the language-adapter request. Disabling per-entry fingerprints does
+/// not disable aggregate dataset coverage collection.
+pub fn batch_input_with_fingerprints(
+    manifest: &Manifest,
+    requests: &[ExecutionRequest],
+    coverage_fingerprints: bool,
+) -> Value {
     let mut coverage_sources = vec![manifest.files.validator.clone()];
     coverage_sources.extend(manifest.files.support.iter().cloned());
     coverage_sources.retain(|source| is_source_file(source));
-    json!({
+    let mut input = json!({
         "contract": manifest.name,
         "package": ".",
         "validator": manifest.files.validator,
         "supplemental_tests": manifest.files.supplemental_tests,
         "coverage_sources": coverage_sources,
         "requests": requests,
-    })
+    });
+    if !coverage_fingerprints {
+        input["coverage_fingerprints"] = Value::Bool(false);
+    }
+    input
 }
 
 #[cfg(test)]

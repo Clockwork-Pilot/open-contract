@@ -1,6 +1,9 @@
-use runner_batch::{run_contract_tree_with_runtime, show_isolation_plan, BatchReport, ManifestBatchAdapter};
-use runner_isolation::Backend;
+use runner_batch::{
+    run_contract_tree_with_fingerprint_mode, show_isolation_plan, BatchReport, FingerprintMode,
+    ManifestBatchAdapter,
+};
 use runner_errors::ContractError;
+use runner_isolation::{auto_backend, Backend};
 use serde_json::{json, Value};
 use std::fs;
 use std::path::PathBuf;
@@ -25,7 +28,7 @@ pub fn execute(arguments: &[String]) -> CliOutput {
         Err(error) => CliOutput {
             exit_code: error.exit_code(),
             stdout,
-            stderr: format!("open-contract-core: {error}\n"),
+            stderr: format!("contract-runner: {error}\n"),
         },
     }
 }
@@ -37,46 +40,125 @@ fn run(mut args: impl Iterator<Item = String>, stdout: &mut String) -> Result<()
         return Ok(());
     }
     if subcommand.as_deref() != Some("run-manifest") {
-        return Err((2, "usage: open-contract-core <run-manifest|show-isolation-plan> <contract.yaml> --isolation <none|bwrap|landlock> [--isolation-runtime <path>] [--coverage-report <path>]".into()).into());
+        return Err((2, "usage: contract-runner <run-manifest|show-isolation-plan> <contract.yaml> [--isolation <auto|tempdir|none|bwrap|landlock>] [--isolation-runtime <path>] [--coverage-report <path>] [--disable-fingerprints|--update-fingerprints]".into()).into());
     }
     let manifest = PathBuf::from(args.next().ok_or((2, "missing manifest path".into()))?);
     let mut backend = None;
     let mut isolation_runtime = None;
     let mut coverage_report = PathBuf::from(".open-contract/coverage/latest.json");
+    let mut disable_fingerprints = false;
+    let mut update_fingerprints = false;
     while let Some(arg) = args.next() {
         match arg.as_str() {
             "--isolation" => {
-                backend = Some(parse_backend(
+                backend = Some(parse_isolation_choice(
                     &args.next().ok_or((2, "missing isolation backend".into()))?,
                 )?)
             }
             "--coverage-report" => {
                 coverage_report = PathBuf::from(
-                    args.next().ok_or((2, "missing coverage report path".into()))?,
+                    args.next()
+                        .ok_or((2, "missing coverage report path".into()))?,
                 );
             }
             "--isolation-runtime" => {
                 isolation_runtime = Some(PathBuf::from(
-                    args.next().ok_or((2, "missing isolation runtime path".into()))?,
+                    args.next()
+                        .ok_or((2, "missing isolation runtime path".into()))?,
                 ));
             }
+            "--disable-fingerprints" => disable_fingerprints = true,
+            "--update-fingerprints" => update_fingerprints = true,
             other => return Err((2, format!("unknown argument: {other}")).into()),
         }
     }
-    let backend = backend.ok_or((2, "--isolation is required".into()))?;
-    if backend == Backend::None && isolation_runtime.is_some() {
-        return Err((2, "--isolation-runtime cannot be used with --isolation none".into()).into());
+    if disable_fingerprints && update_fingerprints {
+        return Err((
+            2,
+            "--update-fingerprints cannot be combined with --disable-fingerprints".into(),
+        )
+            .into());
     }
-    let report = run_contract_tree_with_runtime(manifest, backend, isolation_runtime, &ManifestBatchAdapter)
-        .map_err(|error| ContractError::from((2, error)).context("contract execution"))?;
+    let choice = match backend {
+        Some(backend) => backend,
+        None => isolation_from_environment()?.unwrap_or(IsolationChoice::Auto),
+    };
+    let (backend, auto_attempts) = resolve_isolation_choice(choice, &mut isolation_runtime);
+    write_auto_selection(stdout, backend, auto_attempts.as_deref());
+    let environment_disables_fingerprints = fingerprints_disabled_by_environment()?;
+    if update_fingerprints && environment_disables_fingerprints {
+        return Err((
+            2,
+            "--update-fingerprints cannot be used when OPEN_CONTRACT_DISABLE_FINGERPRINTS=1".into(),
+        )
+            .into());
+    }
+    let fingerprint_mode = if update_fingerprints {
+        FingerprintMode::Update
+    } else if disable_fingerprints || environment_disables_fingerprints {
+        FingerprintMode::Disabled
+    } else {
+        FingerprintMode::Check
+    };
+    let coverage_fingerprints = fingerprint_mode != FingerprintMode::Disabled;
+    if matches!(backend, Backend::None | Backend::TempDir) && isolation_runtime.is_some() {
+        let isolation_name = if backend == Backend::TempDir {
+            "tempdir"
+        } else {
+            "none"
+        };
+        return Err((
+            2,
+            format!(
+                "--isolation-runtime cannot be used with --isolation {}",
+                isolation_name
+            ),
+        )
+            .into());
+    }
+    let report = run_contract_tree_with_fingerprint_mode(
+        manifest,
+        backend,
+        isolation_runtime,
+        fingerprint_mode,
+        &ManifestBatchAdapter,
+    )
+    .map_err(|error| ContractError::from((2, error)).context("contract execution"))?;
     write_adapter_coverage_reports(&coverage_report, &report)?;
+    if update_fingerprints
+        && report_passed(&report) == report_total(&report)
+        && report_coverage_complete(&report, coverage_fingerprints)
+    {
+        let updates = update_dataset_fingerprints(&report)?;
+        stdout.push_str(&updates);
+    } else if update_fingerprints {
+        stdout.push_str(
+            "Fingerprints were not updated because dataset cases or coverage requirements failed\n",
+        );
+    }
+    if !coverage_fingerprints {
+        stdout.push_str("Coverage fingerprints: disabled\n");
+    }
     stdout.push_str(&concise_summary(&report));
     stdout.push_str(&format!("Coverage report: {}\n", coverage_report.display()));
     if report_passed(&report) != report_total(&report) {
-        return Err((1, format!("{}/{} dataset cases passed across {} contract(s)", report_passed(&report), report_total(&report), report.coverage.len())).into());
+        return Err((
+            1,
+            format!(
+                "{}/{} dataset cases passed across {} contract(s)",
+                report_passed(&report),
+                report_total(&report),
+                report.coverage.len()
+            ),
+        )
+            .into());
     }
-    if !report_coverage_complete(&report) {
-        return Err((1, "coverage requirements not met; see adapter coverage report".into()).into());
+    if !report_coverage_complete(&report, coverage_fingerprints) {
+        return Err((
+            1,
+            "coverage requirements not met; see adapter coverage report".into(),
+        )
+            .into());
     }
     Ok(())
 }
@@ -88,7 +170,7 @@ fn show_plan(mut args: impl Iterator<Item = String>) -> Result<String, ContractE
     while let Some(arg) = args.next() {
         match arg.as_str() {
             "--isolation" => {
-                backend = Some(parse_backend(
+                backend = Some(parse_isolation_choice(
                     &args.next().ok_or((2, "missing isolation backend".into()))?,
                 )?);
             }
@@ -101,16 +183,44 @@ fn show_plan(mut args: impl Iterator<Item = String>) -> Result<String, ContractE
             other => return Err((2, format!("unknown argument: {other}")).into()),
         }
     }
-    let backend = backend.ok_or((2, "--isolation is required".into()))?;
-    if backend == Backend::None && isolation_runtime.is_some() {
+    let choice = match backend {
+        Some(backend) => backend,
+        None => isolation_from_environment()?.unwrap_or(IsolationChoice::Auto),
+    };
+    let (backend, auto_attempts) = resolve_isolation_choice(choice, &mut isolation_runtime);
+    if matches!(backend, Backend::None | Backend::TempDir) && isolation_runtime.is_some() {
+        let isolation_name = if backend == Backend::TempDir {
+            "tempdir"
+        } else {
+            "none"
+        };
         return Err((
             2,
-            "--isolation-runtime cannot be used with --isolation none".into(),
+            format!(
+                "--isolation-runtime cannot be used with --isolation {}",
+                isolation_name
+            ),
         )
             .into());
     }
-    show_isolation_plan(manifest, backend, isolation_runtime)
-        .map_err(|error| ContractError::from((2, error)).context("isolation plan"))
+    let mut output = show_isolation_plan(manifest, backend, isolation_runtime)
+        .map_err(|error| ContractError::from((2, error)).context("isolation plan"))?;
+    write_auto_selection(&mut output, backend, auto_attempts.as_deref());
+    Ok(output)
+}
+
+fn write_auto_selection(output: &mut String, backend: Backend, attempts: Option<&[String]>) {
+    let Some(attempts) = attempts else {
+        output.push_str(&format!("Isolation mode: {}\n", backend_name(backend)));
+        return;
+    };
+    output.push_str(&format!(
+        "Isolation auto selected: {}\n",
+        backend_name(backend)
+    ));
+    for attempt in attempts {
+        output.push_str(&format!("  {attempt}\n"));
+    }
 }
 
 /// Persist adapter reports without interpreting or normalizing their contents.
@@ -151,6 +261,172 @@ fn write_adapter_coverage_reports(
     })
 }
 
+fn update_dataset_fingerprints(report: &BatchReport) -> Result<String, ContractError> {
+    let mut output = String::new();
+    for coverage in &report.coverage {
+        let mut pins = Vec::new();
+        for result in report
+            .results
+            .iter()
+            .filter(|result| result.contract == coverage.contract)
+        {
+            if result.steps.is_empty() {
+                pins.extend(result.coverage.as_ref().map(|fingerprint| {
+                    (
+                        result.case_id.as_str(),
+                        None,
+                        fingerprint.fingerprint.as_str(),
+                        fingerprint.files.clone(),
+                    )
+                }));
+            }
+            pins.extend(result.steps.iter().filter_map(|step| {
+                step.coverage.as_ref().map(|fingerprint| {
+                    (
+                        result.case_id.as_str(),
+                        Some(step.id.as_str()),
+                        fingerprint.fingerprint.as_str(),
+                        fingerprint.files.clone(),
+                    )
+                })
+            }));
+        }
+        let dataset_path = &coverage.dataset_path;
+        let source = fs::read(dataset_path).map_err(|error| {
+            ContractError::from((
+                2,
+                format!("cannot read dataset {}: {error}", dataset_path.display()),
+            ))
+        })?;
+        let mut dataset: serde_yaml::Value =
+            serde_yaml::from_slice(&source).map_err(yaml_dataset_error)?;
+        let cases = dataset
+            .as_mapping_mut()
+            .and_then(|root| root.get_mut(serde_yaml::Value::String("cases".into())))
+            .and_then(serde_yaml::Value::as_sequence_mut)
+            .ok_or_else(|| {
+                ContractError::from((
+                    2,
+                    format!("dataset has no cases array: {}", dataset_path.display()),
+                ))
+            })?;
+        let mut changed = Vec::new();
+        for (case_id, step_id, observed, files) in pins {
+            let case = cases
+                .iter_mut()
+                .find(|case| mapping_string(case, "id") == Some(case_id))
+                .ok_or_else(|| {
+                    ContractError::from((
+                        2,
+                        format!("case {case_id} not found in {}", dataset_path.display()),
+                    ))
+                })?;
+            let target = if let Some(step_id) = step_id {
+                case.as_mapping_mut()
+                    .and_then(|mapping| mapping.get_mut(serde_yaml::Value::String("steps".into())))
+                    .and_then(serde_yaml::Value::as_sequence_mut)
+                    .and_then(|steps| {
+                        steps
+                            .iter_mut()
+                            .find(|step| mapping_string(step, "id") == Some(step_id))
+                    })
+                    .ok_or_else(|| {
+                        ContractError::from((
+                            2,
+                            format!(
+                                "step {case_id}/{step_id} not found in {}",
+                                dataset_path.display()
+                            ),
+                        ))
+                    })?
+            } else {
+                case
+            };
+            // The target was located by its string `id` above, so it is a mapping.
+            let old = target["coverage_fingerprint"]
+                .as_str()
+                .unwrap_or("<missing>")
+                .to_owned();
+            if old != observed {
+                target["coverage_fingerprint"] = serde_yaml::Value::String(observed.to_owned());
+                changed.push((
+                    case_id.to_owned(),
+                    step_id.map(str::to_owned),
+                    old,
+                    observed.to_owned(),
+                    files,
+                ));
+            }
+        }
+        if changed.is_empty() {
+            continue;
+        }
+        // JSON is also valid YAML, so one serializer preserves parseability for
+        // both supported dataset extensions while keeping refresh output stable.
+        let serialized = serde_json::to_string_pretty(&dataset).map_err(json_dataset_error)? + "\n";
+        fs::write(dataset_path, serialized).map_err(|error| {
+            ContractError::from((
+                2,
+                format!("cannot update dataset {}: {error}", dataset_path.display()),
+            ))
+        })?;
+        for (case_id, step_id, old, observed, files) in &changed {
+            let subject = step_id
+                .as_ref()
+                .map(|step| format!("{case_id}/{step}"))
+                .unwrap_or_else(|| case_id.clone());
+            output.push_str(&format!(
+                "Updated {}/{} fingerprint: {} -> {}\n",
+                coverage.contract, subject, old, observed
+            ));
+            output.push_str(&format!("  covered: {}\n", format_covered_lines(files)));
+        }
+        output.push_str(&format!(
+            "Updated {} fingerprint(s) in {}\n",
+            changed.len(),
+            dataset_path
+                .file_name()
+                .and_then(|name| name.to_str())
+                .unwrap_or("dataset")
+        ));
+    }
+    if output.is_empty() {
+        output.push_str("Fingerprints already match; no dataset changes made\n");
+    }
+    Ok(output)
+}
+
+fn yaml_dataset_error(error: serde_yaml::Error) -> ContractError {
+    ContractError::from((2, format!("YAML dataset error: {error}")))
+}
+
+fn json_dataset_error(error: serde_json::Error) -> ContractError {
+    ContractError::from((2, format!("JSON dataset error: {error}")))
+}
+
+fn format_covered_lines(files: &[runner_batch::CoverageFile]) -> String {
+    files
+        .iter()
+        .map(|file| {
+            let lines = file
+                .lines
+                .iter()
+                .map(u32::to_string)
+                .collect::<Vec<_>>()
+                .join(",");
+            format!("{}:{lines}", file.path)
+        })
+        .collect::<Vec<_>>()
+        .join("; ")
+}
+
+fn mapping_string<'a>(value: &'a serde_yaml::Value, key: &str) -> Option<&'a str> {
+    value
+        .as_mapping()?
+        .get(serde_yaml::Value::String(key.into()))?
+        .as_str()
+}
+
 fn concise_summary(report: &BatchReport) -> String {
     let mut output = format!(
         "Dataset cases: {}/{} passed across {} contract(s)\n",
@@ -184,7 +460,7 @@ fn report_total(report: &BatchReport) -> usize {
     report.results.len()
 }
 
-fn report_coverage_complete(report: &BatchReport) -> bool {
+fn report_coverage_complete(report: &BatchReport, coverage_fingerprints: bool) -> bool {
     !report.coverage.is_empty()
         && report.coverage.iter().all(|record| {
             record.missing_sources.is_empty()
@@ -192,23 +468,87 @@ fn report_coverage_complete(report: &BatchReport) -> bool {
                 && record.line_threshold_met
         })
         && !report.results.is_empty()
-        && report.results.iter().all(|result| {
-            let valid_scope = |coverage: &Option<runner_batch::CoverageFingerprint>| {
-                coverage.as_ref().is_some_and(|coverage| {
-                    !coverage.files.is_empty() && coverage.baseline_matches != Some(false)
-                })
-            };
-            valid_scope(&result.coverage)
-                && result.steps.iter().all(|step| valid_scope(&step.coverage))
-        })
+        && (!coverage_fingerprints
+            || report.results.iter().all(|result| {
+                let valid_scope = |coverage: &Option<runner_batch::CoverageFingerprint>| {
+                    coverage.as_ref().is_some_and(|coverage| {
+                        !coverage.files.is_empty() && coverage.baseline_matches != Some(false)
+                    })
+                };
+                valid_scope(&result.coverage)
+                    && result.steps.iter().all(|step| valid_scope(&step.coverage))
+            }))
 }
 
-fn parse_backend(value: &str) -> Result<Backend, ContractError> {
+#[derive(Clone, Copy)]
+enum IsolationChoice {
+    Auto,
+    Explicit(Backend),
+}
+
+fn isolation_from_environment() -> Result<Option<IsolationChoice>, ContractError> {
+    std::env::var("OPEN_CONTRACT_ISOLATION")
+        .ok()
+        .map(|value| parse_isolation_choice(&value))
+        .transpose()
+}
+
+fn resolve_isolation_choice(
+    choice: IsolationChoice,
+    isolation_runtime: &mut Option<PathBuf>,
+) -> (Backend, Option<Vec<String>>) {
+    match choice {
+        IsolationChoice::Auto => {
+            let (backend, mut attempts) = auto_backend(isolation_runtime.as_deref());
+            if matches!(backend, Backend::TempDir | Backend::None) && isolation_runtime.is_some() {
+                *isolation_runtime = None;
+                attempts
+                    .push("custom isolation runtime is not used by the selected fallback".into());
+            }
+            (backend, Some(attempts))
+        }
+        IsolationChoice::Explicit(backend) => (backend, None),
+    }
+}
+
+fn fingerprints_disabled_by_environment() -> Result<bool, ContractError> {
+    let Some(value) = std::env::var("OPEN_CONTRACT_DISABLE_FINGERPRINTS").ok() else {
+        return Ok(false);
+    };
+    match value.trim().to_ascii_lowercase().as_str() {
+        "1" | "true" | "yes" | "on" => Ok(true),
+        "0" | "false" | "no" | "off" => Ok(false),
+        _ => Err((
+            2,
+            "OPEN_CONTRACT_DISABLE_FINGERPRINTS must be 0/1, true/false, yes/no, or on/off".into(),
+        )
+            .into()),
+    }
+}
+
+fn parse_isolation_choice(value: &str) -> Result<IsolationChoice, ContractError> {
     match value {
-        "none" => Ok(Backend::None),
-        "bwrap" => Ok(Backend::Bubblewrap),
-        "landlock" => Ok(Backend::Landlock),
-        _ => Err((2, format!("invalid isolation backend {value:?}; expected none, bwrap, or landlock")).into()),
+        "auto" => Ok(IsolationChoice::Auto),
+        "tempdir" => Ok(IsolationChoice::Explicit(Backend::TempDir)),
+        "none" => Ok(IsolationChoice::Explicit(Backend::None)),
+        "bwrap" => Ok(IsolationChoice::Explicit(Backend::Bubblewrap)),
+        "landlock" => Ok(IsolationChoice::Explicit(Backend::Landlock)),
+        _ => Err((
+            2,
+            format!(
+                "invalid isolation backend {value:?}; expected auto, tempdir, none, bwrap, or landlock"
+            ),
+        )
+            .into()),
+    }
+}
+
+fn backend_name(backend: Backend) -> &'static str {
+    match backend {
+        Backend::TempDir => "tempdir",
+        Backend::None => "none",
+        Backend::Bubblewrap => "bwrap",
+        Backend::Landlock => "landlock",
     }
 }
 

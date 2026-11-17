@@ -5,6 +5,7 @@ use serde_json::Value;
 pub enum MatchKind {
     Expected,
     ExpectedAndPredicate,
+    Predicate,
 }
 
 pub fn match_output(
@@ -12,16 +13,22 @@ pub fn match_output(
     expected: Option<&Value>,
     predicate: Option<&str>,
 ) -> Result<MatchKind, String> {
-    let expected = expected.ok_or_else(|| "expected output is required".to_string())?;
-    if !matches_expected_subset(actual, expected) {
+    if expected.is_none() && predicate.is_none() {
+        return Err("expected output or predicate is required".into());
+    }
+    if expected.is_some_and(|expected| !matches_expected_subset(actual, expected)) {
         return Err("output did not match expected subset".into());
     }
     if predicate.is_some_and(|expression| !evaluate_predicate(actual, expression)) {
         return Err("output did not satisfy predicate".into());
     }
-    match predicate.is_some() {
-        true => Ok(MatchKind::ExpectedAndPredicate),
-        false => Ok(MatchKind::Expected),
+    if expected.is_none() {
+        return Ok(MatchKind::Predicate);
+    }
+    if predicate.is_some() {
+        Ok(MatchKind::ExpectedAndPredicate)
+    } else {
+        Ok(MatchKind::Expected)
     }
 }
 

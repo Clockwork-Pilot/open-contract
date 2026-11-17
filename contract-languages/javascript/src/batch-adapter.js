@@ -91,10 +91,12 @@ try {
 		}
 		for (const { item, result } of batchResults) {
 			results.push(result);
-			coverageScopes.set(JSON.stringify(item.key), {
-				key: item.key,
-				files: caseCoverage.map(({ path: source, covered_lines: lines }) => ({ path: source, lines })),
-			});
+			if (request.coverage_fingerprints !== false) {
+				coverageScopes.set(JSON.stringify(item.key), {
+					key: item.key,
+					files: caseCoverage.map(({ path: source, covered_lines: lines }) => ({ path: source, lines })),
+				});
+			}
 		}
 		index += batch.length;
 	}
@@ -183,7 +185,9 @@ const coverage = {
 	sources: [...new Set(files.map((item) => item.url))].sort(),
 	result: files,
 };
-const scopes = requests.map((item) => coverageScopes.get(JSON.stringify(item.key)) ?? ({ key: item.key, files: [] }));
+const scopes = request.coverage_fingerprints === false
+	? []
+	: requests.map((item) => coverageScopes.get(JSON.stringify(item.key)) ?? ({ key: item.key, files: [] }));
 const additionalCoverageLines = supplementalTests.length && additionalTestCoverage?.executed
 	? await normalizedLineCoverage(additionalCoverageSnapshots, packageRoot, request.coverage_sources ?? [])
 	: [];

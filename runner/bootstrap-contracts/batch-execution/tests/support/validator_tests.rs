@@ -78,7 +78,7 @@ fn harness_scenarios() -> Vec<HarnessScenario> {
                                 "value": 1
                             },
                             "expected": {"error": "fixture error"},
-                            "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                            "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
                         }
                     ]
                 }
@@ -101,7 +101,7 @@ fn harness_scenarios() -> Vec<HarnessScenario> {
                             "expected": {
                                 "value": 1
                             },
-                            "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                            "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
                         }
                     ]
                 }
@@ -122,7 +122,7 @@ fn harness_scenarios() -> Vec<HarnessScenario> {
                                 "value": 1
                             },
                             "expected": {"error": "other error"},
-                            "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                            "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
                         }
                     ]
                 }
@@ -145,7 +145,7 @@ fn harness_scenarios() -> Vec<HarnessScenario> {
                             "expected": {
                                 "value": 1
                             },
-                            "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                            "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
                         }
                     ]
                 }
@@ -168,7 +168,7 @@ fn harness_scenarios() -> Vec<HarnessScenario> {
                             "expected": {
                                 "value": 1
                             },
-                            "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                            "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
                         }
                     ]
                 }
@@ -192,7 +192,7 @@ fn harness_scenarios() -> Vec<HarnessScenario> {
                                         "value": 1
                                     },
                                     "expected": {"error": "fixture error"},
-                                    "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                                    "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
                                 }
                             ]
                         }
@@ -218,7 +218,7 @@ fn harness_scenarios() -> Vec<HarnessScenario> {
                                         "value": 1
                                     },
                                     "expected": {"value": 1},
-                                    "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                                    "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
                                 }
                             ]
                         }
@@ -243,7 +243,7 @@ fn harness_scenarios() -> Vec<HarnessScenario> {
                             "expected": {
                                 "value": 1
                             },
-                            "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                            "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
                         }
                     ]
                 }
@@ -266,7 +266,7 @@ fn harness_scenarios() -> Vec<HarnessScenario> {
                             "expected": {
                                 "value": 1
                             },
-                            "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                            "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
                         }
                     ]
                 }
@@ -291,7 +291,7 @@ fn harness_scenarios() -> Vec<HarnessScenario> {
                             "expected": {
                                 "value": 1
                             },
-                            "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                            "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
                         }
                     ]
                 }
@@ -316,7 +316,7 @@ fn harness_scenarios() -> Vec<HarnessScenario> {
                             "expected": {
                                 "value": 1
                             },
-                            "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                            "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
                         }
                     ]
                 }
@@ -341,7 +341,7 @@ fn harness_scenarios() -> Vec<HarnessScenario> {
                             "expected": {
                                 "value": 1
                             },
-                            "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                            "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
                         }
                     ]
                 }
@@ -366,7 +366,7 @@ fn harness_scenarios() -> Vec<HarnessScenario> {
                             "expected": {
                                 "value": 1
                             },
-                            "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                            "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
                         }
                     ]
                 }
@@ -391,7 +391,7 @@ fn harness_scenarios() -> Vec<HarnessScenario> {
                             "expected": {
                                 "value": 1
                             },
-                            "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                            "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
                         }
                     ]
                 }
@@ -416,7 +416,7 @@ fn harness_scenarios() -> Vec<HarnessScenario> {
                             "expected": {
                                 "value": 1
                             },
-                            "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                            "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
                         }
                     ]
                 }
@@ -441,7 +441,7 @@ fn harness_scenarios() -> Vec<HarnessScenario> {
                             "expected": {
                                 "value": 1
                             },
-                            "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                            "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
                         }
                     ]
                 }
@@ -466,7 +466,7 @@ fn harness_scenarios() -> Vec<HarnessScenario> {
                             "expected": {
                                 "value": 1
                             },
-                            "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                            "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
                         }
                     ]
                 }
@@ -495,7 +495,7 @@ fn harness_scenarios() -> Vec<HarnessScenario> {
                                     "expected": {
                                         "value": 1
                                     },
-                                    "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                                    "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
                                 }
                             ]
                         }
@@ -523,7 +523,7 @@ fn harness_scenarios() -> Vec<HarnessScenario> {
                             "expected": {
                                 "value": 1
                             },
-                            "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                            "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
                         }
                     ]
                 }
@@ -548,7 +548,7 @@ fn harness_scenarios() -> Vec<HarnessScenario> {
                             "expected": {
                                 "value": 1
                             },
-                            "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                            "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
                         }
                     ]
                 }
@@ -572,7 +572,7 @@ fn harness_scenarios() -> Vec<HarnessScenario> {
                             "id": "one",
                             "input": {},
                             "expected": {},
-                            "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                            "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
                         }
                     ]
                 }
@@ -595,7 +595,7 @@ fn harness_scenarios() -> Vec<HarnessScenario> {
                             "id": "one",
                             "input": {},
                             "expected": {},
-                            "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                            "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
                         }
                     ]
                 }
@@ -618,7 +618,7 @@ fn harness_scenarios() -> Vec<HarnessScenario> {
                             "id": "one",
                             "input": {},
                             "expected": {},
-                            "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                            "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
                         }
                     ]
                 }
@@ -641,7 +641,7 @@ fn harness_scenarios() -> Vec<HarnessScenario> {
                             "id": "one",
                             "input": {},
                             "expected": {},
-                            "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                            "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
                         }
                     ]
                 }
@@ -669,7 +669,7 @@ fn harness_scenarios() -> Vec<HarnessScenario> {
                             "id": "one",
                             "input": {},
                             "expected": {},
-                            "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                            "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
                         }
                     ]
                 }
@@ -697,7 +697,7 @@ fn harness_scenarios() -> Vec<HarnessScenario> {
                             "id": "one",
                             "input": {},
                             "expected": {},
-                            "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                            "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
                         }
                     ]
                 }
@@ -725,7 +725,7 @@ fn harness_scenarios() -> Vec<HarnessScenario> {
                             "id": "one",
                             "input": {},
                             "expected": {},
-                            "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                            "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
                         }
                     ]
                 }
@@ -753,7 +753,7 @@ fn harness_scenarios() -> Vec<HarnessScenario> {
                             "id": "one",
                             "input": {},
                             "expected": {},
-                            "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                            "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
                         }
                     ]
                 }
@@ -781,7 +781,7 @@ fn harness_scenarios() -> Vec<HarnessScenario> {
                             "id": "one",
                             "input": {},
                             "expected": {},
-                            "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                            "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
                         }
                     ]
                 }
@@ -811,7 +811,7 @@ fn harness_scenarios() -> Vec<HarnessScenario> {
                             "expected": {
                                 "value": 1
                             },
-                            "coverage_fingerprint": "8a484661678bcd54e5d968c1b7e473ec"
+                            "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
                         }
                     ]
                 }
@@ -821,7 +821,7 @@ fn harness_scenarios() -> Vec<HarnessScenario> {
                 "command": [
                     "python3",
                     "-c",
-                    "import json,sys; x=json.load(sys.stdin); r=x['requests'][0]; p=x['validator']; print(json.dumps({'results':[{'key':r['key'],'output':r['input']}], 'coverage':{'sources':[p]}, 'coverage_scopes':[{'key':r['key'],'files':[{'path':p,'lines':[1,2]}]}], 'coverage_lines':[{'path':p,'executable_lines':[1,2],'covered_lines':[1,2]}]}))"
+                    "import json,sys; x=json.load(sys.stdin); r=x['requests'][0]; p=x['validator']; print(json.dumps({'results':[{'key':r['key'],'output':r['input']}], 'coverage':{'sources':[p]}, 'coverage_scopes':[{'key':r['key'],'files':[{'path':p,'lines':[1]}]}], 'coverage_lines':[{'path':p,'executable_lines':[1],'covered_lines':[1]}]}))"
                 ]
             }),
             expected: json!({
@@ -845,7 +845,7 @@ fn harness_scenarios() -> Vec<HarnessScenario> {
                             "expected": {
                                 "value": 1
                             },
-                            "coverage_fingerprint": "642e4c8886d32153e0a01013d9244742"
+                            "coverage_fingerprint": "a1d1095f8c32556fa9b9e8fe53a29c54"
                         }
                     ]
                 }
@@ -872,7 +872,7 @@ fn harness_scenarios() -> Vec<HarnessScenario> {
                             "expected": {
                                 "value": 1
                             },
-                            "coverage_fingerprint": "2409964b5e80537c79cd2c94a6de7ce2"
+                            "coverage_fingerprint": "a43bfa123b9f4dd66b19d13544db8be8"
                         }
                     ]
                 }
@@ -902,7 +902,7 @@ fn harness_scenarios() -> Vec<HarnessScenario> {
                                     "expected": {
                                         "value": 1
                                     },
-                                    "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                                    "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
                                 }
                             ]
                         }
@@ -933,7 +933,7 @@ fn harness_scenarios() -> Vec<HarnessScenario> {
                                     "expected": {
                                         "value": 1
                                     },
-                                    "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                                    "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
                                 }
                             ]
                         }
@@ -960,7 +960,7 @@ fn harness_scenarios() -> Vec<HarnessScenario> {
                             "expected": {
                                 "value": 1
                             },
-                            "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                            "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
                         }
                     ]
                 }
@@ -989,7 +989,7 @@ fn harness_scenarios() -> Vec<HarnessScenario> {
                             "expected": {
                                 "value": 1
                             },
-                            "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                            "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
                         }
                     ]
                 }
@@ -1018,7 +1018,7 @@ fn harness_scenarios() -> Vec<HarnessScenario> {
                             "expected": {
                                 "value": 1
                             },
-                            "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                            "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
                         }
                     ]
                 }
@@ -1047,7 +1047,7 @@ fn harness_scenarios() -> Vec<HarnessScenario> {
                             "expected": {
                                 "value": 1
                             },
-                            "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                            "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
                         }
                     ]
                 }
@@ -1076,7 +1076,7 @@ fn harness_scenarios() -> Vec<HarnessScenario> {
                             "expected": {
                                 "value": 1
                             },
-                            "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                            "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
                         }
                     ]
                 }
@@ -1105,7 +1105,7 @@ fn harness_scenarios() -> Vec<HarnessScenario> {
                             "expected": {
                                 "value": 1
                             },
-                            "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                            "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
                         }
                     ]
                 }
@@ -1134,7 +1134,7 @@ fn harness_scenarios() -> Vec<HarnessScenario> {
                             "expected": {
                                 "value": 1
                             },
-                            "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                            "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
                         }
                     ]
                 }
@@ -1161,7 +1161,7 @@ fn harness_scenarios() -> Vec<HarnessScenario> {
                             "expected": {
                                 "value": 1
                             },
-                            "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                            "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
                         }
                     ]
                 }
@@ -1188,7 +1188,7 @@ fn harness_scenarios() -> Vec<HarnessScenario> {
                             "expected": {
                                 "value": 1
                             },
-                            "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                            "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
                         }
                     ]
                 }
@@ -1213,7 +1213,7 @@ fn harness_scenarios() -> Vec<HarnessScenario> {
                             "expected": {
                                 "value": 1
                             },
-                            "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                            "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
                         }
                     ]
                 }
@@ -1240,7 +1240,7 @@ fn harness_scenarios() -> Vec<HarnessScenario> {
                             "expected": {
                                 "value": 1
                             },
-                            "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da8"
+                            "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
                         }
                     ]
                 }

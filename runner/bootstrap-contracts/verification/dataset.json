@@ -3,7 +3,7 @@
   "cases": [
     {
       "id": "exact",
-      "coverage_fingerprint": "ee8c2d1964b57d548f641ff487b7be42",
+      "coverage_fingerprint": "e266ea95cff5be752ac94b3486aa448e",
       "input": {
         "actual": {
           "value": 4
@@ -16,7 +16,7 @@
     },
     {
       "id": "exact-additional-1",
-      "coverage_fingerprint": "ea9bcce2a8c86ef8fad7824c65df1214",
+      "coverage_fingerprint": "bb3151b0f9489c3f75e37acce2e44240",
       "input": {
         "actual": {
           "value": 3
@@ -31,7 +31,7 @@
     },
     {
       "id": "exact-additional-2",
-      "coverage_fingerprint": "63917e2cf5301dfcc6196cd3ea16b1e1",
+      "coverage_fingerprint": "ab1d1d6d3a18eda2417179a89d1b64f3",
       "input": {
         "actual": {
           "value": 4
@@ -45,7 +45,7 @@
     },
     {
       "id": "exact-additional-3",
-      "coverage_fingerprint": "8d55782a72ea130ddd56b4324e83023b",
+      "coverage_fingerprint": "87b064ccba52c9bd8f1f5ebe302703b9",
       "input": {
         "actual": {
           "value": 4
@@ -61,19 +61,19 @@
     },
     {
       "id": "exact-additional-4",
-      "coverage_fingerprint": "e2a0971f8bd8848ea782c836ad3164d1",
+      "coverage_fingerprint": "f1b1d552f471a907319511dae059068f",
       "input": {
         "actual": {
           "value": 4
         }
       },
       "expected": {
-        "error": "expected output is required"
+        "error": "expected output or predicate is required"
       }
     },
     {
       "id": "predicate",
-      "coverage_fingerprint": "63917e2cf5301dfcc6196cd3ea16b1e1",
+      "coverage_fingerprint": "ab1d1d6d3a18eda2417179a89d1b64f3",
       "input": {
         "actual": {
           "value": 6
@@ -87,7 +87,7 @@
     },
     {
       "id": "predicate-additional-1",
-      "coverage_fingerprint": "8d55782a72ea130ddd56b4324e83023b",
+      "coverage_fingerprint": "87b064ccba52c9bd8f1f5ebe302703b9",
       "input": {
         "actual": {
           "value": 3
@@ -119,7 +119,7 @@
         "predicate": ".error.message == 'invalid name'"
       },
       "expected": "expected_and_predicate",
-      "coverage_fingerprint": "63917e2cf5301dfcc6196cd3ea16b1e1"
+      "coverage_fingerprint": "ab1d1d6d3a18eda2417179a89d1b64f3"
     },
     {
       "id": "expected-subset-missing-key-fails",
@@ -138,7 +138,7 @@
       "expected": {
         "error": "output did not match expected subset"
       },
-      "coverage_fingerprint": "14539696042dd7a7a1a1ebfdaeecd7b5"
+      "coverage_fingerprint": "4e42a715da0dc497775bbd3028d32e8e"
     },
     {
       "id": "expected-array-recurses-through-objects",
@@ -168,7 +168,7 @@
         "predicate": ".items.0.id == 1"
       },
       "expected": "expected_and_predicate",
-      "coverage_fingerprint": "887fb940d8a1738a16d9fa3ba1649369"
+      "coverage_fingerprint": "feb687df4f05e4a474687b084861871d"
     },
     {
       "id": "expected-array-length-remains-exact",
@@ -194,7 +194,7 @@
       "expected": {
         "error": "output did not match expected subset"
       },
-      "coverage_fingerprint": "e53249a2eae2ccb4b2df3979208fd348"
+      "coverage_fingerprint": "4075b574f4fcda5ae38f39903f7d7cfd"
     },
     {
       "id": "empty-expected-object-matches-object",
@@ -207,7 +207,7 @@
         "expected": {}
       },
       "expected": "expected",
-      "coverage_fingerprint": "73550a53376d6f03b93401db6d1d1d35"
+      "coverage_fingerprint": "199bb1cff13735eefe94f2b2824c5ef0"
     },
     {
       "id": "expected-scalar-stays-exact",
@@ -218,7 +218,18 @@
       "expected": {
         "error": "output did not match expected subset"
       },
-      "coverage_fingerprint": "5b6177ca15497684ea119e6e88d378b7"
+      "coverage_fingerprint": "1981a272ebcfe162b5d51b9ccbdd11e7"
+    },
+    {
+      "id": "predicate-only",
+      "input": {
+        "actual": {
+          "value": 5
+        },
+        "predicate": ".value == 5"
+      },
+      "expected": "predicate",
+      "coverage_fingerprint": "b89434f0bca6edf913f4a57531659af7"
     }
   ]
 }

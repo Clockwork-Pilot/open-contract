@@ -20,6 +20,7 @@ pub(super) fn run(
     input: &[u8],
     language_package: Option<&str>,
     isolation_runtime: Option<&Path>,
+    tempdir_mode: bool,
 ) -> Result<Output, String> {
     let plan = plan_command(backend, argv, language_package, isolation_runtime)?;
     run_prepared(
@@ -30,7 +31,74 @@ pub(super) fn run(
         write,
         plan,
         input,
+        tempdir_mode,
     )
+}
+
+pub(super) fn probe_bubblewrap(isolation_runtime: Option<&Path>) -> Result<(), String> {
+    probe_isolated_command(ProbeBackend::Bubblewrap, isolation_runtime)
+}
+
+pub(super) fn probe_landlock(isolation_runtime: Option<&Path>) -> Result<(), String> {
+    probe_isolated_command(ProbeBackend::Landlock, isolation_runtime)
+}
+
+#[derive(Clone, Copy)]
+enum ProbeBackend {
+    Bubblewrap,
+    Landlock,
+}
+
+impl ProbeBackend {
+    fn backend(self) -> Backend {
+        match self {
+            Self::Bubblewrap => Backend::Bubblewrap,
+            Self::Landlock => Backend::Landlock,
+        }
+    }
+}
+
+fn probe_isolated_command(
+    backend: ProbeBackend,
+    isolation_runtime: Option<&Path>,
+) -> Result<(), String> {
+    let executable = find_executable("true").ok_or_else(|| {
+        "could not find a `true` executable for the availability probe".to_string()
+    })?;
+    let argv = vec![executable.to_string_lossy().into_owned()];
+    let plan = plan_command(backend.backend(), &argv, None, isolation_runtime)?;
+    let package = tempfile::tempdir().map_err(|error| error.to_string())?;
+    let output = match backend {
+        ProbeBackend::Bubblewrap => run_bubblewrap(
+            package.path(),
+            package.path(),
+            &[],
+            &[],
+            &plan.command,
+            &[],
+            &plan.runtime,
+            false,
+        )?,
+        ProbeBackend::Landlock => run_landlock(
+            package.path(),
+            package.path(),
+            &[],
+            &[],
+            &plan.command,
+            &[],
+            &plan.runtime,
+        )?,
+    };
+    if output.status.success() {
+        Ok(())
+    } else {
+        let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
+        Err(if stderr.is_empty() {
+            format!("probe command exited with {}", output.status)
+        } else {
+            stderr
+        })
+    }
 }
 
 pub(super) fn run_prepared(
@@ -41,11 +109,12 @@ pub(super) fn run_prepared(
     write: &[String],
     plan: CommandPlan,
     input: &[u8],
+    tempdir_mode: bool,
 ) -> Result<Output, String> {
     let runtime = plan.runtime;
     let argv = plan.command;
     match backend {
-        Backend::None => {
+        Backend::TempDir | Backend::None => {
             let root = package_root
                 .canonicalize()
                 .map_err(|error| error.to_string())?;
@@ -61,6 +130,7 @@ pub(super) fn run_prepared(
             &argv,
             input,
             &runtime,
+            tempdir_mode,
         ),
         Backend::Landlock => run_landlock(
             package_root,
@@ -449,7 +519,10 @@ pub(super) fn collect_output_with_wait(
     input: &[u8],
     wait: &mut dyn FnMut(Child) -> io::Result<Output>,
 ) -> Result<Output, String> {
-    let mut child = command.spawn().map_err(|error| error.to_string())?;
+    let executable = command.get_program().to_string_lossy().into_owned();
+    let mut child = command
+        .spawn()
+        .map_err(|error| format!("cannot start command executable {executable}: {error}"))?;
     let write_error = child
         .stdin
         .take()
@@ -474,6 +547,7 @@ fn run_bubblewrap(
     argv: &[String],
     input: &[u8],
     runtime: &Runtime,
+    tempdir_mode: bool,
 ) -> Result<Output, String> {
     let bwrap = find_executable("bwrap")
         .ok_or_else(|| "bwrap is not installed or not on PATH".to_string())?;
@@ -481,7 +555,7 @@ fn run_bubblewrap(
         .canonicalize()
         .map_err(|error| error.to_string())?;
     let cwd = checked_working_directory(&root, working_directory)?;
-    let guest = guest_root(package_root)?;
+    let guest = guest_root(&root, tempdir_mode)?;
     let mut args = vec![
         "--die-with-parent".into(),
         "--new-session".into(),
@@ -620,29 +694,33 @@ pub(super) struct CheckedPath {
 
 fn checked_path(root: &Path, relative: &str) -> Result<CheckedPath, String> {
     let path = Path::new(relative);
-    if path.is_absolute()
-        || path
-            .components()
-            .any(|part| !matches!(part, std::path::Component::Normal(_)))
-    {
-        return Err(format!("invalid staged path: {relative}"));
-    }
-    let full = root.join(path);
+    let full = if path.is_absolute() {
+        path.to_path_buf()
+    } else {
+        root.join(path)
+    };
     let resolved = full
         .canonicalize()
         .map_err(|error| format!("{}: {error}", full.display()))?;
-    let guest_relative = resolved
-        .strip_prefix(root)
-        .map_err(|_| format!("staged path escapes package root: {relative}"))?
-        .to_path_buf();
+    let guest_relative = if path.is_absolute() {
+        resolved.clone()
+    } else {
+        resolved
+            .strip_prefix(root)
+            .map_err(|_| format!("staged path escapes package root: {relative}"))?
+            .to_path_buf()
+    };
     Ok(CheckedPath {
         host: resolved,
         relative: guest_relative,
     })
 }
 
-fn guest_root(package_root: &Path) -> Result<String, String> {
-    let name = package_root
+fn guest_root(root: &Path, tempdir_mode: bool) -> Result<String, String> {
+    if !tempdir_mode {
+        return Ok(root.to_string_lossy().into_owned());
+    }
+    let name = root
         .file_name()
         .and_then(|name| name.to_str())
         .ok_or_else(|| "staged package has no usable randomized root name".to_string())?;
@@ -732,17 +810,17 @@ fn find_executable_in_path(name: &str, search_path: Option<&str>) -> Option<Path
     std::env::split_paths(&std::ffi::OsStr::new(search_path?))
         .map(|dir| dir.join(path))
         .find(|candidate| candidate.is_file())
+        .or_else(|| (path.components().count() > 1).then(|| path.to_path_buf()))
 }
 
 pub(super) fn runtime_command_roots_for_executable(executable: &Path) -> Vec<PathBuf> {
     let mut roots = Vec::new();
-    if let Some(directory) = executable.parent() {
+    if let Some(directory) = executable.parent().filter(|_| executable.is_absolute()) {
         roots.push(directory.to_path_buf());
     }
     roots.extend(
-        executable
-            .canonicalize()
-            .ok()
+        canonicalize_runtime_executable(executable)
+            .filter(|_| executable.is_absolute())
             .and_then(|resolved| resolved.parent().map(Path::to_path_buf)),
     );
     roots.sort();
@@ -963,4 +1041,11 @@ fn install_landlock(_ruleset: &OwnedFd) -> io::Result<()> {
         io::ErrorKind::Unsupported,
         "Landlock is available only on Linux",
     ))
+}
+
+fn canonicalize_runtime_executable(executable: &Path) -> Option<PathBuf> {
+    executable
+        .is_absolute()
+        .then(|| executable.canonicalize().ok())
+        .flatten()
 }

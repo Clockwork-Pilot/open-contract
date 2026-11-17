@@ -1,13 +1,13 @@
 PYTHON ?= python3
 CARGO ?= cargo
-ISOLATION ?= none
+OPEN_CONTRACT_ISOLATION ?= auto
 
 .PHONY: check check-greeting check-predicate
 
 check: check-greeting check-predicate
 
 check-greeting:
-	$(MAKE) -C greeting check PYTHON="$(PYTHON)" CARGO="$(CARGO)" ISOLATION="$(ISOLATION)"
+	$(MAKE) -C greeting check PYTHON="$(PYTHON)" CARGO="$(CARGO)" OPEN_CONTRACT_ISOLATION="$(OPEN_CONTRACT_ISOLATION)"
 
 check-predicate:
-	$(MAKE) -C predicate check PYTHON="$(PYTHON)" CARGO="$(CARGO)" ISOLATION="$(ISOLATION)"
+	$(MAKE) -C predicate check PYTHON="$(PYTHON)" CARGO="$(CARGO)" OPEN_CONTRACT_ISOLATION="$(OPEN_CONTRACT_ISOLATION)"

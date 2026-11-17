@@ -39,3 +39,10 @@ manifest.
 Run the interface tests with `make -C contract-languages/python test` from the
 `open-contract` directory. They test the adapter protocol and are separate
 from contract dataset coverage.
+
+Install the adapter's runtime dependencies into its isolated package directory
+with `make -C contract-languages/python install-dependencies PYTHON=python3`.
+`coverage.py` belongs to this adapter: its dependencies stay in `.deps/` and
+are exposed by this package's `runtime.yaml`. Each Python example calls this
+adapter-owned Make goal before executing its contract. Other language adapters
+and the generic runner do not require these Python dependencies.

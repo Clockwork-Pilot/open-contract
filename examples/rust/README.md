@@ -12,12 +12,18 @@ coverage enabled, then run the parent tree:
 make check-rust-nested-contracts
 ```
 
+Set `OPEN_CONTRACT_ISOLATION=landlock` (or `bwrap`, `tempdir`, or `none`) to
+select the runner mode. The root `make check-contracts` goal passes the same
+setting to all runner-backed examples.
+
 The datasets pin the observed 32-character fingerprints; code changes that
 alter exercised lines will make the runner print the replacement values. The
 run requires `llvm-profdata` and `llvm-cov` matching the compiler version.
 Install Rust's LLVM tools once with `rustup component add llvm-tools-preview`;
-the script selects those tools from the active compiler's sysroot. Override
-their locations with `LLVM_PROFDATA` and `LLVM_COV` when needed.
+the example invokes the Rust adapter's `install-dependencies` Make goal, which
+copies the tools and LLVM libraries into the adapter's ignored `.deps/` directory.
+The adapter's `runtime.yaml` declares their access and tool locations. The example
+uses the default backend runtime; it does not generate a permission manifest.
 
 The runner writes the combined report to `.coverage/rust-nested-report.json`.
 

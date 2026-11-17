@@ -149,6 +149,7 @@ pub(crate) fn exercise_backend_error_paths() -> Result<(), String> {
             b"",
             None,
             None,
+            false,
         )
         .expect_err("outside command working directory must be rejected");
         assert!(error.contains("inside the staged contract tree"));
@@ -172,6 +173,7 @@ pub(crate) fn exercise_backend_error_paths() -> Result<(), String> {
         b"",
         None,
         None,
+        false,
     )
     .expect_err("outside Bubblewrap working directory must be rejected");
     if let Some(path) = previous_path {

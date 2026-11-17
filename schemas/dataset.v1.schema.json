@@ -1,0 +1,134 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://open-contracts.dev/schemas/dataset.v1.schema.json",
+  "title": "Open Contracts dataset v1",
+  "description": "Dataset format consumed by run-manifest.",
+  "type": "object",
+  "required": [
+    "version",
+    "cases"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "integer"
+    },
+    "cases": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/case"
+      }
+    }
+  },
+  "$defs": {
+    "case": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/call"
+        },
+        {
+          "$ref": "#/$defs/sequence"
+        }
+      ]
+    },
+    "call": {
+      "type": "object",
+      "required": [
+        "id",
+        "input"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "input": {},
+        "expected": {},
+        "predicate": {
+          "type": "string"
+        },
+        "coverage_fingerprint": {
+          "type": "string"
+        },
+        "setup": {
+          "type": "string"
+        }
+      },
+      "anyOf": [
+        {
+          "required": [
+            "expected"
+          ]
+        },
+        {
+          "required": [
+            "predicate"
+          ]
+        }
+      ]
+    },
+    "sequence": {
+      "type": "object",
+      "required": [
+        "id",
+        "steps"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "steps": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/step"
+          }
+        }
+      }
+    },
+    "step": {
+      "type": "object",
+      "required": [
+        "id",
+        "input"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "input": {},
+        "expected": {},
+        "predicate": {
+          "type": "string"
+        },
+        "coverage_fingerprint": {
+          "type": "string"
+        },
+        "setup": {
+          "type": "string"
+        },
+        "parallel": {
+          "type": "boolean",
+          "default": false,
+          "description": "Consecutive steps marked true may execute concurrently."
+        }
+      },
+      "anyOf": [
+        {
+          "required": [
+            "expected"
+          ]
+        },
+        {
+          "required": [
+            "predicate"
+          ]
+        }
+      ]
+    }
+  }
+}

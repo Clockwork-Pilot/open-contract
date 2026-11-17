@@ -44,3 +44,35 @@ test('parallel steps share one coverage scope and receive setup context', async 
 		await rm(packageRoot, { recursive: true, force: true });
 	}
 });
+
+test('disabling fingerprints keeps aggregate dataset line coverage', async () => {
+	const packageRoot = await mkdtemp(path.join(os.tmpdir(), 'open-contract-js-coverage-'));
+	const originalDirectory = process.cwd();
+	const validatorPath = path.join(packageRoot, 'validator.mjs');
+	await writeFile(path.join(packageRoot, 'package.json'), '{"type":"module"}');
+	await writeFile(validatorPath, [
+		'export function validate(input) {',
+		'\tif (input.valid) return { value: "valid" };',
+		'\treturn { value: "invalid" };',
+		'}',
+	].join('\n'));
+	process.chdir(packageRoot);
+	try {
+		const report = await runDataset({
+			package: '.',
+			validator: 'validator.mjs',
+			coverage_sources: ['validator.mjs'],
+			coverage_fingerprints: false,
+			requests: [
+				{ key: { case_id: 'valid', step_id: null }, input: { valid: true } },
+				{ key: { case_id: 'invalid', step_id: null }, input: { valid: false } },
+			],
+		}, () => import(pathToFileURL(validatorPath).href));
+		assert.deepEqual(report.coverage_scopes, []);
+		assert.equal(report.coverage_lines.length, 1);
+		assert.deepEqual(report.coverage_lines[0].covered_lines, report.coverage_lines[0].executable_lines);
+	} finally {
+		process.chdir(originalDirectory);
+		await rm(packageRoot, { recursive: true, force: true });
+	}
+});

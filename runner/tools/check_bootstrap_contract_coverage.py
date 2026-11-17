@@ -17,8 +17,15 @@ from pathlib import Path
 
 def main() -> int:
     arguments = sys.argv[1:]
+    update_fingerprints = False
+    if arguments and arguments[0] == "--update-fingerprints":
+        update_fingerprints = True
+        arguments = arguments[1:]
     if len(arguments) != 1:
-        print("usage: check_bootstrap_contract_coverage.py <package>", file=sys.stderr)
+        print(
+            "usage: check_bootstrap_contract_coverage.py [--update-fingerprints] <package>",
+            file=sys.stderr,
+        )
         return 2
     package = Path(arguments[0]).resolve()
     manifest = package / "Cargo.toml"
@@ -199,6 +206,27 @@ def main() -> int:
             print(json.dumps(inputs, separators=(",", ":")))
         if mismatch:
             case_mismatches.append(f"{case_id}: expected {expected}, observed {actual}")
+    if update_fingerprints:
+        changed = []
+        for case, (_, actual, _) in zip(dataset["cases"], case_fingerprints):
+            old = declared_fingerprint(case)
+            if old != actual:
+                changed.append((case["id"], old, actual))
+            case["coverage_fingerprint"] = actual
+        if dataset_path.suffix == ".json":
+            serialized = json.dumps(dataset, indent=2, ensure_ascii=False) + "\n"
+        else:
+            try:
+                import yaml
+            except ImportError as error:
+                print(f"PyYAML is required to update YAML datasets: {error}", file=sys.stderr)
+                return 2
+            serialized = yaml.safe_dump(dataset, sort_keys=False, allow_unicode=True)
+        dataset_path.write_text(serialized, encoding="utf-8")
+        print(f"Updated {len(changed)} changed coverage fingerprints in {dataset_path}")
+        for case_id, old, actual in changed:
+            print(f"  {case_id}: {old} -> {actual}")
+        case_mismatches = []
     if case_mismatches:
         print("bootstrap dataset coverage fingerprint mismatches:", file=sys.stderr)
         for mismatch in case_mismatches:
@@ -253,14 +281,19 @@ def coverage_fingerprint(sources: list[dict], package: Path) -> str:
 def coverage_fingerprint_inputs(sources: list[dict], package: Path) -> list[dict]:
     files = []
     for source in sources:
-        lines = sorted({
+        covered = sorted({
             segment[0]
             for segment in source.get("segments", [])
             if len(segment) >= 4 and segment[2] > 0 and segment[3]
         })
-        if lines:
+        if covered:
             filename = resolve_source_path(source["filename"], package)
-            files.append({"path": filename.relative_to(package).as_posix(), "lines": lines})
+            relative = filename.relative_to(package).as_posix()
+            source_lines = filename.read_text(encoding="utf-8").splitlines()
+            if any(number < 1 or number > len(source_lines) for number in covered):
+                raise ValueError(f"coverage line is outside source file {relative}")
+            lines = [source_lines[number - 1] for number in covered]
+            files.append({"path": relative, "lines": lines})
     files.sort(key=lambda item: item["path"])
     return files
 

@@ -1,7 +1,8 @@
 use bootstrap_dataset_harness::{run_dataset, DatasetCase};
 use runner_batch::{
-    run_contract_tree, show_isolation_plan, AdapterBatch, AdapterResult, BatchAdapter,
-    ContractBatch, CoverageFile, CoverageScope, ExecutionKey, ManifestBatchAdapter,
+    run_contract_tree, run_contract_tree_with_fingerprint_mode, run_contract_tree_with_options,
+    show_isolation_plan, AdapterBatch, AdapterResult, BatchAdapter, ContractBatch, CoverageFile,
+    CoverageScope, ExecutionKey, FingerprintMode, ManifestBatchAdapter,
 };
 use runner_isolation::{Backend, StagedTree};
 use runner_verification::{match_output, MatchKind};
@@ -102,7 +103,7 @@ fn validate_dataset_entry_with_adapter(
             .map_err(|error| format!("cannot serialize fixture dataset: {error}"))?,
         None => serde_json::to_vec(&json!({
             "version": 1,
-            "cases": [{"id":"case", "input":{"value":1}, "expected":{"value":1}, "coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"}]
+            "cases": [{"id":"case", "input":{"value":1}, "expected":{"value":1}, "coverage_fingerprint":"880ae786fa1c0630fe9158b7962fd8a2"}]
         }))
         .map_err(|error| format!("cannot serialize default dataset: {error}"))?,
     };
@@ -123,7 +124,10 @@ fn validate_dataset_entry_with_adapter(
             fs::create_dir_all(parent)
                 .map_err(|error| format!("create support fixture directory: {error}"))?;
         }
-        write(package.join(support), "def support(value): return value\n")?;
+        write(
+            package.join(support),
+            "def support(value): return value\n# second source line\n",
+        )?;
         manifest["files"]["support"] = json!([support]);
         manifest["filesystem"]["read"] = json!([dataset_name, validator, support]);
     }
@@ -145,6 +149,7 @@ fn validate_dataset_entry_with_adapter(
 
     if input["operation"].as_str() == Some("show-isolation-plan") {
         let backend = match input["backend"].as_str() {
+            Some("tempdir") => Backend::TempDir,
             Some("none") => Backend::None,
             Some("bubblewrap") => Backend::Bubblewrap,
             Some("landlock") => Backend::Landlock,
@@ -157,7 +162,26 @@ fn validate_dataset_entry_with_adapter(
         return check_public_output(&actual, expected, entry.predicate.as_deref());
     }
 
-    let result = run_contract_tree(&manifest_path, Backend::None, adapter);
+    let backend = match input["backend"].as_str() {
+        None | Some("none") => Backend::None,
+        Some("tempdir") => Backend::TempDir,
+        Some("bubblewrap") => Backend::Bubblewrap,
+        Some("landlock") => Backend::Landlock,
+        Some(_) => return Err("run-contract-tree requires a supported backend".into()),
+    };
+    let result = if input["fingerprint_mode"].as_str() == Some("update") {
+        run_contract_tree_with_fingerprint_mode(
+            &manifest_path,
+            backend,
+            None,
+            FingerprintMode::Update,
+            adapter,
+        )
+    } else if input["coverage_fingerprints"].as_bool() == Some(false) {
+        run_contract_tree_with_options(&manifest_path, backend, None, false, adapter)
+    } else {
+        run_contract_tree(&manifest_path, backend, adapter)
+    };
     check_expected(result, expected, entry.predicate.as_deref())
 }
 
@@ -172,7 +196,7 @@ fn add_nested_contract(package: &Path, input: &Value, manifest: &mut Value) -> R
     fs::create_dir_all(&child).map_err(|error| format!("create nested fixture: {error}"))?;
     write(
         child.join("dataset.json"),
-        r#"{"version":1,"cases":[{"id":"child","input":{},"expected":{},"coverage_fingerprint":"60c6194cbdc58033999a1fb07d147da8"}]}"#,
+        r#"{"version":1,"cases":[{"id":"child","input":{},"expected":{},"coverage_fingerprint":"880ae786fa1c0630fe9158b7962fd8a2"}]}"#,
     )?;
     write(
         child.join("validator.py"),
@@ -241,6 +265,8 @@ fn configure_case_setup(
         | "dataset-adapter-native-coverage-no-sources"
         | "dataset-adapter-native-coverage-non-string-source"
         | "dataset-adapter-multiple-coverage-lines"
+        | "dataset-adapter-coverage-source-unavailable"
+        | "dataset-adapter-coverage-line-out-of-range"
         | "dataset-adapter-no-line-coverage"
         | "dataset-adapter-missing-step-coverage"
         | "dataset-adapter-missing-batch"
@@ -294,6 +320,12 @@ print(json.dumps({
 "#
                 }
                 "manifest-adapter-command-fails" => "import sys\nsys.exit(1)\n",
+                "manifest-adapter-command-fails-with-stdout" => {
+                    "print('stdout diagnostic')\nraise SystemExit(1)\n"
+                }
+                "manifest-adapter-command-fails-with-stderr" => {
+                    "import sys\nprint('stderr diagnostic', file=sys.stderr)\nsys.exit(1)\n"
+                }
                 "manifest-adapter-returns-invalid-json" => "print('{')\n",
                 "manifest-adapter-returns-no-results" => {
                     "import json\nprint(json.dumps({'results': []}))\n"
@@ -428,7 +460,7 @@ fn check_public_output(
     predicate: Option<&str>,
 ) -> Result<(), String> {
     match match_output(actual, Some(expected), predicate) {
-        Ok(MatchKind::Expected | MatchKind::ExpectedAndPredicate) => Ok(()),
+        Ok(MatchKind::Expected | MatchKind::ExpectedAndPredicate | MatchKind::Predicate) => Ok(()),
         Err(error) => Err(format!(
             "public output did not match: {error}; actual: {actual}"
         )),
@@ -452,6 +484,10 @@ impl BatchAdapter for ScenarioDatasetAdapter {
     ) -> Result<Vec<AdapterBatch>, String> {
         let mut outputs = IdentityDatasetAdapter.execute_tree(tree, backend, batches)?;
         for (contract_batch, batch) in batches.iter().zip(&mut outputs) {
+            if self.id == "dataset-adapter-coverage-source-unavailable" {
+                fs::remove_file(contract_batch.manifest.package_root.join("validator.py"))
+                    .map_err(|error| format!("remove coverage source fixture: {error}"))?;
+            }
             for result in &mut batch.results {
                 match self.id.as_str() {
                     "dataset-adapter-error-expected-as-output"
@@ -533,6 +569,13 @@ impl BatchAdapter for ScenarioDatasetAdapter {
                             .find(|file| file.path == "support.py")
                         {
                             file.lines = vec![1, 2];
+                        }
+                    }
+                }
+                "dataset-adapter-coverage-line-out-of-range" => {
+                    if let Some(scope) = batch.coverage_scopes.first_mut() {
+                        if let Some(file) = scope.files.first_mut() {
+                            file.lines = vec![u32::MAX];
                         }
                     }
                 }

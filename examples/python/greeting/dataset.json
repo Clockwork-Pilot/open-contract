@@ -9,12 +9,12 @@
       "expected": {
         "greeting": "hello, Ada"
       },
-      "coverage_fingerprint": "4fdfdb3f539ac8a8314cd4f86d3c2984"
+      "coverage_fingerprint": "1a97b0589552059d3c71034ec096d959"
     },
     {
       "id": "rejects-a-missing-name",
       "input": {},
-      "coverage_fingerprint": "6d4b95a84280f1ace43540e619116ab5",
+      "coverage_fingerprint": "90a3616391b826a2788152ea8e884a8e",
       "expected": {},
       "predicate": "contains(.error, 'ValueError: name must be a string')"
     }

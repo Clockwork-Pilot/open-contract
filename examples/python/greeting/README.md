@@ -14,7 +14,9 @@ Run the contract through the Rust runner:
 make -C examples/python/greeting check
 ```
 
-Set `ISOLATION=landlock` or `ISOLATION=bwrap` to select an available backend.
+Set `OPEN_CONTRACT_ISOLATION=landlock` or `OPEN_CONTRACT_ISOLATION=bwrap` to
+select an available backend. The same setting is used by `make check-contracts`
+from the repository root.
 
 The manifest declares the validator and dataset as contract files. The command
 imports `run_dataset` from the Python language adapter provided by Open Contract.
