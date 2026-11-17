@@ -20,7 +20,7 @@ LLVM_COV ?= $(shell PATH="$(HOME)/.cargo/bin:$(PATH)" rustc --print sysroot)/lib
 LLVM_PROFDATA ?= $(patsubst %/,%,$(dir $(LLVM_COV)))/llvm-profdata
 
 .DEFAULT_GOAL := check-contracts
-.PHONY: check-contracts check-bootstrap-contracts check-rust-core-contracts check-cli-contract check-manifest-contract check-isolation-contract check-batch-execution-contract check-verification-contract check-error-handling-contract check-dataset-generation-contract check-cli-contract check-predicate-contract check-bootstrap-dataset-harness check-rust-runtime-safety check-runner-examples check-language-contract-examples check-rust-language-adapter check-rust-nested-contracts check-rust-nested-contracts-html check-python-example check-javascript-example bootstrap-contract-coverage-html check-bootstrap-contract-coverage-html check-bootstrap-contracts-html check-bootstrap-dataset-harness-html check-manifest-contract-html check-isolation-contract-html check-batch-execution-contract-html check-verification-contract-html check-error-handling-contract-html check-dataset-generation-contract-html check-cli-contract-html check-predicate-contract-html examples
+.PHONY: check-contracts check-bootstrap-contracts check-rust-core-contracts check-cli-contract check-manifest-contract check-isolation-contract check-batch-execution-contract check-verification-contract check-error-handling-contract check-dataset-generation-contract check-cli-contract check-predicate-contract check-bootstrap-dataset-harness check-rust-runtime-safety check-runner-examples check-language-contract-examples check-rust-language-adapter check-rust-nested-contracts check-rust-nested-contracts-html check-python-adapter-examples check-javascript-example bootstrap-contract-coverage-html check-bootstrap-contract-coverage-html check-bootstrap-contracts-html check-bootstrap-dataset-harness-html check-manifest-contract-html check-isolation-contract-html check-batch-execution-contract-html check-verification-contract-html check-error-handling-contract-html check-dataset-generation-contract-html check-cli-contract-html check-predicate-contract-html examples
 
 check-contracts: check-bootstrap-contracts check-language-contract-examples
 
@@ -104,7 +104,7 @@ check-runner-examples:
 	$(MAKE) check-rust-language-adapter
 	$(MAKE) check-rust-nested-contracts
 
-check-language-contract-examples: check-runner-examples check-python-example
+check-language-contract-examples: check-runner-examples check-python-adapter-examples
 
 check-rust-language-adapter:
 	PATH="$(HOME)/.cargo/bin:$(PATH)" $(CARGO) test --manifest-path contract-languages/rust/Cargo.toml
@@ -117,8 +117,11 @@ check-rust-nested-contracts-html: check-rust-nested-contracts
 	$(MAKE) bootstrap-contract-coverage-html COVERAGE_PROJECT=. COVERAGE_PROFILE=.coverage/rust-nested.profdata COVERAGE_BINARY="$(abspath .coverage/rust-nested-target/parent/debug/contract-command)" COVERAGE_HTML_DIR=.coverage/rust-nested/parent/html COVERAGE_SUMMARY=.coverage/rust-nested/parent/summary.txt COVERAGE_IGNORE_REGEX='.cargo/|/rustc/|contract-languages/rust/src/|/main.rs'
 	$(MAKE) bootstrap-contract-coverage-html COVERAGE_PROJECT=. COVERAGE_PROFILE=.coverage/rust-nested.profdata COVERAGE_BINARY="$(abspath .coverage/rust-nested-target/child/debug/contract-command)" COVERAGE_HTML_DIR=.coverage/rust-nested/child/html COVERAGE_SUMMARY=.coverage/rust-nested/child/summary.txt COVERAGE_IGNORE_REGEX='.cargo/|/rustc/|contract-languages/rust/src/|/main.rs'
 
-check-python-example:
-	$(MAKE) -C examples/python check PYTHON="$(PYTHON)"
+
+check-python-adapter-examples:
+	$(MAKE) -C contract-languages/python install-dependencies PYTHON="$(PYTHON)"
+	PATH="$(HOME)/.cargo/bin:$(PATH)" $(CARGO) run --manifest-path runner/rust/Cargo.toml -- run-manifest examples/python/greeting/contract.yaml --isolation $(OPEN_CONTRACT_ISOLATION) --coverage-report .coverage/examples/python.json
+	PATH="$(HOME)/.cargo/bin:$(PATH)" $(CARGO) run --manifest-path runner/rust/Cargo.toml -- run-manifest examples/python/predicate/contract.yaml --isolation $(OPEN_CONTRACT_ISOLATION) --coverage-report .coverage/examples/python-predicate.json
 
 check-javascript-example:
 	$(MAKE) -C examples/javascript check

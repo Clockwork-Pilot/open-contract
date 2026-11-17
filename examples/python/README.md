@@ -1,6 +1,8 @@
 # Python Open Contract examples
 
-This directory contains two independent Python contracts:
+This directory contains two Open Contract packages with Python validator
+adapters. Both are executed by the single Rust Open Contract runner; their
+`contract_command.py` files implement the language batch protocol only.
 
 - [`greeting`](greeting/README.md) is a small validator example.
 - [`predicate`](predicate/README.md) exercises a predicate evaluator with a
@@ -9,5 +11,5 @@ This directory contains two independent Python contracts:
 Run both examples from the Open Contract root:
 
 ```sh
-make -C examples/python check
+make check-python-adapter-examples
 ```

@@ -7,11 +7,11 @@ files:
   dataset: dataset.json
   validator: validator.py
 execution:
-  command: [python3, run_contract.py]
+  command: [python3, contract_command.py]
 filesystem:
   read:
     - .
     - dataset.json
-    - run_contract.py
+    - contract_command.py
     - validator.py
   write: []

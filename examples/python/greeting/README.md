@@ -11,12 +11,11 @@ predicate evaluator with a broader dataset.
 Run the contract through the Rust runner:
 
 ```sh
-make -C examples/python/greeting check
+cargo run --manifest-path runner/rust/Cargo.toml -- run-manifest examples/python/greeting/contract.yaml --isolation auto
 ```
 
 Set `OPEN_CONTRACT_ISOLATION=landlock` or `OPEN_CONTRACT_ISOLATION=bwrap` to
 select an available backend. The same setting is used by `make check-contracts`
 from the repository root.
 
-The manifest declares the validator and dataset as contract files. The command
-imports `run_dataset` from the Python language adapter provided by Open Contract.
+The manifest declares the validator and dataset as contract files. The contract command imports `run_dataset` from Open Contract’s Python language adapter; it does not parse the manifest or run a dataset itself.

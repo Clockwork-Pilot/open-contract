@@ -23,11 +23,8 @@ Available adapters:
 - [`rust`](rust/README.md)
 
 Run every language adapter check and end-to-end example with
-`make check-language-contract-examples` from the Open Contract root. This
-includes the JavaScript and Python contract examples and nested Rust examples.
-
-The JavaScript example is in [`examples/javascript`](../examples/javascript),
-the Python greeting and predicate examples are in
-[`examples/python/greeting`](../examples/python/greeting/README.md) and
-[`examples/python/predicate`](../examples/python/predicate/README.md), and the
-Rust nested-contract example is in [`examples/rust`](../examples/rust/README.md).
+`make check-language-contract-examples` from the Open Contract root. These
+examples all use the Rust runner; Python and JavaScript provide validator
+adapters. The Python packages are in [`examples/python`](../examples/python),
+the JavaScript example is in [`examples/javascript`](../examples/javascript),
+and nested Rust contracts are in [`examples/rust`](../examples/rust).

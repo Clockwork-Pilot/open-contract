@@ -49,6 +49,6 @@ make check-predicate-contract
 ```
 
 The shared corpus is the conformance source for the Rust predicate contract.
-The standalone [Python predicate Open Contract example](../../../examples/python/predicate/README.md)
-is an independent implementation; it is not part of the Rust runner or the
-bootstrap predicate implementation.
+The Python predicate example is an Open Contract dataset run by the Rust runner.
+Its Python validator is an example contract implementation; the bootstrap
+predicate contract itself is implemented in Rust.

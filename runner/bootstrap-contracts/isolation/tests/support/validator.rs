@@ -768,7 +768,6 @@ fn check_runtime_mounts_only_adapters(tree: &StagedTree, expected: &Value) -> Re
         .canonicalize()
         .map_err(|error| error.to_string())?;
     for relative in [
-        "examples/python",
         "contract-languages/python/schemas",
         "runner/bootstrap-contracts/predicates/predicate-language.schema.json",
     ] {

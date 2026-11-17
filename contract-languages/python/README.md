@@ -43,6 +43,6 @@ from contract dataset coverage.
 Install the adapter's runtime dependencies into its isolated package directory
 with `make -C contract-languages/python install-dependencies PYTHON=python3`.
 `coverage.py` belongs to this adapter: its dependencies stay in `.deps/` and
-are exposed by this package's `runtime.yaml`. Each Python example calls this
-adapter-owned Make goal before executing its contract. Other language adapters
-and the generic runner do not require these Python dependencies.
+are exposed by this package's `runtime.yaml`. Python adapter checks and contracts that declare this adapter use this
+adapter-owned runtime. Other language adapters and the Rust runner itself do
+not require these Python dependencies.

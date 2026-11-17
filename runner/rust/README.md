@@ -72,7 +72,7 @@ For example:
 
 ```yaml
 execution:
-  command: [python3, run_contract.py]
+  command: [python3, contract_command.py]
 language_package: python
 ```
 

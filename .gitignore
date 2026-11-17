@@ -4,7 +4,6 @@ __pycache__
 hooks_log/
 .changes-tracker/
 
-examples/python/.open-contract/
 runner/bootstrap-contracts/*/target/
 runner/rust/target/
 .coverage/
