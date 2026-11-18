@@ -1,6 +1,33 @@
 use super::*;
 
 #[test]
+fn adapter_coverage_schema_rejects_covered_lines_outside_executable_set() {
+    let valid = json!({
+        "coverage_lines": [{"path":"validator.py", "executable_lines":[1, 2], "covered_lines":[1]}]
+    });
+    assert!(validate_adapter_coverage_payload(&valid, "schema-fixture").is_ok());
+
+    let invalid = json!({
+        "coverage_lines": [{"path":"validator.py", "executable_lines":[1], "covered_lines":[2]}]
+    });
+    let error = validate_adapter_coverage_payload(&invalid, "schema-fixture").unwrap_err();
+    assert!(error.contains("schema-fixture"));
+    assert!(error.contains("every covered line must be executable"));
+}
+
+#[test]
+fn adapter_coverage_schema_rejects_duplicate_and_unsorted_lines() {
+    let unsorted = json!({"coverage_lines": [{"path":"validator.py", "executable_lines":[2, 1], "covered_lines":[]}]});
+    assert!(
+        validate_adapter_coverage_payload(&unsorted, "schema-fixture")
+            .unwrap_err()
+            .contains("sorted and unique")
+    );
+    let duplicate = json!({"coverage_lines": [{"path":"validator.py", "executable_lines":[1, 1], "covered_lines":[]}]});
+    assert!(validate_adapter_coverage_payload(&duplicate, "schema-fixture").is_err());
+}
+
+#[test]
 fn dataset_contract_cases_are_reused_as_unit_inputs() {
     let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("dataset.json");
     let outer =
@@ -75,7 +102,7 @@ fn coverage_scope_validation_rejects_missing_and_invalid_fingerprints() {
     };
     let empty = std::collections::HashMap::new();
     let (coverage, error) =
-        coverage_for_key(&empty, &key, Some("0123456789abcdef0123456789abcdef"));
+        coverage_for_key(&empty, &key, Some("0123456789abcdef0123456789abcdef"), true);
     assert!(coverage.is_none());
     assert!(error.unwrap().contains("coverage fingerprint unavailable"));
 
@@ -168,7 +195,7 @@ fn verification_matches_error_outputs_and_rejects_missing_outputs() {
     assert!(
         evaluate_result(
             &result,
-            &serde_json::json!({}),
+            Some(&serde_json::json!({})),
             Some("contains(.error, 'invalid input')")
         )
         .0
@@ -176,7 +203,7 @@ fn verification_matches_error_outputs_and_rejects_missing_outputs() {
     assert!(
         !evaluate_result(
             &result,
-            &serde_json::json!({}),
+            Some(&serde_json::json!({})),
             Some("contains(.error, 'different')")
         )
         .0
@@ -185,7 +212,7 @@ fn verification_matches_error_outputs_and_rejects_missing_outputs() {
         error: None,
         ..result
     };
-    assert!(evaluate_result(&empty, &serde_json::json!({}), None)
+    assert!(evaluate_result(&empty, Some(&serde_json::json!({})), None)
         .2
         .unwrap()
         .contains("neither output nor error"));

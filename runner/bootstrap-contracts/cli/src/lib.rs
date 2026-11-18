@@ -223,8 +223,8 @@ fn write_auto_selection(output: &mut String, backend: Backend, attempts: Option<
     }
 }
 
-/// Persist adapter reports without interpreting or normalizing their contents.
-fn write_adapter_coverage_reports(
+/// Persist the normalized, versioned runner artifact and retain native adapter reports.
+pub fn write_adapter_coverage_reports(
     path: &std::path::Path,
     report: &BatchReport,
 ) -> Result<(), ContractError> {
@@ -242,23 +242,168 @@ fn write_adapter_coverage_reports(
             )
         })?;
     }
-    let reports = report
+    let contracts = report
         .coverage
         .iter()
         .map(|record| {
+            let dataset_coverage = coverage_totals_json(
+                record.dataset_covered_lines,
+                record.dataset_executable_lines,
+                &record.line_coverage,
+                None,
+            );
+            let aggregate_coverage = coverage_totals_json(
+                record.combined_covered_lines,
+                record.combined_executable_lines,
+                &merge_coverage_files(&record.line_coverage, &record.additional_line_coverage),
+                Some(record.line_threshold_met),
+            );
+            let source_status = if record.missing_sources.is_empty() {
+                "complete"
+            } else {
+                "missing"
+            };
+            let status = if record.missing_sources.is_empty()
+                && record.line_threshold_met
+                && record.additional_test_coverage["passed"] != false
+            {
+                "passed"
+            } else {
+                "failed"
+            };
             json!({
                 "contract": record.contract,
-                "report": record.native_report,
+                "status": status,
+                "minimum_line_percent": record.minimum_line_percent,
+                "sources": {
+                    "status": source_status,
+                    "declared": record.declared_sources,
+                    "covered": record.covered_sources,
+                    "missing": record.missing_sources,
+                },
+                "dataset": dataset_coverage,
+                "aggregate": aggregate_coverage,
+                "supplemental_tests": record.additional_test_coverage,
+                "native_report": record.native_report,
             })
         })
         .collect::<Vec<Value>>();
-    let contents = json!({ "contracts": reports }).to_string();
+    let artifact = json!({ "version": 1, "contracts": contracts });
+    validate_coverage_report(&artifact)?;
+    let contents = artifact.to_string();
     fs::write(path, contents).map_err(|error| {
         ContractError::from((
             2,
             format!("cannot write coverage report {}: {error}", path.display()),
         ))
     })
+}
+
+/// Validate a versioned coverage artifact before a consumer stores or processes it.
+pub fn validate_coverage_report(report: &Value) -> Result<(), ContractError> {
+    validate_coverage_report_with_schema(
+        include_str!("../../../../schemas/coverage-report.v1.schema.json"),
+        report,
+    )
+}
+
+fn validate_coverage_report_with_schema(
+    schema_json: &str,
+    report: &Value,
+) -> Result<(), ContractError> {
+    let schema: Value = serde_json::from_str(schema_json).map_err(|error| {
+        ContractError::from((
+            2,
+            format!("invalid embedded coverage report schema: {error}"),
+        ))
+    })?;
+    let validator = jsonschema::validator_for(&schema).map_err(|error| {
+        ContractError::from((
+            2,
+            format!("cannot compile embedded coverage report schema: {error}"),
+        ))
+    })?;
+    validator.validate(report).map_err(|error| {
+        ContractError::from((
+            2,
+            format!(
+                "invalid coverage report at {}: {error}",
+                error.instance_path()
+            ),
+        ))
+    })
+}
+
+fn coverage_totals_json(
+    covered: usize,
+    executable: usize,
+    files: &[runner_batch::CoverageLineFile],
+    threshold_met: Option<bool>,
+) -> Value {
+    let percent = if executable == 0 {
+        0.0
+    } else {
+        covered as f64 * 100.0 / executable as f64
+    };
+    let mut value = json!({
+        "covered_lines": covered,
+        "executable_lines": executable,
+        "percent": percent,
+        "files": files.iter().map(|file| coverage_file_json(file)).collect::<Vec<_>>(),
+    });
+    if let Some(threshold_met) = threshold_met {
+        value["threshold_met"] = json!(threshold_met);
+    }
+    value
+}
+
+fn coverage_file_json(file: &runner_batch::CoverageLineFile) -> Value {
+    let executable = file
+        .executable_lines
+        .iter()
+        .copied()
+        .collect::<std::collections::BTreeSet<_>>();
+    let covered = file
+        .covered_lines
+        .iter()
+        .copied()
+        .filter(|line| executable.contains(line))
+        .collect::<std::collections::BTreeSet<_>>();
+    let uncovered = executable.difference(&covered).copied().collect::<Vec<_>>();
+    json!({
+        "path": file.path,
+        "executable_lines": executable.into_iter().collect::<Vec<_>>(),
+        "covered_lines": covered.into_iter().collect::<Vec<_>>(),
+        "uncovered_lines": uncovered,
+    })
+}
+
+fn merge_coverage_files(
+    dataset: &[runner_batch::CoverageLineFile],
+    supplemental: &[runner_batch::CoverageLineFile],
+) -> Vec<runner_batch::CoverageLineFile> {
+    let mut files = std::collections::BTreeMap::<
+        String,
+        (
+            std::collections::BTreeSet<u32>,
+            std::collections::BTreeSet<u32>,
+        ),
+    >::new();
+    for file in dataset.iter().chain(supplemental) {
+        let (executable, covered) = files.entry(file.path.clone()).or_default();
+        executable.extend(file.executable_lines.iter().copied());
+        covered.extend(file.covered_lines.iter().copied());
+    }
+    files
+        .into_iter()
+        .map(
+            |(path, (executable, covered))| runner_batch::CoverageLineFile {
+                path,
+                executable_lines: executable.into_iter().collect(),
+                covered_lines: covered.into_iter().collect(),
+            },
+        )
+        .collect()
 }
 
 fn update_dataset_fingerprints(report: &BatchReport) -> Result<String, ContractError> {

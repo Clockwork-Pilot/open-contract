@@ -465,11 +465,17 @@ cases:
       \  covered: validator.py:1\nUpdated 2 fingerprint(s) in dataset.yaml\nDataset\
       \ cases: 3/3 passed across 1 contract(s)\nCoverage report: coverage.json\n"
     coverage_report:
+      version: 1
       contracts:
       - contract: cli-smoke-fixture
-        report:
-          sources:
+        status: passed
+        sources:
+          status: complete
+          declared:
           - validator.py
+          covered:
+          - validator.py
+          missing: []
     stderr: ''
     updated_dataset:
       version: 1
@@ -500,7 +506,7 @@ cases:
           expected:
             value: 2
           coverage_fingerprint: 867714e81b27e269f9a7f3b13bdc37ae
-  coverage_fingerprint: f75632b260f20e061895643994e41166
+  coverage_fingerprint: aaacf93acf82b5b4728b98f765629b78
 - id: reports-incomplete-contract-coverage
   setup: true
   input:
@@ -530,6 +536,18 @@ cases:
         : [1]}],\n}))\n"
   expected:
     exit_code: 1
+    coverage_report:
+      version: 1
+      contracts:
+      - contract: cli-incomplete-coverage-fixture
+        status: failed
+        sources:
+          status: missing
+          declared:
+          - validator.py
+          covered: []
+          missing:
+          - validator.py
     stdout: 'Isolation mode: none
 
       Coverage fingerprints: disabled
@@ -543,7 +561,7 @@ cases:
       report
 
       '
-  coverage_fingerprint: 602ac1b6bc259e83bccc18939e1ae06e
+  coverage_fingerprint: 3f233cce4bce040cdbc81bb94c357ff3
 - id: reports-coverage-write-failure
   setup: true
   input:
@@ -583,7 +601,7 @@ cases:
       (os error 21)
 
       '
-  coverage_fingerprint: 7d277d6052ff53d6c86fb1f75afcb293
+  coverage_fingerprint: af92c9686be0e9382c3b654d14b68866
 - id: reports-contract-execution-failure
   setup: true
   input:
@@ -660,7 +678,7 @@ cases:
     stderr: 'contract-runner: 2/3 dataset cases passed across 1 contract(s)
 
       '
-  coverage_fingerprint: 9d1df359568c74a4dbb26734f6482ce1
+  coverage_fingerprint: 1f63a3d98ad8853b1f415193b919b9f6
 - id: reports-supplemental-test-failure
   setup: true
   input:
@@ -704,7 +722,7 @@ cases:
       report
 
       '
-  coverage_fingerprint: 74fd89acabd65a38e9937346a1e1432d
+  coverage_fingerprint: a655cd20429032a8a3e02f393a6359fb
 - id: reports-coverage-directory-creation-failure
   setup: true
   input:
@@ -744,7 +762,7 @@ cases:
       exists (os error 17)
 
       '
-  coverage_fingerprint: 0e36668f03eee0a7d2d7df5bf0e7df02
+  coverage_fingerprint: cda6782bf81201377fc283572d8bb9bb
 - id: run-manifest-rejects-missing-manifest-with-bwrap
   setup: false
   input:
@@ -908,7 +926,7 @@ cases:
     stderr: 'contract-runner: 0/1 dataset cases passed across 1 contract(s)
 
       '
-  coverage_fingerprint: 9d1df359568c74a4dbb26734f6482ce1
+  coverage_fingerprint: 1f63a3d98ad8853b1f415193b919b9f6
 - id: reports-result-fingerprint-mismatch
   setup: true
   input:
@@ -947,7 +965,7 @@ cases:
     stderr: 'contract-runner: 0/1 dataset cases passed across 1 contract(s)
 
       '
-  coverage_fingerprint: 9d1df359568c74a4dbb26734f6482ce1
+  coverage_fingerprint: 1f63a3d98ad8853b1f415193b919b9f6
 - id: reports-step-fingerprint-mismatch
   setup: true
   input:
@@ -986,7 +1004,7 @@ cases:
     stderr: 'contract-runner: 0/1 dataset cases passed across 1 contract(s)
 
       '
-  coverage_fingerprint: 9d1df359568c74a4dbb26734f6482ce1
+  coverage_fingerprint: 1f63a3d98ad8853b1f415193b919b9f6
 - id: reports-missing-coverage-scope
   setup: true
   input:
@@ -1030,7 +1048,7 @@ cases:
     stderr: 'contract-runner: 0/3 dataset cases passed across 1 contract(s)
 
       '
-  coverage_fingerprint: 9d1df359568c74a4dbb26734f6482ce1
+  coverage_fingerprint: 1f63a3d98ad8853b1f415193b919b9f6
 - id: reports-below-target-coverage-threshold
   setup: true
   input:
@@ -1058,6 +1076,29 @@ cases:
         : [1, 2], \"covered_lines\": [1]}]\n}))\n"
   expected:
     exit_code: 1
+    coverage_report:
+      version: 1
+      contracts:
+      - contract: cli-smoke-fixture
+        status: failed
+        dataset:
+          covered_lines: 1
+          executable_lines: 2
+          percent: 50.0
+        aggregate:
+          covered_lines: 1
+          executable_lines: 2
+          percent: 50.0
+          threshold_met: false
+          files:
+          - path: validator.py
+            executable_lines:
+            - 1
+            - 2
+            covered_lines:
+            - 1
+            uncovered_lines:
+            - 2
     stdout: 'Isolation mode: none
 
       Dataset cases: 3/3 passed across 1 contract(s)
@@ -1069,7 +1110,7 @@ cases:
       report
 
       '
-  coverage_fingerprint: 2685f5ce8cf59c62cb116259d4c560e1
+  coverage_fingerprint: faf820c525d4d2079260f2506e5a0398
 - id: resolves-relative-coverage-scope-path
   setup: true
   input:
@@ -1105,15 +1146,21 @@ cases:
 
       '
     stderr: ''
-  coverage_fingerprint: 7fe43f07f8f577d1a91c80566e8751fe
-- coverage_fingerprint: 792222703fbbc3641df50c1c10b0a77f
+  coverage_fingerprint: e02db73fcada28c9405281a7883d5d79
+- coverage_fingerprint: 8b9780fabb0ef48086a2878d08c37667
   expected:
     coverage_report:
+      version: 1
       contracts:
       - contract: cli-current-pins-fixture
-        report:
-          sources:
+        status: passed
+        sources:
+          status: complete
+          declared:
           - validator.py
+          covered:
+          - validator.py
+          missing: []
     exit_code: 0
     stderr: ''
     stdout: 'Isolation mode: none
@@ -1167,7 +1214,7 @@ cases:
       tests/check.py: "def run():\n    return True\n"
       validator.py: "def validate(value):\n    return value\n"
   setup: true
-- coverage_fingerprint: c9fe6b28a5c0b7063881be35e0a7925b
+- coverage_fingerprint: 2b4cfa2e8b99cae2d202c14febc6558c
   expected: {}
   id: update-fingerprints-skips-failed-case
   input:
@@ -1285,7 +1332,7 @@ cases:
         :[1],\"covered_lines\":[1]}]}))\n"
   expected: {}
   predicate: .exit_code == 2 AND contains(.stderr, 'cannot read dataset')
-  coverage_fingerprint: 7f24c7f46f93d5cdf59db076b861c319
+  coverage_fingerprint: e100719e8892893583844c2e58528950
 - id: update-fingerprints-requires-valid-dataset
   setup: true
   input:
@@ -1325,7 +1372,7 @@ cases:
         :[1],\"covered_lines\":[1]}]}))\n"
   expected: {}
   predicate: .exit_code == 2 AND contains(.stderr, 'YAML dataset error')
-  coverage_fingerprint: bf9c42a49b0dfd8b385e9db30476d2cc
+  coverage_fingerprint: a1d4ddcde9dc55dd2b41a7a1da1165eb
 - id: update-fingerprints-requires-cases-list
   setup: true
   input:
@@ -1365,7 +1412,7 @@ cases:
         :[1],\"covered_lines\":[1]}]}))\n"
   expected: {}
   predicate: .exit_code == 2 AND contains(.stderr, 'dataset has no cases array')
-  coverage_fingerprint: a0e7e86ae4acb16c2aeca5fdad92ac5c
+  coverage_fingerprint: 7247d26d7882626deda36d8802e2e09d
 - id: update-fingerprints-requires-case-id
   setup: true
   input:
@@ -1405,7 +1452,7 @@ cases:
         :[1],\"covered_lines\":[1]}]}))\n"
   expected: {}
   predicate: .exit_code == 2 AND contains(.stderr, 'case one not found')
-  coverage_fingerprint: 8651c6e0bf62d4ee1419c4526a7d8ed3
+  coverage_fingerprint: 2d2388696c4d350e9c9f66475e13899a
 - id: update-fingerprints-requires-step-id
   setup: true
   input:
@@ -1446,7 +1493,7 @@ cases:
         :[1],\"covered_lines\":[1]}]}))\n"
   expected: {}
   predicate: .exit_code == 2 AND contains(.stderr, 'step one/step not found')
-  coverage_fingerprint: 439268cc43f358d0804dfc12c48890fe
+  coverage_fingerprint: 17ca76a03766e42a4031fbeb0b4114dc
 - id: update-fingerprints-requires-writable-dataset
   setup: true
   input:
@@ -1486,7 +1533,7 @@ cases:
         :[1],\"covered_lines\":[1]}]}))\n"
   expected: {}
   predicate: .exit_code == 2 AND contains(.stderr, 'cannot update dataset')
-  coverage_fingerprint: 0096558acf55d1a365cd19fc0b429590
+  coverage_fingerprint: c289a32fa25906949d9ed07f25be587c
 - id: update-fingerprints-requires-json-serializable-dataset
   setup: true
   input:
@@ -1525,15 +1572,21 @@ cases:
         :[1],\"covered_lines\":[1]}]}))\n"
   expected: {}
   predicate: .exit_code == 2 AND contains(.stderr, 'JSON dataset error')
-  coverage_fingerprint: ba82190ec9870b3482cf2cce1cbf074a
-- coverage_fingerprint: f75632b260f20e061895643994e41166
+  coverage_fingerprint: ebd337c08c20a2e44846c545aecfdaad
+- coverage_fingerprint: aaacf93acf82b5b4728b98f765629b78
   expected:
     coverage_report:
+      version: 1
       contracts:
       - contract: cli-current-pins-fixture
-        report:
-          sources:
+        status: passed
+        sources:
+          status: complete
+          declared:
           - validator.py
+          covered:
+          - validator.py
+          missing: []
     exit_code: 0
     stderr: ''
     stdout: "Isolation mode: none\nUpdated cli-current-pins-fixture/echo fingerprint:\
@@ -1643,7 +1696,7 @@ cases:
         :[{\"path\":\"validator.py\",\"executable_lines\":[1],\"covered_lines\":[1]}]}))\n"
   expected: {}
   predicate: .exit_code == 2 AND contains(.stderr, 'case one not found')
-  coverage_fingerprint: 2e62e6d1b52ff508d7a96ebd64f76614
+  coverage_fingerprint: 2a9b2e99f08cea35efe7e038dda35642
 - id: update-fingerprints-requires-string-case-id
   setup: true
   input:
@@ -1686,8 +1739,8 @@ cases:
         :[{\"path\":\"validator.py\",\"executable_lines\":[1],\"covered_lines\":[1]}]}))\n"
   expected: {}
   predicate: .exit_code == 2 AND contains(.stderr, 'case one not found')
-  coverage_fingerprint: 0665162d39236a9b8baae8cef1cd68f3
-- coverage_fingerprint: 271ca821f33d4e05ce7fd38c3e2fcf45
+  coverage_fingerprint: befecfeb90f7ddfa0077eb5ee0c5cd6e
+- coverage_fingerprint: 6731ebe8b024914778db4ea2c1c382bb
   expected: {}
   id: update-fingerprints-requires-case-id-field
   input:
@@ -1728,3 +1781,164 @@ cases:
         '
   predicate: .exit_code == 2 AND contains(.stderr, 'case one not found')
   setup: true
+- id: validates-versioned-coverage-report
+  setup: false
+  input:
+    validate_coverage_report:
+      version: 1
+      contracts:
+      - contract: schema-fixture
+        status: passed
+        minimum_line_percent: 100
+        sources:
+          status: complete
+          declared:
+          - src/validator.py
+          covered:
+          - src/validator.py
+          missing: []
+        dataset:
+          covered_lines: 1
+          executable_lines: 1
+          percent: 100
+          files:
+          - path: src/validator.py
+            executable_lines:
+            - 1
+            covered_lines:
+            - 1
+            uncovered_lines: []
+        aggregate:
+          covered_lines: 1
+          executable_lines: 1
+          percent: 100
+          threshold_met: true
+          files:
+          - path: src/validator.py
+            executable_lines:
+            - 1
+            covered_lines:
+            - 1
+            uncovered_lines: []
+        supplemental_tests:
+          passed: true
+          cases: 1
+        native_report:
+          format: fixture
+          summary:
+            files: 1
+  expected:
+    valid: true
+  coverage_fingerprint: 2437c98f34361ab0a19db9c34c69b9c1
+- id: rejects-invalid-coverage-report-with-contract-path
+  setup: false
+  input:
+    validate_coverage_report:
+      version: 1
+      contracts:
+      - contract: bad-fixture
+  expected:
+    valid: false
+  predicate: contains(.error, '/contracts/0') AND contains(.error, 'status')
+  coverage_fingerprint: f053e11bbac32513231c52c2e17f57ff
+- id: runner-rejects-invalid-coverage-artifact-before-writing
+  setup: false
+  input:
+    write_invalid_coverage_report:
+      minimum_line_percent: 101
+  expected:
+    written: false
+  predicate: contains(.error, 'minimum_line_percent')
+  coverage_fingerprint: bca01eefb2569b3c7c5983d0ab4fe8a4
+- id: rejects-invalid-nested-coverage-totals
+  setup: false
+  input:
+    invalid_coverage_report_field: dataset-object
+  expected:
+    valid: false
+  predicate: contains(.error, '/contracts/0/dataset')
+  coverage_fingerprint: f053e11bbac32513231c52c2e17f57ff
+- id: rejects-duplicate-lines-in-coverage-artifact
+  setup: false
+  input:
+    invalid_coverage_report_field: duplicate-lines
+  expected:
+    valid: false
+  predicate: contains(.error, '/contracts/0/dataset/files/0/executable_lines')
+  coverage_fingerprint: f053e11bbac32513231c52c2e17f57ff
+- id: rejects-zero-line-in-coverage-artifact
+  setup: false
+  input:
+    invalid_coverage_report_field: zero-line
+  expected:
+    valid: false
+  predicate: contains(.error, '/contracts/0/dataset/files/0/executable_lines')
+  coverage_fingerprint: f053e11bbac32513231c52c2e17f57ff
+- id: reports-invalid-coverage-schema-json
+  setup: false
+  input:
+    invalid_coverage_schema: '{'
+  expected:
+    valid: false
+  predicate: contains(.error, 'invalid embedded coverage report schema')
+  coverage_fingerprint: 29022ef194057512b40e45a8a34fdf86
+- id: reports-uncompilable-coverage-schema
+  setup: false
+  input:
+    invalid_coverage_schema: '{"type":"not-a-json-schema-type"}'
+  expected:
+    valid: false
+  predicate: contains(.error, 'cannot compile embedded coverage report schema')
+  coverage_fingerprint: 0d65fcd9bd4a49e3af97347ff7749c0e
+- id: reports-zero-executable-lines-as-zero-percent
+  setup: true
+  input:
+    args:
+    - run-manifest
+    - contract.yaml
+    - --isolation
+    - none
+    - --coverage-report
+    - coverage.json
+    environment:
+      OPEN_CONTRACT_DISABLE_FINGERPRINTS: '1'
+    files:
+      contract.yaml: "version: \"1\"\nname: cli-zero-line-coverage-fixture\ncoverage:\n\
+        \  minimum_line_percent: 0\nfiles:\n  dataset: dataset.json\n  validator:\
+        \ validator.py\nfilesystem:\n  read: [dataset.json, validator.py, adapter.py]\n\
+        \  write: []\nexecution:\n  command: [python3, adapter.py]\n"
+      dataset.json: '{"version":1,"cases":[{"id":"echo","input":{"value":1},"expected":{"value":1},"coverage_fingerprint":"11111111111111111111111111111111"}]}
+
+        '
+      validator.py: 'def validate(value): return value
+
+        '
+      adapter.py: 'import json, sys
+
+        request = json.load(sys.stdin)
+
+        results = [{"key": item["key"], "output": item["input"]} for item in request["requests"]]
+
+        scopes = [{"key": item["key"], "files": [{"path": "validator.py", "lines":
+        []}]} for item in request["requests"]]
+
+        print(json.dumps({"results": results, "coverage": {"sources": ["validator.py"]},
+        "coverage_scopes": scopes, "coverage_lines": [{"path": "validator.py", "executable_lines":
+        [], "covered_lines": []}]}))
+
+        '
+  expected:
+    exit_code: 1
+    coverage_report:
+      version: 1
+      contracts:
+      - status: failed
+        dataset:
+          executable_lines: 0
+          percent: 0.0
+        aggregate:
+          executable_lines: 0
+          percent: 0.0
+          threshold_met: false
+  predicate: contains(.stderr, 'coverage requirements not met')
+  coverage_fingerprint: d39c9e5b754e7c2be1c1f5d161413d63

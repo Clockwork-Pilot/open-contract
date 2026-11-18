@@ -37,6 +37,106 @@ mod profile;
 
 fn validate(case: &DatasetCase) -> Result<(), String> {
     let input = case.input.as_object().ok_or("input must be an object")?;
+    if let Some(schema) = input.get("invalid_coverage_schema") {
+        let schema = schema
+            .as_str()
+            .ok_or("invalid_coverage_schema must be a string")?;
+        let actual = match crate::validate_coverage_report_with_schema(schema, &Value::Null) {
+            Ok(()) => json!({ "valid": true }),
+            Err(error) => json!({ "valid": false, "error": error.to_string() }),
+        };
+        return match_output(
+            &actual,
+            Some(case.expected_value()?),
+            case.predicate.as_deref(),
+        )
+        .map(|_| ())
+        .map_err(|error| {
+            format!("coverage report schema compilation result did not match: {error}")
+        });
+    }
+    if let Some(field) = input.get("invalid_coverage_report_field") {
+        let field = field
+            .as_str()
+            .ok_or("invalid_coverage_report_field must be a string")?;
+        let mut report = valid_coverage_report();
+        match field {
+            "dataset-object" => report["contracts"][0]["dataset"] = json!([]),
+            "duplicate-lines" => {
+                report["contracts"][0]["dataset"]["files"][0]["executable_lines"] = json!([1, 1]);
+            }
+            "zero-line" => {
+                report["contracts"][0]["dataset"]["files"][0]["executable_lines"] = json!([0]);
+            }
+            other => return Err(format!("unknown invalid coverage report field: {other}")),
+        }
+        let actual = match crate::validate_coverage_report(&report) {
+            Ok(()) => json!({ "valid": true }),
+            Err(error) => json!({ "valid": false, "error": error.to_string() }),
+        };
+        return match_output(
+            &actual,
+            Some(case.expected_value()?),
+            case.predicate.as_deref(),
+        )
+        .map(|_| ())
+        .map_err(|error| format!("coverage report schema result did not match: {error}"));
+    }
+    if let Some(report) = input.get("validate_coverage_report") {
+        let actual = match crate::validate_coverage_report(report) {
+            Ok(()) => json!({ "valid": true }),
+            Err(error) => json!({ "valid": false, "error": error.to_string() }),
+        };
+        return match_output(
+            &actual,
+            Some(case.expected_value()?),
+            case.predicate.as_deref(),
+        )
+        .map(|_| ())
+        .map_err(|error| format!("coverage report schema result did not match: {error}"));
+    }
+    if let Some(fixture) = input.get("write_invalid_coverage_report") {
+        use runner_batch::CoverageRecord;
+
+        let minimum_line_percent = fixture
+            .get("minimum_line_percent")
+            .and_then(Value::as_f64)
+            .ok_or("write_invalid_coverage_report.minimum_line_percent must be a number")?;
+        let report = runner_batch::BatchReport {
+            results: Vec::new(),
+            coverage: vec![CoverageRecord {
+                contract: "invalid-report-fixture".into(),
+                dataset_path: PathBuf::from("dataset.json"),
+                minimum_line_percent,
+                dataset_covered_lines: 0,
+                dataset_executable_lines: 0,
+                combined_covered_lines: 0,
+                combined_executable_lines: 0,
+                line_threshold_met: false,
+                native_report: Value::Null,
+                declared_sources: Vec::new(),
+                covered_sources: Vec::new(),
+                missing_sources: Vec::new(),
+                line_coverage: Vec::new(),
+                additional_test_coverage: Value::Null,
+                additional_line_coverage: Vec::new(),
+            }],
+        };
+        let actual = match crate::write_adapter_coverage_reports(
+            Path::new("must-not-be-written.json"),
+            &report,
+        ) {
+            Ok(()) => json!({ "written": true }),
+            Err(error) => json!({ "written": false, "error": error.to_string() }),
+        };
+        return match_output(
+            &actual,
+            Some(case.expected_value()?),
+            case.predicate.as_deref(),
+        )
+        .map(|_| ())
+        .map_err(|error| format!("invalid report writer result did not match: {error}"));
+    }
     let arguments = input
         .get("args")
         .and_then(Value::as_array)
@@ -166,6 +266,48 @@ fn validate(case: &DatasetCase) -> Result<(), String> {
         format!("complete CLI result did not match: {error}; actual: {actual_value}")
     })?;
     Ok(())
+}
+
+fn valid_coverage_report() -> Value {
+    json!({
+        "version": 1,
+        "contracts": [{
+            "contract": "schema-fixture",
+            "status": "passed",
+            "minimum_line_percent": 100,
+            "sources": {
+                "status": "complete",
+                "declared": ["src/validator.py"],
+                "covered": ["src/validator.py"],
+                "missing": []
+            },
+            "dataset": {
+                "covered_lines": 1,
+                "executable_lines": 1,
+                "percent": 100,
+                "files": [{
+                    "path": "src/validator.py",
+                    "executable_lines": [1],
+                    "covered_lines": [1],
+                    "uncovered_lines": []
+                }]
+            },
+            "aggregate": {
+                "covered_lines": 1,
+                "executable_lines": 1,
+                "percent": 100,
+                "threshold_met": true,
+                "files": [{
+                    "path": "src/validator.py",
+                    "executable_lines": [1],
+                    "covered_lines": [1],
+                    "uncovered_lines": []
+                }]
+            },
+            "supplemental_tests": null,
+            "native_report": null
+        }]
+    })
 }
 
 struct CliEnvironmentGuard {

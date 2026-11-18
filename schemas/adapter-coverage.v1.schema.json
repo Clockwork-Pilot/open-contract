@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://open-contract.dev/schemas/adapter-coverage.v1.schema.json",
+  "title": "Open Contract adapter coverage payload",
+  "type": "object",
+  "required": ["coverage_lines"],
+  "properties": {
+    "coverage": {"type": ["object", "null"]},
+    "coverage_lines": {"$ref": "#/$defs/files"},
+    "additional_test_coverage": {"type": ["object", "null"]},
+    "additional_coverage_lines": {"$ref": "#/$defs/files"}
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "files": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/file"}
+    },
+    "file": {
+      "type": "object",
+      "required": ["path", "executable_lines", "covered_lines"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "executable_lines": {"$ref": "#/$defs/lines"},
+        "covered_lines": {"$ref": "#/$defs/lines"}
+      },
+      "additionalProperties": false
+    },
+    "lines": {
+      "type": "array",
+      "items": {"type": "integer", "minimum": 1},
+      "uniqueItems": true
+    }
+  }
+}

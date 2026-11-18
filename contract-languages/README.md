@@ -5,8 +5,12 @@ contract's public validator with the real `input` plus a context object. The
 context contains `case_id`, optional `step_id`, optional `setup` fixture ID,
 and the `parallel` marker. Adapters execute unmarked calls and steps in order;
 adjacent `parallel: true` steps in one case form a concurrent group. They
-return one raw output or error per request, keyed by case and step, plus
-language-native coverage data. They do not interpret setup IDs or replace
+return one raw output or error per request, keyed by case and step, plus native
+coverage and normalized `coverage_lines` records. Each normalized file contains
+a relative `path`, sorted unique positive `executable_lines`, and sorted unique
+positive `covered_lines`. The runner validates this payload against
+`schemas/adapter-coverage.v1.schema.json` before calculating thresholds. They do
+not interpret setup IDs or replace
 public calls with harness operations. The Rust runner checks each result
 against that call's sibling `expected` and optional `predicate` after execution.
 

@@ -653,6 +653,7 @@ name = "runner-cli"
 version = "0.1.0"
 dependencies = [
  "bootstrap-dataset-harness",
+ "jsonschema",
  "runner-batch",
  "runner-errors",
  "runner-isolation",

@@ -130,12 +130,15 @@ accepted with `none` or `tempdir`. Runtime YAML describes host runtime
 dependencies such as system libraries and executables. Contract-owned or
 shared contract files belong in `filesystem.read`/`filesystem.write`.
 
-`--coverage-report <path>` is optional. It writes each executed contract's raw
-native report, declared and covered source paths, and missing source paths to a
-separate JSON file. It also lists executable, covered, and uncovered line
-numbers per source file, plus covered lines per dataset case and step. Language
-adapters translate their native coverage into this shared line format; Rust
-does not parse language-specific coverage reports. Only dataset execution
+`--coverage-report <path>` writes a version 1 JSON artifact. Each contract entry
+includes its coverage status, declared/covered/missing sources, dataset and
+aggregate line totals, and executable, covered, and uncovered line numbers per
+file. The adapter's native report is retained under `native_report`. The
+artifact format is defined by `schemas/coverage-report.v1.schema.json`; adapter
+line data follows `schemas/adapter-coverage.v1.schema.json`. The runner validates
+both formats and reports the contract and schema field when data is invalid.
+Language adapters translate their native coverage into this shared line format;
+Rust does not parse language-specific coverage reports. Only dataset execution
 contributes to contract coverage.
 When enabled, the runner also prints a compact per-file line summary to stderr,
 including uncovered line ranges, so the gaps are visible without opening the

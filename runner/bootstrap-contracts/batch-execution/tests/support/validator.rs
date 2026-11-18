@@ -67,6 +67,25 @@ fn validate_dataset_entry_with_adapter(
     let id = entry.id.as_str();
     let input = &entry.input;
     let expected = entry.expected_value()?;
+    if input["operation"].as_str() == Some("validate-adapter-coverage") {
+        let payloads = input["payloads"]
+            .as_array()
+            .ok_or_else(|| "validate-adapter-coverage requires input.payloads".to_string())?;
+        let checks = payloads
+            .iter()
+            .map(|payload| {
+                match runner_batch::validate_adapter_coverage_payload(payload, "schema-fixture") {
+                    Ok(()) => json!({"valid": true}),
+                    Err(error) => json!({"valid": false, "error": error}),
+                }
+            })
+            .collect::<Vec<_>>();
+        return check_public_output(
+            &json!({"checks": checks}),
+            expected,
+            entry.predicate.as_deref(),
+        );
+    }
     let fixture = tempdir().map_err(|error| format!("fixture directory: {error}"))?;
     let package = fixture.path();
     if id == "load-dataset-reports-missing-file" {
@@ -267,6 +286,7 @@ fn configure_case_setup(
         | "dataset-adapter-multiple-coverage-lines"
         | "dataset-adapter-coverage-source-unavailable"
         | "dataset-adapter-coverage-line-out-of-range"
+        | "dataset-adapter-covered-line-outside-executable"
         | "dataset-adapter-no-line-coverage"
         | "dataset-adapter-missing-step-coverage"
         | "dataset-adapter-missing-batch"
@@ -327,6 +347,15 @@ print(json.dumps({
                     "import sys\nprint('stderr diagnostic', file=sys.stderr)\nsys.exit(1)\n"
                 }
                 "manifest-adapter-returns-invalid-json" => "print('{')\n",
+                "manifest-adapter-returns-invalid-batch-data" => {
+                    "import json\nprint(json.dumps({'results': 'not-an-array'}))\n"
+                }
+                "manifest-adapter-returns-invalid-coverage-data" => {
+                    r#"import json, sys
+batch=json.load(sys.stdin); request=batch["requests"][0]; source=batch["validator"]
+print(json.dumps({"results":[{"key":request["key"],"output":request["input"]}],"coverage_lines":[{"path":source,"executable_lines":[1],"covered_lines":[2]}]}))
+"#
+                }
                 "manifest-adapter-returns-no-results" => {
                     "import json\nprint(json.dumps({'results': []}))\n"
                 }
@@ -616,6 +645,12 @@ impl BatchAdapter for ScenarioDatasetAdapter {
                     }
                 }
                 "dataset-adapter-no-line-coverage" => batch.coverage_lines.clear(),
+                "dataset-adapter-covered-line-outside-executable" => {
+                    if let Some(file) = batch.coverage_lines.first_mut() {
+                        file.executable_lines = vec![1];
+                        file.covered_lines = vec![2];
+                    }
+                }
                 "dataset-adapter-missing-step-coverage" => {
                     batch
                         .coverage_scopes

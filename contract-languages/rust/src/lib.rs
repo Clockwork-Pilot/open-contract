@@ -320,14 +320,12 @@ mod llvm_coverage {
             .arg(format!("-instr-profile={}", indexed.display()))
             .arg(binary);
         command.args(sources);
-        let output = command
-            .output()
-            .map_err(|error| {
-                format!(
-                    "cannot run llvm-cov at {} (set LLVM_COV): {error}",
-                    llvm_cov.display()
-                )
-            })?;
+        let output = command.output().map_err(|error| {
+            format!(
+                "cannot run llvm-cov at {} (set LLVM_COV): {error}",
+                llvm_cov.display()
+            )
+        })?;
         if !output.status.success() {
             return Err(format!(
                 "llvm-cov export failed: {}",
@@ -499,6 +497,47 @@ mod llvm_coverage {
 mod tests {
     use super::run_dataset;
     use serde_json::{json, Value};
+
+    #[test]
+    fn returns_normalized_coverage_line_records() {
+        let request = json!({
+            "coverage_sources": ["src/lib.rs"],
+            "requests": [{"key":{"case_id":"one","step_id":null},"input":{"value":1}}]
+        });
+        let report = run_dataset(&request, |input, _| Ok(input.clone())).unwrap();
+        let lines = report["coverage_lines"]
+            .as_array()
+            .expect("coverage_lines is an array");
+        #[cfg(coverage)]
+        assert!(
+            !lines.is_empty(),
+            "instrumented Rust coverage must include the declared source"
+        );
+        #[cfg(not(coverage))]
+        assert_eq!(lines, &Vec::<Value>::new());
+        for file in lines {
+            assert!(file["path"].as_str().is_some_and(|path| !path.is_empty()));
+            #[cfg(coverage)]
+            assert_eq!(file["path"], "src/lib.rs");
+            let executable = file["executable_lines"]
+                .as_array()
+                .expect("executable_lines is an array");
+            let covered = file["covered_lines"]
+                .as_array()
+                .expect("covered_lines is an array");
+            assert!(executable
+                .windows(2)
+                .all(|pair| pair[0].as_u64() < pair[1].as_u64()));
+            assert!(covered
+                .windows(2)
+                .all(|pair| pair[0].as_u64() < pair[1].as_u64()));
+            assert!(covered.iter().all(|line| executable.contains(line)));
+        }
+        #[cfg(not(coverage))]
+        assert!(report["coverage"]["error"]
+            .as_str()
+            .is_some_and(|message| message.contains("not compiled with")));
+    }
 
     #[test]
     fn invokes_sequential_requests_with_public_input_and_setup_context() {

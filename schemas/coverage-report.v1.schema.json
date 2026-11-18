@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://open-contract.dev/schemas/coverage-report.v1.schema.json",
+  "title": "Open Contract runner coverage artifact",
+  "type": "object",
+  "required": ["version", "contracts"],
+  "properties": {
+    "version": {"const": 1},
+    "contracts": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/contract"}
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "contract": {
+      "type": "object",
+      "required": ["contract", "status", "minimum_line_percent", "sources", "dataset", "aggregate", "supplemental_tests", "native_report"],
+      "properties": {
+        "contract": {"type": "string", "minLength": 1},
+        "status": {"enum": ["passed", "failed"]},
+        "minimum_line_percent": {"type": "number", "minimum": 0, "maximum": 100},
+        "sources": {
+          "type": "object",
+          "required": ["status", "declared", "covered", "missing"],
+          "properties": {
+            "status": {"enum": ["complete", "missing"]},
+            "declared": {"type": "array", "items": {"type": "string"}},
+            "covered": {"type": "array", "items": {"type": "string"}},
+            "missing": {"type": "array", "items": {"type": "string"}}
+          },
+          "additionalProperties": false
+        },
+        "dataset": {"$ref": "#/$defs/totals"},
+        "aggregate": {"$ref": "#/$defs/totals"},
+        "supplemental_tests": {"type": ["object", "null"]},
+        "native_report": true
+      },
+      "additionalProperties": false
+    },
+    "totals": {
+      "type": "object",
+      "required": ["covered_lines", "executable_lines", "percent", "files"],
+      "properties": {
+        "covered_lines": {"type": "integer", "minimum": 0},
+        "executable_lines": {"type": "integer", "minimum": 0},
+        "percent": {"type": "number", "minimum": 0, "maximum": 100},
+        "threshold_met": {"type": "boolean"},
+        "files": {"type": "array", "items": {"$ref": "#/$defs/file"}}
+      },
+      "additionalProperties": false
+    },
+    "file": {
+      "type": "object",
+      "required": ["path", "executable_lines", "covered_lines", "uncovered_lines"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "executable_lines": {"$ref": "#/$defs/lines"},
+        "covered_lines": {"$ref": "#/$defs/lines"},
+        "uncovered_lines": {"$ref": "#/$defs/lines"}
+      },
+      "additionalProperties": false
+    },
+    "lines": {
+      "type": "array",
+      "items": {"type": "integer", "minimum": 1},
+      "uniqueItems": true
+    }
+  }
+}

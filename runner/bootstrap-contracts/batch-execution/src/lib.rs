@@ -10,6 +10,9 @@ use std::path::{Path, PathBuf};
 #[jsonschema::validator(path = "../../../schemas/dataset.v1.schema.json")]
 struct DatasetSchema;
 
+#[jsonschema::validator(path = "../../../schemas/adapter-coverage.v1.schema.json")]
+struct AdapterCoverageSchema;
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Dataset {
@@ -289,12 +292,83 @@ impl BatchAdapter for ManifestBatchAdapter {
 }
 
 fn decode_batch_output(bytes: &[u8], contract: &str) -> Result<AdapterBatch, String> {
-    let response: AdapterBatch = serde_json::from_slice(bytes)
+    let value: Value = serde_json::from_slice(bytes)
         .map_err(|e| format!("language adapter returned invalid batch JSON: {e}"))?;
+    let response: AdapterBatch = serde_json::from_value(value.clone())
+        .map_err(|e| format!("language adapter returned invalid batch data: {e}"))?;
     if response.results.is_empty() {
         return Err(format!("contract {contract} returned no batch results"));
     }
+    validate_adapter_coverage_payload(&value, contract)?;
     Ok(response)
+}
+
+/// Validate normalized coverage before it reaches threshold calculations.
+pub fn validate_adapter_coverage_payload(value: &Value, contract: &str) -> Result<(), String> {
+    let coverage = json!({
+        "coverage": value.get("coverage").cloned().unwrap_or(Value::Null),
+        "coverage_lines": value.get("coverage_lines").cloned().unwrap_or(Value::Null),
+        "additional_test_coverage": value.get("additional_test_coverage").cloned().unwrap_or(Value::Null),
+        "additional_coverage_lines": value.get("additional_coverage_lines").cloned().unwrap_or_else(|| json!([])),
+    });
+    if let Some(error) = AdapterCoverageSchema::iter_errors(&coverage).next() {
+        return Err(format!(
+            "contract {contract} returned invalid adapter coverage at {}: {}",
+            error.instance_path(),
+            error
+        ));
+    }
+    for field in ["coverage_lines", "additional_coverage_lines"] {
+        let files = coverage[field].as_array().map(Vec::as_slice).unwrap_or(&[]);
+        let mut paths = std::collections::HashSet::new();
+        for (index, file) in files.iter().enumerate() {
+            let path = file["path"].as_str().unwrap_or_default();
+            if !paths.insert(path) {
+                return Err(format!("contract {contract} returned invalid adapter coverage at /{field}/{index}/path: duplicate file path {path:?}"));
+            }
+            let executable = file["executable_lines"]
+                .as_array()
+                .map(Vec::as_slice)
+                .unwrap_or(&[]);
+            let covered = file["covered_lines"]
+                .as_array()
+                .map(Vec::as_slice)
+                .unwrap_or(&[]);
+            if !strictly_increasing(executable) {
+                return Err(format!("contract {contract} returned invalid adapter coverage at /{field}/{index}/executable_lines: line numbers must be sorted and unique"));
+            }
+            if !strictly_increasing(covered) {
+                return Err(format!("contract {contract} returned invalid adapter coverage at /{field}/{index}/covered_lines: line numbers must be sorted and unique"));
+            }
+            if covered.iter().any(|line| !executable.contains(line)) {
+                return Err(format!("contract {contract} returned invalid adapter coverage at /{field}/{index}/covered_lines: every covered line must be executable"));
+            }
+            let source_path = Path::new(path);
+            if source_path.is_absolute()
+                || source_path
+                    .components()
+                    .any(|part| !matches!(part, std::path::Component::Normal(_)))
+            {
+                return Err(format!("contract {contract} returned invalid adapter coverage at /{field}/{index}/path: path must be package-relative"));
+            }
+        }
+    }
+    Ok(())
+}
+
+fn adapter_coverage_value(batch: &AdapterBatch) -> Value {
+    json!({
+        "coverage": batch.coverage,
+        "coverage_lines": batch.coverage_lines,
+        "additional_test_coverage": batch.additional_test_coverage,
+        "additional_coverage_lines": batch.additional_coverage_lines,
+    })
+}
+
+fn strictly_increasing(lines: &[Value]) -> bool {
+    lines
+        .windows(2)
+        .all(|pair| pair[0].as_u64() < pair[1].as_u64())
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -449,6 +523,8 @@ pub fn run_contract_tree_with_fingerprint_mode(
     for ((batch, checks), mut adapter_batch) in
         batches.iter().zip(checks_by_contract).zip(adapter_batches)
     {
+        let adapter_value = adapter_coverage_value(&adapter_batch);
+        validate_adapter_coverage_payload(&adapter_value, &batch.manifest.manifest.name)?;
         let additional_test_coverage = validate_additional_test_coverage(batch, &adapter_batch)?;
         prefix_line_coverage_paths(&batch.package_prefix, &mut adapter_batch.coverage_lines);
         prefix_line_coverage_paths(

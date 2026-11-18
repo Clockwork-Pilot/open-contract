@@ -36,6 +36,9 @@ test('parallel steps share one coverage scope and receive setup context', async 
 			scope.files.flatMap((file) => file.lines)));
 		assert.deepEqual(report.coverage_lines[0].covered_lines, [...scopedLines].sort((a, b) => a - b));
 		assert.equal(report.coverage_lines[0].path, 'validator.mjs');
+		assert.deepEqual(report.coverage_lines[0].executable_lines, [...new Set(report.coverage_lines[0].executable_lines)].sort((a, b) => a - b));
+		assert.deepEqual(report.coverage_lines[0].covered_lines, [...new Set(report.coverage_lines[0].covered_lines)].sort((a, b) => a - b));
+		assert.ok(report.coverage_lines[0].covered_lines.every((line) => report.coverage_lines[0].executable_lines.includes(line)));
 		assert.equal(report.results.length, 2);
 		assert.deepEqual(report.coverage_scopes[0].files, report.coverage_scopes[1].files);
 		assert.equal(report.results[0].key.case_id, 'same');
@@ -71,6 +74,7 @@ test('disabling fingerprints keeps aggregate dataset line coverage', async () =>
 		assert.deepEqual(report.coverage_scopes, []);
 		assert.equal(report.coverage_lines.length, 1);
 		assert.deepEqual(report.coverage_lines[0].covered_lines, report.coverage_lines[0].executable_lines);
+		assert.ok(report.coverage_lines[0].executable_lines.every((line) => Number.isInteger(line) && line > 0));
 	} finally {
 		process.chdir(originalDirectory);
 		await rm(packageRoot, { recursive: true, force: true });

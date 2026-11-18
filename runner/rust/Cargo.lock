@@ -666,6 +666,7 @@ dependencies = [
 name = "runner-cli"
 version = "0.1.0"
 dependencies = [
+ "jsonschema",
  "runner-batch",
  "runner-errors",
  "runner-isolation",
