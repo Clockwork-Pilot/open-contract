@@ -148,7 +148,6 @@ pub(crate) fn exercise_backend_error_paths() -> Result<(), String> {
             &command,
             b"",
             None,
-            None,
             false,
         )
         .expect_err("outside command working directory must be rejected");
@@ -171,7 +170,6 @@ pub(crate) fn exercise_backend_error_paths() -> Result<(), String> {
         &[],
         &command,
         b"",
-        None,
         None,
         false,
     )
@@ -204,7 +202,6 @@ pub(crate) fn exercise_backend_error_paths() -> Result<(), String> {
 
     assert!(canonicalize_runner_root(&root.path().join("missing-runner-root")).is_err());
     assert!(runtime_with_root_path(
-        None,
         Backend::None,
         None,
         &root.path().join("missing-configured-runner-root"),

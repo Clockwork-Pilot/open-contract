@@ -1,10 +1,7 @@
 version: 1
-profiles:
-  production:
-    entrypoint: src/open_contract_language/batch_adapter.py
-    files:
-      - src
-      - .deps
-    environment_paths:
-      OPEN_CONTRACT_LANGUAGE_PATH: src
-      PYTHONPATH: .deps
+entrypoint: src/open_contract_language/batch_adapter.py
+files:
+  - src
+  - .deps
+environment_paths:
+  PYTHONPATH: .deps

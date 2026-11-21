@@ -1,4 +1,5 @@
 use serde::Deserialize;
+use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Component, Path, PathBuf};
 
@@ -7,15 +8,20 @@ use std::path::{Component, Path, PathBuf};
 pub struct Manifest {
     pub version: String,
     pub name: String,
-    /// Logical language-support package identifier. Host paths and runtime
-    /// mount details are resolved by runner configuration, not the manifest.
+    pub datasets: Vec<String>,
+    pub coverage_sources: Vec<String>,
     #[serde(default)]
-    pub language_package: Option<String>,
-    pub files: Files,
+    pub supplemental_tests: Vec<String>,
+    #[serde(default)]
+    pub nested_contracts: Vec<String>,
+    #[serde(default)]
+    pub directories: BTreeMap<String, String>,
     #[serde(default)]
     pub coverage: Coverage,
     #[serde(default)]
     pub execution: Option<ExecutionCommand>,
+    #[serde(default)]
+    pub language_adapter: Option<String>,
     pub filesystem: FileSystem,
 }
 
@@ -48,19 +54,6 @@ pub struct ExecutionCommand {
 
 #[derive(Clone, Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct Files {
-    pub dataset: String,
-    pub validator: String,
-    #[serde(default)]
-    pub support: Vec<String>,
-    #[serde(default)]
-    pub supplemental_tests: Vec<String>,
-    #[serde(default)]
-    pub nested_contracts: Vec<String>,
-}
-
-#[derive(Clone, Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
 pub struct FileSystem {
     pub read: Vec<String>,
     pub write: Vec<String>,
@@ -73,6 +66,7 @@ pub struct ManifestPlan {
     pub manifest: Manifest,
     pub manifest_path: PathBuf,
     pub package_root: PathBuf,
+    pub language_adapter: Option<PathBuf>,
 }
 
 impl ManifestPlan {
@@ -84,7 +78,7 @@ impl ManifestPlan {
         let manifest_path = canonicalize_path(path)?;
         let mut package_root = manifest_path.clone();
         package_root.pop();
-        let manifest: Manifest =
+        let mut manifest: Manifest =
             serde_yaml::from_slice(&fs::read(&manifest_path).map_err(|e| e.to_string())?)
                 .map_err(|e| format!("invalid manifest: {e}"))?;
         if manifest.version != "1" {
@@ -93,9 +87,27 @@ impl ManifestPlan {
         if manifest.name.trim().is_empty() {
             return Err("manifest name must be non-empty".into());
         }
-        if let Some(package) = manifest.language_package.as_deref() {
-            validate_language_package(package)?;
+        validate_directory_aliases(&package_root, &manifest.directories)?;
+        for path in &mut manifest.datasets {
+            *path = resolve_directory_alias(path, &manifest.directories)?;
         }
+        for path in &mut manifest.supplemental_tests {
+            *path = resolve_directory_alias(path, &manifest.directories)?;
+        }
+        for path in &mut manifest.nested_contracts {
+            *path = resolve_directory_alias(path, &manifest.directories)?;
+        }
+        for path in &mut manifest.filesystem.read {
+            *path = resolve_directory_alias(path, &manifest.directories)?;
+        }
+        for path in &mut manifest.filesystem.write {
+            *path = resolve_directory_alias(path, &manifest.directories)?;
+        }
+        manifest.coverage_sources = resolve_coverage_sources(
+            &package_root,
+            &manifest.coverage_sources,
+            &manifest.directories,
+        )?;
         if !manifest.coverage.minimum_line_percent.is_finite()
             || !(0.0..=100.0).contains(&manifest.coverage.minimum_line_percent)
         {
@@ -106,13 +118,30 @@ impl ManifestPlan {
                 return Err("manifest execution command must not be empty".into());
             }
         }
-        let mut declared_files = vec![
-            manifest.files.dataset.as_str(),
-            manifest.files.validator.as_str(),
-        ];
-        declared_files.extend(manifest.files.support.iter().map(String::as_str));
-        declared_files.extend(manifest.files.supplemental_tests.iter().map(String::as_str));
-        declared_files.extend(manifest.files.nested_contracts.iter().map(String::as_str));
+        let language_adapter = manifest
+            .language_adapter
+            .as_deref()
+            .map(|path| resolve_filesystem_path(&package_root, path, true))
+            .transpose()?;
+        if let Some(path) = &language_adapter {
+            if !path.is_file() {
+                return Err(format!(
+                    "language_adapter is not a regular file: {}",
+                    path.display()
+                ));
+            }
+        }
+        if manifest.datasets.is_empty() {
+            return Err("manifest datasets must include at least one path".into());
+        }
+        let mut declared_files = manifest
+            .datasets
+            .iter()
+            .map(String::as_str)
+            .collect::<Vec<_>>();
+        declared_files.extend(manifest.coverage_sources.iter().map(String::as_str));
+        declared_files.extend(manifest.supplemental_tests.iter().map(String::as_str));
+        declared_files.extend(manifest.nested_contracts.iter().map(String::as_str));
         let resolved_read_paths = manifest
             .filesystem
             .read
@@ -139,23 +168,105 @@ impl ManifestPlan {
             manifest,
             manifest_path,
             package_root,
+            language_adapter,
         })
     }
 }
 
-fn validate_language_package(package: &str) -> Result<(), String> {
-    let mut characters = package.chars();
-    let valid = characters
-        .next()
-        .is_some_and(|first| first.is_ascii_alphanumeric())
-        && characters.all(|character| {
-            character.is_ascii_alphanumeric() || matches!(character, '-' | '_' | '.')
-        });
-    if valid {
-        Ok(())
-    } else {
-        Err("manifest language_package must be a logical identifier, not a path".into())
+fn validate_directory_aliases(
+    package_root: &Path,
+    aliases: &BTreeMap<String, String>,
+) -> Result<(), String> {
+    for (name, raw_path) in aliases {
+        let mut characters = name.chars();
+        let valid_name = characters
+            .next()
+            .is_some_and(|first| first.is_ascii_alphabetic())
+            && characters.all(|character| {
+                character.is_ascii_alphanumeric() || matches!(character, '_' | '-')
+            });
+        if !valid_name {
+            return Err(format!("invalid directory alias name: {name:?}"));
+        }
+        validate_package_path(raw_path)?;
+        let resolved = resolve_inside(package_root, raw_path)?;
+        if !resolved.is_dir() {
+            return Err(format!(
+                "directory alias @{name} does not name a directory: {raw_path}"
+            ));
+        }
     }
+    Ok(())
+}
+
+fn resolve_directory_alias(
+    raw: &str,
+    aliases: &BTreeMap<String, String>,
+) -> Result<String, String> {
+    if !raw.starts_with('@') {
+        return Ok(raw.to_owned());
+    }
+    let reference = &raw[1..];
+    let (name, suffix) = reference.split_once('/').unwrap_or((reference, ""));
+    let root = aliases
+        .get(name)
+        .ok_or_else(|| format!("unknown directory alias: @{name}"))?;
+    if suffix.is_empty() {
+        Ok(root.clone())
+    } else {
+        Ok(format!("{root}/{suffix}"))
+    }
+}
+
+fn resolve_coverage_sources(
+    package_root: &Path,
+    declarations: &[String],
+    aliases: &BTreeMap<String, String>,
+) -> Result<Vec<String>, String> {
+    let mut resolved = Vec::new();
+    let mut seen = std::collections::HashSet::new();
+    for declaration in declarations {
+        let pattern = resolve_directory_alias(declaration, aliases)?;
+        validate_package_path(&pattern)?;
+        let absolute_pattern = package_root.join(&pattern).to_string_lossy().into_owned();
+        let mut matches = glob::glob(&absolute_pattern)
+            .map_err(|error| format!("invalid coverage_sources glob {pattern:?}: {error}"))?
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(|error| format!("cannot expand coverage_sources glob {pattern:?}: {error}"))?;
+        matches.sort();
+        if matches.is_empty() {
+            return Err(format!(
+                "coverage_sources entry matched no files: {pattern}"
+            ));
+        }
+        for matched in matches {
+            let canonical = matched.canonicalize().map_err(|error| error.to_string())?;
+            if !canonical.starts_with(package_root) {
+                return Err(format!(
+                    "coverage_sources path escapes its package: {pattern}"
+                ));
+            }
+            if !canonical.is_file() {
+                return Err(format!(
+                    "coverage_sources entry is not a regular file: {pattern}"
+                ));
+            }
+            // `pattern` is a validated package-relative path and `matched`
+            // came from globbing `package_root.join(pattern)`, so removing
+            // the package root is guaranteed by construction. The canonical
+            // path check above separately rejects symlink escapes.
+            let relative = matched
+                .components()
+                .skip(package_root.components().count())
+                .collect::<PathBuf>()
+                .to_string_lossy()
+                .replace('\\', "/");
+            if seen.insert(relative.clone()) {
+                resolved.push(relative);
+            }
+        }
+    }
+    Ok(resolved)
 }
 
 pub fn validate_package_path(raw: &str) -> Result<(), String> {
@@ -323,7 +434,7 @@ mod tests {
         std::fs::write(root.join("contract.yaml"), text).unwrap();
     }
 
-    const VALID: &str = "version: '1'\nname: sample\nfiles: {dataset: dataset.json, validator: validator.py}\nfilesystem: {read: [dataset.json, validator.py], write: [reports/deep]}\n";
+    const VALID: &str = "version: '1'\nname: sample\ndatasets: [dataset.json]\ncoverage_sources: [validator.py]\nfilesystem: {read: [dataset.json, validator.py], write: [reports/deep]}\n";
 
     #[test]
     fn package_paths_reject_escape_and_absolute_paths() {
@@ -361,13 +472,11 @@ mod tests {
         for invalid in [
             VALID.replace("version: '1'", "version: '2'"),
             VALID.replace("name: sample", "name: '  '"),
-            VALID.replace("read: [dataset.json, validator.py]", "read: [/etc/passwd]"),
             VALID.replace("read: [dataset.json, validator.py]", "read: [missing.json]"),
-            VALID.replace("write: [reports/deep]", "write: [/tmp/out]"),
             VALID.replace("read: [dataset.json, validator.py]", "read: [dataset.json]"),
-            VALID.replace("dataset: dataset.json", "dataset: missing.json"),
+            VALID.replace("datasets: [dataset.json]", "datasets: [missing.json]"),
             VALID
-                .replace("dataset: dataset.json", "dataset: ../escape")
+                .replace("datasets: [dataset.json]", "datasets: [../escape]")
                 .replace("read: [dataset.json, validator.py]", "read: [validator.py]"),
             "not: [valid: yaml".to_string(),
         ] {
@@ -378,7 +487,7 @@ mod tests {
         let directory = temp.path().join("dataset-dir");
         std::fs::create_dir(&directory).unwrap();
         let directory_manifest = VALID
-            .replace("dataset: dataset.json", "dataset: dataset-dir")
+            .replace("datasets: [dataset.json]", "datasets: [dataset-dir]")
             .replace(
                 "read: [dataset.json, validator.py]",
                 "read: [dataset-dir, validator.py]",
@@ -417,13 +526,56 @@ mod tests {
         write_manifest(
             temp.path(),
             &VALID.replace(
-                "files: {dataset: dataset.json, validator: validator.py}",
-                "files: {dataset: dataset.json, validator: validator.py}\ncoverage: {minimum_line_percent: 101}",
+                "datasets: [dataset.json]",
+                "datasets: [dataset.json]\ncoverage: {minimum_line_percent: 101}",
             ),
         );
         assert!(ManifestPlan::load(&temp.path().join("contract.yaml"))
             .unwrap_err()
             .contains("coverage.minimum_line_percent"));
+    }
+
+    #[test]
+    fn coverage_sources_keep_literals_and_expand_globs_in_sorted_order() {
+        let temp = package();
+        let source_dir = temp.path().join("src");
+        std::fs::create_dir_all(source_dir.join("internal")).unwrap();
+        std::fs::write(source_dir.join("z.rs"), "pub fn z() {}\n").unwrap();
+        std::fs::write(source_dir.join("a.rs"), "pub fn a() {}\n").unwrap();
+        std::fs::write(source_dir.join("internal/helper.rs"), "fn helper() {}\n").unwrap();
+        let manifest = "version: '1'\nname: sources\ndatasets: [dataset.json]\ncoverage_sources: [src/**/*.rs]\nfilesystem: {read: [dataset.json, src], write: []}\n";
+        write_manifest(temp.path(), manifest);
+
+        let plan = ManifestPlan::load(&temp.path().join("contract.yaml")).unwrap();
+        assert_eq!(
+            plan.manifest.coverage_sources,
+            vec!["src/a.rs", "src/internal/helper.rs", "src/z.rs"]
+        );
+    }
+
+    #[test]
+    fn coverage_sources_include_only_declared_literal_sources() {
+        let temp = package();
+        let source_dir = temp.path().join("src");
+        std::fs::create_dir_all(&source_dir).unwrap();
+        std::fs::write(source_dir.join("public.rs"), "pub fn api() {}\n").unwrap();
+        std::fs::write(source_dir.join("helper.rs"), "fn helper() {}\n").unwrap();
+        let manifest = "version: '1'\nname: sources\ndatasets: [dataset.json]\ncoverage_sources: [src/public.rs]\nfilesystem: {read: [dataset.json, src], write: []}\n";
+        write_manifest(temp.path(), manifest);
+
+        let plan = ManifestPlan::load(&temp.path().join("contract.yaml")).unwrap();
+        assert_eq!(plan.manifest.coverage_sources, vec!["src/public.rs"]);
+    }
+
+    #[test]
+    fn coverage_source_glob_must_match_at_least_one_file() {
+        let temp = package();
+        let manifest = "version: '1'\nname: sources\ndatasets: [dataset.json]\ncoverage_sources: [src/**/*.rs]\nfilesystem: {read: [dataset.json, src], write: []}\n";
+        std::fs::create_dir(temp.path().join("src")).unwrap();
+        write_manifest(temp.path(), manifest);
+
+        let error = ManifestPlan::load(&temp.path().join("contract.yaml")).unwrap_err();
+        assert!(error.contains("coverage_sources entry matched no files"));
     }
 
     #[test]

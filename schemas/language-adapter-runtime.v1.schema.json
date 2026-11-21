@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://open-contracts.dev/schemas/language-adapter-runtime.v1.schema.json",
+  "title": "Open Contract language adapter runtime v1",
+  "type": "object",
+  "required": ["version", "entrypoint", "files"],
+  "additionalProperties": false,
+  "properties": {
+    "version": {"const": 1},
+    "entrypoint": {"$ref": "#/$defs/runtimePath"},
+    "files": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/runtimePath"}, "uniqueItems": true},
+    "environment": {"type": "object", "additionalProperties": {"type": "string"}},
+    "environment_paths": {"type": "object", "additionalProperties": {"$ref": "#/$defs/runtimePath"}}
+  },
+  "$defs": {
+    "runtimePath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\).+$",
+      "description": "Path relative to the directory containing runtime.yaml."
+    }
+  }
+}

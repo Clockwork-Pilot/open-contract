@@ -144,7 +144,7 @@ pub(crate) fn exercise_copy_error_paths() -> Result<(), String> {
         let external_child = tempfile::tempdir().map_err(|error| error.to_string())?;
         fs::write(
             external_child.path().join("contract.yaml"),
-            "version: \"1\"\nname: child\ncoverage:\n  minimum_line_percent: 100\nfiles:\n  dataset: dataset.json\n  validator: validator.txt\nfilesystem:\n  read: [dataset.json, validator.txt]\n  write: []\n",
+            "version: \"1\"\nname: child\ndatasets: [dataset.json]\ncoverage_sources: []\ncoverage:\n  minimum_line_percent: 100\nfilesystem:\n  read: [dataset.json, validator.txt]\n  write: []\n",
         )
         .map_err(|error| error.to_string())?;
         fs::write(external_child.path().join("dataset.json"), "{}")
@@ -164,7 +164,7 @@ pub(crate) fn exercise_copy_error_paths() -> Result<(), String> {
         plan.package_root = package_copy.path().to_path_buf();
         plan.manifest.filesystem.read.clear();
         plan.manifest.filesystem.write.clear();
-        plan.manifest.files.nested_contracts = vec!["nested-child.yaml".into()];
+        plan.manifest.nested_contracts = vec!["nested-child.yaml".into()];
         let error = super::StagedTree::create(&plan)
             .err()
             .ok_or_else(|| "nested contract symlink escape unexpectedly staged".to_string())?;

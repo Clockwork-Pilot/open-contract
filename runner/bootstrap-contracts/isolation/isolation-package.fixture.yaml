@@ -4,13 +4,10 @@ version: "1"
 name: isolation-bootstrap
 coverage:
   minimum_line_percent: 100
-files:
-  dataset: dataset.json
-  validator: src/lib.rs
-  support:
-    - src/lib.rs
-    - src/backend.rs
-    - Cargo.toml
+datasets: [dataset.json]
+coverage_sources:
+  - src/lib.rs
+  - src/backend.rs
 filesystem:
   read:
     - dataset.json

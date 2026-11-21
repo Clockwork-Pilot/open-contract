@@ -19,7 +19,7 @@ pub(super) fn configure_supplemental_fixture(
         package.join("tests/supplemental.py"),
         "def run(): return True\n",
     )?;
-    manifest["files"]["supplemental_tests"] = json!(["tests/supplemental.py"]);
+    manifest["supplemental_tests"] = json!(["tests/supplemental.py"]);
     manifest["filesystem"]["read"]
         .as_array_mut()
         .ok_or_else(|| "fixture read list must be an array".to_string())?
@@ -1362,10 +1362,7 @@ impl BatchAdapter for FixtureAdapter {
                 } else {
                     Some(json!({
                         "format": "fixture",
-                        "sources": std::iter::once(&batch.manifest.manifest.files.validator)
-                            .chain(&batch.manifest.manifest.files.support)
-                            .cloned()
-                            .collect::<Vec<_>>(),
+                        "sources": batch.manifest.manifest.coverage_sources,
                     }))
                 },
                 coverage_scopes: self.coverage(batch),
@@ -1394,7 +1391,7 @@ impl FixtureAdapter {
             (vec![1], vec![1])
         };
         vec![runner_batch::CoverageLineFile {
-            path: batch.manifest.manifest.files.validator.clone(),
+            path: batch.manifest.manifest.coverage_sources[0].clone(),
             executable_lines,
             covered_lines,
         }]
@@ -1414,7 +1411,7 @@ impl FixtureAdapter {
             return Vec::new();
         }
         vec![runner_batch::CoverageLineFile {
-            path: batch.manifest.manifest.files.validator.clone(),
+            path: batch.manifest.manifest.coverage_sources[0].clone(),
             executable_lines: vec![1, 2],
             covered_lines: vec![2],
         }]
@@ -1512,18 +1509,18 @@ impl FixtureAdapter {
                             lines: vec![1],
                         }],
                         "zero-coverage-line" => vec![CoverageFile {
-                            path: batch.manifest.manifest.files.validator.clone(),
+                            path: batch.manifest.manifest.coverage_sources[0].clone(),
                             lines: vec![0],
                         }],
                         "empty-coverage" => vec![CoverageFile {
-                            path: batch.manifest.manifest.files.validator.clone(),
+                            path: batch.manifest.manifest.coverage_sources[0].clone(),
                             lines: Vec::new(),
                         }],
                         "multi-file-coverage" => std::iter::once(CoverageFile {
-                            path: batch.manifest.manifest.files.validator.clone(),
+                            path: batch.manifest.manifest.coverage_sources[0].clone(),
                             lines: vec![1],
                         })
-                        .chain(batch.manifest.manifest.files.support.iter().map(|path| {
+                        .chain(batch.manifest.manifest.coverage_sources.iter().skip(1).map(|path| {
                             CoverageFile {
                                 path: path.clone(),
                                 lines: vec![1, 2],
@@ -1531,7 +1528,7 @@ impl FixtureAdapter {
                         }))
                         .collect(),
                         _ => vec![CoverageFile {
-                            path: batch.manifest.manifest.files.validator.clone(),
+                            path: batch.manifest.manifest.coverage_sources[0].clone(),
                             lines: vec![1],
                         }],
                     };

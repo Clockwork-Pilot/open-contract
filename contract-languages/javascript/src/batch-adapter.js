@@ -10,9 +10,12 @@ const v8ToIstanbul = require('v8-to-istanbul');
 
 export async function runDataset(request, validatorLoader = null) {
 const root = process.cwd();
-const validator = path.resolve(root, request.validator);
-if (validator !== root && !validator.startsWith(`${root}${path.sep}`)) {
+const validator = request.validator == null ? null : path.resolve(root, request.validator);
+if (validator !== null && validator !== root && !validator.startsWith(`${root}${path.sep}`)) {
 	throw new Error('validator path escaped staged package root');
+}
+if (validator === null && typeof validatorLoader !== 'function') {
+	throw new Error('validatorLoader is required when request.validator is omitted');
 }
 
 const originalStdoutWrite = process.stdout.write.bind(process.stdout);
@@ -35,10 +38,12 @@ const requests = request.requests ?? [];
 const supplementalTests = request.supplemental_tests ?? [];
 const packageRoot = path.resolve(root, request.package ?? '');
 let additionalTestCoverage = null;
+let declaredSourcePaths = new Set();
 try {
 	if (packageRoot !== root && !packageRoot.startsWith(`${root}${path.sep}`)) {
 		throw new Error('contract package path escaped staged root');
 	}
+	declaredSourcePaths = new Set(await declaredSourceFiles(packageRoot, request.coverage_sources ?? []));
 	await post('Profiler.enable');
 	await post('Profiler.startPreciseCoverage', { callCount: true, detailed: true });
 	const loaded = validatorLoader
@@ -46,7 +51,7 @@ try {
 		: await import(pathToFileURL(validator).href);
 	const validate = typeof loaded === 'function' ? loaded : loaded.validate ?? loaded.default;
 	if (typeof validate !== 'function') throw new Error('validator must export validate(input, context) or a default function');
-	const setupCoverage = await post('Profiler.takePreciseCoverage');
+	const setupCoverage = onlyDeclaredScripts(await post('Profiler.takePreciseCoverage'), declaredSourcePaths);
 	coverageSnapshots.push(setupCoverage);
 	for (let index = 0; index < requests.length;) {
 		const first = requests[index];
@@ -74,7 +79,7 @@ try {
 				return { item, result: { key: item.key, error: `${error?.name ?? 'Error'}: ${error?.message ?? error}` } };
 			}
 		}));
-		const snapshot = await post('Profiler.takePreciseCoverage');
+		const snapshot = onlyDeclaredScripts(await post('Profiler.takePreciseCoverage'), declaredSourcePaths);
 		coverageSnapshots.push(snapshot);
 		const caseCoverage = await normalizedLineCoverage(
 			[setupCoverage, snapshot], packageRoot, request.coverage_sources ?? [],
@@ -141,7 +146,9 @@ try {
 				} catch (error) {
 					errors.push(`${entry}: ${error?.name ?? 'Error'}: ${error?.message ?? error}`);
 				} finally {
-					additionalCoverageSnapshots.push(await post('Profiler.takePreciseCoverage'));
+					additionalCoverageSnapshots.push(onlyDeclaredScripts(
+						await post('Profiler.takePreciseCoverage'), declaredSourcePaths,
+					));
 				}
 			}
 			const passed = errors.length === 0 && passedCount === supplementalTests.length;
@@ -240,6 +247,16 @@ async function normalizedLineCoverage(snapshots, sourceRoot, declaredSources) {
 		});
 	}
 	return files.sort((left, right) => left.path.localeCompare(right.path));
+}
+
+function onlyDeclaredScripts(snapshot, declaredSources) {
+	return {
+		...snapshot,
+		result: (snapshot.result ?? []).filter((script) => {
+			if (!script.url?.startsWith('file:')) return false;
+			return declaredSources.has(path.resolve(fileURLToPath(script.url)));
+		}),
+	};
 }
 
 async function declaredSourceFiles(sourceRoot, declaredSources) {

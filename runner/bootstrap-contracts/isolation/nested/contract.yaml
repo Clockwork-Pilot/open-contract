@@ -1,8 +1,7 @@
 version: "1"
 name: nested-isolation-fixture
-files:
-  dataset: dataset.json
-  validator: validator.py
+datasets: [dataset.json]
+coverage_sources: [validator.py]
 filesystem:
   read:
     - dataset.json

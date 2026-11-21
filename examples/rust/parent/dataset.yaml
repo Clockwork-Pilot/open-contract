@@ -1,13 +1,22 @@
-version: 1
-cases:
-  - id: greeting
-    input:
-      name: Ada
-    expected:
-      greeting: hello, Ada
-    coverage_fingerprint: "fc6a092310cc54513b4e1e5d6ab3e4d9"
-  - id: missing-name
-    input: {}
-    expected: {}
-    predicate: "contains(.error, 'name must be a string')"
-    coverage_fingerprint: "a31ce67e03bb417354ea43213f8ff84f"
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "greeting",
+      "input": {
+        "name": "Ada"
+      },
+      "expected": {
+        "greeting": "hello, Ada"
+      },
+      "coverage_fingerprint": "4ff8cc0ec5102897ca106a894fbe3be7"
+    },
+    {
+      "id": "missing-name",
+      "input": {},
+      "expected": {},
+      "predicate": "contains(.error, 'name must be a string')",
+      "coverage_fingerprint": "506fdbab08e1c3d9f6fed30b68ff873b"
+    }
+  ]
+}

@@ -21,12 +21,6 @@ pub struct StagedCommandPlan {
     runtime_plan: backend::CommandPlan,
 }
 
-/// Validate a language support package using the same loader used to stage
-/// its runtime resources for commands.
-pub fn validate_language_package(repository: &Path, language: &str) -> Result<(), String> {
-    backend::validate_language_package(repository, language)
-}
-
 impl Backend {
     pub fn runtime_manifest_name(self) -> Option<&'static str> {
         match self {
@@ -227,7 +221,7 @@ impl StagedTree {
                 self.write.push(target.to_string_lossy().into_owned());
             }
         }
-        for child_name in &plan.manifest.files.nested_contracts {
+        for child_name in &plan.manifest.nested_contracts {
             validate_package_path(child_name)?;
             let child_source = plan.package_root.join(child_name);
             let child = ManifestPlan::load(&child_source)?;
@@ -254,7 +248,6 @@ impl StagedTree {
         package_root: &Path,
         command: &[String],
         input: &[u8],
-        language_package: Option<&str>,
     ) -> Result<Output, String> {
         self.prepare_direct_write_paths()?;
         backend::run(
@@ -265,7 +258,6 @@ impl StagedTree {
             &self.write,
             command,
             input,
-            language_package,
             self.isolation_runtime.as_deref(),
             self.tempdir_mode,
         )
@@ -279,10 +271,9 @@ impl StagedTree {
         working_directory: &Path,
         command: &[String],
         input: &[u8],
-        language_package: Option<&str>,
     ) -> Result<Output, String> {
         self.prepare_direct_write_paths()?;
-        let plan = self.plan_command_at(backend, working_directory, command, language_package)?;
+        let plan = self.plan_command_at(backend, working_directory, command)?;
         backend::run_prepared(
             backend,
             &self.root,
@@ -321,18 +312,25 @@ impl StagedTree {
         backend: Backend,
         working_directory: &Path,
         command: &[String],
-        language_package: Option<&str>,
     ) -> Result<StagedCommandPlan, String> {
         let root = self
             .root
             .canonicalize()
             .map_err(|error| error.to_string())?;
         let working_directory = backend::checked_working_directory(&root, working_directory)?;
-        let plan = backend::plan_command(
+        let language_adapter = self
+            .manifests
+            .iter()
+            .find(|(_, prefix)| {
+                self.root.join(prefix).canonicalize().ok().as_deref()
+                    == Some(working_directory.host.as_path())
+            })
+            .and_then(|(manifest, _)| manifest.language_adapter.as_deref());
+        let plan = backend::plan_command_with_adapter(
             backend,
             command,
-            language_package,
             self.isolation_runtime.as_deref(),
+            language_adapter,
         )?;
         Ok(StagedCommandPlan {
             command: plan.command.clone(),

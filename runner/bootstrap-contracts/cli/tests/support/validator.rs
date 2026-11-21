@@ -217,7 +217,7 @@ fn validate(case: &DatasetCase) -> Result<(), String> {
             .windows(2)
             .find(|pair| pair[0] == "--coverage-report")
             .map(|pair| pair[1].as_str())
-            .unwrap_or(".open-contract/coverage/latest.json");
+            .unwrap_or(".coverage/latest.json");
         let report_path = temporary.as_ref().map_or_else(
             || PathBuf::from(report_arg),
             |directory| directory.path().join(report_arg),

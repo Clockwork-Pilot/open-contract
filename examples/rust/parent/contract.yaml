@@ -1,21 +1,20 @@
 version: "1"
 name: rust-parent-example
-language_package: rust
 coverage:
   minimum_line_percent: 100
-files:
-  dataset: dataset.yaml
-  validator: src/validator.rs
-  support:
-    - src/implementation.rs
-  nested_contracts:
-    - child/contract.yaml
+datasets: [dataset.yaml]
+coverage_sources: [src/implementation.rs]
+nested_contracts: [child/contract.yaml]
 execution:
   command:
     - env
     - TMPDIR=.open-contract-work
     - LLVM_PROFILE_FILE=.open-contract-work/%m-%p.profraw
+    - LLVM_PROFDATA=.deps/bin/llvm-profdata
+    - LLVM_COV=.deps/bin/llvm-cov
+    - LD_LIBRARY_PATH=.deps/lib
     - ./contract-command
+language_adapter: ../../../contract-languages/rust/runtime.yaml
 filesystem:
   read:
     - dataset.yaml
@@ -24,6 +23,7 @@ filesystem:
     - src/implementation.rs
     - contract-command
     - child/contract.yaml
+    - .deps
     - .open-contract-work
   write:
     - .open-contract-work

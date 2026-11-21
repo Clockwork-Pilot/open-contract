@@ -44,7 +44,7 @@ coverage or fingerprint options.
 | --- | --- | --- |
 | `--isolation <auto\|tempdir\|none\|bwrap\|landlock>` | Both | Select the execution boundary. Defaults to `OPEN_CONTRACT_ISOLATION`, then `auto` if unset. |
 | `--isolation-runtime <path>` | Both | Replace the bundled runtime YAML for `bwrap` or `landlock`. Invalid with `none` and `tempdir`. |
-| `--coverage-report <path>` | `run-manifest` | Write the coverage report. Defaults to `.open-contract/coverage/latest.json`. |
+| `--coverage-report <path>` | `run-manifest` | Write the coverage report. Defaults to `.coverage/latest.json`. |
 | `--disable-fingerprints` | `run-manifest` | Skip per-case fingerprint checks while retaining output and aggregate coverage checks. Equivalent to `OPEN_CONTRACT_DISABLE_FINGERPRINTS=1`. |
 | `--update-fingerprints` | `run-manifest` | Rewrite fingerprints after all cases and coverage requirements pass. Cannot be combined with `--disable-fingerprints` or `OPEN_CONTRACT_DISABLE_FINGERPRINTS=1`. |
 
@@ -54,27 +54,41 @@ The runner reads these environment variables from its own process:
 | --- | --- | --- |
 | `OPEN_CONTRACT_ISOLATION` | Both commands | Default isolation choice: `auto`, `tempdir`, `none`, `bwrap`, or `landlock`. An explicit `--isolation` takes precedence. |
 | `OPEN_CONTRACT_DISABLE_FINGERPRINTS` | `run-manifest` | Disable per-case fingerprints when set to `1`, `true`, `yes`, or `on`; `0`, `false`, `no`, or `off` leaves them enabled. Other values are errors. |
-| `OPEN_CONTRACT_LANGUAGE_PACKAGES` | Both commands when resolving a manifest's `language_package` | Optional JSON object mapping logical package IDs to package directories, for example `{"python":"/opt/contracts/python"}`. Without a mapping, the runner resolves packages under `contract-languages/`. |
 
-The runner does not read `OPEN_CONTRACT_LANGUAGE_PATH` from the caller's shell.
-For an isolated adapter command, it sets that variable from the selected
-language runtime's `environment_paths` entry, which points to the resolved
-language support package. Other adapter environment values come from the
-selected isolation runtime YAML. These runtime-provided values are distinct
-from the runner's CLI configuration above.
+Each contract may name its adapter with a scalar `language_adapter` path to
+one `runtime.yaml`. The runner loads only that explicit path; it does not infer
+an adapter from a language name or search a built-in catalog. The runtime
+manifest declares the adapter entrypoint, files, and environment needed by
+`execution.command`. Those resources do not need to be repeated in the
+contract's `filesystem.read`, which remains responsible for contract-owned
+inputs. Runtime paths are relative to the directory containing `runtime.yaml`.
 
-The manifest declares the contract command and, when needed, one logical
-`language_package` identifier. Runner configuration resolves that identifier
-and provides the support package location through `OPEN_CONTRACT_LANGUAGE_PATH`.
-The manifest contains no host paths or language-specific dependency file lists.
-
-For example:
+For example, the command may launch a contract-owned Python wrapper that imports
+the resolved adapter entrypoint from the injected environment variable:
 
 ```yaml
 execution:
   command: [python3, contract_command.py]
-language_package: python
+language_adapter: ../../adapters/python/runtime.yaml
+coverage_sources:
+  - src/public_api.py
+filesystem:
+  read: [dataset.yaml, contract_command.py, src/public_api.py]
+  write: []
 ```
+
+The adapter runtime file has one flat definition, without named profiles:
+
+```yaml
+version: 1
+entrypoint: src/open_contract_language/batch_adapter.py
+files: [src, .deps]
+environment_paths:
+  PYTHONPATH: .deps
+```
+
+The runner sets `OPEN_CONTRACT_LANGUAGE_ENTRYPOINT` to the absolute staged path
+of the runtime manifest's `entrypoint`. The wrapper imports that file directly.
 
 Run the Rust executor with runtime-selected isolation:
 
@@ -105,8 +119,8 @@ Landlock enforce the declared paths using their native mechanisms.
 Nested contracts in a `tempdir` run share one randomized temporary tree. In
 the direct modes, nested contracts remain at their source paths in the
 checkout. Rust invokes each contract's declared command once for its full
-batch. The logical `language_package` identifier is resolved by runner
-configuration; it does not contain a host path or a list of support files.
+batch. The runner uses only the runtime manifest named by `language_adapter`;
+it does not infer adapter dependencies from a language name.
 
 For `bwrap` and `landlock`, the runner selects the corresponding bundled system
 runtime YAML from `runner/isolation-runtime/<backend>.yaml`. Override that
@@ -152,8 +166,7 @@ JavaScript modules export a `run()` function, which may throw or return `false`
 to report failure. For example:
 
 ```yaml
-files:
-  supplemental_tests: [tests/edge_cases.py]
+supplemental_tests: [tests/edge_cases.py]
 filesystem:
   read: [dataset.yaml, validator.py, tests/edge_cases.py]
 ```

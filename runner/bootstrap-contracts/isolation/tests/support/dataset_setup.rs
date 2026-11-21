@@ -11,13 +11,6 @@ enum CaseSetup {
     HideBubblewrapFromPath,
     MockBubblewrapLauncher,
     PrintBubblewrapArguments,
-    MissingLanguageRuntimeManifest,
-    CreateUndeclaredLanguageResource,
-    CreateUndeclaredEntrypoint,
-    CreateLanguageSymlinkEscape,
-    InvalidLanguagePackageMapping,
-    UnmatchedLanguagePackageMapping,
-    MissingMappedLanguagePackage,
     SetEnvironmentValue,
     ClearEnvironmentValue,
     InvalidUtf8EnvironmentValue,
@@ -111,42 +104,6 @@ const CASE_SETUP_BY_ID: &[(&str, CaseSetup)] = &[
     (
         "direct-backend-reports-write-directory-error",
         CaseSetup::ReplaceWriteDirectoryWithFile,
-    ),
-    (
-        "adapter-runtime-mounts-are-limited",
-        CaseSetup::PrintBubblewrapArguments,
-    ),
-    (
-        "language-package-runtime-manifest-missing",
-        CaseSetup::MissingLanguageRuntimeManifest,
-    ),
-    (
-        "language-package-environment-path-outside-files",
-        CaseSetup::CreateUndeclaredLanguageResource,
-    ),
-    (
-        "language-package-entrypoint-not-declared",
-        CaseSetup::CreateUndeclaredEntrypoint,
-    ),
-    (
-        "language-package-rejects-symlink-escape",
-        CaseSetup::CreateLanguageSymlinkEscape,
-    ),
-    (
-        "language-package-invalid-environment-mapping",
-        CaseSetup::InvalidLanguagePackageMapping,
-    ),
-    (
-        "language-package-rejects-invalid-runner-configuration",
-        CaseSetup::InvalidLanguagePackageMapping,
-    ),
-    (
-        "language-package-unmatched-mapping-falls-back-to-repository",
-        CaseSetup::UnmatchedLanguagePackageMapping,
-    ),
-    (
-        "language-package-mapped-directory-missing",
-        CaseSetup::MissingMappedLanguagePackage,
     ),
     (
         "command-expands-environment-reference",
@@ -364,7 +321,7 @@ pub(super) fn run_staging_backend(
         .map_err(|error| error.to_string())?;
         std::fs::write(
             package.join("contract.yaml"),
-            "version: '1'\nname: direct-write-fixture\nfiles: {dataset: dataset.json, validator: validator.py}\nfilesystem: {read: [dataset.json, validator.py], write: []}\n",
+            "version: '1'\nname: direct-write-fixture\ndatasets: [dataset.json]\ncoverage_sources: [validator.py]\nfilesystem: {read: [dataset.json, validator.py], write: []}\n",
         )
         .map_err(|error| error.to_string())?;
         let plan = runner_manifest::ManifestPlan::load(package.join("contract.yaml"))?;
@@ -409,7 +366,7 @@ pub(super) fn run_staging_backend(
             .map_err(|error| error.to_string())?;
             std::fs::write(
                 external.join("contract.yaml"),
-                "version: '1'\nname: external-child\nfiles: {dataset: dataset.json, validator: validator.py}\nfilesystem: {read: [dataset.json, validator.py], write: []}\n",
+                "version: '1'\nname: external-child\ndatasets: [dataset.json]\ncoverage_sources: [validator.py]\nfilesystem: {read: [dataset.json, validator.py], write: []}\n",
             )
             .map_err(|error| error.to_string())?;
             #[cfg(unix)]
@@ -480,10 +437,9 @@ fn stage_backend_case(
                     &tree.root.join(working_directory),
                     &command,
                     b"",
-                    None,
                 )
             } else {
-                tree.run_command(backend, &tree.root, &command, b"", None)
+                tree.run_command(backend, &tree.root, &command, b"")
             }
         };
         let output = if case_id == "direct-backend-prepares-write-paths" {
@@ -576,18 +532,12 @@ fn apply_staging_manifest_input(
             has_manifest_input = true;
         }
     }
-    if let Some(files) = manifest.get("files") {
-        let files = files
-            .as_object()
-            .ok_or_else(|| "input.manifest.files must be an object".to_string())?;
-        reject_unknown_keys(files, &["nested_contracts"], "input.manifest.files")?;
-        if let Some(nested_contracts) = files.get("nested_contracts") {
-            plan.manifest.files.nested_contracts =
-                string_list(nested_contracts, "input.manifest.files.nested_contracts")?;
-            has_manifest_input = true;
-        }
+    if let Some(nested_contracts) = manifest.get("nested_contracts") {
+        plan.manifest.nested_contracts =
+            string_list(nested_contracts, "input.manifest.nested_contracts")?;
+        has_manifest_input = true;
     }
-    reject_unknown_keys(manifest, &["filesystem", "files"], "input.manifest")?;
+    reject_unknown_keys(manifest, &["filesystem", "nested_contracts"], "input.manifest")?;
     let allowed_input_keys: &[&str] = if input["operation"] == "stage-backend" {
         &[
             "operation",
@@ -606,7 +556,7 @@ fn apply_staging_manifest_input(
         "input",
     )?;
     if !has_manifest_input {
-        return Err("input.manifest must specify filesystem.read, filesystem.write, or files.nested_contracts".into());
+        return Err("input.manifest must specify filesystem.read, filesystem.write, or nested_contracts".into());
     }
     Ok(())
 }
@@ -706,53 +656,6 @@ pub(super) fn run_with_case_setup<T: Send>(
         }
         (true, Some(CaseSetup::StageBackendBubblewrapArguments)) => {
             run_with_bubblewrap_launcher("#!/bin/sh\nprintf '%s\\n' \"$@\"\n", run)
-        }
-        (true, Some(CaseSetup::MissingLanguageRuntimeManifest)) => {
-            let _setting = EnvironmentGuard::set(
-                "OPEN_CONTRACT_ISOLATION_OMIT_LANGUAGE_RUNTIME_MANIFEST",
-                "1",
-            );
-            run()
-        }
-        (true, Some(CaseSetup::CreateUndeclaredLanguageResource)) => {
-            let _setting = EnvironmentGuard::set(
-                "OPEN_CONTRACT_ISOLATION_CREATE_UNDECLARED_LANGUAGE_RESOURCE",
-                "1",
-            );
-            run()
-        }
-        (true, Some(CaseSetup::CreateUndeclaredEntrypoint)) => {
-            let _setting = EnvironmentGuard::set(
-                "OPEN_CONTRACT_ISOLATION_CREATE_UNDECLARED_LANGUAGE_ENTRYPOINT",
-                "1",
-            );
-            run()
-        }
-        (true, Some(CaseSetup::CreateLanguageSymlinkEscape)) => run(),
-        (true, Some(CaseSetup::InvalidLanguagePackageMapping)) => {
-            let _mapping = EnvironmentGuard::set(
-                "OPEN_CONTRACT_LANGUAGE_PACKAGES",
-                "{" ,
-            );
-            run()
-        }
-        (true, Some(CaseSetup::UnmatchedLanguagePackageMapping)) => {
-            let _mapping = EnvironmentGuard::set(
-                "OPEN_CONTRACT_LANGUAGE_PACKAGES",
-                r#"{"another-language":"/tmp"}"#,
-            );
-            run()
-        }
-        (true, Some(CaseSetup::MissingMappedLanguagePackage)) => {
-            let temp = tempfile::tempdir().map_err(|error| error.to_string())?;
-            let mapping = serde_json::json!({
-                "missing-package": temp.path().join("package-does-not-exist")
-            });
-            let _mapping = EnvironmentGuard::set(
-                "OPEN_CONTRACT_LANGUAGE_PACKAGES",
-                mapping.to_string(),
-            );
-            run()
         }
         (true, Some(CaseSetup::SetEnvironmentValue)) => {
             let _value = EnvironmentGuard::set("OPEN_CONTRACT_TEST_VALUE", "contract supplied value");

@@ -1,15 +1,12 @@
 version: "1"
 name: python-predicate-example
-language_package: python
 coverage:
   minimum_line_percent: 100
-files:
-  dataset: dataset.json
-  validator: validator.py
-  support:
-    - predicate.py
+datasets: [dataset.json]
+coverage_sources: [predicate.py]
 execution:
   command: [python3, contract_command.py]
+language_adapter: ../../../contract-languages/python/runtime.yaml
 filesystem:
   read:
     - .

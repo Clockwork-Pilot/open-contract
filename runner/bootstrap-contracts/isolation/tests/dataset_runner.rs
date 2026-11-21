@@ -5,6 +5,14 @@ pub(crate) mod test_fixture {
     pub(crate) fn exercise_landlock_installation_paths() -> Result<(), String> {
         Ok(())
     }
+
+    pub(crate) fn exercise_backend_error_paths() -> Result<(), String> {
+        Ok(())
+    }
+
+    pub(crate) fn exercise_staging_copy_error_paths() -> Result<(), String> {
+        Ok(())
+    }
 }
 
 #[test]

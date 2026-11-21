@@ -1,26 +1,52 @@
-version: 1
-cases:
-  - id: sum
-    input:
-      values: [2, 3, 5]
-    expected:
-      total: 10
-    coverage_fingerprint: "c753b86d57ee0c98f7a43542d7ad6def"
-  - id: values-is-not-an-array
-    input:
-      values: "not-an-array"
-    expected: {}
-    predicate: "contains(.error, 'values must be an array')"
-    coverage_fingerprint: "e1fc51e26cf01c9ff92520173ad2444b"
-  - id: values-contain-a-non-integer
-    input:
-      values: [1, "not-an-integer"]
-    expected: {}
-    predicate: "contains(.error, 'values must contain integers')"
-    coverage_fingerprint: "fa6ba97032ceeffb8444635bee18c387"
-  - id: sum-overflows
-    input:
-      values: [9223372036854775807, 1]
-    expected: {}
-    predicate: "contains(.error, 'sum overflow')"
-    coverage_fingerprint: "fa6ba97032ceeffb8444635bee18c387"
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "sum",
+      "input": {
+        "values": [
+          2,
+          3,
+          5
+        ]
+      },
+      "expected": {
+        "total": 10
+      },
+      "coverage_fingerprint": "cf2b73feec9af27814303687f9f17332"
+    },
+    {
+      "id": "values-is-not-an-array",
+      "input": {
+        "values": "not-an-array"
+      },
+      "expected": {},
+      "predicate": "contains(.error, 'values must be an array')",
+      "coverage_fingerprint": "3191dba8e7ef241a606d40f6de305b15"
+    },
+    {
+      "id": "values-contain-a-non-integer",
+      "input": {
+        "values": [
+          1,
+          "not-an-integer"
+        ]
+      },
+      "expected": {},
+      "predicate": "contains(.error, 'values must contain integers')",
+      "coverage_fingerprint": "adf3c0ca98d52c947af2493334d445c0"
+    },
+    {
+      "id": "sum-overflows",
+      "input": {
+        "values": [
+          9223372036854775807,
+          1
+        ]
+      },
+      "expected": {},
+      "predicate": "contains(.error, 'sum overflow')",
+      "coverage_fingerprint": "adf3c0ca98d52c947af2493334d445c0"
+    }
+  ]
+}

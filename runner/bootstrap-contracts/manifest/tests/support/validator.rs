@@ -115,8 +115,12 @@ fn manifest_setup_case(case_id: &str, setup: bool) -> Result<Option<&str>, Strin
         "read-path-symlink-escape"
             | "declared-file-symlink-escape"
             | "write-path-symlink-escape"
+            | "directory-alias-symlink-escape"
+            | "coverage-source-symlink-escape"
+            | "coverage-glob-dangling-match-is-rejected"
             | "write-path-dangling-symlink"
             | "write-path-inaccessible-ancestor"
+            | "coverage-glob-inaccessible-directory"
             | "accepts-relative-read-path-outside-package"
     );
     if setup != requires_setup {
@@ -144,17 +148,26 @@ fn run_manifest_case(input: &Value, setup_case: Option<&str>) -> Result<bool, St
         "def helper(): return True\n",
     )
     .map_err(|error| error.to_string())?;
+    std::fs::create_dir_all(root.join("support/nested")).map_err(|error| error.to_string())?;
     std::fs::create_dir_all(root.join("tests")).map_err(|error| error.to_string())?;
     std::fs::write(root.join("tests/extra.rs"), "fn supplemental_case() {}\n")
         .map_err(|error| error.to_string())?;
+    std::fs::write(root.join("tests/data.json"), "{}\n").map_err(|error| error.to_string())?;
+    std::fs::create_dir_all(root.join("output")).map_err(|error| error.to_string())?;
     std::fs::create_dir_all(root.join("child")).map_err(|error| error.to_string())?;
     std::fs::write(root.join("child/contract.yaml"), "version: '1'\n")
         .map_err(|error| error.to_string())?;
     std::fs::create_dir(root.join("directory")).map_err(|error| error.to_string())?;
+    std::fs::write(temp.path().join("adapter-runtime.yaml"), "version: 1\n")
+        .map_err(|error| error.to_string())?;
 
     let mut permission_restore = None;
     match setup_case {
-        Some("read-path-symlink-escape" | "declared-file-symlink-escape") => {
+        Some(
+            "read-path-symlink-escape"
+            | "declared-file-symlink-escape"
+            | "directory-alias-symlink-escape",
+        ) => {
             let outside = temp.path().join("outside.json");
             std::fs::write(&outside, "{}").map_err(|error| error.to_string())?;
             #[cfg(unix)]
@@ -174,7 +187,32 @@ fn run_manifest_case(input: &Value, setup_case: Option<&str>) -> Result<bool, St
             std::os::windows::fs::symlink_dir(&outside, root.join("escape"))
                 .map_err(|error| error.to_string())?;
         }
-        Some("write-path-inaccessible-ancestor") => {
+        Some("coverage-source-symlink-escape") => {
+            let outside = temp.path().join("outside.py");
+            std::fs::write(&outside, "def external(): return True\n")
+                .map_err(|error| error.to_string())?;
+            #[cfg(unix)]
+            std::os::unix::fs::symlink(&outside, root.join("support/escape.py"))
+                .map_err(|error| error.to_string())?;
+            #[cfg(windows)]
+            std::os::windows::fs::symlink_file(&outside, root.join("support/escape.py"))
+                .map_err(|error| error.to_string())?;
+        }
+        Some("coverage-glob-dangling-match-is-rejected") => {
+            #[cfg(unix)]
+            std::os::unix::fs::symlink(
+                temp.path().join("missing-target.py"),
+                root.join("support/dangling.py"),
+            )
+            .map_err(|error| error.to_string())?;
+            #[cfg(windows)]
+            std::os::windows::fs::symlink_file(
+                temp.path().join("missing-target.py"),
+                root.join("support/dangling.py"),
+            )
+            .map_err(|error| error.to_string())?;
+        }
+        Some("write-path-inaccessible-ancestor" | "coverage-glob-inaccessible-directory") => {
             #[cfg(unix)]
             {
                 use std::os::unix::fs::{symlink, PermissionsExt};
@@ -183,7 +221,12 @@ fn run_manifest_case(input: &Value, setup_case: Option<&str>) -> Result<bool, St
                 let permissions = std::fs::Permissions::from_mode(0o000);
                 std::fs::set_permissions(&outside, permissions)
                     .map_err(|error| error.to_string())?;
-                symlink(&outside, root.join("blocked")).map_err(|error| error.to_string())?;
+                let link = if setup_case == Some("coverage-glob-inaccessible-directory") {
+                    root.join("support/blocked")
+                } else {
+                    root.join("blocked")
+                };
+                symlink(&outside, link).map_err(|error| error.to_string())?;
                 permission_restore = Some(outside);
             }
         }
@@ -221,5 +264,5 @@ fn run_manifest_case(input: &Value, setup_case: Option<&str>) -> Result<bool, St
 }
 
 #[cfg(test)]
-#[path = "../manifest_fixtures.rs"]
+#[path = "manifest_fixtures.rs"]
 mod tests;

@@ -22,8 +22,9 @@ run requires `llvm-profdata` and `llvm-cov` matching the compiler version.
 Install Rust's LLVM tools once with `rustup component add llvm-tools-preview`;
 the example invokes the Rust adapter's `install-dependencies` Make goal, which
 copies the tools and LLVM libraries into the adapter's ignored `.deps/` directory.
-The adapter's `runtime.yaml` declares their access and tool locations. The example
-uses the default backend runtime; it does not generate a permission manifest.
+The manifests explicitly grant read access to `.deps/` and set the tool paths in
+the command environment. The runner uses the default backend runtime and does
+not load Rust-adapter package metadata.
 
 The runner writes the combined report to `.coverage/rust-nested-report.json`.
 

@@ -132,7 +132,8 @@ fn validate_dataset_entry_with_adapter(
     let mut manifest = json!({
         "version": "1",
         "name": name,
-        "files": {"dataset": dataset_name, "validator": validator},
+        "datasets": [dataset_name],
+        "coverage_sources": [validator],
         "filesystem": {"read": [dataset_name, validator], "write": []}
     });
     if input["support"].as_bool() == Some(true) || input["support_path"].is_string() {
@@ -147,7 +148,7 @@ fn validate_dataset_entry_with_adapter(
             package.join(support),
             "def support(value): return value\n# second source line\n",
         )?;
-        manifest["files"]["support"] = json!([support]);
+        manifest["coverage_sources"].as_array_mut().unwrap().push(json!(support));
         manifest["filesystem"]["read"] = json!([dataset_name, validator, support]);
     }
     #[cfg(test)]
@@ -232,11 +233,11 @@ fn add_nested_contract(package: &Path, input: &Value, manifest: &mut Value) -> R
         ""
     };
     let child_manifest = format!(
-        "version: '1'\nname: {name}\nfiles:\n  dataset: dataset.json\n  validator: validator.py\n{nested}filesystem:\n  read: [dataset.json, validator.py{}]\n  write: []\n",
+        "version: '1'\nname: {name}\ndatasets: [dataset.json]\ncoverage_sources: [validator.py]\n{nested}filesystem:\n  read: [dataset.json, validator.py{}]\n  write: []\n",
         if cycle { ", contract.yaml" } else { "" }
     );
     write(child.join("contract.yaml"), &child_manifest)?;
-    manifest["files"]["nested_contracts"] = json!(["child/contract.yaml"]);
+    manifest["nested_contracts"] = json!(["child/contract.yaml"]);
     let reads = if input["support"].as_bool() == Some(true) || input["support_path"].is_string() {
         let support = input["support_path"]
             .as_str()
@@ -283,6 +284,8 @@ fn configure_case_setup(
         | "dataset-adapter-undeclared-coverage-source"
         | "dataset-adapter-native-coverage-no-sources"
         | "dataset-adapter-native-coverage-non-string-source"
+        | "dataset-adapter-native-coverage-undeclared-source"
+        | "dataset-adapter-coverage-lines-undeclared-source"
         | "dataset-adapter-multiple-coverage-lines"
         | "dataset-adapter-coverage-source-unavailable"
         | "dataset-adapter-coverage-line-out-of-range"
@@ -330,12 +333,12 @@ batch = json.load(sys.stdin)
 requests = batch["requests"]
 print(json.dumps({
     "results": [{"key": request["key"], "output": request["input"]} for request in requests],
-    "coverage": {"format": "bootstrap-dataset", "sources": [batch["validator"]]},
+    "coverage": {"format": "bootstrap-dataset", "sources": [batch["coverage_sources"][0]]},
     "coverage_scopes": [
-        {"key": request["key"], "files": [{"path": batch["validator"], "lines": [1]}]}
+        {"key": request["key"], "files": [{"path": batch["coverage_sources"][0], "lines": [1]}]}
         for request in requests
     ],
-    "coverage_lines": [{"path": batch["validator"], "executable_lines": [1], "covered_lines": [1]}]
+    "coverage_lines": [{"path": batch["coverage_sources"][0], "executable_lines": [1], "covered_lines": [1]}]
 }))
 "#
                 }
@@ -352,7 +355,7 @@ print(json.dumps({
                 }
                 "manifest-adapter-returns-invalid-coverage-data" => {
                     r#"import json, sys
-batch=json.load(sys.stdin); request=batch["requests"][0]; source=batch["validator"]
+batch=json.load(sys.stdin); request=batch["requests"][0]; source=batch["coverage_sources"][0]
 print(json.dumps({"results":[{"key":request["key"],"output":request["input"]}],"coverage_lines":[{"path":source,"executable_lines":[1],"covered_lines":[2]}]}))
 "#
                 }
@@ -367,62 +370,62 @@ batch = json.load(sys.stdin)
 requests = batch["requests"]
 print(json.dumps({
     "results": [{"key": request["key"], "output": request["input"]} for request in requests],
-    "coverage": {"format": "bootstrap-dataset", "sources": [batch["validator"]]},
+    "coverage": {"format": "bootstrap-dataset", "sources": [batch["coverage_sources"][0]]},
     "coverage_scopes": [
-        {"key": request["key"], "files": [{"path": batch["validator"], "lines": [1]}]}
+        {"key": request["key"], "files": [{"path": batch["coverage_sources"][0], "lines": [1]}]}
         for request in requests
     ],
-    "coverage_lines": [{"path": batch["validator"], "executable_lines": [1], "covered_lines": [1]}],
+    "coverage_lines": [{"path": batch["coverage_sources"][0], "executable_lines": [1], "covered_lines": [1]}],
     "additional_test_coverage": {"executed": True, "passed": True, "native_report": {"format": "fixture"}},
-    "additional_coverage_lines": [{"path": batch["validator"], "executable_lines": [1, 2], "covered_lines": [2]}]
+    "additional_coverage_lines": [{"path": batch["coverage_sources"][0], "executable_lines": [1, 2], "covered_lines": [2]}]
 }))
 "#
                 }
                 "supplemental-tests-low-dataset-coverage" => {
                     r#"import json, sys
-batch=json.load(sys.stdin); requests=batch["requests"]; src=batch["validator"]
+batch=json.load(sys.stdin); requests=batch["requests"]; src=batch["coverage_sources"][0]
 print(json.dumps({"results":[{"key":r["key"],"output":r["input"]} for r in requests],"coverage":{"sources":[src]},"coverage_scopes":[{"key":r["key"],"files":[{"path":src,"lines":[1]}]} for r in requests],"coverage_lines":[{"path":src,"executable_lines":[1,2],"covered_lines":[1]}],"additional_test_coverage":{"executed":True,"passed":True}}))
 "#
                 }
                 "supplemental-coverage-without-tests" => {
                     r#"import json, sys
-batch=json.load(sys.stdin); requests=batch["requests"]; src=batch["validator"]
+batch=json.load(sys.stdin); requests=batch["requests"]; src=batch["coverage_sources"][0]
 print(json.dumps({"results":[{"key":r["key"],"output":r["input"]} for r in requests],"coverage":{"sources":[src]},"coverage_scopes":[{"key":r["key"],"files":[{"path":src,"lines":[1]}]} for r in requests],"coverage_lines":[{"path":src,"executable_lines":[1],"covered_lines":[1]}],"additional_test_coverage":{"executed":True,"passed":True}}))
 "#
                 }
                 "supplemental-coverage-missing-report" => {
                     r#"import json, sys
-batch=json.load(sys.stdin); requests=batch["requests"]; src=batch["validator"]
+batch=json.load(sys.stdin); requests=batch["requests"]; src=batch["coverage_sources"][0]
 print(json.dumps({"results":[{"key":r["key"],"output":r["input"]} for r in requests],"coverage":{"sources":[src]},"coverage_scopes":[{"key":r["key"],"files":[{"path":src,"lines":[1]}]} for r in requests],"coverage_lines":[{"path":src,"executable_lines":[1],"covered_lines":[1]}]}))
 "#
                 }
                 "supplemental-tests-failed" => {
                     r#"import json, sys
-batch=json.load(sys.stdin); requests=batch["requests"]; src=batch["validator"]
+batch=json.load(sys.stdin); requests=batch["requests"]; src=batch["coverage_sources"][0]
 print(json.dumps({"results":[{"key":r["key"],"output":r["input"]} for r in requests],"coverage":{"sources":[src]},"coverage_scopes":[{"key":r["key"],"files":[{"path":src,"lines":[1]}]} for r in requests],"coverage_lines":[{"path":src,"executable_lines":[1],"covered_lines":[1]}],"additional_test_coverage":{"executed":True,"passed":False,"error":"supplemental test failure"}}))
 "#
                 }
                 "supplemental-tests-skipped" => {
                     r#"import json, sys
-batch=json.load(sys.stdin); requests=batch["requests"]; src=batch["validator"]
+batch=json.load(sys.stdin); requests=batch["requests"]; src=batch["coverage_sources"][0]
 print(json.dumps({"results":[{"key":r["key"],"output":r["input"]} for r in requests],"coverage":{"sources":[src]},"coverage_scopes":[{"key":r["key"],"files":[{"path":src,"lines":[1]}]} for r in requests],"coverage_lines":[{"path":src,"executable_lines":[1,2],"covered_lines":[1]}]}))
 "#
                 }
                 "supplemental-tests-no-executable-lines" => {
                     r#"import json, sys
-batch=json.load(sys.stdin); requests=batch["requests"]; src=batch["validator"]
+batch=json.load(sys.stdin); requests=batch["requests"]; src=batch["coverage_sources"][0]
 print(json.dumps({"results":[{"key":r["key"],"output":r["input"]} for r in requests],"coverage":{"sources":[src]},"coverage_scopes":[{"key":r["key"],"files":[{"path":src,"lines":[1]}]} for r in requests],"coverage_lines":[]}))
 "#
                 }
                 "supplemental-tests-coverage-without-run" => {
                     r#"import json, sys
-batch=json.load(sys.stdin); requests=batch["requests"]; src=batch["validator"]
+batch=json.load(sys.stdin); requests=batch["requests"]; src=batch["coverage_sources"][0]
 print(json.dumps({"results":[{"key":r["key"],"output":r["input"]} for r in requests],"coverage":{"sources":[src]},"coverage_scopes":[{"key":r["key"],"files":[{"path":src,"lines":[1]}]} for r in requests],"coverage_lines":[{"path":src,"executable_lines":[1,2],"covered_lines":[1]}],"additional_coverage_lines":[{"path":src,"executable_lines":[1,2],"covered_lines":[2]}]}))
 "#
                 }
                 "supplemental-tests-not-executed" => {
                     r#"import json, sys
-batch=json.load(sys.stdin); requests=batch["requests"]; src=batch["validator"]
+batch=json.load(sys.stdin); requests=batch["requests"]; src=batch["coverage_sources"][0]
 print(json.dumps({"results":[{"key":r["key"],"output":r["input"]} for r in requests],"coverage":{"sources":[src]},"coverage_scopes":[{"key":r["key"],"files":[{"path":src,"lines":[1]}]} for r in requests],"coverage_lines":[{"path":src,"executable_lines":[1],"covered_lines":[1]}],"additional_test_coverage":{"executed":False,"passed":True}}))
 "#
                 }
@@ -434,7 +437,7 @@ print(json.dumps({"results":[{"key":r["key"],"output":r["input"]} for r in reque
             };
             let adapter = "adapter.runner";
             write(package.join(adapter), script)?;
-            manifest["files"]["support"] = json!([adapter]);
+            manifest["coverage_sources"].as_array_mut().unwrap().push(json!(adapter));
             manifest["filesystem"]["read"] = json!(["dataset.json", "validator.py", adapter]);
             if input["supplemental_tests"].as_bool() == Some(true) {
                 manifest["filesystem"]["read"]
@@ -450,7 +453,7 @@ print(json.dumps({"results":[{"key":r["key"],"output":r["input"]} for r in reque
                     package.join("tests/supplemental.py"),
                     "def run(): return True\n",
                 )?;
-                manifest["files"]["supplemental_tests"] = json!(["tests/supplemental.py"]);
+                manifest["supplemental_tests"] = json!(["tests/supplemental.py"]);
                 manifest["filesystem"]["read"] = json!([
                     "dataset.json",
                     "validator.py",
@@ -590,6 +593,14 @@ impl BatchAdapter for ScenarioDatasetAdapter {
                 "dataset-adapter-native-coverage-non-string-source" => {
                     batch.coverage = Some(json!({"sources": [7]}));
                 }
+                "dataset-adapter-native-coverage-undeclared-source" => {
+                    batch.coverage = Some(json!({"sources": ["validator.py", "private.py"]}));
+                }
+                "dataset-adapter-coverage-lines-undeclared-source" => {
+                    if let Some(file) = batch.coverage_lines.first_mut() {
+                        file.path = "private.py".into();
+                    }
+                }
                 "dataset-adapter-multiple-coverage-lines" => {
                     if let Some(scope) = batch.coverage_scopes.first_mut() {
                         if let Some(file) = scope
@@ -696,16 +707,16 @@ impl BatchAdapter for IdentityDatasetAdapter {
                     .collect(),
                 coverage: Some(json!({
                     "format": "bootstrap-dataset",
-                    "sources": std::iter::once(&batch.manifest.manifest.files.validator)
-                        .chain(batch.manifest.manifest.files.support.iter()).collect::<Vec<_>>(),
+                    "sources": std::iter::once(&batch.manifest.manifest.coverage_sources[0])
+                        .chain(batch.manifest.manifest.coverage_sources.iter().skip(1)).collect::<Vec<_>>(),
                 })),
                 coverage_scopes: batch
                     .requests
                     .iter()
                     .map(|request| CoverageScope {
                         key: request.key.clone(),
-                        files: std::iter::once(&batch.manifest.manifest.files.validator)
-                            .chain(batch.manifest.manifest.files.support.iter())
+                        files: std::iter::once(&batch.manifest.manifest.coverage_sources[0])
+                            .chain(batch.manifest.manifest.coverage_sources.iter().skip(1))
                             .map(|path| CoverageFile {
                                 path: path.clone(),
                                 lines: vec![1],
@@ -713,8 +724,8 @@ impl BatchAdapter for IdentityDatasetAdapter {
                             .collect(),
                     })
                     .collect(),
-                coverage_lines: std::iter::once(&batch.manifest.manifest.files.validator)
-                    .chain(batch.manifest.manifest.files.support.iter())
+                coverage_lines: std::iter::once(&batch.manifest.manifest.coverage_sources[0])
+                    .chain(batch.manifest.manifest.coverage_sources.iter().skip(1))
                     .map(|path| runner_batch::CoverageLineFile {
                         path: path.clone(),
                         executable_lines: vec![1],

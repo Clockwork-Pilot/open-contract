@@ -11,7 +11,7 @@ fn package(temp: &Path, name: &str, filesystem: &str, files: &str) -> ManifestPl
     .unwrap();
     std::fs::write(
             temp.join("contract.yaml"),
-            format!("version: '1'\nname: {name}\nfiles: {{dataset: dataset.json, validator: validator.py{files}}}\nfilesystem: {filesystem}\n"),
+            format!("version: '1'\nname: {name}\ndatasets: [dataset.json]\ncoverage_sources: [validator.py]\n{files}filesystem: {filesystem}\n"),
         ).unwrap();
     ManifestPlan::load(temp.join("contract.yaml")).unwrap()
 }
@@ -28,7 +28,7 @@ fn isolation_contract_dataset_is_staged_under_a_fresh_root() {
     .unwrap();
     std::fs::write(
             temp.path().join("contract.yaml"),
-            "version: '1'\nname: isolation-fixture\nfiles: {dataset: dataset.json, validator: validator.py}\nfilesystem: {read: [dataset.json, validator.py], write: [reports]}\n",
+            "version: '1'\nname: isolation-fixture\ndatasets: [dataset.json]\ncoverage_sources: [validator.py]\nfilesystem: {read: [dataset.json, validator.py], write: [reports]}\n",
         )
         .unwrap();
     let plan = ManifestPlan::load(temp.path().join("contract.yaml")).unwrap();
@@ -44,6 +44,39 @@ fn isolation_contract_dataset_is_staged_under_a_fresh_root() {
     assert_eq!(Backend::None.runtime_manifest_name(), None);
     assert_eq!(Backend::Bubblewrap.runtime_manifest_name(), Some("bwrap"));
     assert_eq!(Backend::Landlock.runtime_manifest_name(), Some("landlock"));
+}
+
+#[test]
+fn manifest_selected_language_adapter_runtime_is_available_without_filesystem_mounts() {
+    let temp = tempfile::tempdir().unwrap();
+    let adapter = temp.path().join("adapter");
+    std::fs::create_dir_all(adapter.join("src")).unwrap();
+    std::fs::write(adapter.join("src/adapter.py"), "adapter-runtime-ok").unwrap();
+    std::fs::write(
+        adapter.join("runtime.yaml"),
+        "version: 1\nentrypoint: src/adapter.py\nfiles: [src]\nenvironment_paths: {ADAPTER_RUNTIME_ROOT: src}\n",
+    )
+    .unwrap();
+    std::fs::write(temp.path().join("dataset.json"), "{\"version\":1,\"cases\":[]}").unwrap();
+    std::fs::write(temp.path().join("validator.py"), "def validate(value): return value\n").unwrap();
+    std::fs::write(
+        temp.path().join("contract.yaml"),
+        "version: '1'\nname: adapter-runtime-fixture\ndatasets: [dataset.json]\ncoverage_sources: [validator.py]\nlanguage_adapter: adapter/runtime.yaml\nexecution: {command: [python3, -c, 'import os,pathlib; print(pathlib.Path(os.environ[\"ADAPTER_RUNTIME_ROOT\"], \"adapter.py\").read_text())']}\nfilesystem: {read: [dataset.json, validator.py], write: []}\n",
+    )
+    .unwrap();
+    let manifest = ManifestPlan::load(temp.path().join("contract.yaml")).unwrap();
+    let tree = StagedTree::create(&manifest).unwrap();
+    let output = tree
+        .run_command_at(
+            Backend::None,
+            &tree.root,
+            &manifest.manifest.execution.as_ref().unwrap().command,
+            b"",
+        )
+        .unwrap();
+    assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
+    assert_eq!(String::from_utf8_lossy(&output.stdout).trim(), "adapter-runtime-ok");
+    assert!(!tree.read.iter().any(|path| path.contains("adapter/src")));
 }
 
 #[test]
@@ -67,7 +100,6 @@ fn isolation_stages_write_files_and_executes_a_command() {
                 "import sys; print(sys.stdin.read())".into(),
             ],
             b"input-check",
-            None,
         )
         .unwrap();
     assert!(output.status.success());
@@ -76,7 +108,7 @@ fn isolation_stages_write_files_and_executes_a_command() {
         "input-check"
     );
     assert!(tree
-        .run_command(Backend::None, &tree.root, &[], b"", None)
+        .run_command(Backend::None, &tree.root, &[], b"")
         .is_err());
 }
 
@@ -87,7 +119,7 @@ fn isolation_rejects_nested_cycles_and_package_escape_symlinks() {
         temp.path(),
         "cycle",
         "{read: [dataset.json, validator.py, contract.yaml], write: []}",
-        ", nested_contracts: [contract.yaml]",
+        "nested_contracts: [contract.yaml]\n",
     );
     assert!(StagedTree::create(&cycle)
         .err()
@@ -109,7 +141,7 @@ fn isolation_rejects_nested_cycles_and_package_escape_symlinks() {
         .unwrap();
         std::fs::write(
                 temp.path().join("contract.yaml"),
-                "version: '1'\nname: symlink-escape\nfiles: {dataset: dataset.json, validator: validator.py}\nfilesystem: {read: [dataset.json, validator.py, escape], write: []}\n",
+                "version: '1'\nname: symlink-escape\ndatasets: [dataset.json]\ncoverage_sources: [validator.py]\nfilesystem: {read: [dataset.json, validator.py, escape], write: []}\n",
             ).unwrap();
         let plan = ManifestPlan::load(temp.path().join("contract.yaml")).unwrap();
         std::fs::remove_dir_all(temp.path().join("escape")).unwrap();
@@ -117,6 +149,6 @@ fn isolation_rejects_nested_cycles_and_package_escape_symlinks() {
         assert!(StagedTree::create(&plan)
             .err()
             .unwrap()
-            .contains("escapes package"));
+            .contains("symlink"));
     }
 }

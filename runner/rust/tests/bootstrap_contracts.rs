@@ -42,7 +42,7 @@ impl BatchAdapter for SupplementalBatch {
                     .collect(),
                 coverage: Some(json!({
                     "format": "fixture",
-                    "sources": [batch.manifest.manifest.files.validator.clone()]
+                    "sources": batch.manifest.manifest.coverage_sources
                 })),
                 coverage_lines: vec![open_contract_core::batch::CoverageLineFile {
                     path: "validator.py".into(),
@@ -55,7 +55,7 @@ impl BatchAdapter for SupplementalBatch {
                     .map(|request| open_contract_core::batch::CoverageScope {
                         key: request.key.clone(),
                         files: vec![open_contract_core::batch::CoverageFile {
-                            path: batch.manifest.manifest.files.validator.clone(),
+                            path: batch.manifest.manifest.coverage_sources[0].clone(),
                             lines: vec![1],
                         }],
                     })
@@ -105,7 +105,7 @@ impl BatchAdapter for EchoBatch {
                 coverage: Some(json!({
                     "native": "fixture",
                     "contract": batch.manifest.manifest.name,
-                    "sources": [batch.manifest.manifest.files.validator.clone()]
+                    "sources": batch.manifest.manifest.coverage_sources
                 })),
                 coverage_scopes: batch
                     .requests
@@ -113,13 +113,13 @@ impl BatchAdapter for EchoBatch {
                     .map(|request| open_contract_core::batch::CoverageScope {
                         key: request.key.clone(),
                         files: vec![open_contract_core::batch::CoverageFile {
-                            path: batch.manifest.manifest.files.validator.clone(),
+                            path: batch.manifest.manifest.coverage_sources[0].clone(),
                             lines: vec![1],
                         }],
                     })
                     .collect(),
-                coverage_lines: std::iter::once(batch.manifest.manifest.files.validator.clone())
-                    .chain(batch.manifest.manifest.files.support.iter().cloned())
+                coverage_lines: std::iter::once(batch.manifest.manifest.coverage_sources[0].clone())
+                    .chain(batch.manifest.manifest.coverage_sources.iter().skip(1).cloned())
                     .map(|path| open_contract_core::batch::CoverageLineFile {
                         path,
                         executable_lines: vec![1],
@@ -133,6 +133,19 @@ impl BatchAdapter for EchoBatch {
 }
 
 fn write_cross_language_fixture(package: &Path) -> PathBuf {
+    let repository = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../..")
+        .canonicalize()
+        .unwrap();
+    let python_adapter = repository.join("contract-languages/python/src");
+    let python_dependencies = repository.join("contract-languages/python/.deps");
+    let javascript_adapter = repository.join("contract-languages/javascript/src/batch-adapter.js");
+    let javascript_dependencies = repository.join("contract-languages/javascript/node_modules");
+    let python_adapter_literal = serde_json::to_string(&python_adapter.to_string_lossy()).unwrap();
+    let python_dependencies_literal =
+        serde_json::to_string(&python_dependencies.to_string_lossy()).unwrap();
+    let javascript_adapter_literal =
+        serde_json::to_string(&javascript_adapter.to_string_lossy()).unwrap();
     let child = package.join("child");
     std::fs::create_dir_all(&child).unwrap();
     std::fs::write(
@@ -147,25 +160,23 @@ fn write_cross_language_fixture(package: &Path) -> PathBuf {
     .unwrap();
     std::fs::write(
         package.join("run-contract.py"),
-        "import json, os, sys\nlanguage_path = os.environ['OPEN_CONTRACT_LANGUAGE_PATH']\nsys.path.insert(0, language_path)\nfrom open_contract_language.batch_adapter import run_dataset\ndef load_validator():\n    from validator import validate\n    return validate\nreport = run_dataset(json.load(sys.stdin), validator_loader=load_validator)\nprint(json.dumps(report))\n",
+        format!("import json, sys\nsys.path[0:0] = [{python_adapter_literal}, {python_dependencies_literal}]\nfrom open_contract_language.batch_adapter import run_dataset\ndef load_validator():\n    from validator import validate\n    return validate\nreport = run_dataset(json.load(sys.stdin), validator_loader=load_validator)\nprint(json.dumps(report))\n"),
     )
     .unwrap();
     std::fs::write(
         package.join("contract.yaml"),
-        r#"
+        format!(r#"
 version: "1"
 name: python-root
-files:
-  dataset: dataset.json
-  validator: validator.py
-  nested_contracts: [child/contract.yaml]
+datasets: [dataset.json]
+coverage_sources: [validator.py]
+nested_contracts: [child/contract.yaml]
 execution:
   command: [python3, run-contract.py]
-language_package: python
 filesystem:
-  read: [dataset.json, validator.py, run-contract.py, child/contract.yaml]
+  read: [dataset.json, validator.py, run-contract.py, child/contract.yaml, "{python_adapter}", "{python_dependencies}"]
   write: []
-"#,
+"#, python_adapter = python_adapter.display(), python_dependencies = python_dependencies.display()),
     )
     .unwrap();
     std::fs::write(
@@ -180,20 +191,20 @@ filesystem:
     .unwrap();
     std::fs::write(
         child.join("run-contract.mjs"),
-        "import path from 'node:path';\nimport { pathToFileURL } from 'node:url';\nconst languagePath = process.env.OPEN_CONTRACT_LANGUAGE_PATH;\nif (!languagePath) throw new Error('missing language support path');\nconst { runDataset } = await import(pathToFileURL(path.join(languagePath, 'batch-adapter.js')).href);\nlet text = '';\nfor await (const chunk of process.stdin) text += chunk;\nconst request = JSON.parse(text);\nconst report = await runDataset(request, () => import('./validator.mjs'));\nprocess.stdout.write(`${JSON.stringify(report)}\\n`);\n",
+        format!("const {{ runDataset }} = await import({javascript_adapter_literal});\nlet text = '';\nfor await (const chunk of process.stdin) text += chunk;\nconst request = JSON.parse(text);\nconst report = await runDataset(request, () => import('./validator.mjs'));\nprocess.stdout.write(`${{JSON.stringify(report)}}\\n`);\n"),
     )
     .unwrap();
     std::fs::write(
         child.join("contract.yaml"),
-        r#"
+        format!(r#"
 version: "1"
 name: javascript-child
-files: {dataset: dataset.yaml, validator: validator.mjs}
+datasets: [dataset.yaml]
+coverage_sources: [validator.mjs]
 execution:
   command: [node, run-contract.mjs]
-language_package: javascript
-filesystem: {read: [dataset.yaml, validator.mjs, run-contract.mjs], write: []}
-"#,
+filesystem: {read: [dataset.yaml, validator.mjs, run-contract.mjs, "{javascript_adapter}", "{javascript_dependencies}"], write: []}
+"#, javascript_adapter = javascript_adapter.display(), javascript_dependencies = javascript_dependencies.display()),
     )
     .unwrap();
     package.join("contract.yaml")
@@ -222,7 +233,7 @@ fn isolation_staging_uses_fresh_roots_and_copies_only_declared_reads() {
         r#"
 version: "1"
 name: isolation-random-root
-files: {dataset: dataset.json, validator: validator.py}
+datasets: [dataset.json], coverage_sources: [validator.py]
 filesystem: {read: [dataset.json, validator.py], write: [reports]}
 "#,
     )
@@ -255,7 +266,7 @@ fn landlock_allows_manifest_reads_and_denies_unlisted_filesystem_reads() {
         r#"
 version: "1"
 name: landlock-read-policy
-files: {dataset: dataset.json, validator: validator.py}
+datasets: [dataset.json], coverage_sources: [validator.py]
 filesystem: {read: [dataset.json, validator.py], write: [reports]}
 "#,
     )
@@ -271,7 +282,6 @@ filesystem: {read: [dataset.json, validator.py], write: [reports]}
             "from pathlib import Path; assert Path('dataset.json').is_file();\ntry: Path('/etc/passwd').read_text(); print('outside-readable')\nexcept PermissionError: print('outside-denied')".into(),
         ],
         b"",
-        Some("python"),
     ).unwrap();
     assert!(
         output.status.success(),
@@ -333,7 +343,7 @@ fn coverage_proof_reports_declared_source_files_missing_from_native_data() {
         r#"
 version: "1"
 name: coverage-proof
-files: {dataset: dataset.json, validator: validator.py, support: [support.py]}
+datasets: [dataset.json], coverage_sources: [validator.py, support.py]
 filesystem: {read: [dataset.json, validator.py, support.py], write: [reports]}
 "#,
     )
@@ -487,10 +497,10 @@ fn cli_saves_report_and_returns_nonzero_when_manifest_coverage_threshold_is_miss
     assert!(stdout.contains("Dataset cases: 2/2 passed"), "{stdout}");
     assert!(stdout.contains("target lines covered (80.0%, required 100.0%)"));
     assert!(stdout.contains("uncovered lines 3"));
-    assert!(stdout.contains("Coverage report: .open-contract/coverage/latest.json"));
+    assert!(stdout.contains("Coverage report: .coverage/latest.json"));
     assert!(stderr.contains("coverage requirements not met"));
     let report: Value = serde_json::from_slice(
-        &std::fs::read(package.path().join(".open-contract/coverage/latest.json")).unwrap(),
+        &std::fs::read(package.path().join(".coverage/latest.json")).unwrap(),
     )
     .unwrap();
     assert_eq!(report["coverage_complete"], false);
@@ -534,7 +544,7 @@ fn manifest_supplemental_coverage_is_separate_and_fails_the_coverage_gate() {
     .unwrap();
     std::fs::write(
         package.path().join("child/contract.yaml"),
-        "version: '1'\nname: child-supplemental-fixture\nfiles: {dataset: dataset.json, validator: validator.py, supplemental_tests: [tests/supplemental.py]}\nfilesystem: {read: [dataset.json, validator.py, tests/supplemental.py], write: []}\n",
+        "version: '1'\nname: child-supplemental-fixture\ndatasets: [dataset.json], coverage_sources: [validator.py], supplemental_tests: [tests/supplemental.py]\nfilesystem: {read: [dataset.json, validator.py, tests/supplemental.py], write: []}\n",
     )
     .unwrap();
     std::fs::write(
@@ -542,11 +552,10 @@ fn manifest_supplemental_coverage_is_separate_and_fails_the_coverage_gate() {
         r#"
 version: "1"
 name: supplemental-coverage-fixture
-files:
-  dataset: dataset.json
-  validator: validator.py
-  supplemental_tests: [tests/supplemental.py]
-  nested_contracts: [child/contract.yaml]
+datasets: [dataset.json]
+coverage_sources: [validator.py]
+supplemental_tests: [tests/supplemental.py]
+nested_contracts: [child/contract.yaml]
 filesystem:
   read: [dataset.json, validator.py, tests/supplemental.py, child/contract.yaml]
   write: [reports]
@@ -617,7 +626,7 @@ fn dataset_coverage_fingerprints_match_cases_and_steps() {
     .unwrap();
     std::fs::write(
         package.path().join("contract.yaml"),
-        "version: '1'\nname: fingerprint-fixture\nfiles: {dataset: dataset.json, validator: validator.py}\nfilesystem: {read: [dataset.json, validator.py], write: []}\n",
+        "version: '1'\nname: fingerprint-fixture\ndatasets: [dataset.json], coverage_sources: [validator.py]\nfilesystem: {read: [dataset.json, validator.py], write: []}\n",
     )
     .unwrap();
 

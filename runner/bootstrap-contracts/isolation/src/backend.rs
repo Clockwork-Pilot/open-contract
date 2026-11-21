@@ -18,11 +18,10 @@ pub(super) fn run(
     write: &[String],
     argv: &[String],
     input: &[u8],
-    language_package: Option<&str>,
     isolation_runtime: Option<&Path>,
     tempdir_mode: bool,
 ) -> Result<Output, String> {
-    let plan = plan_command(backend, argv, language_package, isolation_runtime)?;
+    let plan = plan_command(backend, argv, isolation_runtime)?;
     run_prepared(
         backend,
         package_root,
@@ -66,7 +65,7 @@ fn probe_isolated_command(
         "could not find a `true` executable for the availability probe".to_string()
     })?;
     let argv = vec![executable.to_string_lossy().into_owned()];
-    let plan = plan_command(backend.backend(), &argv, None, isolation_runtime)?;
+    let plan = plan_command(backend.backend(), &argv, isolation_runtime)?;
     let package = tempfile::tempdir().map_err(|error| error.to_string())?;
     let output = match backend {
         ProbeBackend::Bubblewrap => run_bubblewrap(
@@ -154,10 +153,18 @@ pub struct CommandPlan {
 pub(super) fn plan_command(
     backend: Backend,
     argv: &[String],
-    language_package: Option<&str>,
     isolation_runtime: Option<&Path>,
 ) -> Result<CommandPlan, String> {
-    let prepared = prepare_command(backend, argv, language_package, isolation_runtime)?;
+    plan_command_with_adapter(backend, argv, isolation_runtime, None)
+}
+
+pub(super) fn plan_command_with_adapter(
+    backend: Backend,
+    argv: &[String],
+    isolation_runtime: Option<&Path>,
+    language_adapter: Option<&Path>,
+) -> Result<CommandPlan, String> {
+    let prepared = prepare_command(backend, argv, isolation_runtime, language_adapter)?;
     Ok(CommandPlan {
         command: prepared.command,
         runtime_roots: prepared.runtime.roots.clone(),
@@ -175,10 +182,13 @@ struct PreparedCommand {
 fn prepare_command(
     backend: Backend,
     argv: &[String],
-    language_package: Option<&str>,
     isolation_runtime: Option<&Path>,
+    language_adapter: Option<&Path>,
 ) -> Result<PreparedCommand, String> {
-    let mut runtime = runtime(language_package, backend, isolation_runtime)?;
+    let mut runtime = runtime(backend, isolation_runtime)?;
+    if let Some(manifest_path) = language_adapter {
+        add_language_adapter_runtime(&mut runtime, manifest_path)?;
+    }
     let command = expand_command(argv)?;
     if command
         .first()
@@ -211,6 +221,73 @@ fn prepare_command(
         runtime,
         resolved_executable,
     })
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct LanguageAdapterRuntimeManifest {
+    version: u32,
+    entrypoint: PathBuf,
+    files: Vec<PathBuf>,
+    #[serde(default)]
+    environment: BTreeMap<String, String>,
+    #[serde(default)]
+    environment_paths: BTreeMap<String, PathBuf>,
+}
+
+fn add_language_adapter_runtime(runtime: &mut Runtime, manifest_path: &Path) -> Result<(), String> {
+    let manifest_path = manifest_path.canonicalize().map_err(|error| {
+        format!("cannot resolve language adapter runtime manifest {}: {error}", manifest_path.display())
+    })?;
+    let package_root = manifest_path
+        .parent()
+        .unwrap_or(manifest_path.as_path());
+    let bytes = fs::read(&manifest_path).map_err(|error| {
+        format!("cannot read language adapter runtime manifest {}: {error}", manifest_path.display())
+    })?;
+    let manifest: LanguageAdapterRuntimeManifest = serde_yaml::from_slice(&bytes).map_err(|error| {
+        format!("invalid language adapter runtime manifest {}: {error}", manifest_path.display())
+    })?;
+    if manifest.version != 1 {
+        return Err(format!("unsupported language adapter runtime manifest version {}", manifest.version));
+    }
+    if manifest.files.is_empty() {
+        return Err("language adapter runtime manifest declares no files".into());
+    }
+    let resources = manifest.files.iter()
+        .map(|path| checked_adapter_path(package_root, path))
+        .collect::<Result<Vec<_>, _>>()?;
+    let entrypoint = checked_adapter_path(package_root, &manifest.entrypoint)?;
+    if !entrypoint.is_file() || !resources.iter().any(|root| entrypoint.starts_with(root)) {
+        return Err("language adapter entrypoint must be a file included in its declared files".into());
+    }
+    runtime.environment.insert(
+        "OPEN_CONTRACT_LANGUAGE_ENTRYPOINT".into(),
+        entrypoint.to_string_lossy().into_owned(),
+    );
+    for (key, value) in manifest.environment_paths {
+        let path = checked_adapter_path(package_root, &value)?;
+        if !resources.iter().any(|root| path.starts_with(root)) {
+            return Err(format!("language adapter environment path {} is outside declared files", value.display()));
+        }
+        runtime.environment.insert(key, path.to_string_lossy().into_owned());
+    }
+    runtime.environment.extend(manifest.environment);
+    runtime.roots.extend(resources);
+    Ok(())
+}
+
+fn checked_adapter_path(package_root: &Path, path: &Path) -> Result<PathBuf, String> {
+    if path.is_absolute() || path.components().any(|component| matches!(component, std::path::Component::ParentDir)) {
+        return Err(format!("language adapter runtime paths must stay inside the runtime manifest directory: {}", path.display()));
+    }
+    let resolved = package_root.join(path).canonicalize().map_err(|error| {
+        format!("language adapter runtime path {} is unavailable: {error}", path.display())
+    })?;
+    if !resolved.starts_with(package_root) {
+        return Err(format!("language adapter runtime path escapes its package: {}", path.display()));
+    }
+    Ok(resolved)
 }
 
 /// Expand explicit `${NAME}` references in command arguments. Values remain
@@ -262,12 +339,6 @@ pub(super) struct Runtime {
 }
 
 #[derive(Deserialize)]
-struct RuntimeManifest {
-    version: u32,
-    profiles: BTreeMap<String, RuntimeProfile>,
-}
-
-#[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct IsolationRuntimeManifest {
     version: u32,
@@ -279,32 +350,11 @@ struct IsolationRuntimeManifest {
     command_executable: bool,
 }
 
-#[derive(Deserialize)]
-struct RuntimeProfile {
-    entrypoint: String,
-    files: Vec<String>,
-    #[serde(default)]
-    environment: BTreeMap<String, String>,
-    #[serde(default)]
-    environment_paths: BTreeMap<String, String>,
-}
-
-pub(super) fn validate_language_package(repository: &Path, language: &str) -> Result<(), String> {
-    let mut runtime = Runtime {
-        roots: Vec::new(),
-        environment: BTreeMap::new(),
-        command_executable: false,
-    };
-    add_language_package(&mut runtime, repository, language)
-}
-
 fn runtime(
-    profile: Option<&str>,
     backend: Backend,
     isolation_runtime: Option<&Path>,
 ) -> Result<Runtime, String> {
     runtime_with_root_path(
-        profile,
         backend,
         isolation_runtime,
         &Path::new(env!("CARGO_MANIFEST_DIR")).join("../../.."),
@@ -312,7 +362,6 @@ fn runtime(
 }
 
 pub(super) fn runtime_with_root_path(
-    profile: Option<&str>,
     backend: Backend,
     isolation_runtime: Option<&Path>,
     runner_root: &Path,
@@ -323,10 +372,6 @@ pub(super) fn runtime_with_root_path(
         environment: BTreeMap::new(),
         command_executable: false,
     };
-    match profile {
-        None => {}
-        Some(package) => add_language_package(&mut runtime, &repository, package)?,
-    }
     if let Some(runtime_name) = backend.runtime_manifest_name() {
         let runtime_manifest = match isolation_runtime {
             Some(path) => path.to_path_buf(),
@@ -380,121 +425,6 @@ fn add_isolation_runtime(runtime: &mut Runtime, manifest_path: &Path) -> Result<
     runtime.environment.extend(manifest.environment);
     runtime.command_executable = manifest.command_executable;
     Ok(())
-}
-
-fn add_language_package(
-    runtime: &mut Runtime,
-    repository: &Path,
-    language: &str,
-) -> Result<(), String> {
-    let package = language_package_root(repository, language)?;
-    let manifest_path = package.join("runtime.yaml");
-    let bytes = fs::read(&manifest_path).map_err(|error| {
-        format!(
-            "cannot read {language} runtime manifest {}: {error}",
-            manifest_path.display()
-        )
-    })?;
-    let manifest: RuntimeManifest = serde_yaml::from_slice(&bytes).map_err(|error| {
-        format!(
-            "invalid {language} runtime manifest {}: {error}",
-            manifest_path.display()
-        )
-    })?;
-    if manifest.version != 1 {
-        return Err(format!(
-            "unsupported {language} runtime manifest version {}",
-            manifest.version
-        ));
-    }
-    let profile = manifest
-        .profiles
-        .get("production")
-        .ok_or_else(|| format!("{language} runtime manifest has no production profile"))?;
-    let resources = profile
-        .files
-        .iter()
-        .map(|path| checked_runtime_path(&package, path))
-        .collect::<Result<Vec<_>, _>>()?;
-    if resources.is_empty() {
-        return Err(format!(
-            "{language} production profile declares no runtime files"
-        ));
-    }
-    let entrypoint = checked_runtime_path(&package, &profile.entrypoint)?;
-    if !entrypoint.is_file() || !resources.iter().any(|root| entrypoint.starts_with(root)) {
-        return Err(format!("{language} production entrypoint must be a file included in its declared runtime files"));
-    }
-    for (key, value) in &profile.environment {
-        runtime.environment.insert(key.clone(), value.clone());
-    }
-    for (key, value) in &profile.environment_paths {
-        let path = checked_runtime_path(&package, value)?;
-        if !resources.iter().any(|root| path.starts_with(root)) {
-            return Err(format!(
-                "{language} environment path {value:?} is outside declared runtime files"
-            ));
-        }
-        runtime
-            .environment
-            .insert(key.clone(), path.to_string_lossy().into_owned());
-    }
-    runtime.roots.extend(resources);
-    Ok(())
-}
-
-fn language_package_root(repository: &Path, package_id: &str) -> Result<PathBuf, String> {
-    let mut characters = package_id.chars();
-    let valid_id = characters
-        .next()
-        .is_some_and(|character| character.is_ascii_alphanumeric())
-        && characters.all(|character| {
-            character.is_ascii_alphanumeric() || matches!(character, '-' | '_' | '.')
-        });
-    if !valid_id {
-        return Err(format!(
-            "invalid logical language package identifier: {package_id:?}"
-        ));
-    }
-    if let Some(config) = std::env::var_os("OPEN_CONTRACT_LANGUAGE_PACKAGES") {
-        let mappings: BTreeMap<String, String> = serde_json::from_str(&config.to_string_lossy())
-            .map_err(|error| format!("invalid OPEN_CONTRACT_LANGUAGE_PACKAGES JSON: {error}"))?;
-        if let Some(root) = mappings.get(package_id) {
-            return PathBuf::from(root).canonicalize().map_err(|error| {
-                format!("language package {package_id:?} is unavailable at {root:?}: {error}")
-            });
-        }
-    }
-    repository
-        .join("contract-languages")
-        .join(package_id)
-        .canonicalize()
-        .map_err(|error| format!("language package {package_id:?} is unavailable: {error}"))
-}
-
-fn checked_runtime_path(package: &Path, relative: &str) -> Result<PathBuf, String> {
-    let path = Path::new(relative);
-    if path.as_os_str().is_empty()
-        || path.is_absolute()
-        || path
-            .components()
-            .any(|part| !matches!(part, std::path::Component::Normal(_)))
-    {
-        return Err(format!("invalid runtime package path: {relative}"));
-    }
-    let full = package.join(path);
-    let resolved = full.canonicalize().map_err(|error| {
-        format!(
-            "runtime resource {} is unavailable: {error}",
-            full.display()
-        )
-    })?;
-    if !resolved.starts_with(package) {
-        return Err(format!(
-            "runtime resource escapes language package: {relative}"
-        ));
-    }
-    Ok(resolved)
 }
 
 fn command(argv: &[String], cwd: &Path, environment: &BTreeMap<String, String>) -> Command {

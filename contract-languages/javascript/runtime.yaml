@@ -1,14 +1,10 @@
 version: 1
-profiles:
-  production:
-    entrypoint: src/batch-adapter.js
-    files:
-      - package.json
-      - src
-      - node_modules/v8-to-istanbul
-      - node_modules/@jridgewell/trace-mapping
-      - node_modules/@jridgewell/resolve-uri
-      - node_modules/@jridgewell/sourcemap-codec
-      - node_modules/convert-source-map
-    environment_paths:
-      OPEN_CONTRACT_LANGUAGE_PATH: src
+entrypoint: src/batch-adapter.js
+files:
+  - package.json
+  - src
+  - node_modules/v8-to-istanbul
+  - node_modules/@jridgewell/trace-mapping
+  - node_modules/@jridgewell/resolve-uri
+  - node_modules/@jridgewell/sourcemap-codec
+  - node_modules/convert-source-map

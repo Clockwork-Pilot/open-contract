@@ -134,6 +134,7 @@ pub struct CoverageFingerprint {
 pub struct ContractBatch {
     pub manifest: ManifestPlan,
     pub package_prefix: PathBuf,
+    pub dataset_path: PathBuf,
     pub requests: Vec<ExecutionRequest>,
     pub coverage_fingerprints: bool,
 }
@@ -192,12 +193,7 @@ pub fn show_isolation_plan(
             )
         })?;
         let working_directory = tree.root.join(prefix);
-        let command = tree.plan_command_at(
-            backend,
-            &working_directory,
-            &execution.command,
-            manifest.manifest.language_package.as_deref(),
-        )?;
+        let command = tree.plan_command_at(backend, &working_directory, &execution.command)?;
         output.push_str(&format!("Contract {}:\n", manifest.manifest.name));
         output.push_str(&format!(
             "  Working directory: {}\n",
@@ -261,13 +257,8 @@ impl BatchAdapter for ManifestBatchAdapter {
                 }
                 .to_string()
                 .into_bytes();
-                let output = tree.run_command_at(
-                    backend,
-                    &package_root,
-                    &execution.command,
-                    &input,
-                    manifest.language_package.as_deref(),
-                )?;
+                let output =
+                    tree.run_command_at(backend, &package_root, &execution.command, &input)?;
                 if !output.status.success() {
                     let stderr = String::from_utf8_lossy(&output.stderr).trim().to_owned();
                     let stdout = String::from_utf8_lossy(&output.stdout).trim().to_owned();
@@ -500,16 +491,20 @@ pub fn run_contract_tree_with_fingerprint_mode(
                 manifest.manifest.name
             ));
         }
-        let data_path = manifest.package_root.join(&manifest.manifest.files.dataset);
-        let dataset = load_dataset(&data_path)?;
-        let (requests, checks) = flatten_dataset_with_fingerprints(&dataset, require_fingerprints)?;
-        batches.push(ContractBatch {
-            manifest: manifest.clone(),
-            package_prefix: package_prefix.to_path_buf(),
-            requests,
-            coverage_fingerprints,
-        });
-        checks_by_contract.push(checks);
+        for dataset_name in &manifest.manifest.datasets {
+            let data_path = manifest.package_root.join(dataset_name);
+            let dataset = load_dataset(&data_path)?;
+            let (requests, checks) =
+                flatten_dataset_with_fingerprints(&dataset, require_fingerprints)?;
+            batches.push(ContractBatch {
+                manifest: manifest.clone(),
+                package_prefix: package_prefix.to_path_buf(),
+                dataset_path: data_path,
+                requests,
+                coverage_fingerprints,
+            });
+            checks_by_contract.push(checks);
+        }
     }
     let adapter_batches = adapter.execute_tree(&tree, backend, &batches)?;
     if adapter_batches.len() != batches.len() {
@@ -525,6 +520,11 @@ pub fn run_contract_tree_with_fingerprint_mode(
     {
         let adapter_value = adapter_coverage_value(&adapter_batch);
         validate_adapter_coverage_payload(&adapter_value, &batch.manifest.manifest.name)?;
+        validate_declared_coverage_sources(
+            &adapter_batch,
+            &batch.manifest.manifest.coverage_sources,
+            &batch.manifest.manifest.name,
+        )?;
         let additional_test_coverage = validate_additional_test_coverage(batch, &adapter_batch)?;
         prefix_line_coverage_paths(&batch.package_prefix, &mut adapter_batch.coverage_lines);
         prefix_line_coverage_paths(
@@ -573,10 +573,7 @@ pub fn run_contract_tree_with_fingerprint_mode(
             .collect();
         report.coverage.push(CoverageRecord {
             contract: batch.manifest.manifest.name.clone(),
-            dataset_path: batch
-                .manifest
-                .package_root
-                .join(&batch.manifest.manifest.files.dataset),
+            dataset_path: batch.dataset_path.clone(),
             minimum_line_percent,
             dataset_covered_lines,
             dataset_executable_lines,
@@ -608,6 +605,34 @@ pub fn run_contract_tree_with_fingerprint_mode(
     Ok(report)
 }
 
+fn validate_declared_coverage_sources(
+    batch: &AdapterBatch,
+    declared_sources: &[String],
+    contract: &str,
+) -> Result<(), String> {
+    for file in batch.coverage_lines.iter().chain(batch.additional_coverage_lines.iter()) {
+        if !is_allowed(&file.path, declared_sources) {
+            return Err(format!(
+                "contract {contract} adapter reported coverage for source outside coverage_sources: {}",
+                file.path
+            ));
+        }
+    }
+    if let Some(sources) = batch.coverage.as_ref()
+        .and_then(|report| report.get("sources"))
+        .and_then(Value::as_array)
+    {
+        for source in sources.iter().filter_map(Value::as_str) {
+            if !is_allowed(source, declared_sources) {
+                return Err(format!(
+                    "contract {contract} adapter reported source outside coverage_sources: {source}"
+                ));
+            }
+        }
+    }
+    Ok(())
+}
+
 fn prefix_line_coverage_paths(prefix: &Path, files: &mut [CoverageLineFile]) {
     if prefix.as_os_str().is_empty() || prefix == Path::new(".") {
         return;
@@ -636,11 +661,11 @@ fn prefix_native_coverage_sources(prefix: &Path, coverage: &mut Option<Value>) {
 }
 
 fn declared_sources(batch: &ContractBatch) -> Vec<String> {
-    let mut sources = vec![batch.manifest.manifest.files.validator.clone()];
-    sources.extend(batch.manifest.manifest.files.support.iter().cloned());
-    sources
-        .into_iter()
-        .filter(|source| is_source_file(source))
+    batch
+        .manifest
+        .manifest
+        .coverage_sources
+        .iter()
         .map(|source| {
             batch
                 .package_prefix
@@ -651,20 +676,11 @@ fn declared_sources(batch: &ContractBatch) -> Vec<String> {
         .collect()
 }
 
-fn is_source_file(path: &str) -> bool {
-    matches!(
-        Path::new(path)
-            .extension()
-            .and_then(|extension| extension.to_str()),
-        Some("py" | "js" | "mjs" | "cjs" | "rs")
-    )
-}
-
 fn validate_additional_test_coverage(
     batch: &ContractBatch,
     adapter_batch: &AdapterBatch,
 ) -> Result<Value, String> {
-    let test_files = &batch.manifest.manifest.files.supplemental_tests;
+    let test_files = &batch.manifest.manifest.supplemental_tests;
     if test_files.is_empty() {
         if adapter_batch.additional_test_coverage.is_some()
             || !adapter_batch.additional_coverage_lines.is_empty()
@@ -830,8 +846,7 @@ fn index_coverage_scopes(
         .iter()
         .map(|request| request.key.clone())
         .collect::<std::collections::HashSet<_>>();
-    let mut allowed_sources = vec![batch.manifest.manifest.files.validator.clone()];
-    allowed_sources.extend(batch.manifest.manifest.files.support.iter().cloned());
+    let allowed_sources = &batch.manifest.manifest.coverage_sources;
     let mut indexed = std::collections::HashMap::new();
     for scope in scopes {
         if !expected_keys.contains(&scope.key) {
@@ -842,7 +857,7 @@ fn index_coverage_scopes(
         }
         for file in &scope.files {
             validate_package_path(&file.path)?;
-            if !is_allowed(&file.path, &allowed_sources) {
+            if !is_allowed(&file.path, allowed_sources) {
                 return Err(format!(
                     "adapter returned coverage for undeclared contract source: {}",
                     file.path
@@ -1370,15 +1385,11 @@ pub fn batch_input_with_fingerprints(
     requests: &[ExecutionRequest],
     coverage_fingerprints: bool,
 ) -> Value {
-    let mut coverage_sources = vec![manifest.files.validator.clone()];
-    coverage_sources.extend(manifest.files.support.iter().cloned());
-    coverage_sources.retain(|source| is_source_file(source));
     let mut input = json!({
         "contract": manifest.name,
         "package": ".",
-        "validator": manifest.files.validator,
-        "supplemental_tests": manifest.files.supplemental_tests,
-        "coverage_sources": coverage_sources,
+        "supplemental_tests": manifest.supplemental_tests,
+        "coverage_sources": manifest.coverage_sources,
         "requests": requests,
     });
     if !coverage_fingerprints {

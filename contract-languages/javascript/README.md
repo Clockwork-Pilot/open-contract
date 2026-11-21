@@ -17,13 +17,11 @@ The adapter does not interpret the ID or alter the call input. Every step in a
 parallel group receives the same group coverage scope.
 
 ```js
-import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-const languagePath = process.env.OPEN_CONTRACT_LANGUAGE_PATH;
-const { runDataset } = await import(
-  pathToFileURL(path.join(languagePath, 'batch-adapter.js')).href
-);
+const entrypoint = process.env.OPEN_CONTRACT_LANGUAGE_ENTRYPOINT;
+if (!entrypoint) throw new Error('OPEN_CONTRACT_LANGUAGE_ENTRYPOINT is required');
+const { runDataset } = await import(pathToFileURL(entrypoint).href);
 let input = '';
 for await (const chunk of process.stdin) input += chunk;
 const request = JSON.parse(input);
@@ -31,11 +29,10 @@ const report = await runDataset(request, () => import('./validator.mjs'));
 process.stdout.write(JSON.stringify(report));
 ```
 
-The manifest carries only the logical `language_package` identifier and the
-contract's `execution.command`. Runner configuration maps that identifier to
-the support package root; the runner provides its isolated location through
-`OPEN_CONTRACT_LANGUAGE_PATH`. No support file list or host path belongs in the
-manifest.
+The contract manifest points `language_adapter` to the adapter's `runtime.yaml`.
+That file declares its entrypoint, runtime files, and environment. The runner
+exposes the resolved entrypoint as `OPEN_CONTRACT_LANGUAGE_ENTRYPOINT`; adapter
+runtime files do not need duplicate entries in the contract's filesystem policy.
 
 Run the interface tests with `make -C contract-languages/javascript test` from
 the `open-contract` directory. They exercise the importable adapter protocol

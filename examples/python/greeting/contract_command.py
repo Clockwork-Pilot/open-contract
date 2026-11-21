@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import json
+import importlib.util
 import os
 import sys
+from pathlib import Path
 
 def load_validator():
     # Imported after coverage starts so validator initialization is measured.
@@ -16,11 +18,18 @@ def load_validator():
 def main() -> int:
     try:
         request = json.load(sys.stdin)
-        language_path = os.environ.get("OPEN_CONTRACT_LANGUAGE_PATH")
-        if not language_path:
-            raise RuntimeError("OPEN_CONTRACT_LANGUAGE_PATH is not configured")
-        sys.path.insert(0, language_path)
-        from open_contract_language.batch_adapter import run_dataset
+        adapter_entrypoint = os.environ.get("OPEN_CONTRACT_LANGUAGE_ENTRYPOINT")
+        if not adapter_entrypoint:
+            raise RuntimeError("OPEN_CONTRACT_LANGUAGE_ENTRYPOINT is required")
+        spec = importlib.util.spec_from_file_location(
+            "open_contract_language.batch_adapter", Path(adapter_entrypoint)
+        )
+        if spec is None or spec.loader is None:
+            raise RuntimeError("cannot load language adapter entrypoint")
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = module
+        spec.loader.exec_module(module)
+        run_dataset = module.run_dataset
 
         report = run_dataset(request, validator_loader=load_validator)
         print(json.dumps(report, ensure_ascii=False))

@@ -5,107 +5,11 @@ use serde_json::{json, Value};
 use std::path::PathBuf;
 
 #[test]
-fn language_package_filesystem_setup_edges_are_unit_fixtures() {
+fn isolation_filesystem_and_command_edges_are_unit_fixtures() {
     let package = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let plan = ManifestPlan::load(package.join("isolation-package.fixture.yaml"))
         .expect("load isolation package fixture");
     let fixtures: Vec<DatasetCase> = vec![
-        serde_json::from_value(json!({
-    "id": "language-package-resolves-from-runner-configuration",
-    "input": {
-        "operation": "language-package",
-        "language_package": "custom-python-support",
-        "external_package_mapping": true,
-        "runtime_yaml": "version: 1\nprofiles:\n  production:\n    entrypoint: src/runner.py\n    files: [src]\n    environment_paths: {OPEN_CONTRACT_LANGUAGE_PATH: src}\n"
-    },
-    "expected": {
-        "valid": true
-    }
-})).expect("valid unit fixture"),
-    serde_json::from_value(json!({
-    "id": "language-package-rejects-invalid-runner-configuration",
-    "setup": true,
-    "input": {
-        "operation": "language-package",
-        "language_package": "python",
-        "runtime_yaml": "version: 1\nprofiles:\n  production:\n    entrypoint: src/runner.py\n    files: [src]\n"
-    },
-    "expected": {
-        "error_contains": "invalid OPEN_CONTRACT_LANGUAGE_PACKAGES JSON"
-    }
-})).expect("valid unit fixture"),
-        serde_json::from_value(json!({
-    "id": "language-package-reference-must-be-logical",
-    "input": {
-        "operation": "language-package",
-        "language_package": "bad/id",
-        "create_runtime_manifest": false
-    },
-    "expected": {
-        "error_contains": "invalid logical language package identifier"
-    }
-})).expect("valid unit fixture"),
-        serde_json::from_value(json!({
-    "id": "language-package-reports-missing-configured-root",
-    "input": {
-        "operation": "language-package",
-        "language_package": "custom-python-support",
-        "external_package_mapping": true,
-        "missing_mapping_target": true,
-        "runtime_yaml": "version: 1\nprofiles:\n  production:\n    entrypoint: src/runner.py\n    files: [src]\n"
-    },
-    "expected": {
-        "error_contains": "is unavailable at"
-    }
-})).expect("valid unit fixture"),
-        serde_json::from_value(json!({
-    "id": "language-package-missing-manifest",
-    "input": {
-        "operation": "language-package",
-        "language_package": "python",
-        "create_runtime_manifest": false
-    },
-    "expected": {
-        "error_contains": "cannot read python runtime manifest"
-    }
-})).expect("valid unit fixture"),
-        serde_json::from_value(json!({
-    "id": "language-package-entrypoint-outside-resources",
-    "input": {
-        "operation": "language-package",
-        "language_package": "python",
-        "runtime_yaml": "version: 1\nprofiles:\n  production:\n    entrypoint: outside.py\n    files: [src]\n    environment: {MODE: production}\n    environment_paths: {ADAPTER: src/runner.py}\n",
-        "entrypoint_path": "outside.py"
-    },
-    "expected": {
-        "error_contains": "entrypoint must be a file included"
-    }
-})).expect("valid unit fixture"),
-        serde_json::from_value(json!({
-    "id": "language-package-environment-path-outside-resources",
-    "input": {
-        "operation": "language-package",
-        "language_package": "python",
-        "runtime_yaml": "version: 1\nprofiles:\n  production:\n    entrypoint: src/runner.py\n    files: [src]\n    environment: {MODE: production}\n    environment_paths: {ADAPTER: outside.py}\n",
-        "create_outside_resource": true
-    },
-    "expected": {
-        "error_contains": "environment path \"outside.py\" is outside"
-    }
-})).expect("valid unit fixture"),
-        serde_json::from_value(json!({
-    "id": "language-package-symlink-escape",
-    "input": {
-        "operation": "language-package",
-        "language_package": "python",
-        "runtime_yaml": "version: 1\nprofiles:\n  production:\n    entrypoint: escape\n    files: [escape]\n    environment: {MODE: production}\n    environment_paths: {ADAPTER: src/runner.py}\n",
-        "create_entrypoint": false,
-        "create_symlink_escape": true
-    },
-    "expected": {
-        "error_contains": "runtime resource escapes language package"
-    }
-})).expect("valid unit fixture"),
         serde_json::from_value(json!({
     "id": "randomized-stage",
     "input": {
@@ -147,15 +51,6 @@ fn language_package_filesystem_setup_edges_are_unit_fixtures() {
     "expected": {
         "working_directory": "nested",
         "outside_rejected": true
-    }
-})).expect("valid unit fixture"),
-        serde_json::from_value(json!({
-    "id": "unknown-language-package",
-    "input": {
-        "operation": "unknown-language-package"
-    },
-    "expected": {
-        "rejected": true
     }
 })).expect("valid unit fixture"),
         serde_json::from_value(json!({
@@ -201,22 +96,6 @@ fn language_package_filesystem_setup_edges_are_unit_fixtures() {
     },
     "expected": {
         "launcher_invoked": true
-    }
-})).expect("valid unit fixture"),
-        serde_json::from_value(json!({
-    "id": "runtime-mounts-only-language-adapters",
-    "input": {
-        "operation": "runtime-mounts-only-adapters"
-    },
-    "expected": {
-        "adapter_roots_only": true,
-        "javascript_runtime_packages": [
-            "contract-languages/javascript/node_modules/v8-to-istanbul",
-            "contract-languages/javascript/node_modules/@jridgewell/trace-mapping",
-            "contract-languages/javascript/node_modules/@jridgewell/resolve-uri",
-            "contract-languages/javascript/node_modules/@jridgewell/sourcemap-codec",
-            "contract-languages/javascript/node_modules/convert-source-map"
-        ]
     }
 })).expect("valid unit fixture"),
         serde_json::from_value(json!({

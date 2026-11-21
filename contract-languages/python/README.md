@@ -16,9 +16,16 @@ Rust verifies expected values and predicates after commands finish.
 import json
 import os
 import sys
+from importlib.util import module_from_spec, spec_from_file_location
 
-sys.path.insert(0, os.environ["OPEN_CONTRACT_LANGUAGE_PATH"])
-from open_contract_language.batch_adapter import run_dataset
+entrypoint = os.environ["OPEN_CONTRACT_LANGUAGE_ENTRYPOINT"]
+spec = spec_from_file_location("open_contract_language.batch_adapter", entrypoint)
+if spec is None or spec.loader is None:
+    raise RuntimeError("cannot load language adapter entrypoint")
+adapter = module_from_spec(spec)
+sys.modules[spec.name] = adapter
+spec.loader.exec_module(adapter)
+run_dataset = adapter.run_dataset
 
 
 def load_validator():
@@ -30,11 +37,10 @@ request = json.load(sys.stdin)
 print(json.dumps(run_dataset(request, validator_loader=load_validator)))
 ```
 
-The manifest carries only the logical `language_package` identifier and the
-contract's `execution.command`. Runner configuration maps that identifier to
-the support package root; the runner provides its isolated location through
-`OPEN_CONTRACT_LANGUAGE_PATH`. No support file list or host path belongs in the
-manifest.
+The contract manifest points `language_adapter` to the adapter's `runtime.yaml`.
+That file declares its entrypoint, runtime files, and environment. The runner
+exposes the resolved entrypoint as `OPEN_CONTRACT_LANGUAGE_ENTRYPOINT`; adapter
+runtime files do not need duplicate entries in the contract's filesystem policy.
 
 Run the interface tests with `make -C contract-languages/python test` from the
 `open-contract` directory. They test the adapter protocol and are separate
@@ -43,6 +49,7 @@ from contract dataset coverage.
 Install the adapter's runtime dependencies into its isolated package directory
 with `make -C contract-languages/python install-dependencies PYTHON=python3`.
 `coverage.py` belongs to this adapter: its dependencies stay in `.deps/` and
-are exposed by this package's `runtime.yaml`. Python adapter checks and contracts that declare this adapter use this
-adapter-owned runtime. Other language adapters and the Rust runner itself do
-not require these Python dependencies.
+are installed under this adapter's `.deps/` directory. Adapter checks and
+contract-owned commands can refer to those tools directly. The Rust runner
+loads the runtime manifest named by `language_adapter` and makes its declared
+files available inside isolation.

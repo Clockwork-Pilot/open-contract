@@ -1,5 +1,9 @@
 # Open Contracts schemas
 
+`contract-manifest.v1.schema.json` defines the contract manifest.
+`language-adapter-runtime.v1.schema.json` defines the flat runtime manifest
+referenced by a contract's `language_adapter` field.
+
 This directory contains schemas for two related, but distinct, documents:
 
 - [`bundle.v1.schema.json`](bundle.v1.schema.json) describes a version 1

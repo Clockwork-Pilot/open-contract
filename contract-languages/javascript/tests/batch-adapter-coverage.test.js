@@ -6,6 +6,34 @@ import { pathToFileURL } from 'node:url';
 import test from 'node:test';
 import { runDataset } from '../src/batch-adapter.js';
 
+test('coverage reports only explicitly declared public source files', async () => {
+	const packageRoot = await mkdtemp(path.join(os.tmpdir(), 'open-contract-js-coverage-'));
+	const originalDirectory = process.cwd();
+	const validatorPath = path.join(packageRoot, 'validator.mjs');
+	const helperPath = path.join(packageRoot, 'helper.mjs');
+	await writeFile(path.join(packageRoot, 'package.json'), '{"type":"module"}');
+	await writeFile(helperPath, 'export const answer = () => 42;\n');
+	await writeFile(validatorPath, [
+		'import { answer } from "./helper.mjs";',
+		'export function validate() { return answer(); }',
+	].join('\n'));
+	process.chdir(packageRoot);
+	try {
+		const report = await runDataset({
+			package: '.',
+			coverage_sources: ['validator.mjs'],
+			requests: [{ key: { case_id: 'one', step_id: null }, input: {} }],
+		}, () => import(pathToFileURL(validatorPath).href));
+		assert.deepEqual(report.coverage.sources, ['validator.mjs']);
+		assert.ok(report.coverage.result.length > 0);
+		assert.ok(report.coverage.result.every((entry) => entry.url === 'validator.mjs'));
+		assert.deepEqual(report.coverage_lines.map((entry) => entry.path), ['validator.mjs']);
+	} finally {
+		process.chdir(originalDirectory);
+		await rm(packageRoot, { recursive: true, force: true });
+	}
+});
+
 test('parallel steps share one coverage scope and receive setup context', async () => {
 	const packageRoot = await mkdtemp(path.join(os.tmpdir(), 'open-contract-js-coverage-'));
 	const originalDirectory = process.cwd();
@@ -25,7 +53,6 @@ test('parallel steps share one coverage scope and receive setup context', async 
 	try {
 		const report = await runDataset({
 			package: '.',
-			validator: 'validator.mjs',
 			coverage_sources: ['validator.mjs'],
 			requests: [
 				{ key: { case_id: 'same', step_id: 'yes' }, input: { mode: 'yes' }, setup: 'fixture', parallel: true },
@@ -63,7 +90,6 @@ test('disabling fingerprints keeps aggregate dataset line coverage', async () =>
 	try {
 		const report = await runDataset({
 			package: '.',
-			validator: 'validator.mjs',
 			coverage_sources: ['validator.mjs'],
 			coverage_fingerprints: false,
 			requests: [

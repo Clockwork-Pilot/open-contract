@@ -2,10 +2,9 @@ version: "1"
 name: cli-smoke-fixture
 coverage:
   minimum_line_percent: 0
-files:
-  dataset: dataset.json
-  validator: validator.py
-  supplemental_tests: [tests/check.py]
+datasets: [dataset.json]
+coverage_sources: [validator.py]
+supplemental_tests: [tests/check.py]
 filesystem:
   read:
     - dataset.json

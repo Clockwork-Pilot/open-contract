@@ -28,6 +28,53 @@ fn adapter_coverage_schema_rejects_duplicate_and_unsorted_lines() {
 }
 
 #[test]
+fn adapter_coverage_rejects_sources_outside_manifest_whitelist() {
+    let valid = AdapterBatch {
+        coverage: Some(json!({"sources": ["src/public.rs"]})),
+        coverage_lines: vec![CoverageLineFile {
+            path: "src/public.rs".into(),
+            executable_lines: vec![1],
+            covered_lines: vec![1],
+        }],
+        ..AdapterBatch::default()
+    };
+    assert!(validate_declared_coverage_sources(
+        &valid,
+        &["src/public.rs".into()],
+        "whitelist-fixture"
+    )
+    .is_ok());
+
+    let leaked = AdapterBatch {
+        coverage: Some(json!({"sources": ["src/public.rs", "/rustc/library/std/src/lib.rs"]})),
+        ..valid
+    };
+    let error = validate_declared_coverage_sources(
+        &leaked,
+        &["src/public.rs".into()],
+        "whitelist-fixture",
+    )
+    .unwrap_err();
+    assert!(error.contains("outside coverage_sources"));
+
+    let leaked_lines = AdapterBatch {
+        coverage_lines: vec![CoverageLineFile {
+            path: "src/helper.rs".into(),
+            executable_lines: vec![1],
+            covered_lines: vec![1],
+        }],
+        ..AdapterBatch::default()
+    };
+    let error = validate_declared_coverage_sources(
+        &leaked_lines,
+        &["src/public.rs".into()],
+        "whitelist-fixture",
+    )
+    .unwrap_err();
+    assert!(error.contains("coverage_sources"));
+}
+
+#[test]
 fn dataset_contract_cases_are_reused_as_unit_inputs() {
     let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("dataset.json");
     let outer =

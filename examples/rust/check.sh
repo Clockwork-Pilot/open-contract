@@ -11,12 +11,12 @@ cargo=${CARGO:-cargo}
 isolation=${OPEN_CONTRACT_ISOLATION:-auto}
 
 cd "$repo_root"
-rm -rf "$target_root" .open-contract-work "$parent/$scratch_root" "$parent/child/$scratch_root" "$parent/.coverage" "$parent/child/.coverage"
+rm -rf "$target_root" .open-contract-work "$parent/$scratch_root" "$parent/child/$scratch_root" "$parent/.deps" "$parent/child/.deps" "$parent/.coverage" "$parent/child/.coverage"
 rm -f .coverage/rust-nested-report.json
 mkdir -p .coverage "$target_root" .open-contract-work "$parent/$scratch_root" "$parent/child/$scratch_root"
 cleanup() {
   rm -f "$parent/contract-command" "$parent/child/contract-command"
-  rm -rf "$parent/$scratch_root" "$parent/child/$scratch_root" "$parent/.coverage" "$parent/child/.coverage"
+  rm -rf "$parent/$scratch_root" "$parent/child/$scratch_root" "$parent/.deps" "$parent/child/.deps" "$parent/.coverage" "$parent/child/.coverage"
   rm -rf "$repo_root/.open-contract-work"
 }
 trap cleanup EXIT HUP INT TERM
@@ -32,6 +32,8 @@ RUSTFLAGS="-Cinstrument-coverage --cfg=coverage --check-cfg=cfg(coverage)" \
 
 cp "$target_root/parent/debug/contract-command" "$parent/contract-command"
 cp "$target_root/child/debug/contract-command" "$parent/child/contract-command"
+cp -R "$repo_root/contract-languages/rust/.deps" "$parent/.deps"
+cp -R "$repo_root/contract-languages/rust/.deps" "$parent/child/.deps"
 chmod +x "$parent/contract-command" "$parent/child/contract-command"
 
 make -C contract-languages/rust install-dependencies

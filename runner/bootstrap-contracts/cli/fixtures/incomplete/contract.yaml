@@ -2,10 +2,8 @@ version: "1"
 name: cli-incomplete-coverage-fixture
 coverage:
   minimum_line_percent: 0
-files:
-  dataset: dataset.json
-  validator: validator.py
-  support: [adapter.py]
+datasets: [dataset.json]
+coverage_sources: [validator.py]
 filesystem:
   read:
     - dataset.json

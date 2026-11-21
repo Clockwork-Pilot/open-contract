@@ -1,5 +1,4 @@
 use bootstrap_dataset_harness::{run_dataset as run_cases, DatasetCase};
-use runner_isolation::validate_language_package;
 use runner_isolation::{Backend, StagedTree};
 use runner_manifest::ManifestPlan;
 use serde_json::Value;
@@ -173,14 +172,11 @@ fn validate_case_with_tree(
         "reject-invalid-staged-paths" => check_invalid_paths(tree, expected)?,
         "command" => check_command(&tree, input, expected)?,
         "command-at" => check_command_at(&tree, input, expected)?,
-        "unknown-language-package" => check_unknown_package(&tree, expected)?,
         "command-not-found" => check_missing_command(&tree, expected)?,
         "broken-stdin-pipe" => check_broken_pipe(&tree, expected)?,
         "missing-bubblewrap" => check_missing_bubblewrap(&tree, expected)?,
-        "runtime-mounts-only-adapters" => check_runtime_mounts_only_adapters(&tree, expected)?,
         "isolation-runtime-manifest" => check_isolation_runtime_manifest(&tree, expected)?,
         "command-runtime-resolution" => check_command_runtime_resolution(&tree, input, expected)?,
-        "language-package" => check_language_package(case.id.as_str(), input, expected)?,
         "bubblewrap-invalid-root" => check_bubblewrap_invalid_root(tree, expected)?,
         "deny-private-read" => check_private_read(&tree, package, expected)?,
         "bwrap-command" => check_bubblewrap_command(&tree, expected)?,
@@ -222,7 +218,6 @@ fn check_isolation_runtime_manifest(tree: &StagedTree, expected: &Value) -> Resu
         &custom_tree.root,
         &["true".into()],
         b"",
-        None,
     );
     if let Some(path) = previous_path {
         std::env::set_var("PATH", path);
@@ -280,7 +275,6 @@ fn check_isolation_runtime_manifest(tree: &StagedTree, expected: &Value) -> Resu
                 &custom_tree.root,
                 &["true".into()],
                 b"",
-                None,
             )
             .err()
             .ok_or_else(|| format!("invalid isolation runtime {name} was accepted"))?;
@@ -296,6 +290,120 @@ fn check_isolation_runtime_manifest(tree: &StagedTree, expected: &Value) -> Resu
     ensure!(
         expected["invalid_manifests_rejected"] == true,
         "expected.invalid_manifests_rejected is false"
+    );
+    exercise_language_adapter_runtime_manifest(expected)?;
+    Ok(())
+}
+
+fn exercise_language_adapter_runtime_manifest(expected: &Value) -> Result<(), String> {
+    let package = tempfile::tempdir().map_err(|error| error.to_string())?;
+    let adapter = package.path().join("adapter");
+    std::fs::create_dir_all(&adapter).map_err(|error| error.to_string())?;
+    std::fs::create_dir_all(package.path().join("src")).map_err(|error| error.to_string())?;
+    write(package.path().join("dataset.yaml"), "cases: []\n")?;
+    write(package.path().join("src/api.rs"), "pub fn api() {}\n")?;
+    write(adapter.join("helper.py"), "# adapter fixture\n")?;
+    write(adapter.join("other.py"), "# undeclared adapter fixture\n")?;
+    let manifest = package.path().join("contract.yaml");
+    write(
+        &manifest,
+        "version: '1'\nname: language-adapter-fixture\ndatasets: [dataset.yaml]\ncoverage_sources: [src/api.rs]\nlanguage_adapter: adapter/runtime.yaml\nfilesystem: {read: [dataset.yaml, src, adapter], write: []}\n",
+    )?;
+    let runtime_manifest = adapter.join("runtime.yaml");
+    let valid_runtime = "version: 1\nentrypoint: helper.py\nfiles: [helper.py]\nenvironment: {OPEN_CONTRACT_LANGUAGE_RUNTIME_MARKER: loaded}\nenvironment_paths: {OPEN_CONTRACT_LANGUAGE_RUNTIME_FILE: helper.py}\n";
+    write(&runtime_manifest, valid_runtime)?;
+    let plan = ManifestPlan::load(&manifest)
+        .map_err(|error| format!("cannot load language adapter fixture contract: {error}"))?;
+    let tree = StagedTree::create_for_backend(&plan, Backend::None, None)?;
+    let output = tree.run_command_at(
+        Backend::None,
+        &tree.root,
+        &["/usr/bin/env".into()],
+        b"",
+    )?;
+    ensure!(output.status.success(), "language adapter command failed");
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    ensure!(
+        stdout.contains("OPEN_CONTRACT_LANGUAGE_RUNTIME_MARKER=loaded")
+            && stdout.contains(&format!(
+                "OPEN_CONTRACT_LANGUAGE_ENTRYPOINT={}",
+                adapter.join("helper.py").display()
+            ))
+            && stdout.contains(&format!(
+                "OPEN_CONTRACT_LANGUAGE_RUNTIME_FILE={}",
+                adapter.join("helper.py").display()
+            )),
+        "language adapter entrypoint, files, or environment were not applied"
+    );
+
+    let expect_error = |contents: &str, needle: &str| -> Result<(), String> {
+        write(&runtime_manifest, contents)?;
+        let error = tree
+            .plan_command_at(Backend::None, &tree.root, &["true".into()])
+            .err()
+            .ok_or_else(|| format!("language adapter runtime was accepted: {contents:?}"))?;
+        ensure!(error.contains(needle), "unexpected language adapter error: {error}");
+        Ok(())
+    };
+
+    let checks = (|| {
+        std::fs::remove_file(&runtime_manifest).map_err(|error| error.to_string())?;
+        let missing_error = tree
+            .plan_command_at(Backend::None, &tree.root, &["true".into()])
+            .err()
+            .ok_or_else(|| "missing language adapter runtime manifest was accepted".to_string())?;
+        ensure!(
+            missing_error.contains("cannot resolve language adapter runtime manifest"),
+            "unexpected missing runtime manifest error: {missing_error}"
+        );
+        write(&runtime_manifest, valid_runtime)?;
+
+        std::fs::remove_file(&runtime_manifest).map_err(|error| error.to_string())?;
+        std::fs::create_dir(&runtime_manifest).map_err(|error| error.to_string())?;
+        let read_error = tree
+            .plan_command_at(Backend::None, &tree.root, &["true".into()])
+            .err()
+            .ok_or_else(|| "directory language adapter runtime manifest was accepted".to_string())?;
+        ensure!(
+            read_error.contains("cannot read language adapter runtime manifest"),
+            "unexpected unreadable runtime manifest error: {read_error}"
+        );
+        std::fs::remove_dir(&runtime_manifest).map_err(|error| error.to_string())?;
+
+        expect_error("version: [\n", "invalid language adapter runtime manifest")?;
+        expect_error("version: 2\nentrypoint: helper.py\nfiles: [helper.py]\n", "unsupported language adapter runtime manifest version")?;
+        expect_error("version: 1\nentrypoint: helper.py\nfiles: []\n", "declares no files")?;
+        expect_error("version: 1\nentrypoint: helper.py\nfiles: [../helper.py]\n", "paths must stay inside")?;
+        expect_error("version: 1\nentrypoint: helper.py\nfiles: [/tmp/helper.py]\n", "paths must stay inside")?;
+        expect_error("version: 1\nentrypoint: helper.py\nfiles: [missing.py]\n", "is unavailable")?;
+        expect_error("version: 1\nentrypoint: missing.py\nfiles: [helper.py]\n", "is unavailable")?;
+        expect_error("version: 1\nentrypoint: other.py\nfiles: [helper.py]\n", "entrypoint must be a file included")?;
+        expect_error("version: 1\nentrypoint: helper.py\nfiles: [helper.py]\nenvironment_paths: {MISSING: missing.py}\n", "is unavailable")?;
+        expect_error("version: 1\nentrypoint: helper.py\nfiles: [helper.py]\nenvironment_paths: {UNDECLARED: other.py}\n", "outside declared files")?;
+
+        #[cfg(unix)]
+        {
+            let outside = tempfile::tempdir().map_err(|error| error.to_string())?;
+            write(outside.path().join("outside.py"), "# outside\n")?;
+            std::os::unix::fs::symlink(
+                outside.path().join("outside.py"),
+                adapter.join("escape.py"),
+            )
+            .map_err(|error| error.to_string())?;
+            expect_error("version: 1\nentrypoint: escape.py\nfiles: [escape.py]\n", "escapes its package")?;
+        }
+        Ok(())
+    })();
+    let restore = write(&runtime_manifest, valid_runtime);
+    checks?;
+    restore?;
+    ensure!(
+        expected["language_adapter_runtime_applied"] == true,
+        "expected.language_adapter_runtime_applied is false"
+    );
+    ensure!(
+        expected["invalid_language_adapter_manifests_rejected"] == true,
+        "expected.invalid_language_adapter_manifests_rejected is false"
     );
     Ok(())
 }
@@ -326,7 +434,7 @@ fn check_command_runtime_resolution(
         })
         .collect::<Result<Vec<_>, _>>()?;
     let error = custom_tree
-        .run_command(Backend::Bubblewrap, &custom_tree.root, &command, b"", None)
+        .run_command(Backend::Bubblewrap, &custom_tree.root, &command, b"")
         .err()
         .ok_or_else(|| "runtime accepted an unresolved command executable".to_string())?;
     let needle = expected["error_contains"]
@@ -334,77 +442,6 @@ fn check_command_runtime_resolution(
         .ok_or_else(|| "expected.error_contains must be a string".to_string())?;
     ensure!(error.contains(needle), "unexpected command error: {error}");
     Ok(())
-}
-
-fn check_language_package(case_id: &str, input: &Value, expected: &Value) -> Result<(), String> {
-    let language = input["language_package"]
-        .as_str()
-        .ok_or_else(|| "language_package must be a string".to_string())?;
-    let temp = tempfile::tempdir().map_err(|error| error.to_string())?;
-    let package = if input["external_package_mapping"] == true {
-        temp.path().join("external-language-package")
-    } else {
-        temp.path().join("contract-languages").join(language)
-    };
-    std::fs::create_dir_all(&package).map_err(|error| error.to_string())?;
-    std::fs::create_dir_all(package.join("src")).map_err(|error| error.to_string())?;
-    if std::env::var_os("OPEN_CONTRACT_ISOLATION_CREATE_UNDECLARED_LANGUAGE_RESOURCE").is_some() {
-        std::fs::write(package.join("outside.py"), "outside runtime resource\n")
-            .map_err(|error| error.to_string())?;
-    }
-    if case_id == "language-package-rejects-symlink-escape" {
-        let outside = temp.path().join("outside");
-        std::fs::write(&outside, "outside runtime file").map_err(|error| error.to_string())?;
-        #[cfg(unix)]
-        std::os::unix::fs::symlink(&outside, package.join("escape"))
-            .map_err(|error| error.to_string())?;
-    }
-    if std::env::var_os("OPEN_CONTRACT_ISOLATION_OMIT_LANGUAGE_RUNTIME_MANIFEST").is_none() {
-        let manifest = input["runtime_yaml"]
-            .as_str()
-            .ok_or_else(|| "runtime_yaml must be a string".to_string())?;
-        std::fs::write(package.join("runtime.yaml"), manifest)
-            .map_err(|error| error.to_string())?;
-    }
-    if input["create_entrypoint"] != false {
-        let entrypoint = input["entrypoint_path"].as_str().unwrap_or("src/runner.py");
-        let path = package.join(entrypoint);
-        if let Some(parent) = path.parent() {
-            std::fs::create_dir_all(parent).map_err(|error| error.to_string())?;
-        }
-        std::fs::write(path, "# runtime entrypoint\n").map_err(|error| error.to_string())?;
-    }
-    if std::env::var_os("OPEN_CONTRACT_ISOLATION_CREATE_UNDECLARED_LANGUAGE_ENTRYPOINT").is_some() {
-        std::fs::write(
-            package.join("src/not-present.py"),
-            "# undeclared entrypoint\n",
-        )
-        .map_err(|error| error.to_string())?;
-    }
-    let previous_mapping = std::env::var_os("OPEN_CONTRACT_LANGUAGE_PACKAGES");
-    if previous_mapping.is_none() {
-        let mut mapping = serde_json::Map::new();
-        mapping.insert(
-            language.to_owned(),
-            Value::String(package.to_string_lossy().into_owned()),
-        );
-        std::env::set_var(
-            "OPEN_CONTRACT_LANGUAGE_PACKAGES",
-            Value::Object(mapping).to_string(),
-        );
-    }
-    let result = validate_language_package(temp.path(), language);
-    if let Some(previous) = previous_mapping {
-        std::env::set_var("OPEN_CONTRACT_LANGUAGE_PACKAGES", previous);
-    } else {
-        std::env::remove_var("OPEN_CONTRACT_LANGUAGE_PACKAGES");
-    }
-    match (result, expected["error_contains"].as_str()) {
-        (Ok(()), None) if expected["valid"] == true => Ok(()),
-        (Err(error), Some(needle)) if error.contains(needle) => Ok(()),
-        (Ok(()), _) => Err(format!("language package unexpectedly validated")),
-        (Err(error), _) => Err(format!("unexpected language package error: {error}")),
-    }
 }
 
 fn check_cycle_and_escape(expected: &Value) -> Result<(), String> {
@@ -416,7 +453,7 @@ fn check_cycle_and_escape(expected: &Value) -> Result<(), String> {
     )?;
     write(
         cycle_root.path().join("contract.yaml"),
-        "version: '1'\nname: cycle\nfiles: {dataset: dataset.json, validator: validator.py, nested_contracts: [contract.yaml]}\nfilesystem: {read: [dataset.json, validator.py, contract.yaml], write: []}\n",
+        "version: '1'\nname: cycle\ndatasets: [dataset.json]\ncoverage_sources: [validator.py]\nnested_contracts: [contract.yaml]\nfilesystem: {read: [dataset.json, validator.py, contract.yaml], write: []}\n",
     )?;
     let cycle = ManifestPlan::load(cycle_root.path().join("contract.yaml"))
         .map_err(|error| format!("cycle fixture manifest: {error}"))?;
@@ -442,7 +479,7 @@ fn check_cycle_and_escape(expected: &Value) -> Result<(), String> {
         write(outside.path().join("secret"), "secret")?;
         write(
             package.path().join("contract.yaml"),
-            "version: '1'\nname: symlink-escape\nfiles: {dataset: dataset.json, validator: validator.py}\nfilesystem: {read: [dataset.json, validator.py, escape], write: []}\n",
+            "version: '1'\nname: symlink-escape\ndatasets: [dataset.json]\ncoverage_sources: [validator.py]\nfilesystem: {read: [dataset.json, validator.py, escape], write: []}\n",
         )?;
         let plan = ManifestPlan::load(package.path().join("contract.yaml"))
             .map_err(|error| format!("symlink fixture manifest: {error}"))?;
@@ -472,7 +509,7 @@ fn check_cycle_and_escape(expected: &Value) -> Result<(), String> {
 fn check_invalid_paths(mut tree: StagedTree, expected: &Value) -> Result<(), String> {
     tree.read.push("..".into());
     let invalid = tree
-        .run_command(Backend::Landlock, &tree.root, &["true".into()], b"", None)
+        .run_command(Backend::Landlock, &tree.root, &["true".into()], b"")
         .err()
         .ok_or_else(|| "relative parent path was unexpectedly accepted".to_string())?;
     ensure!(
@@ -516,7 +553,6 @@ fn check_command(tree: &StagedTree, input: &Value, expected: &Value) -> Result<(
         &tree.root,
         &command,
         stdin.as_bytes(),
-        input["language_package"].as_str(),
     );
     if let Some(needle) = expected["error_contains"].as_str() {
         let error = result
@@ -583,7 +619,6 @@ fn check_command_at(tree: &StagedTree, input: &Value, expected: &Value) -> Resul
                 &working_directory,
                 &["/bin/pwd".into()],
                 b"",
-                None,
             )
             .err()
             .ok_or_else(|| format!("expected working-directory error containing {needle:?}"))?;
@@ -614,7 +649,7 @@ fn check_command_at(tree: &StagedTree, input: &Value, expected: &Value) -> Resul
         })
         .transpose()?
         .unwrap_or_else(|| vec!["/bin/pwd".into()]);
-    let output = tree.run_command_at(backend, &working_directory, &command, b"", None)?;
+    let output = tree.run_command_at(backend, &working_directory, &command, b"")?;
     ensure!(output.status.success(), "command failed: {}", output.status);
     if expected["success"] == true {
         return Ok(());
@@ -634,7 +669,7 @@ fn check_command_at(tree: &StagedTree, input: &Value, expected: &Value) -> Resul
         .parent()
         .ok_or_else(|| "staged root has no parent".to_string())?;
     let error = tree
-        .run_command_at(Backend::None, outside, &["true".into()], b"", None)
+        .run_command_at(Backend::None, outside, &["true".into()], b"")
         .err()
         .ok_or_else(|| "outside working directory was accepted".to_string())?;
     ensure!(
@@ -648,25 +683,6 @@ fn check_command_at(tree: &StagedTree, input: &Value, expected: &Value) -> Resul
     Ok(())
 }
 
-fn check_unknown_package(tree: &StagedTree, expected: &Value) -> Result<(), String> {
-    let error = tree
-        .run_command(
-            Backend::None,
-            &tree.root,
-            &["true".into()],
-            b"",
-            Some("unsupported"),
-        )
-        .err()
-        .ok_or_else(|| "unknown language package was unexpectedly accepted".to_string())?;
-    ensure!(
-        error.contains("language package"),
-        "unexpected package error: {error}"
-    );
-    ensure!(expected["rejected"] == true, "expected.rejected is false");
-    Ok(())
-}
-
 fn check_missing_command(tree: &StagedTree, expected: &Value) -> Result<(), String> {
     let error = tree
         .run_command(
@@ -674,7 +690,6 @@ fn check_missing_command(tree: &StagedTree, expected: &Value) -> Result<(), Stri
             &tree.root,
             &["open-contract-command-that-does-not-exist".into()],
             b"",
-            None,
         )
         .err()
         .ok_or_else(|| "missing executable was unexpectedly accepted".to_string())?;
@@ -690,7 +705,6 @@ fn check_broken_pipe(tree: &StagedTree, expected: &Value) -> Result<(), String> 
             &tree.root,
             &["/bin/true".into()],
             &vec![b'x'; 4 * 1024 * 1024],
-            None,
         )
         .err()
         .ok_or_else(|| "closed command stdin pipe was unexpectedly accepted".to_string())?;
@@ -705,7 +719,7 @@ fn check_broken_pipe(tree: &StagedTree, expected: &Value) -> Result<(), String> 
 fn check_missing_bubblewrap(tree: &StagedTree, expected: &Value) -> Result<(), String> {
     let previous = std::env::var_os("PATH");
     std::env::set_var("PATH", "");
-    let result = tree.run_command(Backend::Bubblewrap, &tree.root, &["true".into()], b"", None);
+    let result = tree.run_command(Backend::Bubblewrap, &tree.root, &["true".into()], b"");
     if let Some(path) = previous {
         std::env::set_var("PATH", path);
     } else {
@@ -719,87 +733,6 @@ fn check_missing_bubblewrap(tree: &StagedTree, expected: &Value) -> Result<(), S
         "unexpected bwrap error: {error}"
     );
     ensure!(expected["rejected"] == true, "expected.rejected is false");
-    Ok(())
-}
-
-fn check_runtime_mounts_only_adapters(tree: &StagedTree, expected: &Value) -> Result<(), String> {
-    use std::os::unix::fs::PermissionsExt;
-    let fake_bin = tempfile::tempdir().map_err(|error| error.to_string())?;
-    let launcher = fake_bin.path().join("bwrap");
-    write(&launcher, "#!/bin/sh\nprintf '%s\\n' \"$@\"\n")?;
-    std::fs::set_permissions(&launcher, std::fs::Permissions::from_mode(0o755))
-        .map_err(|error| error.to_string())?;
-    let previous = std::env::var_os("PATH");
-    let path = match &previous {
-        Some(old) => format!("{}:{}", fake_bin.path().display(), old.to_string_lossy()),
-        None => fake_bin.path().display().to_string(),
-    };
-    std::env::set_var("PATH", path);
-    let results = ["python", "javascript"]
-        .iter()
-        .map(|package| {
-            tree.run_command(
-                Backend::Bubblewrap,
-                &tree.root,
-                &["true".into()],
-                b"",
-                Some(package),
-            )
-            .map(|output| output.stdout)
-        })
-        .collect::<Result<Vec<_>, _>>();
-    if let Some(path) = previous {
-        std::env::set_var("PATH", path);
-    } else {
-        std::env::remove_var("PATH");
-    }
-    let output = results?;
-    let arguments = String::from_utf8_lossy(&output.concat()).into_owned();
-    ensure!(
-        arguments.contains("contract-languages/python/src"),
-        "Python language support was not mounted"
-    );
-    ensure!(
-        arguments.contains("contract-languages/javascript/src"),
-        "JavaScript language support was not mounted"
-    );
-    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../../..")
-        .canonicalize()
-        .map_err(|error| error.to_string())?;
-    for relative in [
-        "contract-languages/python/schemas",
-        "runner/bootstrap-contracts/predicates/predicate-language.schema.json",
-    ] {
-        let path = repository.join(relative);
-        ensure!(
-            !arguments
-                .lines()
-                .any(|argument| argument == path.to_string_lossy()),
-            "undeclared runtime path was included in Bubblewrap arguments: {}",
-            path.display()
-        );
-    }
-    for relative in expected["javascript_runtime_packages"]
-        .as_array()
-        .ok_or_else(|| "expected.javascript_runtime_packages must be an array".to_string())?
-    {
-        let relative = relative
-            .as_str()
-            .ok_or_else(|| "JavaScript runtime package path must be a string".to_string())?;
-        let path = repository.join(relative);
-        ensure!(
-            arguments
-                .lines()
-                .any(|argument| argument == path.to_string_lossy()),
-            "declared JavaScript runtime package was not mounted: {}",
-            path.display()
-        );
-    }
-    ensure!(
-        expected["adapter_roots_only"] == true,
-        "expected.adapter_roots_only is false"
-    );
     Ok(())
 }
 
@@ -823,7 +756,6 @@ fn check_bubblewrap_invalid_root(mut tree: StagedTree, expected: &Value) -> Resu
         Path::new("/"),
         &["true".into()],
         b"",
-        None,
     );
     if let Some(path) = previous {
         std::env::set_var("PATH", path);
@@ -851,7 +783,6 @@ fn check_private_read(tree: &StagedTree, package: &Path, expected: &Value) -> Re
             private_source.to_string_lossy().into_owned(),
         ],
         b"",
-        None,
     )?;
     ensure!(
         output.status.code() == Some(1),
@@ -868,7 +799,6 @@ fn check_bubblewrap_command(tree: &StagedTree, expected: &Value) -> Result<(), S
         &tree.root,
         &["/bin/echo".into(), "bubblewrap command".into()],
         b"",
-        None,
     )?;
     if output.status.success() {
         ensure!(
@@ -892,7 +822,7 @@ fn check_bubblewrap_command(tree: &StagedTree, expected: &Value) -> Result<(), S
 
 fn check_empty_command(tree: &StagedTree, input: &Value, expected: &Value) -> Result<(), String> {
     let error = tree
-        .run_command(Backend::None, &tree.root, &[], b"", None)
+        .run_command(Backend::None, &tree.root, &[], b"")
         .err()
         .ok_or_else(|| "empty command was unexpectedly accepted".to_string())?;
     ensure!(
@@ -908,7 +838,6 @@ fn check_empty_command(tree: &StagedTree, input: &Value, expected: &Value) -> Re
             &tree.root.join(working_directory),
             &[],
             b"",
-            None,
         )
         .err()
         .ok_or_else(|| "empty package command was unexpectedly accepted".to_string())?;

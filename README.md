@@ -61,11 +61,35 @@ cargo run --manifest-path runner/rust/Cargo.toml -- \
   --isolation landlock
 ```
 
-The manifest's `files` entries (dataset, validator, support files, and nested
-contracts) stay within the contract package. `filesystem.read` and
-`filesystem.write` entries are host paths: relative entries resolve from the
-contract directory, and absolute entries are accepted. They may refer to
-shared files outside the contract directory.
+The manifest declares `datasets`, public implementation files in
+`coverage_sources`, optional `supplemental_tests`, and optional
+`nested_contracts` directly at the top level. These package-relative paths must
+also be readable under `filesystem.read`. Coverage sources may use glob
+patterns; the runner expands only declared patterns and passes that exact
+resolved list to the language adapter. It does not infer or append source
+files. Keep test harnesses, validators, and helpers out of `coverage_sources`.
+
+Use `directories` to define named package-relative directory roots and refer to
+them as `@name/path` in path fields. For example:
+
+```yaml
+directories:
+  source: src
+  tests: tests
+datasets: ["@tests/cases.yaml"]
+coverage_sources: ["@source/**/*.rs"]
+filesystem:
+  read: ["@tests", "@source"]
+  write: []
+```
+
+Aliases resolve from the contract package, in declaration order independent of
+their YAML key order. Unknown aliases fail manifest loading. Aliases abbreviate
+paths only; they do not grant filesystem permissions by themselves.
+
+`filesystem.read` and `filesystem.write` entries are host paths: relative
+entries resolve from the contract directory, and absolute entries are
+accepted. They may refer to shared files outside the contract directory.
 
 `--isolation tempdir` preserves the original staged-copy behavior: declared
 contract files are copied into a fresh temporary package tree before execution.
@@ -79,6 +103,22 @@ The root contract starts isolation once. Its dataset and declared nested
 contracts execute within that boundary. Running a nested contract directly
 starts a separate boundary. Nested coverage is combined into the root coverage
 report while each contract's case results remain distinct.
+
+### Nested contract filesystem access
+
+The parent must list each nested manifest path in its own `filesystem.read`;
+the runner reads that manifest to discover and execute the child contract.
+Each child manifest then contributes its own `filesystem.read` and
+`filesystem.write` paths to the root run's single isolation boundary. The
+parent does not need to repeat the child's resource paths merely to grant
+access to them. It should declare a child resource itself only when the parent
+uses a resource that the child manifest does not declare.
+
+If a contract uses another contract's files without listing its manifest under
+`nested_contracts`, the runner treats those files as ordinary dependencies: it
+does not execute that contract's dataset or inherit its filesystem policy.
+The using contract must declare the required paths in its own filesystem
+policy.
 
 ## Isolation backends
 
@@ -155,7 +195,7 @@ repeated fingerprint adds no new line coverage by itself.
 
 The runner prints a concise case and coverage summary, including uncovered line
 ranges. It always writes the full report to
-`.open-contract/coverage/latest.json`; `--coverage-report <path>` selects a
+`.coverage/latest.json`; `--coverage-report <path>` selects a
 different location. A run exits nonzero when cases fail, a required fingerprint
 is missing or mismatched, or the manifest's coverage threshold is not met.
 
@@ -206,24 +246,25 @@ Access requirements belong in versioned YAML at the layer that owns them:
 | Resource | Declaration |
 | --- | --- |
 | Shared OS resources, such as Landlock access to `/dev/null` | `runner/isolation-runtime/<backend>.yaml` |
-| Language adapter tools, libraries, and installed dependencies | `contract-languages/<language>/runtime.yaml` |
-| Contract inputs, implementation, executable, and writable outputs | The contract manifest's file and filesystem declarations |
+| Language adapter tools, libraries, and installed dependencies | The language adapter's `runtime.yaml`, selected by the contract manifest |
+| Contract inputs, implementation, executable, and writable outputs | The contract manifest's top-level path fields and filesystem declarations |
 
-The runner combines the selected backend runtime with the declared language
-runtime. `--isolation-runtime <file>` replaces the backend default; it does not
-extend it. Keep intentional overrides in maintained YAML files. Do not generate
-permission manifests or add hidden access grants in example scripts or Make
-recipes.
+The runner combines the selected backend runtime, each contract's filesystem
+policy, and the adapter runtime explicitly named by `language_adapter`.
+`language_adapter` points directly to one flat `runtime.yaml`; the runner does
+not infer a language or search for packages. `--isolation-runtime <file>`
+replaces the OS-backend default; it does not replace adapter runtime
+declarations. Keep intentional overrides in maintained YAML files. Do not
+generate permission manifests or add hidden access grants in example scripts
+or Make recipes.
 
-Language packages own dependency installation. For example,
+Language adapters own dependency installation. For example,
 `make -C contract-languages/rust install-dependencies` installs the active Rust
 toolchain's LLVM coverage tools and libraries into its ignored `.deps/` directory.
-The Rust `runtime.yaml` declares those files and sets `LLVM_PROFDATA` and
-`LLVM_COV` through `environment_paths`. The example invokes this installation
-goal and uses the default isolation runtime, without granting access to the
-host Rust sysroot. Python similarly declares its installed dependencies in its
-language runtime. Tool locations in `environment_paths` must be included in
-the language runtime's declared files.
+The Rust adapter's `runtime.yaml` declares those tools. Python similarly
+installs dependencies under its adapter directory and declares them in its
+runtime manifest. A custom adapter can provide its own runtime manifest; the
+runner does not need a language-specific registry.
 
 ### Permission denied (`EACCES`) under isolation
 

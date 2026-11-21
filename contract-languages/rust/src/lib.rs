@@ -254,7 +254,7 @@ mod llvm_coverage {
         };
         fs::write(&aggregate, aggregate_bytes)
             .map_err(|error| format!("cannot write aggregate Rust profile: {error}"))?;
-        let aggregate_report = export(
+        let mut aggregate_report = export(
             &llvm_profdata,
             &llvm_cov,
             &aggregate,
@@ -263,6 +263,7 @@ mod llvm_coverage {
             &temp.path,
             snapshots.len(),
         )?;
+        filter_export_to_declared_sources(&mut aggregate_report, package_root, declared_sources);
         let lines = coverage_line_files(&aggregate_report, package_root, declared_sources);
         let sources = lines
             .iter()
@@ -350,6 +351,83 @@ mod llvm_coverage {
             })
     }
 
+    fn filter_export_to_declared_sources(
+        report: &mut Value,
+        package_root: &Path,
+        declared: &[String],
+    ) {
+        let Some(data) = report.get_mut("data").and_then(Value::as_array_mut) else {
+            return;
+        };
+        for item in data {
+            let (public_filenames, filtered_totals) = {
+                let Some(files) = item.get_mut("files").and_then(Value::as_array_mut) else {
+                    continue;
+                };
+                files.retain(|file| {
+                    file.get("filename")
+                        .and_then(Value::as_str)
+                        .and_then(|filename| package_relative(filename, package_root, declared))
+                        .is_some_and(|path| declared.iter().any(|source| source == &path))
+                });
+                let filenames = files
+                    .iter()
+                    .filter_map(|file| file.get("filename").and_then(Value::as_str))
+                    .map(str::to_owned)
+                    .collect::<std::collections::HashSet<_>>();
+                (filenames, summarize_files(files))
+            };
+            if let Some(functions) = item.get_mut("functions").and_then(Value::as_array_mut) {
+                functions.retain(|function| {
+                    function
+                        .get("filenames")
+                        .and_then(Value::as_array)
+                        .is_some_and(|filenames| {
+                            !filenames.is_empty()
+                                && filenames.iter().all(|filename| {
+                                    filename
+                                        .as_str()
+                                        .is_some_and(|filename| public_filenames.contains(filename))
+                                })
+                        })
+                });
+            }
+            if let Some(totals) = item.get_mut("totals") {
+                *totals = filtered_totals;
+            }
+        }
+    }
+
+    fn summarize_files(files: &[Value]) -> Value {
+        let mut totals = serde_json::Map::new();
+        let categories = files
+            .iter()
+            .filter_map(|file| file.get("summary").and_then(Value::as_object))
+            .flat_map(|summary| summary.keys().cloned())
+            .collect::<std::collections::BTreeSet<_>>();
+        for category in categories {
+            let mut count = 0_u64;
+            let mut covered = 0_u64;
+            for summary in files
+                .iter()
+                .filter_map(|file| file.get("summary").and_then(|s| s.get(&category)))
+            {
+                count += summary.get("count").and_then(Value::as_u64).unwrap_or(0);
+                covered += summary.get("covered").and_then(Value::as_u64).unwrap_or(0);
+            }
+            let percent = if count == 0 {
+                100.0
+            } else {
+                covered as f64 * 100.0 / count as f64
+            };
+            totals.insert(
+                category,
+                json!({ "count": count, "covered": covered, "percent": percent }),
+            );
+        }
+        Value::Object(totals)
+    }
+
     fn package_relative(
         filename: &str,
         package_root: &Path,
@@ -361,7 +439,10 @@ mod llvm_coverage {
         }
         declared
             .iter()
-            .find(|source| filename.ends_with(source.as_str()))
+            .find(|source| {
+                candidate.canonicalize().ok().as_ref()
+                    == package_root.join(source).canonicalize().ok().as_ref()
+            })
             .cloned()
     }
 
@@ -489,6 +570,52 @@ mod llvm_coverage {
     impl Drop for TempDirectory {
         fn drop(&mut self) {
             let _ = fs::remove_dir_all(&self.path);
+        }
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::filter_export_to_declared_sources;
+        use serde_json::json;
+        use std::fs;
+
+        #[test]
+        fn llvm_native_report_contains_only_declared_sources_and_totals() {
+            let root = std::env::temp_dir().join(format!(
+                "open-contract-coverage-filter-test-{}",
+                std::process::id()
+            ));
+            let _ = fs::remove_dir_all(&root);
+            fs::create_dir_all(root.join("src")).unwrap();
+            fs::write(root.join("src/public.rs"), "pub fn api() {}\n").unwrap();
+            fs::write(root.join("src/helper.rs"), "fn helper() {}\n").unwrap();
+            let public = root.join("src/public.rs").to_string_lossy().into_owned();
+            let private = root.join("src/helper.rs").to_string_lossy().into_owned();
+            let mut report = json!({"data": [{
+                "files": [
+                    {"filename": public, "summary": {"lines": {"count": 2, "covered": 1, "percent": 50.0}}},
+                    {"filename": private, "summary": {"lines": {"count": 20, "covered": 0, "percent": 0.0}}}
+                ],
+                "functions": [
+                    {"name": "api", "filenames": [root.join("src/public.rs").to_string_lossy()]},
+                    {"name": "helper", "filenames": [root.join("src/helper.rs").to_string_lossy()]}
+                ],
+                "totals": {"lines": {"count": 22, "covered": 1, "percent": 4.5}}
+            }]});
+
+            filter_export_to_declared_sources(&mut report, &root, &["src/public.rs".into()]);
+
+            let data = &report["data"][0];
+            assert_eq!(data["files"].as_array().unwrap().len(), 1);
+            assert_eq!(
+                data["files"][0]["filename"],
+                root.join("src/public.rs").to_string_lossy().as_ref()
+            );
+            assert_eq!(data["functions"].as_array().unwrap().len(), 1);
+            assert_eq!(data["totals"]["lines"]["count"], 2);
+            assert_eq!(data["totals"]["lines"]["covered"], 1);
+
+            fs::remove_dir_all(root).unwrap();
         }
     }
 }

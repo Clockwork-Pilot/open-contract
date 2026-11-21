@@ -9,11 +9,15 @@ LANGUAGE_PACKAGE = Path(__file__).parents[1] / "src"
 
 
 def test_coverage_lines_are_normalized_and_subset_of_executable_lines(tmp_path):
+    (tmp_path / "helper.py").write_text(
+        "def answer(value):\n"
+        "    return {'ok': value}\n",
+        encoding="utf-8",
+    )
     (tmp_path / "validator.py").write_text(
+        "from helper import answer\n"
         "def validate(value, context):\n"
-        "    if value:\n"
-        "        return {'ok': True}\n"
-        "    return {'ok': False}\n",
+        "    return answer(value)\n",
         encoding="utf-8",
     )
     entrypoint = tmp_path / "contract_entry.py"
@@ -28,7 +32,6 @@ def test_coverage_lines_are_normalized_and_subset_of_executable_lines(tmp_path):
         encoding="utf-8",
     )
     request = {
-        "validator": "validator.py",
         "package": ".",
         "coverage_sources": ["validator.py"],
         "requests": [
@@ -49,6 +52,8 @@ def test_coverage_lines_are_normalized_and_subset_of_executable_lines(tmp_path):
     assert result.returncode == 0, result.stderr
     report = json.loads(result.stdout)
     assert len(report["coverage_lines"]) == 1
+    assert report["coverage"]["sources"] == ["validator.py"]
+    assert list(report["coverage"]["files"]) == ["validator.py"]
     source = report["coverage_lines"][0]
     assert source["path"] == "validator.py"
     assert source["executable_lines"] == sorted(set(source["executable_lines"]))

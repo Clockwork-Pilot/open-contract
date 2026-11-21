@@ -15,7 +15,7 @@ not consumer-specific contracts.
   single isolation boundary. Running that nested contract independently starts
   its own isolation boundary.
 - Keep runners consistent across supported languages.
-- Open Contract provides isolation and supported language runtimes. Contract
+- Open Contract provides isolation and language-adapter interfaces. Contract
   code implements its validators or evaluators in its chosen language.
 - Keep execution and verification separate. Inside isolation, contract logic
   receives input and produces output or artifacts. Open Contract checks those
@@ -29,12 +29,12 @@ not consumer-specific contracts.
   contract's complete batch, including nested contracts, inside the same
   boundary. Verify outputs and evaluate predicates after the batch returns,
   outside isolation.
-- Keep the contract manifest's language support reference minimal: one logical
-  package identifier alongside the contract-owned `execution.command`. Resolve
-  the package's host location from runner configuration. Do not add host paths,
-  per-file package lists, mount locations, or environment-variable names to the
-  portable manifest. The runner makes support available read-only inside
-  isolation and provides its location through a runtime environment convention.
+- Let a contract identify its language adapter with one explicit
+  `language_adapter` path to the adapter's `runtime.yaml`. The runner loads only
+  that file; it does not map language names to packages. Adapter runtime files
+  and environment come from that manifest, not duplicated contract
+  `filesystem.read` entries. Keep contract-owned resources in the contract's
+  filesystem policy.
 - A language support package is an importable interface used by the
   contract-owned command. It iterates the supplied batch and invokes the
   contract validator, returning raw outputs/errors and coverage data. It does
@@ -147,17 +147,16 @@ not consumer-specific contracts.
 
 - Declare runtime access in versioned YAML at its owning layer. Shared OS
   resources belong in `runner/isolation-runtime/<backend>.yaml`; adapter tools,
-  libraries, and dependencies belong in `contract-languages/<language>/runtime.yaml`;
-  contract data, executable files, and writable output paths belong in that
-  contract's manifest.
+  libraries, and dependencies belong in the adapter's `runtime.yaml`; contract
+  data, executable files, and writable output paths belong in that contract's
+  manifest filesystem policy.
 - Language dependency installation may populate an ignored package-local
-  `.deps/` directory. Declare it in the language runtime's `profiles.production.files`
-  and use `environment_paths` for tool locations inside those declared files.
-  Keep dependency installation in the language package; example Make goals may
-  invoke it. Do not expose an entire host toolchain to supply a few adapter tools.
+  `.deps/` directory. The adapter's `runtime.yaml` declares the required paths
+  and environment. Do not expose an entire host toolchain to supply a few
+  adapter tools.
 - Do not generate runtime permission manifests in shell scripts or Make recipes,
   or hide additional access grants in command wrappers. Use the default backend
-  manifest together with the language runtime. An explicit `--isolation-runtime`
+  manifest together with each contract's declared filesystem policy. An explicit `--isolation-runtime`
   override must point to a maintained, reviewable YAML configuration; it replaces
   the backend default, rather than extending it. Troubleshooting fixes must be
   applied to the owning runtime declaration and checked using normal invocation.

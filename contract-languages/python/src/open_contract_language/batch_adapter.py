@@ -19,13 +19,19 @@ def run_dataset(request, validator_loader=None):
     loader runs after coverage starts so validator module execution is measured.
     """
     try:
-        validator = Path(request["validator"]).resolve(strict=True)
         root = Path.cwd().resolve(strict=True)
-        if not validator.is_relative_to(root):
+        validator = request.get("validator")
+        if validator is not None:
+            validator = Path(validator).resolve(strict=True)
+        if validator is not None and not validator.is_relative_to(root):
             raise ValueError("validator path escaped staged package root")
+        if validator is None and validator_loader is None:
+            raise ValueError("validator_loader is required when request.validator is omitted")
         package_root = (root / request.get("package", "")).resolve(strict=True)
         if not package_root.is_relative_to(root):
             raise ValueError("contract package path escaped staged root")
+        coverage_sources = request.get("coverage_sources", [])
+        declared_sources = _declared_source_files(package_root, coverage_sources)
     except Exception as exc:
         return {"results": [], "coverage": None, "error": f"{type(exc).__name__}: {exc}"}
 
@@ -34,7 +40,14 @@ def run_dataset(request, validator_loader=None):
     except ImportError as exc:
         return {"results": [], "coverage": None, "error": f"coverage unavailable: {exc}"}
 
-    coverage = Coverage(data_file=None, branch=True, config_file=False, concurrency=["thread"])
+    coverage = Coverage(
+        data_file=None,
+        branch=True,
+        config_file=False,
+        concurrency=["thread"],
+        include=[str(source) for source in declared_sources]
+        or [str(package_root / ".open-contract-no-public-sources")],
+    )
     collect_fingerprints = request.get("coverage_fingerprints", True) is not False
     results = []
     keys_by_context = {}
@@ -45,7 +58,8 @@ def run_dataset(request, validator_loader=None):
             coverage.switch_context(setup_context)
             try:
                 sys.path.insert(0, str(root))
-                sys.path.insert(0, str(validator.parent))
+                if validator is not None:
+                    sys.path.insert(0, str(validator.parent))
                 loaded = validator_loader() if validator_loader else _load_validator(validator, root)
                 executor = loaded if callable(loaded) else getattr(loaded, "validate", None)
                 if not callable(executor):
@@ -81,13 +95,10 @@ def run_dataset(request, validator_loader=None):
 
     data = coverage.get_data()
     files = {}
-    coverage_sources = request.get("coverage_sources", [])
     contexts_by_file = {}
-    for name in sorted(data.measured_files()):
-        source = Path(name).resolve()
-        if not source.is_relative_to(root):
-            continue
-        relative = source.relative_to(root).as_posix()
+    for source in declared_sources:
+        name = str(source)
+        relative = source.relative_to(package_root).as_posix()
         files[relative] = {"lines": data.lines(name) or [], "arcs": data.arcs(name) or []}
         contexts_by_file[name] = data.contexts_by_lineno(name)
     coverage_lines = _normalized_coverage_lines(
@@ -205,7 +216,14 @@ def _coverage_percent(files) -> float:
 def _run_supplemental_tests(test_files, root: Path, package_root: Path, coverage_sources):
     from coverage import Coverage
 
-    coverage = Coverage(data_file=None, branch=True, config_file=False)
+    declared_sources = _declared_source_files(package_root, coverage_sources)
+    coverage = Coverage(
+        data_file=None,
+        branch=True,
+        config_file=False,
+        include=[str(source) for source in declared_sources]
+        or [str(package_root / ".open-contract-no-public-sources")],
+    )
     errors = []
     resolved_tests = []
     for entry in test_files:
@@ -246,12 +264,11 @@ def _run_supplemental_tests(test_files, root: Path, package_root: Path, coverage
     lines = _normalized_coverage_lines(coverage, package_root, coverage_sources)
     data = coverage.get_data()
     native_files = {
-        Path(name).resolve().relative_to(package_root).as_posix(): {
-            "lines": data.lines(name) or [],
-            "arcs": data.arcs(name) or [],
+        source.relative_to(package_root).as_posix(): {
+            "lines": data.lines(str(source)) or [],
+            "arcs": data.arcs(str(source)) or [],
         }
-        for name in data.measured_files()
-        if Path(name).resolve().is_relative_to(package_root)
+        for source in declared_sources
     }
     passed = not errors and passed_count == len(resolved_tests) and bool(resolved_tests)
     return ({
