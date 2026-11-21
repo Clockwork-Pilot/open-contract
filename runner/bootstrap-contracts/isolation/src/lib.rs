@@ -1,4 +1,4 @@
-use runner_manifest::{resolve_filesystem_path, validate_package_path, ManifestPlan};
+use runner_manifest::{resolve_filesystem_path, resolve_nested_manifest_path, ManifestPlan};
 mod backend;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -62,6 +62,7 @@ pub fn auto_backend(isolation_runtime: Option<&Path>) -> (Backend, Vec<String>) 
 pub struct StagedTree {
     _temp: Option<TempDir>,
     pub root: PathBuf,
+    source_root: PathBuf,
     pub root_plan: ManifestPlan,
     pub read: Vec<String>,
     pub write: Vec<String>,
@@ -82,15 +83,21 @@ impl StagedTree {
         root: &ManifestPlan,
         isolation_runtime: Option<PathBuf>,
     ) -> Result<Self, String> {
-        Self::create_with_runtime_using(root, isolation_runtime, &mut |path| fs::File::create(path))
+        Self::create_with_runtime_using(
+            root,
+            isolation_runtime,
+            &mut |path| fs::File::create(path),
+            &mut |path| fs::create_dir_all(path),
+        )
     }
 
     fn create_with_runtime_using(
         root: &ManifestPlan,
         isolation_runtime: Option<PathBuf>,
         create_file: &mut dyn FnMut(&Path) -> std::io::Result<fs::File>,
+        create_directory: &mut dyn FnMut(&Path) -> std::io::Result<()>,
     ) -> Result<Self, String> {
-        Self::create_tree_using(root, true, isolation_runtime, create_file)
+        Self::create_tree_using(root, true, isolation_runtime, create_file, create_directory)
     }
 
     pub fn create_for_backend(
@@ -98,9 +105,13 @@ impl StagedTree {
         backend: Backend,
         isolation_runtime: Option<PathBuf>,
     ) -> Result<Self, String> {
-        Self::create_for_backend_using(root, backend, isolation_runtime, &mut |path| {
-            fs::File::create(path)
-        })
+        Self::create_for_backend_using(
+            root,
+            backend,
+            isolation_runtime,
+            &mut |path| fs::File::create(path),
+            &mut |path| fs::create_dir_all(path),
+        )
     }
 
     fn create_for_backend_using(
@@ -108,6 +119,7 @@ impl StagedTree {
         backend: Backend,
         isolation_runtime: Option<PathBuf>,
         create_file: &mut dyn FnMut(&Path) -> std::io::Result<fs::File>,
+        create_directory: &mut dyn FnMut(&Path) -> std::io::Result<()>,
     ) -> Result<Self, String> {
         let tempdir_mode = backend == Backend::TempDir;
         if matches!(backend, Backend::None | Backend::TempDir) && isolation_runtime.is_some() {
@@ -120,7 +132,13 @@ impl StagedTree {
                 }
             ));
         }
-        Self::create_tree_using(root, tempdir_mode, isolation_runtime, create_file)
+        Self::create_tree_using(
+            root,
+            tempdir_mode,
+            isolation_runtime,
+            create_file,
+            create_directory,
+        )
     }
 
     fn create_tree_using(
@@ -128,7 +146,22 @@ impl StagedTree {
         tempdir_mode: bool,
         isolation_runtime: Option<PathBuf>,
         create_file: &mut dyn FnMut(&Path) -> std::io::Result<fs::File>,
+        create_directory: &mut dyn FnMut(&Path) -> std::io::Result<()>,
     ) -> Result<Self, String> {
+        let mut plans = Vec::new();
+        collect_contract_plans(root, &mut Vec::new(), &mut plans)?;
+        let package_roots = plans
+            .iter()
+            .map(|plan: &ManifestPlan| plan.package_root.clone())
+            .collect::<Vec<_>>();
+        if let Some(path) = package_roots.iter().find(|path| !path.is_absolute()) {
+            return Err(format!(
+                "contract package root must be absolute after manifest resolution: {}",
+                path.display()
+            ));
+        }
+        let source_root =
+            common_ancestor(&root.package_root, package_roots.iter().skip(1).cloned());
         let temp = if tempdir_mode {
             Some(
                 tempfile::Builder::new()
@@ -142,10 +175,11 @@ impl StagedTree {
         let root_dir = temp
             .as_ref()
             .map(|temp| temp.path().to_path_buf())
-            .unwrap_or_else(|| root.package_root.clone());
+            .unwrap_or_else(|| source_root.clone());
         let mut tree = Self {
             _temp: temp,
             root: root_dir,
+            source_root,
             root_plan: root.clone(),
             read: Vec::new(),
             write: Vec::new(),
@@ -153,7 +187,9 @@ impl StagedTree {
             isolation_runtime,
             tempdir_mode,
         };
-        tree.stage_recursive(root, Path::new(""), &mut Vec::new(), create_file)?;
+        for plan in &plans {
+            tree.stage_plan(plan, create_file, create_directory)?;
+        }
         tree.read.sort();
         tree.read.dedup();
         tree.write.sort();
@@ -161,84 +197,57 @@ impl StagedTree {
         Ok(tree)
     }
 
-    fn stage_recursive(
+    fn stage_plan(
         &mut self,
         plan: &ManifestPlan,
-        prefix: &Path,
-        stack: &mut Vec<PathBuf>,
         create_file: &mut dyn FnMut(&Path) -> std::io::Result<fs::File>,
+        create_directory: &mut dyn FnMut(&Path) -> std::io::Result<()>,
     ) -> Result<(), String> {
-        if stack.contains(&plan.manifest_path) {
-            return Err(format!(
-                "nested contract cycle detected: {}",
-                plan.manifest_path.display()
-            ));
-        }
-        stack.push(plan.manifest_path.clone());
+        let prefix = plan
+            .package_root
+            .strip_prefix(&self.source_root)
+            .map_err(|_| "nested contract package is outside the shared source root".to_string())?
+            .to_path_buf();
         self.manifests.push((plan.clone(), prefix.to_path_buf()));
         for entry in &plan.manifest.filesystem.read {
             let source = resolve_filesystem_path(&plan.package_root, entry, true)?;
             if self.tempdir_mode {
-                // `.` declares the whole package readable. It is accepted by
-                // the filesystem policy resolver, so preserve that meaning
-                // when copying the package into a tempdir as well.
-                let target_rel = if entry == "." {
-                    prefix.to_path_buf()
-                } else {
-                    validate_package_path(entry)?;
-                    prefix.join(entry)
-                };
-                copy_entry(&source, &plan.package_root, &self.root.join(&target_rel))?;
+                let target_rel = source.strip_prefix(&self.source_root).map_err(|_| {
+                    format!("filesystem read path is outside the staged source root: {entry}")
+                })?;
+                copy_entry(&source, &self.source_root, &self.root.join(target_rel))?;
                 self.read
-                    .push(if entry == "." && prefix.as_os_str().is_empty() {
-                        ".".to_owned()
-                    } else {
-                        target_rel.to_string_lossy().replace('\\', "/")
-                    });
+                    .push(target_rel.to_string_lossy().replace('\\', "/"));
             } else {
                 self.read.push(source.to_string_lossy().into_owned());
             }
         }
         for entry in &plan.manifest.filesystem.write {
+            let target = resolve_filesystem_path(&plan.package_root, entry, false)?;
             if self.tempdir_mode {
-                validate_package_path(entry)?;
-                let target_rel = prefix.join(entry);
+                let target_rel = target.strip_prefix(&self.source_root).map_err(|_| {
+                    format!("filesystem write path is outside the staged source root: {entry}")
+                })?;
                 let staged_target = self.root.join(&target_rel);
-                if staged_target.extension().is_some() {
+                let is_directory = target.is_dir()
+                    || entry.ends_with('/')
+                    || (!target.exists() && staged_target.extension().is_none());
+                if is_directory {
+                    create_directory(&staged_target).map_err(|e| e.to_string())?;
+                } else {
                     let parent = staged_target
                         .parent()
                         .map_or(self.root.as_path(), |path| path);
-                    fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+                    create_directory(parent).map_err(|e| e.to_string())?;
                     let _created =
                         create_declared_write_file_if_missing(&staged_target, create_file)?;
-                } else {
-                    fs::create_dir_all(&staged_target).map_err(|e| e.to_string())?;
                 }
                 self.write
                     .push(target_rel.to_string_lossy().replace('\\', "/"));
             } else {
-                let target = resolve_filesystem_path(&plan.package_root, entry, false)?;
                 self.write.push(target.to_string_lossy().into_owned());
             }
         }
-        for child_name in &plan.manifest.nested_contracts {
-            validate_package_path(child_name)?;
-            let child_source = plan.package_root.join(child_name);
-            let child = ManifestPlan::load(&child_source)?;
-            let child_rel = Path::new(child_name);
-            let child_target = self.root.join(prefix).join(child_rel);
-            if self.tempdir_mode {
-                copy_entry(&child_source, &plan.package_root, &child_target)?;
-                self.read
-                    .push(prefix.join(child_rel).to_string_lossy().replace('\\', "/"));
-            } else {
-                self.read
-                    .push(child.manifest_path.to_string_lossy().into_owned());
-            }
-            let child_prefix = prefix.join(child_rel.parent().unwrap_or(Path::new("")));
-            self.stage_recursive(&child, &child_prefix, stack, create_file)?;
-        }
-        stack.pop();
         Ok(())
     }
 
@@ -340,6 +349,38 @@ impl StagedTree {
             runtime_plan: plan,
         })
     }
+}
+
+fn collect_contract_plans(
+    plan: &ManifestPlan,
+    stack: &mut Vec<PathBuf>,
+    plans: &mut Vec<ManifestPlan>,
+) -> Result<(), String> {
+    if stack.contains(&plan.manifest_path) {
+        return Err(format!(
+            "nested contract cycle detected: {}",
+            plan.manifest_path.display()
+        ));
+    }
+    stack.push(plan.manifest_path.clone());
+    plans.push(plan.clone());
+    for child_name in &plan.manifest.nested_contracts {
+        let child_path = resolve_nested_manifest_path(&plan.package_root, child_name)?;
+        let child = ManifestPlan::load(child_path)?;
+        collect_contract_plans(&child, stack, plans)?;
+    }
+    stack.pop();
+    Ok(())
+}
+
+fn common_ancestor(first: &Path, paths: impl Iterator<Item = PathBuf>) -> PathBuf {
+    let mut common = first.to_path_buf();
+    for path in paths {
+        while !path.starts_with(&common) {
+            common.pop();
+        }
+    }
+    common
 }
 
 fn create_declared_write_file_if_missing(

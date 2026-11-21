@@ -300,6 +300,84 @@ pub(super) fn run_staging_backend(
 ) -> Result<(), String> {
     if matches!(
         case_id,
+        "nested-child-reads-parent-directory-tempdir"
+            | "nested-child-reads-parent-directory-landlock"
+            | "nested-child-parent-directory-is-mounted-bwrap"
+            | "nested-child-writes-parent-directory-tempdir"
+            | "nested-child-writes-parent-directory-landlock"
+            | "nested-child-parent-write-directory-is-mounted-bwrap"
+            | "nested-child-tempdir-rejects-absolute-read-outside-tree"
+            | "nested-child-tempdir-rejects-absolute-write-outside-tree"
+    ) {
+        if !setup_enabled {
+            return Err(format!("dataset case {case_id:?} must declare setup: true"));
+        }
+        let temporary = tempfile::tempdir().map_err(|error| error.to_string())?;
+        let parent = temporary.path().join("parent");
+        let child = temporary.path().join("sibling/child");
+        let shared_data = temporary.path().join("shared-data/deep");
+        let shared_output = temporary.path().join("shared-output");
+        let external = tempfile::tempdir().map_err(|error| error.to_string())?;
+        std::fs::create_dir_all(&parent).map_err(|error| error.to_string())?;
+        std::fs::create_dir_all(&child).map_err(|error| error.to_string())?;
+        std::fs::create_dir_all(&shared_data).map_err(|error| error.to_string())?;
+        std::fs::create_dir_all(&shared_output).map_err(|error| error.to_string())?;
+        write_contract_inputs(&parent)?;
+        write_contract_inputs(&child)?;
+        std::fs::write(shared_data.join("file.txt"), "parent-directory-grant\n")
+            .map_err(|error| error.to_string())?;
+        std::fs::write(
+            child.join("contract.yaml"),
+            "version: '1'\nname: child\ndatasets: [dataset.json]\ncoverage_sources: [validator.py]\nfilesystem: {read: [dataset.json, validator.py], write: []}\n",
+        )
+        .map_err(|error| error.to_string())?;
+        std::fs::write(
+            parent.join("contract.yaml"),
+            "version: '1'\nname: parent\ndatasets: [dataset.json]\ncoverage_sources: [validator.py]\nnested_contracts: [../sibling/child/contract.yaml]\nfilesystem: {read: [dataset.json, validator.py, ../sibling/child/contract.yaml, ../shared-data], write: []}\n",
+        )
+        .map_err(|error| error.to_string())?;
+        let mut plan = root_plan.clone();
+        plan.package_root = parent.clone();
+        plan.manifest_path = parent.join("contract.yaml");
+        plan.manifest.filesystem.read.clear();
+        plan.manifest.filesystem.write.clear();
+        plan.manifest.nested_contracts.clear();
+        let mut adjusted_input = input.clone();
+        if case_id == "nested-child-parent-directory-is-mounted-bwrap"
+            || case_id == "nested-child-tempdir-rejects-absolute-read-outside-tree"
+        {
+            let read = adjusted_input["manifest"]["filesystem"]["read"]
+                .as_array_mut()
+                .ok_or_else(|| "filesystem.read must be an array".to_string())?;
+            read.push(serde_json::Value::String(
+                external.path().to_string_lossy().into_owned(),
+            ));
+        }
+        if case_id == "nested-child-tempdir-rejects-absolute-write-outside-tree" {
+            adjusted_input["manifest"]["filesystem"]["write"] = serde_json::json!([
+                external.path().join("created-dir").to_string_lossy().into_owned()
+            ]);
+        }
+        if matches!(
+            case_id,
+            "nested-child-writes-parent-directory-tempdir"
+                | "nested-child-writes-parent-directory-landlock"
+                | "nested-child-parent-write-directory-is-mounted-bwrap"
+        ) {
+            adjusted_input["manifest"]["filesystem"]["write"] =
+                serde_json::json!(["../shared-output"]);
+        }
+        return stage_backend_case(
+            case_id,
+            setup_enabled,
+            &plan,
+            &adjusted_input,
+            expected,
+            predicate,
+        );
+    }
+    if matches!(
+        case_id,
         "direct-backend-prepares-write-paths"
             | "direct-backend-reports-missing-source-root"
             | "direct-backend-at-reports-missing-source-root"
@@ -442,7 +520,22 @@ fn stage_backend_case(
                 tree.run_command(backend, &tree.root, &command, b"")
             }
         };
-        let output = if case_id == "direct-backend-prepares-write-paths" {
+        let output = if matches!(
+            case_id,
+            "nested-child-parent-directory-is-mounted-bwrap"
+                | "nested-child-parent-write-directory-is-mounted-bwrap"
+        ) {
+            run_with_bubblewrap_launcher("#!/bin/sh\nprintf '%s\\n' \"$@\"\n", run_command)
+        } else if matches!(
+            case_id,
+            "direct-backend-prepares-write-paths"
+                | "nested-child-reads-parent-directory-tempdir"
+                | "nested-child-reads-parent-directory-landlock"
+                | "nested-child-writes-parent-directory-tempdir"
+                | "nested-child-writes-parent-directory-landlock"
+                | "nested-child-tempdir-rejects-absolute-read-outside-tree"
+                | "nested-child-tempdir-rejects-absolute-write-outside-tree"
+        ) {
             run_command()
         } else {
             run_with_case_setup(case_id, setup_enabled, &tree.root, run_command)
@@ -474,6 +567,16 @@ fn stage_backend_case(
     let expected =
         expected.ok_or_else(|| "staging succeeded without an expected output".to_string())?;
     match_staging_output(&actual, expected, predicate)
+}
+
+fn write_contract_inputs(root: &std::path::Path) -> Result<(), String> {
+    std::fs::write(root.join("dataset.json"), "{}")
+        .map_err(|error| error.to_string())?;
+    std::fs::write(
+        root.join("validator.py"),
+        "def validate(value): return value\n",
+    )
+    .map_err(|error| error.to_string())
 }
 
 fn match_staging_output(

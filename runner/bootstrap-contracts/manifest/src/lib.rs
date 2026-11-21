@@ -141,13 +141,23 @@ impl ManifestPlan {
             .collect::<Vec<_>>();
         declared_files.extend(manifest.coverage_sources.iter().map(String::as_str));
         declared_files.extend(manifest.supplemental_tests.iter().map(String::as_str));
-        declared_files.extend(manifest.nested_contracts.iter().map(String::as_str));
         let resolved_read_paths = manifest
             .filesystem
             .read
             .iter()
             .map(|path| resolve_filesystem_path(&package_root, path, true))
             .collect::<Result<Vec<_>, _>>()?;
+        for nested_manifest in &manifest.nested_contracts {
+            let resolved = resolve_nested_manifest_path(&package_root, nested_manifest)?;
+            if !resolved_read_paths
+                .iter()
+                .any(|read_path| resolved.starts_with(read_path))
+            {
+                return Err(format!(
+                    "nested contract manifest is not readable: {nested_manifest}"
+                ));
+            }
+        }
         for path in &manifest.filesystem.write {
             resolve_filesystem_path(&package_root, path, false)?;
         }
@@ -171,6 +181,72 @@ impl ManifestPlan {
             language_adapter,
         })
     }
+}
+
+/// Resolve a nested contract manifest relative to the manifest that declares it.
+/// Nested contracts may live beside or above the declaring package, but the
+/// reference itself must remain relative and identify a regular file.
+pub fn resolve_nested_manifest_path(package_root: &Path, raw: &str) -> Result<PathBuf, String> {
+    let path = Path::new(raw);
+    if raw.is_empty()
+        || raw.contains('\0')
+        || raw.contains('\\')
+        || raw.as_bytes().get(1) == Some(&b':')
+    {
+        return Err(format!(
+            "nested contract manifest path must be relative: {raw:?}"
+        ));
+    }
+    let leading_root_component = usize::from(raw.starts_with('/'));
+    if raw
+        .split('/')
+        .skip(leading_root_component)
+        .any(|component| component.is_empty())
+    {
+        return Err(format!(
+            "nested contract manifest path has an empty component: {raw:?}"
+        ));
+    }
+    let mut candidate = package_root.to_path_buf();
+    for component in path.components() {
+        match component {
+            Component::Normal(name) => {
+                candidate.push(name);
+                match fs::symlink_metadata(&candidate) {
+                    Ok(metadata) if metadata.file_type().is_symlink() => {
+                        return Err(format!(
+                            "nested contract manifest path traverses a symlink: {raw}"
+                        ));
+                    }
+                    Ok(_) => {}
+                    Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+                    Err(error) => {
+                        return Err(format!(
+                            "cannot inspect nested contract manifest {raw:?}: {error}"
+                        ));
+                    }
+                }
+            }
+            Component::ParentDir => {
+                candidate.pop();
+            }
+            Component::CurDir => {}
+            Component::RootDir | Component::Prefix(_) => {
+                return Err(format!(
+                    "nested contract manifest path must be relative: {raw:?}"
+                ));
+            }
+        }
+    }
+    let resolved = candidate
+        .canonicalize()
+        .map_err(|error| format!("cannot resolve nested contract manifest {raw:?}: {error}"))?;
+    if !resolved.is_file() {
+        return Err(format!(
+            "nested contract manifest is not a regular file: {raw}"
+        ));
+    }
+    Ok(resolved)
 }
 
 fn validate_directory_aliases(

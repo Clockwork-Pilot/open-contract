@@ -11,7 +11,7 @@
     "datasets": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/pathReference"}, "uniqueItems": true},
     "coverage_sources": {"type": "array", "items": {"$ref": "#/$defs/coverageSourceReference"}, "uniqueItems": true, "description": "Package-relative public API implementation files or glob patterns. The runner resolves only the declared patterns."},
     "supplemental_tests": {"type": "array", "items": {"$ref": "#/$defs/pathReference"}, "uniqueItems": true},
-    "nested_contracts": {"type": "array", "items": {"$ref": "#/$defs/pathReference"}, "uniqueItems": true, "description": "Package-relative YAML manifest file paths."},
+    "nested_contracts": {"type": "array", "items": {"$ref": "#/$defs/nestedManifestReference"}, "uniqueItems": true, "description": "Relative YAML manifest paths resolved from this manifest; paths may traverse to sibling contract packages."},
     "directories": {
       "type": "object",
       "description": "Named package-relative directory roots referenced as @alias/path.",
@@ -59,6 +59,12 @@
         {"pattern": "^@[A-Za-z][A-Za-z0-9_-]*(?:/[^*?\\[\\]]+)?$"}
       ],
       "description": "Package-relative path or @directory-alias/path reference."
+    },
+    "nestedManifestReference": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?!.*\\\\)(?![A-Za-z]:)(?!.*//).+$",
+      "description": "Relative YAML manifest path resolved from this manifest; .. components may reference another contract package."
     },
     "filesystemPath": {
       "type": "string",

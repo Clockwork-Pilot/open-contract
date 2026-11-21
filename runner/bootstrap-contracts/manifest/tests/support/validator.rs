@@ -122,6 +122,16 @@ fn manifest_setup_case(case_id: &str, setup: bool) -> Result<Option<&str>, Strin
             | "write-path-inaccessible-ancestor"
             | "coverage-glob-inaccessible-directory"
             | "accepts-relative-read-path-outside-package"
+            | "nested-contract-sibling-manifest"
+            | "nested-contract-multiple-parent-traversals"
+            | "nested-contract-absolute-path-rejected"
+            | "nested-contract-missing-manifest-rejected"
+            | "nested-contract-manifest-not-readable"
+            | "nested-contract-symlink-rejected"
+            | "nested-contract-empty-component-rejected"
+            | "nested-contract-directory-rejected"
+            | "nested-contract-file-parent-rejected"
+            | "nested-contract-current-directory-component"
     );
     if setup != requires_setup {
         return Err(format!(
@@ -162,6 +172,7 @@ fn run_manifest_case(input: &Value, setup_case: Option<&str>) -> Result<bool, St
         .map_err(|error| error.to_string())?;
 
     let mut permission_restore = None;
+    let mut manifest_root = root.clone();
     match setup_case {
         Some(
             "read-path-symlink-escape"
@@ -245,15 +256,117 @@ fn run_manifest_case(input: &Value, setup_case: Option<&str>) -> Result<bool, St
             std::fs::write(temp.path().join("outside.json"), "{}")
                 .map_err(|error| error.to_string())?;
         }
+        Some(
+            "nested-contract-sibling-manifest"
+            | "nested-contract-absolute-path-rejected"
+            | "nested-contract-missing-manifest-rejected"
+            | "nested-contract-manifest-not-readable"
+            | "nested-contract-empty-component-rejected"
+            | "nested-contract-directory-rejected"
+            | "nested-contract-file-parent-rejected"
+            | "nested-contract-current-directory-component",
+        ) => {
+            let sibling = temp.path().join("sibling");
+            std::fs::create_dir_all(&sibling).map_err(|error| error.to_string())?;
+            if setup_case != Some("nested-contract-missing-manifest-rejected") {
+                write_valid_contract_package(&sibling)?;
+            }
+        }
+        Some("nested-contract-symlink-rejected") => {
+            let sibling = temp.path().join("sibling");
+            std::fs::create_dir_all(&sibling).map_err(|error| error.to_string())?;
+            write_valid_contract_package(&sibling)?;
+            #[cfg(unix)]
+            std::os::unix::fs::symlink(
+                sibling.join("contract.yaml"),
+                sibling.join("linked.yaml"),
+            )
+            .map_err(|error| error.to_string())?;
+            #[cfg(not(unix))]
+            return Err("nested manifest symlink fixture requires a Unix host".into());
+        }
+        Some("nested-contract-multiple-parent-traversals") => {
+            manifest_root = temp.path().join("level-one/level-two/parent");
+            std::fs::create_dir_all(&manifest_root).map_err(|error| error.to_string())?;
+            std::fs::write(manifest_root.join("dataset.json"), "{}")
+                .map_err(|error| error.to_string())?;
+            std::fs::write(
+                manifest_root.join("validator.py"),
+                "def validate(value): return value\n",
+            )
+            .map_err(|error| error.to_string())?;
+            let sibling = temp.path().join("level-one/contracts/child");
+            write_valid_contract_package(&sibling)?;
+        }
         None => {}
         Some(other) => return Err(format!("unknown manifest setup case {other:?}")),
     }
 
-    let manifest = input["yaml"]
+    let mut manifest = input["yaml"]
         .as_str()
-        .ok_or_else(|| "fixture yaml must be a string".to_string())?;
-    std::fs::write(root.join("contract.yaml"), manifest).map_err(|error| error.to_string())?;
-    let valid = ManifestPlan::load(&root.join("contract.yaml")).is_ok();
+        .ok_or_else(|| "fixture yaml must be a string".to_string())?
+        .to_owned();
+    if setup_case == Some("nested-contract-absolute-path-rejected") {
+        let child_manifest = temp.path().join("sibling/contract.yaml");
+        manifest = manifest.replace("@CHILD_MANIFEST@", &child_manifest.to_string_lossy());
+    }
+    std::fs::write(manifest_root.join("contract.yaml"), manifest)
+        .map_err(|error| error.to_string())?;
+    let result = ManifestPlan::load(&manifest_root.join("contract.yaml"));
+    if setup_case == Some("nested-contract-missing-manifest-rejected") {
+        let error = result
+            .as_ref()
+            .err()
+            .ok_or_else(|| "missing nested manifest was unexpectedly accepted".to_string())?;
+        if !error.contains("cannot resolve nested contract manifest") {
+            return Err(format!("missing nested manifest error was unclear: {error}"));
+        }
+    }
+    if matches!(
+        setup_case,
+        Some(
+            "nested-contract-manifest-not-readable"
+                | "nested-contract-symlink-rejected"
+                | "nested-contract-empty-component-rejected"
+                | "nested-contract-directory-rejected"
+                | "nested-contract-file-parent-rejected"
+                | "nested-contract-current-directory-component"
+        )
+    ) {
+        let expected_error = match setup_case {
+            Some("nested-contract-manifest-not-readable") => {
+                "nested contract manifest is not readable"
+            }
+            Some("nested-contract-symlink-rejected") => {
+                "nested contract manifest path traverses a symlink"
+            }
+            Some("nested-contract-empty-component-rejected") => {
+                "nested contract manifest path has an empty component"
+            }
+            Some("nested-contract-directory-rejected") => {
+                "nested contract manifest is not a regular file"
+            }
+            Some("nested-contract-file-parent-rejected") => {
+                "cannot inspect nested contract manifest"
+            }
+            Some("nested-contract-current-directory-component") => "",
+            _ => unreachable!(),
+        };
+        let error = result.as_ref().err().map(ToString::to_string);
+        if expected_error.is_empty() {
+            if error.is_some() {
+                return Err(format!(
+                    "relative nested manifest with a current-directory component failed: {}",
+                    error.unwrap()
+                ));
+            }
+        } else if !error.as_deref().is_some_and(|error| error.contains(expected_error)) {
+            return Err(format!(
+                "nested manifest setup {setup_case:?} expected error containing {expected_error:?}, got {error:?}"
+            ));
+        }
+    }
+    let valid = result.is_ok();
     #[cfg(unix)]
     if let Some(path) = permission_restore {
         use std::os::unix::fs::PermissionsExt;
@@ -261,6 +374,19 @@ fn run_manifest_case(input: &Value, setup_case: Option<&str>) -> Result<bool, St
             .map_err(|error| error.to_string())?;
     }
     Ok(valid)
+}
+
+fn write_valid_contract_package(root: &std::path::Path) -> Result<(), String> {
+    std::fs::create_dir_all(root).map_err(|error| error.to_string())?;
+    std::fs::write(root.join("dataset.json"), "{}")
+        .map_err(|error| error.to_string())?;
+    std::fs::write(root.join("validator.py"), "def validate(value): return value\n")
+        .map_err(|error| error.to_string())?;
+    std::fs::write(
+        root.join("contract.yaml"),
+        "version: '1'\nname: child\ndatasets: [dataset.json]\ncoverage_sources: [validator.py]\nfilesystem: {read: [dataset.json, validator.py], write: []}\n",
+    )
+    .map_err(|error| error.to_string())
 }
 
 #[cfg(test)]

@@ -21,16 +21,87 @@ pub(crate) fn exercise_copy_error_paths() -> Result<(), String> {
         return Err("declared read/write file was unexpectedly overwritten".into());
     }
 
-    let staging_error =
-        super::StagedTree::create_with_runtime_using(&staging_plan, None, &mut |_| {
+    let staging_error = super::StagedTree::create_with_runtime_using(
+        &staging_plan,
+        None,
+        &mut |_| {
             Err(std::io::Error::other(
                 "injected writable file creation failure",
             ))
-        })
-        .err()
-        .ok_or_else(|| "injected writable file creation unexpectedly succeeded".to_string())?;
+        },
+        &mut |path| fs::create_dir_all(path),
+    )
+    .err()
+    .ok_or_else(|| "injected writable file creation unexpectedly succeeded".to_string())?;
     if !staging_error.contains("injected writable file creation failure") {
         return Err(format!("unexpected writable file error: {staging_error}"));
+    }
+
+    let mut directory_plan = staging_plan.clone();
+    directory_plan.manifest.filesystem.write = vec!["new-directory".into()];
+    let directory_error = super::StagedTree::create_tree_using(
+        &directory_plan,
+        true,
+        None,
+        &mut |path| fs::File::create(path),
+        &mut |_| Err(std::io::Error::other("injected directory creation failure")),
+    )
+    .err()
+    .ok_or_else(|| "injected writable directory creation unexpectedly succeeded".to_string())?;
+    if !directory_error.contains("injected directory creation failure") {
+        return Err(format!(
+            "unexpected writable directory error: {directory_error}"
+        ));
+    }
+
+    let mut parent_plan = staging_plan.clone();
+    parent_plan.manifest.filesystem.write = vec!["new-parent/result.json".into()];
+    let parent_error = super::StagedTree::create_tree_using(
+        &parent_plan,
+        true,
+        None,
+        &mut |path| fs::File::create(path),
+        &mut |_| {
+            Err(std::io::Error::other(
+                "injected write parent creation failure",
+            ))
+        },
+    )
+    .err()
+    .ok_or_else(|| "injected writable parent creation unexpectedly succeeded".to_string())?;
+    if !parent_error.contains("injected write parent creation failure") {
+        return Err(format!("unexpected writable parent error: {parent_error}"));
+    }
+
+    let mut mismatched_source_root = super::StagedTree::create(&staging_plan)?;
+    mismatched_source_root.source_root = package.path().to_path_buf();
+    let prefix_error = mismatched_source_root
+        .stage_plan(
+            &staging_plan,
+            &mut |path| fs::File::create(path),
+            &mut |path| fs::create_dir_all(path),
+        )
+        .err()
+        .ok_or_else(|| "package outside the staging root unexpectedly staged".to_string())?;
+    if !prefix_error.contains("outside the shared source root") {
+        return Err(format!("unexpected package prefix error: {prefix_error}"));
+    }
+
+    let mut unresolved_root_plan = staging_plan.clone();
+    unresolved_root_plan.package_root = std::path::PathBuf::from("relative/package");
+    let common_root_error = super::StagedTree::create_tree_using(
+        &unresolved_root_plan,
+        true,
+        None,
+        &mut |path| fs::File::create(path),
+        &mut |path| fs::create_dir_all(path),
+    )
+    .err()
+    .ok_or_else(|| "unresolved package root unexpectedly staged".to_string())?;
+    if !common_root_error.contains("must be absolute after manifest resolution") {
+        return Err(format!(
+            "unexpected unresolved package root error: {common_root_error}"
+        ));
     }
 
     let source_file = package.path().join("source.txt");
@@ -168,8 +239,22 @@ pub(crate) fn exercise_copy_error_paths() -> Result<(), String> {
         let error = super::StagedTree::create(&plan)
             .err()
             .ok_or_else(|| "nested contract symlink escape unexpectedly staged".to_string())?;
-        if !error.contains("staging source escapes package") {
+        if !error.contains("nested contract manifest path traverses a symlink") {
             return Err(format!("unexpected nested staging error: {error}"));
+        }
+
+        let child = package_copy.path().join("child");
+        fs::create_dir_all(&child).map_err(|error| error.to_string())?;
+        fs::write(child.join("contract.yaml"), "version: '1'\n")
+            .map_err(|error| error.to_string())?;
+        let mut invalid_child_plan = plan;
+        invalid_child_plan.manifest_path = package_copy.path().join("contract.yaml");
+        invalid_child_plan.manifest.nested_contracts = vec!["child/contract.yaml".into()];
+        let error = super::StagedTree::create(&invalid_child_plan)
+            .err()
+            .ok_or_else(|| "invalid nested contract manifest unexpectedly staged".to_string())?;
+        if error.is_empty() {
+            return Err("invalid nested contract manifest error was empty".into());
         }
     }
 

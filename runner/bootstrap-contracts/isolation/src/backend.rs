@@ -632,13 +632,10 @@ fn checked_path(root: &Path, relative: &str) -> Result<CheckedPath, String> {
     let resolved = full
         .canonicalize()
         .map_err(|error| format!("{}: {error}", full.display()))?;
-    let guest_relative = if path.is_absolute() {
-        resolved.clone()
-    } else {
-        resolved
-            .strip_prefix(root)
-            .map_err(|_| format!("staged path escapes package root: {relative}"))?
-            .to_path_buf()
+    let guest_relative = match resolved.strip_prefix(root) {
+        Ok(path) => path.to_path_buf(),
+        Err(_) if path.is_absolute() => resolved.clone(),
+        Err(_) => return Err(format!("staged path escapes package root: {relative}")),
     };
     Ok(CheckedPath {
         host: resolved,
