@@ -1,6 +1,6 @@
 use runner_batch::{
-    run_contract_tree_with_fingerprint_mode, show_isolation_plan, BatchReport, FingerprintMode,
-    ManifestBatchAdapter,
+    run_contract_tree_with_fingerprint_mode_and_nested_contracts, show_isolation_plan, BatchReport,
+    FingerprintMode, ManifestBatchAdapter,
 };
 use runner_errors::ContractError;
 use runner_isolation::{auto_backend, Backend};
@@ -40,7 +40,7 @@ fn run(mut args: impl Iterator<Item = String>, stdout: &mut String) -> Result<()
         return Ok(());
     }
     if subcommand.as_deref() != Some("run-manifest") {
-        return Err((2, "usage: contract-runner <run-manifest|show-isolation-plan> <contract.yaml> [--isolation <auto|tempdir|none|bwrap|landlock>] [--isolation-runtime <path>] [--coverage-report <path>] [--disable-fingerprints|--update-fingerprints]".into()).into());
+        return Err((2, "usage: contract-runner <run-manifest|show-isolation-plan> <contract.yaml> [--isolation <auto|tempdir|none|bwrap|landlock>] [--isolation-runtime <path>] [--coverage-report <path>] [--disable-fingerprints|--update-fingerprints] [--no-nested-contracts]".into()).into());
     }
     let manifest = PathBuf::from(args.next().ok_or((2, "missing manifest path".into()))?);
     let mut backend = None;
@@ -48,6 +48,7 @@ fn run(mut args: impl Iterator<Item = String>, stdout: &mut String) -> Result<()
     let mut coverage_report = PathBuf::from(".coverage/latest.json");
     let mut disable_fingerprints = false;
     let mut update_fingerprints = false;
+    let mut include_nested_contracts = true;
     while let Some(arg) = args.next() {
         match arg.as_str() {
             "--isolation" => {
@@ -69,6 +70,7 @@ fn run(mut args: impl Iterator<Item = String>, stdout: &mut String) -> Result<()
             }
             "--disable-fingerprints" => disable_fingerprints = true,
             "--update-fingerprints" => update_fingerprints = true,
+            "--no-nested-contracts" => include_nested_contracts = false,
             other => return Err((2, format!("unknown argument: {other}")).into()),
         }
     }
@@ -116,11 +118,12 @@ fn run(mut args: impl Iterator<Item = String>, stdout: &mut String) -> Result<()
         )
             .into());
     }
-    let report = run_contract_tree_with_fingerprint_mode(
+    let report = run_contract_tree_with_fingerprint_mode_and_nested_contracts(
         manifest,
         backend,
         isolation_runtime,
         fingerprint_mode,
+        include_nested_contracts,
         &ManifestBatchAdapter,
     )
     .map_err(|error| ContractError::from((2, error)).context("contract execution"))?;

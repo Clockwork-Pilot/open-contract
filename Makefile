@@ -120,8 +120,8 @@ check-rust-nested-contracts-html: check-rust-nested-contracts
 
 check-python-adapter-examples:
 	$(MAKE) -C contract-languages/python install-dependencies PYTHON="$(PYTHON)"
-	PATH="$(HOME)/.cargo/bin:$(PATH)" $(CARGO) run --manifest-path runner/rust/Cargo.toml -- run-manifest examples/python/greeting/contract.yaml --isolation $(OPEN_CONTRACT_ISOLATION) --coverage-report .coverage/examples/python.json
-	PATH="$(HOME)/.cargo/bin:$(PATH)" $(CARGO) run --manifest-path runner/rust/Cargo.toml -- run-manifest examples/python/predicate/contract.yaml --isolation $(OPEN_CONTRACT_ISOLATION) --coverage-report .coverage/examples/python-predicate.json
+	PATH="$(HOME)/.cargo/bin:$(PATH)" $(CARGO) run --manifest-path runner/rust/Cargo.toml -- run-manifest examples/python/greeting/contract.yaml --isolation $(OPEN_CONTRACT_ISOLATION) --no-nested-contracts --coverage-report .coverage/examples/python.json
+	PATH="$(HOME)/.cargo/bin:$(PATH)" $(CARGO) run --manifest-path runner/rust/Cargo.toml -- run-manifest examples/python/predicate/contract.yaml --isolation $(OPEN_CONTRACT_ISOLATION) --no-nested-contracts --coverage-report .coverage/examples/python-predicate.json
 
 check-javascript-example:
 	$(MAKE) -C examples/javascript check

@@ -16,6 +16,10 @@ dataset summary. The section lists each contract in recursive traversal order
 with that contract's passed and total dataset-case counts. The aggregate line
 and any per-case failure details follow.
 
+Nested manifests run by default. Pass `--no-nested-contracts` to execute only
+the root manifest; nested contracts are omitted from the execution and coverage
+reports.
+
 Run the checks from the `open-contract` repository root:
 
 ```sh

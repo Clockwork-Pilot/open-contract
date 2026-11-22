@@ -97,7 +97,7 @@ impl StagedTree {
         create_file: &mut dyn FnMut(&Path) -> std::io::Result<fs::File>,
         create_directory: &mut dyn FnMut(&Path) -> std::io::Result<()>,
     ) -> Result<Self, String> {
-        Self::create_tree_using(root, true, isolation_runtime, create_file, create_directory)
+        Self::create_tree_using(root, true, isolation_runtime, true, create_file, create_directory)
     }
 
     pub fn create_for_backend(
@@ -105,10 +105,22 @@ impl StagedTree {
         backend: Backend,
         isolation_runtime: Option<PathBuf>,
     ) -> Result<Self, String> {
+        Self::create_for_backend_with_nested_contracts(root, backend, isolation_runtime, true)
+    }
+
+    /// Create a staged tree and optionally include contracts declared by the
+    /// root and its descendants.
+    pub fn create_for_backend_with_nested_contracts(
+        root: &ManifestPlan,
+        backend: Backend,
+        isolation_runtime: Option<PathBuf>,
+        include_nested_contracts: bool,
+    ) -> Result<Self, String> {
         Self::create_for_backend_using(
             root,
             backend,
             isolation_runtime,
+            include_nested_contracts,
             &mut |path| fs::File::create(path),
             &mut |path| fs::create_dir_all(path),
         )
@@ -118,6 +130,7 @@ impl StagedTree {
         root: &ManifestPlan,
         backend: Backend,
         isolation_runtime: Option<PathBuf>,
+        include_nested_contracts: bool,
         create_file: &mut dyn FnMut(&Path) -> std::io::Result<fs::File>,
         create_directory: &mut dyn FnMut(&Path) -> std::io::Result<()>,
     ) -> Result<Self, String> {
@@ -136,6 +149,7 @@ impl StagedTree {
             root,
             tempdir_mode,
             isolation_runtime,
+            include_nested_contracts,
             create_file,
             create_directory,
         )
@@ -145,11 +159,18 @@ impl StagedTree {
         root: &ManifestPlan,
         tempdir_mode: bool,
         isolation_runtime: Option<PathBuf>,
+        include_nested_contracts: bool,
         create_file: &mut dyn FnMut(&Path) -> std::io::Result<fs::File>,
         create_directory: &mut dyn FnMut(&Path) -> std::io::Result<()>,
     ) -> Result<Self, String> {
         let mut plans = Vec::new();
-        collect_contract_plans(root, &mut Vec::new(), &mut plans)?;
+        collect_contract_plans(
+            root,
+            include_nested_contracts,
+            &mut Vec::new(),
+            &mut std::collections::HashSet::new(),
+            &mut plans,
+        )?;
         let package_roots = plans
             .iter()
             .map(|plan: &ManifestPlan| plan.package_root.clone())
@@ -353,7 +374,9 @@ impl StagedTree {
 
 fn collect_contract_plans(
     plan: &ManifestPlan,
+    include_nested_contracts: bool,
     stack: &mut Vec<PathBuf>,
+    visited: &mut std::collections::HashSet<PathBuf>,
     plans: &mut Vec<ManifestPlan>,
 ) -> Result<(), String> {
     if stack.contains(&plan.manifest_path) {
@@ -362,12 +385,17 @@ fn collect_contract_plans(
             plan.manifest_path.display()
         ));
     }
+    if !visited.insert(plan.manifest_path.clone()) {
+        return Ok(());
+    }
     stack.push(plan.manifest_path.clone());
     plans.push(plan.clone());
-    for child_name in &plan.manifest.nested_contracts {
-        let child_path = resolve_nested_manifest_path(&plan.package_root, child_name)?;
-        let child = ManifestPlan::load(child_path)?;
-        collect_contract_plans(&child, stack, plans)?;
+    if include_nested_contracts {
+        for child_name in &plan.manifest.nested_contracts {
+            let child_path = resolve_nested_manifest_path(&plan.package_root, child_name)?;
+            let child = ManifestPlan::load(child_path)?;
+            collect_contract_plans(&child, include_nested_contracts, stack, visited, plans)?;
+        }
     }
     stack.pop();
     Ok(())

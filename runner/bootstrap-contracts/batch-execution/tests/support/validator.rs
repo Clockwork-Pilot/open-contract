@@ -199,6 +199,15 @@ fn validate_dataset_entry_with_adapter(
         )
     } else if input["coverage_fingerprints"].as_bool() == Some(false) {
         run_contract_tree_with_options(&manifest_path, backend, None, false, adapter)
+    } else if let Some(include_nested) = input["include_nested_contracts"].as_bool() {
+        runner_batch::run_contract_tree_with_fingerprint_mode_and_nested_contracts(
+            &manifest_path,
+            backend,
+            None,
+            FingerprintMode::Disabled,
+            include_nested,
+            adapter,
+        )
     } else {
         run_contract_tree(&manifest_path, backend, adapter)
     };
@@ -209,6 +218,52 @@ fn add_nested_contract(package: &Path, input: &Value, manifest: &mut Value) -> R
     let duplicate_name = input["duplicate_nested_name"].as_bool() == Some(true);
     let cycle = input["nested_cycle"].as_bool() == Some(true);
     let nested_contract = input["nested_contract"].as_bool() == Some(true);
+    let shared_nested = input["shared_nested_contract"].as_bool() == Some(true);
+    let root_only_fixture = input["include_nested_contracts"].as_bool() == Some(false);
+    if root_only_fixture {
+        let child = package.join("child");
+        fs::create_dir_all(&child).map_err(|error| error.to_string())?;
+        write(child.join("dataset.json"), r#"{"version":1,"cases":[{"id":"child","input":{"value":2},"expected":{"value":2}}]}"#)?;
+        write(child.join("validator.py"), "def validate(value): return value\n")?;
+        write(
+            child.join("contract.yaml"),
+            "version: '1'\nname: child\ndatasets: [dataset.json]\ncoverage_sources: [validator.py]\nfilesystem: {read: [dataset.json, validator.py], write: []}\n",
+        )?;
+        manifest["nested_contracts"] = json!(["child/contract.yaml"]);
+        manifest["filesystem"]["read"] = json!(["dataset.json", "validator.py", "child/contract.yaml"]);
+        return Ok(());
+    }
+    if shared_nested {
+        for (directory, name) in [("left", "left"), ("right", "right")] {
+            let child = package.join(directory);
+            fs::create_dir_all(&child).map_err(|error| error.to_string())?;
+            write(child.join("dataset.json"), r#"{"version":1,"cases":[{"id":"branch","input":{"value":1},"expected":{"value":1},"coverage_fingerprint":"880ae786fa1c0630fe9158b7962fd8a2"}]}"#)?;
+            write(child.join("validator.py"), "def validate(value): return value\n")?;
+            write(
+                child.join("contract.yaml"),
+                &format!(
+                    "version: '1'\nname: {name}\ndatasets: [dataset.json]\ncoverage_sources: [validator.py]\nnested_contracts: [../shared/contract.yaml]\nfilesystem:\n  read: [dataset.json, validator.py, ../shared/contract.yaml]\n  write: []\n"
+                ),
+            )?;
+        }
+        let shared = package.join("shared");
+        fs::create_dir_all(&shared).map_err(|error| error.to_string())?;
+        write(shared.join("dataset.json"), r#"{"version":1,"cases":[{"id":"shared","input":{"value":1},"expected":{"value":1},"coverage_fingerprint":"880ae786fa1c0630fe9158b7962fd8a2"}]}"#)?;
+        write(shared.join("validator.py"), "def validate(value): return value\n")?;
+        write(
+            shared.join("contract.yaml"),
+            "version: '1'\nname: shared\ndatasets: [dataset.json]\ncoverage_sources: [validator.py]\nfilesystem: {read: [dataset.json, validator.py], write: []}\n",
+        )?;
+        manifest["nested_contracts"] = json!(["left/contract.yaml", "right/contract.yaml"]);
+        manifest["filesystem"]["read"] = json!([
+            "dataset.json",
+            "validator.py",
+            "left",
+            "right",
+            "shared"
+        ]);
+        return Ok(());
+    }
     if !duplicate_name && !cycle && !nested_contract {
         return Ok(());
     }
@@ -294,6 +349,8 @@ fn configure_case_setup(
         | "dataset-adapter-missing-step-coverage"
         | "dataset-adapter-missing-batch"
         | "dataset-adapter-error"
+        | "dataset-adapter-root-only-contract-tree"
+        | "dataset-adapter-shared-nested-contract-runs-once"
         | "dataset-adapter-wrong-expected-error" => Ok(()),
         "run-contract-tree-staging-rejects-symlink-escape"
         | "show-isolation-plan-staging-rejects-symlink-escape" => {

@@ -476,11 +476,37 @@ pub fn run_contract_tree_with_fingerprint_mode(
     fingerprint_mode: FingerprintMode,
     adapter: &dyn BatchAdapter,
 ) -> Result<BatchReport, String> {
+    run_contract_tree_with_fingerprint_mode_and_nested_contracts(
+        manifest_path,
+        backend,
+        isolation_runtime,
+        fingerprint_mode,
+        true,
+        adapter,
+    )
+}
+
+/// Run a contract tree with explicit control over nested contract traversal.
+/// When `include_nested_contracts` is false, only the root manifest is staged
+/// and included in execution and coverage reports.
+pub fn run_contract_tree_with_fingerprint_mode_and_nested_contracts(
+    manifest_path: impl AsRef<Path>,
+    backend: Backend,
+    isolation_runtime: Option<PathBuf>,
+    fingerprint_mode: FingerprintMode,
+    include_nested_contracts: bool,
+    adapter: &dyn BatchAdapter,
+) -> Result<BatchReport, String> {
     let coverage_fingerprints = fingerprint_mode != FingerprintMode::Disabled;
     let require_fingerprints = fingerprint_mode == FingerprintMode::Check;
     let compare_fingerprints = fingerprint_mode == FingerprintMode::Check;
     let root = ManifestPlan::load(manifest_path)?;
-    let tree = StagedTree::create_for_backend(&root, backend, isolation_runtime)?;
+    let tree = StagedTree::create_for_backend_with_nested_contracts(
+        &root,
+        backend,
+        isolation_runtime,
+        include_nested_contracts,
+    )?;
     let mut batches = Vec::new();
     let mut checks_by_contract = Vec::new();
     let mut names = std::collections::HashSet::new();

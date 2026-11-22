@@ -43,6 +43,7 @@ pub(crate) fn exercise_copy_error_paths() -> Result<(), String> {
         &directory_plan,
         true,
         None,
+        true,
         &mut |path| fs::File::create(path),
         &mut |_| Err(std::io::Error::other("injected directory creation failure")),
     )
@@ -60,6 +61,7 @@ pub(crate) fn exercise_copy_error_paths() -> Result<(), String> {
         &parent_plan,
         true,
         None,
+        true,
         &mut |path| fs::File::create(path),
         &mut |_| {
             Err(std::io::Error::other(
@@ -93,6 +95,7 @@ pub(crate) fn exercise_copy_error_paths() -> Result<(), String> {
         &unresolved_root_plan,
         true,
         None,
+        true,
         &mut |path| fs::File::create(path),
         &mut |path| fs::create_dir_all(path),
     )

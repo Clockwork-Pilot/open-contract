@@ -228,6 +228,9 @@ summary. Explicit selections print `Isolation mode: <backend>`; automatic
 selection prints `Isolation auto selected: <backend>` followed by fallback
 details when applicable.
 
+Nested contracts run by default. Pass `--no-nested-contracts` to execute only
+the root manifest and omit nested contracts from result and coverage reports.
+
 For a diagnostic runner invocation, set
 `OPEN_CONTRACT_DISABLE_FINGERPRINTS=1` or pass `--disable-fingerprints` to the
 Rust runner. This skips per-entry fingerprint collection and matching while

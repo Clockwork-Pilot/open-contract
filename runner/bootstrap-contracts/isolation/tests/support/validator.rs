@@ -95,6 +95,10 @@ pub(crate) fn validate_case(
     previous_root: &Option<PathBuf>,
     case: &DatasetCase,
 ) -> Result<PathBuf, String> {
+    if case.input["operation"] == "stage-root-without-nested-contracts" {
+        check_root_only_staging(case.expected_value()?)?;
+        return Ok(package.to_path_buf());
+    }
     if case.input["operation"] == "stage-contract-tree" {
         dataset_setup::run_staging_failure(
             case.id.as_str(),
@@ -155,6 +159,101 @@ pub(crate) fn validate_case(
         validate_case_with_tree(package, case, tree)
     })?;
     Ok(current_root)
+}
+
+fn check_root_only_staging(expected: &Value) -> Result<(), String> {
+    let package = tempfile::tempdir().map_err(|error| error.to_string())?;
+    write(package.path().join("dataset.json"), "{}")?;
+    write(package.path().join("validator.py"), "def validate(value): return value\n")?;
+    std::fs::create_dir_all(package.path().join("child"))
+        .map_err(|error| error.to_string())?;
+    write(package.path().join("child/dataset.json"), "{}")?;
+    write(
+        package.path().join("child/validator.py"),
+        "def validate(value): return value\n",
+    )?;
+    write(
+        package.path().join("child/contract.yaml"),
+        "version: '1'\nname: child\ndatasets: [dataset.json]\ncoverage_sources: [validator.py]\nfilesystem: {read: [dataset.json, validator.py], write: []}\n",
+    )?;
+    write(
+        package.path().join("contract.yaml"),
+        "version: '1'\nname: root\ndatasets: [dataset.json]\ncoverage_sources: [validator.py]\nnested_contracts: [child/contract.yaml]\nfilesystem: {read: [dataset.json, validator.py, child/contract.yaml], write: []}\n",
+    )?;
+    let plan = ManifestPlan::load(package.path().join("contract.yaml"))?;
+    let tree = StagedTree::create_for_backend_with_nested_contracts(
+        &plan,
+        Backend::TempDir,
+        None,
+        false,
+    )?;
+    let names = tree
+        .manifests
+        .iter()
+        .map(|(manifest, _)| manifest.manifest.name.as_str())
+        .collect::<Vec<_>>();
+    ensure!(names == ["root"], "expected only root manifest, got {names:?}");
+    ensure!(
+        !tree.root.join("child/dataset.json").exists(),
+        "nested dataset was staged despite root-only mode"
+    );
+    ensure!(
+        expected["root_only"] == true,
+        "expected.root_only is false"
+    );
+
+    let graph = tempfile::tempdir().map_err(|error| error.to_string())?;
+    for (directory, name, nested) in [
+        ("left", "left", Some("../shared/contract.yaml")),
+        ("right", "right", Some("../shared/contract.yaml")),
+        ("shared", "shared", None),
+    ] {
+        let package_root = graph.path().join(directory);
+        std::fs::create_dir_all(&package_root).map_err(|error| error.to_string())?;
+        write(package_root.join("dataset.json"), "{}")?;
+        write(
+            package_root.join("validator.py"),
+            "def validate(value): return value\n",
+        )?;
+        let nested_section = nested.map_or(String::new(), |path| {
+            format!("nested_contracts: [{path}]\n")
+        });
+        let read_nested = nested.map_or(String::new(), |path| format!(", {path}"));
+        write(
+            package_root.join("contract.yaml"),
+            &format!(
+                "version: '1'\nname: {name}\ndatasets: [dataset.json]\ncoverage_sources: [validator.py]\n{nested_section}filesystem: {{read: [dataset.json, validator.py{read_nested}], write: []}}\n"
+            ),
+        )?;
+    }
+    std::fs::create_dir_all(graph.path()).map_err(|error| error.to_string())?;
+    write(graph.path().join("dataset.json"), "{}")?;
+    write(
+        graph.path().join("validator.py"),
+        "def validate(value): return value\n",
+    )?;
+    write(
+        graph.path().join("contract.yaml"),
+        "version: '1'\nname: graph-root\ndatasets: [dataset.json]\ncoverage_sources: [validator.py]\nnested_contracts: [left/contract.yaml, right/contract.yaml]\nfilesystem: {read: [dataset.json, validator.py, left/contract.yaml, right/contract.yaml], write: []}\n",
+    )?;
+    let graph_plan = ManifestPlan::load(graph.path().join("contract.yaml"))?;
+    let graph_tree = StagedTree::create_for_backend_with_nested_contracts(
+        &graph_plan,
+        Backend::TempDir,
+        None,
+        true,
+    )?;
+    let shared_count = graph_tree
+        .manifests
+        .iter()
+        .filter(|(manifest, _)| manifest.manifest.name == "shared")
+        .count();
+    ensure!(
+        graph_tree.manifests.len() == 4 && shared_count == 1,
+        "shared nested manifest should be planned once, got {} manifests and {shared_count} shared entries",
+        graph_tree.manifests.len()
+    );
+    Ok(())
 }
 
 fn validate_case_with_tree(
