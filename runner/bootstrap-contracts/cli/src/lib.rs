@@ -573,12 +573,26 @@ fn mapping_string<'a>(value: &'a serde_yaml::Value, key: &str) -> Option<&'a str
 }
 
 fn concise_summary(report: &BatchReport) -> String {
-    let mut output = format!(
+    let mut output = String::from("Contracts executed:\n");
+    for contract in &report.coverage {
+        let results = report
+            .results
+            .iter()
+            .filter(|result| result.contract == contract.contract);
+        let (passed, total) = results.fold((0, 0), |(passed, total), result| {
+            (passed + usize::from(result.passed), total + 1)
+        });
+        output.push_str(&format!(
+            "  {}: {passed}/{total} cases passed\n",
+            contract.contract
+        ));
+    }
+    output.push_str(&format!(
         "Dataset cases: {}/{} passed across {} contract(s)\n",
         report_passed(report),
         report_total(report),
         report.coverage.len()
-    );
+    ));
     for result in report.results.iter().filter(|result| !result.passed) {
         output.push_str(&format!(
             "  FAIL {}/{}: {}\n",

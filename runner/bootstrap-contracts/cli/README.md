@@ -11,6 +11,11 @@ working directory before calling the CLI. The validator does not map fixture
 IDs to hidden file contents or substitute a test-only operation for the CLI
 call.
 
+`run-manifest` prints a `Contracts executed` section before the aggregate
+dataset summary. The section lists each contract in recursive traversal order
+with that contract's passed and total dataset-case counts. The aggregate line
+and any per-case failure details follow.
+
 Run the checks from the `open-contract` repository root:
 
 ```sh

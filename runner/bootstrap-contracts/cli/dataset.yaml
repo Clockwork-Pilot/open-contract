@@ -460,11 +460,7 @@ cases:
     dataset_path: dataset.yaml
   expected:
     exit_code: 0
-    stdout: "Isolation mode: none\nUpdated cli-smoke-fixture/echo fingerprint: 11111111111111111111111111111111\
-      \ -> 867714e81b27e269f9a7f3b13bdc37ae\n  covered: validator.py:1\nUpdated cli-smoke-fixture/sequence/first\
-      \ fingerprint: 22222222222222222222222222222222 -> 867714e81b27e269f9a7f3b13bdc37ae\n\
-      \  covered: validator.py:1\nUpdated 2 fingerprint(s) in dataset.yaml\nDataset\
-      \ cases: 3/3 passed across 1 contract(s)\nCoverage report: coverage.json\n"
+    stdout: "Isolation mode: none\nUpdated cli-smoke-fixture/echo fingerprint: 11111111111111111111111111111111 -> 867714e81b27e269f9a7f3b13bdc37ae\n  covered: validator.py:1\nUpdated cli-smoke-fixture/sequence/first fingerprint: 22222222222222222222222222222222 -> 867714e81b27e269f9a7f3b13bdc37ae\n  covered: validator.py:1\nUpdated 2 fingerprint(s) in dataset.yaml\nContracts executed:\n  cli-smoke-fixture: 3/3 cases passed\nDataset cases: 3/3 passed across 1 contract(s)\nCoverage report: coverage.json\n"
     coverage_report:
       version: 1
       contracts:
@@ -507,7 +503,145 @@ cases:
           expected:
             value: 2
           coverage_fingerprint: 867714e81b27e269f9a7f3b13bdc37ae
-  coverage_fingerprint: 7ad45e3b22feb17a0e96748e57bcdc13
+  coverage_fingerprint: 99703b1703ba72d3abdf500e5187aa9a
+- id: lists-contracts-executed-through-recursive-nesting
+  setup: true
+  input:
+    args:
+    - run-manifest
+    - contract.yaml
+    - --isolation
+    - none
+    - --coverage-report
+    - coverage.json
+    - --disable-fingerprints
+    files:
+      contract.yaml: |
+        version: '1'
+        name: nested-root
+        datasets: [dataset.yaml]
+        coverage: {minimum_line_percent: 0}
+        coverage_sources: [validator.py]
+        nested_contracts: [child/contract.yaml]
+        filesystem:
+          read: [dataset.yaml, validator.py, adapter.py, child/contract.yaml]
+          write: []
+        execution: {command: [python3, adapter.py]}
+      child/contract.yaml: |
+        version: '1'
+        name: nested-child
+        datasets: [dataset.yaml]
+        coverage: {minimum_line_percent: 0}
+        coverage_sources: [validator.py]
+        nested_contracts: [grandchild/contract.yaml]
+        filesystem:
+          read: [dataset.yaml, validator.py, adapter.py, grandchild/contract.yaml]
+          write: []
+        execution: {command: [python3, adapter.py]}
+      child/grandchild/contract.yaml: |
+        version: '1'
+        name: nested-grandchild
+        datasets: [dataset.yaml]
+        coverage: {minimum_line_percent: 0}
+        coverage_sources: [validator.py]
+        filesystem:
+          read: [dataset.yaml, validator.py, adapter.py]
+          write: []
+        execution: {command: [python3, adapter.py]}
+      dataset.yaml: |
+        version: 1
+        cases:
+        - id: echo
+          input: {value: 1}
+          expected: {value: 1}
+          coverage_fingerprint: 60c6194cbdc58033999a1fb07d147da8
+      child/dataset.yaml: |
+        version: 1
+        cases:
+        - id: echo
+          input: {value: 2}
+          expected: {value: 2}
+          coverage_fingerprint: 60c6194cbdc58033999a1fb07d147da8
+      child/grandchild/dataset.yaml: |
+        version: 1
+        cases:
+        - id: echo
+          input: {value: 3}
+          expected: {value: 3}
+          coverage_fingerprint: 60c6194cbdc58033999a1fb07d147da8
+      validator.py: |
+        def validate(value):
+            return value
+      child/validator.py: |
+        def validate(value):
+            return value
+      child/grandchild/validator.py: |
+        def validate(value):
+            return value
+      adapter.py: |
+        import json, sys
+        request = json.load(sys.stdin)
+        results = []
+        scopes = []
+        for item in request["requests"]:
+            results.append({"key": item["key"], "output": item["input"]})
+            scopes.append({"key": item["key"], "files": [{"path": "validator.py", "lines": [1]}]})
+        print(json.dumps({
+            "results": results,
+            "coverage": {"sources": ["validator.py"]},
+            "coverage_scopes": scopes,
+            "coverage_lines": [{"path": "validator.py", "executable_lines": [1], "covered_lines": [1]}]
+        }))
+      child/adapter.py: |
+        import json, sys
+        request = json.load(sys.stdin)
+        results = []
+        scopes = []
+        for item in request["requests"]:
+            results.append({"key": item["key"], "output": item["input"]})
+            scopes.append({"key": item["key"], "files": [{"path": "validator.py", "lines": [1]}]})
+        print(json.dumps({
+            "results": results,
+            "coverage": {"sources": ["validator.py"]},
+            "coverage_scopes": scopes,
+            "coverage_lines": [{"path": "validator.py", "executable_lines": [1], "covered_lines": [1]}]
+        }))
+      child/grandchild/adapter.py: |
+        import json, sys
+        request = json.load(sys.stdin)
+        results = []
+        scopes = []
+        for item in request["requests"]:
+            results.append({"key": item["key"], "output": item["input"]})
+            scopes.append({"key": item["key"], "files": [{"path": "validator.py", "lines": [1]}]})
+        print(json.dumps({
+            "results": results,
+            "coverage": {"sources": ["validator.py"]},
+            "coverage_scopes": scopes,
+            "coverage_lines": [{"path": "validator.py", "executable_lines": [1], "covered_lines": [1]}]
+        }))
+  expected:
+    exit_code: 0
+    stdout: |
+      Isolation mode: none
+      Coverage fingerprints: disabled
+      Contracts executed:
+        nested-root: 1/1 cases passed
+        nested-child: 1/1 cases passed
+        nested-grandchild: 1/1 cases passed
+      Dataset cases: 3/3 passed across 3 contract(s)
+      Coverage report: coverage.json
+    stderr: ''
+    coverage_report:
+      version: 1
+      contracts:
+      - contract: nested-root
+        status: passed
+      - contract: nested-child
+        status: passed
+      - contract: nested-grandchild
+        status: passed
+  coverage_fingerprint: 896a16aac66d56d637ce27f3ad03c2d7
 - id: reports-incomplete-contract-coverage
   setup: true
   input:
@@ -549,20 +683,12 @@ cases:
           covered: []
           missing:
           - validator.py
-    stdout: 'Isolation mode: none
-
-      Coverage fingerprints: disabled
-
-      Dataset cases: 1/1 passed across 1 contract(s)
-
-      Coverage report: coverage.json
-
-      '
+    stdout: "Isolation mode: none\nCoverage fingerprints: disabled\nContracts executed:\n  cli-incomplete-coverage-fixture: 1/1 cases passed\nDataset cases: 1/1 passed across 1 contract(s)\nCoverage report: coverage.json\n"
     stderr: 'contract-runner: coverage requirements not met; see adapter coverage
       report
 
       '
-  coverage_fingerprint: abdc1191dc232e301904d4b1c7bfe770
+  coverage_fingerprint: 0f07fbc3d74efbdb4d89eca0c7c07d31
 - id: reports-coverage-write-failure
   setup: true
   input:
@@ -676,13 +802,11 @@ cases:
       tests/check.py: "def run():\n    return True\n"
   expected:
     exit_code: 1
-    stdout: "Isolation mode: none\nDataset cases: 2/3 passed across 1 contract(s)\n\
-      \  FAIL cli-smoke-fixture/echo: output did not match expected subset\n    actual:\
-      \ 7\nCoverage report: coverage.json\n"
+    stdout: "Isolation mode: none\nContracts executed:\n  cli-smoke-fixture: 2/3 cases passed\nDataset cases: 2/3 passed across 1 contract(s)\n  FAIL cli-smoke-fixture/echo: output did not match expected subset\n    actual: 7\nCoverage report: coverage.json\n"
     stderr: 'contract-runner: 2/3 dataset cases passed across 1 contract(s)
 
       '
-  coverage_fingerprint: 74c42ec9b6a56e11a1707cb5b3f740ea
+  coverage_fingerprint: 36ec7ce472711f10478c367a9ed4776a
 - id: reports-supplemental-test-failure
   setup: true
   input:
@@ -716,18 +840,12 @@ cases:
       tests/check.py: "def run():\n    return True\n"
   expected:
     exit_code: 1
-    stdout: 'Isolation mode: none
-
-      Dataset cases: 3/3 passed across 1 contract(s)
-
-      Coverage report: coverage.json
-
-      '
+    stdout: "Isolation mode: none\nContracts executed:\n  cli-smoke-fixture: 3/3 cases passed\nDataset cases: 3/3 passed across 1 contract(s)\nCoverage report: coverage.json\n"
     stderr: 'contract-runner: coverage requirements not met; see adapter coverage
       report
 
       '
-  coverage_fingerprint: a48de30d4891c2dc89ecdac9acfd7961
+  coverage_fingerprint: 36e671f21fc988a17962394595d5c481
 - id: reports-coverage-directory-creation-failure
   setup: true
   input:
@@ -926,13 +1044,11 @@ cases:
         : [1], \"covered_lines\": [1]}]\n}))\n"
   expected:
     exit_code: 1
-    stdout: "Isolation mode: none\nDataset cases: 0/1 passed across 1 contract(s)\n\
-      \  FAIL cli-validator-error-fixture/invalid: output did not match expected subset\n\
-      \    actual: {\"error\":\"ValueError: invalid input\"}\nCoverage report: coverage.json\n"
+    stdout: "Isolation mode: none\nContracts executed:\n  cli-validator-error-fixture: 0/1 cases passed\nDataset cases: 0/1 passed across 1 contract(s)\n  FAIL cli-validator-error-fixture/invalid: output did not match expected subset\n    actual: {\"error\":\"ValueError: invalid input\"}\nCoverage report: coverage.json\n"
     stderr: 'contract-runner: 0/1 dataset cases passed across 1 contract(s)
 
       '
-  coverage_fingerprint: 74c42ec9b6a56e11a1707cb5b3f740ea
+  coverage_fingerprint: 36ec7ce472711f10478c367a9ed4776a
 - id: reports-result-fingerprint-mismatch
   setup: true
   input:
@@ -965,14 +1081,11 @@ cases:
       tests/check.py: "def run():\n    return True\n"
   expected:
     exit_code: 1
-    stdout: "Isolation mode: none\nDataset cases: 0/1 passed across 1 contract(s)\n\
-      \  FAIL cli-smoke-fixture/echo: cli-smoke-fixture/echo: coverage fingerprint\
-      \ mismatch: expected 11111111111111111111111111111111, observed 867714e81b27e269f9a7f3b13bdc37ae\n\
-      \    actual: {\"value\":7}\nCoverage report: coverage.json\n"
+    stdout: "Isolation mode: none\nContracts executed:\n  cli-smoke-fixture: 0/1 cases passed\nDataset cases: 0/1 passed across 1 contract(s)\n  FAIL cli-smoke-fixture/echo: cli-smoke-fixture/echo: coverage fingerprint mismatch: expected 11111111111111111111111111111111, observed 867714e81b27e269f9a7f3b13bdc37ae\n    actual: {\"value\":7}\nCoverage report: coverage.json\n"
     stderr: 'contract-runner: 0/1 dataset cases passed across 1 contract(s)
 
       '
-  coverage_fingerprint: 74c42ec9b6a56e11a1707cb5b3f740ea
+  coverage_fingerprint: 36ec7ce472711f10478c367a9ed4776a
 - id: reports-step-fingerprint-mismatch
   setup: true
   input:
@@ -1005,14 +1118,11 @@ cases:
       tests/check.py: "def run():\n    return True\n"
   expected:
     exit_code: 1
-    stdout: "Isolation mode: none\nDataset cases: 0/1 passed across 1 contract(s)\n\
-      \  FAIL cli-smoke-fixture/sequence: cli-smoke-fixture/sequence step one: coverage\
-      \ fingerprint mismatch: expected 11111111111111111111111111111111, observed\
-      \ 867714e81b27e269f9a7f3b13bdc37ae\n    actual: null\nCoverage report: coverage.json\n"
+    stdout: "Isolation mode: none\nContracts executed:\n  cli-smoke-fixture: 0/1 cases passed\nDataset cases: 0/1 passed across 1 contract(s)\n  FAIL cli-smoke-fixture/sequence: cli-smoke-fixture/sequence step one: coverage fingerprint mismatch: expected 11111111111111111111111111111111, observed 867714e81b27e269f9a7f3b13bdc37ae\n    actual: null\nCoverage report: coverage.json\n"
     stderr: 'contract-runner: 0/1 dataset cases passed across 1 contract(s)
 
       '
-  coverage_fingerprint: 74c42ec9b6a56e11a1707cb5b3f740ea
+  coverage_fingerprint: 36ec7ce472711f10478c367a9ed4776a
 - id: reports-missing-coverage-scope
   setup: true
   input:
@@ -1045,19 +1155,11 @@ cases:
       tests/check.py: "def run():\n    return True\n"
   expected:
     exit_code: 1
-    stdout: "Isolation mode: none\nDataset cases: 0/3 passed across 1 contract(s)\n\
-      \  FAIL cli-smoke-fixture/echo: cli-smoke-fixture/echo: coverage fingerprint\
-      \ unavailable for ExecutionKey { case_id: \"echo\", step_id: None }\n    actual:\
-      \ {\"value\":7}\n  FAIL cli-smoke-fixture/echo-text: cli-smoke-fixture/echo-text:\
-      \ coverage fingerprint unavailable for ExecutionKey { case_id: \"echo-text\"\
-      , step_id: None }\n    actual: {\"value\":\"text\"}\n  FAIL cli-smoke-fixture/sequence:\
-      \ cli-smoke-fixture/sequence step first: coverage fingerprint unavailable for\
-      \ ExecutionKey { case_id: \"sequence\", step_id: Some(\"first\") }\n    actual:\
-      \ null\nCoverage report: coverage.json\n"
+    stdout: "Isolation mode: none\nContracts executed:\n  cli-smoke-fixture: 0/3 cases passed\nDataset cases: 0/3 passed across 1 contract(s)\n  FAIL cli-smoke-fixture/echo: cli-smoke-fixture/echo: coverage fingerprint unavailable for ExecutionKey { case_id: \"echo\", step_id: None }\n    actual: {\"value\":7}\n  FAIL cli-smoke-fixture/echo-text: cli-smoke-fixture/echo-text: coverage fingerprint unavailable for ExecutionKey { case_id: \"echo-text\", step_id: None }\n    actual: {\"value\":\"text\"}\n  FAIL cli-smoke-fixture/sequence: cli-smoke-fixture/sequence step first: coverage fingerprint unavailable for ExecutionKey { case_id: \"sequence\", step_id: Some(\"first\") }\n    actual: null\nCoverage report: coverage.json\n"
     stderr: 'contract-runner: 0/3 dataset cases passed across 1 contract(s)
 
       '
-  coverage_fingerprint: 74c42ec9b6a56e11a1707cb5b3f740ea
+  coverage_fingerprint: 36ec7ce472711f10478c367a9ed4776a
 - id: reports-below-target-coverage-threshold
   setup: true
   input:
@@ -1108,18 +1210,12 @@ cases:
             - 1
             uncovered_lines:
             - 2
-    stdout: 'Isolation mode: none
-
-      Dataset cases: 3/3 passed across 1 contract(s)
-
-      Coverage report: coverage.json
-
-      '
+    stdout: "Isolation mode: none\nContracts executed:\n  cli-smoke-fixture: 3/3 cases passed\nDataset cases: 3/3 passed across 1 contract(s)\nCoverage report: coverage.json\n"
     stderr: 'contract-runner: coverage requirements not met; see adapter coverage
       report
 
       '
-  coverage_fingerprint: 6c760b7b8baf432e1b87c99c21861dc4
+  coverage_fingerprint: 0f6bd575ed255be2ecbbf15da9bca152
 - id: resolves-relative-coverage-scope-path
   setup: true
   input:
@@ -1147,16 +1243,10 @@ cases:
       src/validator.py: "def validate(value):\n    return value\n"
   expected:
     exit_code: 0
-    stdout: 'Isolation mode: none
-
-      Dataset cases: 3/3 passed across 1 contract(s)
-
-      Coverage report: coverage.json
-
-      '
+    stdout: "Isolation mode: none\nContracts executed:\n  cli-smoke-fixture: 3/3 cases passed\nDataset cases: 3/3 passed across 1 contract(s)\nCoverage report: coverage.json\n"
     stderr: ''
-  coverage_fingerprint: a51415b5d47f7511821d941b713f8e40
-- coverage_fingerprint: 9d6a4de7b892407f7e7f7a959820bc2f
+  coverage_fingerprint: 3c584f5b7858a289fb251ad6dc4f7f0b
+- coverage_fingerprint: 15c49bd76fbb08106ed6f0f4408fb767
   expected:
     coverage_report:
       version: 1
@@ -1172,15 +1262,7 @@ cases:
           missing: []
     exit_code: 0
     stderr: ''
-    stdout: 'Isolation mode: none
-
-      Fingerprints already match; no dataset changes made
-
-      Dataset cases: 3/3 passed across 1 contract(s)
-
-      Coverage report: coverage.json
-
-      '
+    stdout: "Isolation mode: none\nFingerprints already match; no dataset changes made\nContracts executed:\n  cli-current-pins-fixture: 3/3 cases passed\nDataset cases: 3/3 passed across 1 contract(s)\nCoverage report: coverage.json\n"
     updated_dataset:
       version: 1
       cases: *id001
@@ -1223,7 +1305,7 @@ cases:
       tests/check.py: "def run():\n    return True\n"
       validator.py: "def validate(value):\n    return value\n"
   setup: true
-- coverage_fingerprint: 38ffefa071e9282d767b0499fde25d5e
+- coverage_fingerprint: 3d3f1a17af773910012486a2a6f253fa
   expected: {}
   id: update-fingerprints-skips-failed-case
   input:
@@ -1587,7 +1669,7 @@ cases:
   expected: {}
   predicate: .exit_code == 2 AND contains(.stderr, 'JSON dataset error')
   coverage_fingerprint: 12ebb2614c1cc51c628755e19ab3bde6
-- coverage_fingerprint: 7ad45e3b22feb17a0e96748e57bcdc13
+- coverage_fingerprint: 99703b1703ba72d3abdf500e5187aa9a
   expected:
     coverage_report:
       version: 1
@@ -1603,10 +1685,7 @@ cases:
           missing: []
     exit_code: 0
     stderr: ''
-    stdout: "Isolation mode: none\nUpdated cli-current-pins-fixture/echo fingerprint:\
-      \ 11111111111111111111111111111111 -> 867714e81b27e269f9a7f3b13bdc37ae\n  covered:\
-      \ validator.py:1\nUpdated 1 fingerprint(s) in dataset.json\nDataset cases: 3/3\
-      \ passed across 1 contract(s)\nCoverage report: coverage.json\n"
+    stdout: "Isolation mode: none\nUpdated cli-current-pins-fixture/echo fingerprint: 11111111111111111111111111111111 -> 867714e81b27e269f9a7f3b13bdc37ae\n  covered: validator.py:1\nUpdated 1 fingerprint(s) in dataset.json\nContracts executed:\n  cli-current-pins-fixture: 3/3 cases passed\nDataset cases: 3/3 passed across 1 contract(s)\nCoverage report: coverage.json\n"
     updated_dataset:
       version: 1
       cases:
@@ -1958,4 +2037,4 @@ cases:
           percent: 0.0
           threshold_met: false
   predicate: contains(.stderr, 'coverage requirements not met')
-  coverage_fingerprint: 67f2721537eed2515b7e527dcf7c447c
+  coverage_fingerprint: a00c95fe1b3eaaf8db05a60d613dc8a1
