@@ -7,6 +7,12 @@ or path input to that API. The coverage check runs this binary with the full
 dataset; the validator captures each case's profile independently and restores
 the aggregate profile after the batch.
 
+The optional top-level `metadata` mapping is consumer-owned data. The Rust
+manifest model preserves its JSON-compatible values for callers through
+`ManifestPlan.manifest.metadata`; the runner does not interpret metadata or use
+it when planning or executing contracts. Unknown top-level manifest fields
+remain errors.
+
 The Rust runner owns manifest loading and planning. The `execution.command`
 field names the language adapter command invoked once for the contract tree.
 Rust supplies the flattened case and step inputs; the adapter returns validator

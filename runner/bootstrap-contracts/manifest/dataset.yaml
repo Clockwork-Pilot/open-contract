@@ -999,3 +999,17 @@ cases:
       '
   expected:
     valid: false
+- id: manifest-accepts-consumer-metadata
+  coverage_fingerprint: eb9cf7f99e6b68dbd38c702ddaf04dfd
+  input:
+    operation: manifest
+    yaml: "version: '1'\nname: sample\nmetadata: {schema_sources: [contracts/a/schema], owner: {team: platform, enabled: true, limits: [1, 2]}}\nfilesystem: {read: [dataset.json, validator.py], write: []}\ndatasets: [dataset.json]\ncoverage_sources: [validator.py]\n"
+  expected:
+    valid: true
+- id: manifest-still-rejects-unknown-top-level-fields
+  coverage_fingerprint: 2ee163302105a19bd0a55ff426fd9ea5
+  input:
+    operation: manifest
+    yaml: "version: '1'\nname: sample\nnot_metadata: {owner: platform}\nfilesystem: {read: [dataset.json, validator.py], write: []}\ndatasets: [dataset.json]\ncoverage_sources: [validator.py]\n"
+  expected:
+    valid: false

@@ -4,6 +4,11 @@
 `language-adapter-runtime.v1.schema.json` defines the flat runtime manifest
 referenced by a contract's `language_adapter` field.
 
+The manifest may include an optional top-level `metadata` object for
+consumer-owned JSON-compatible values. Open Contract preserves this data on
+the parsed manifest and does not assign it execution semantics. Other unknown
+top-level manifest fields remain invalid.
+
 This directory contains schemas for two related, but distinct, documents:
 
 - [`bundle.v1.schema.json`](bundle.v1.schema.json) describes a version 1

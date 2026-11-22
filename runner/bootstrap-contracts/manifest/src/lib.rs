@@ -11,6 +11,8 @@ pub struct Manifest {
     pub datasets: Vec<String>,
     pub coverage_sources: Vec<String>,
     #[serde(default)]
+    pub metadata: Option<BTreeMap<String, serde_json::Value>>,
+    #[serde(default)]
     pub supplemental_tests: Vec<String>,
     #[serde(default)]
     pub nested_contracts: Vec<String>,
@@ -590,6 +592,30 @@ mod tests {
             write_manifest(temp.path(), &write_escape);
             assert!(ManifestPlan::load(&temp.path().join("contract.yaml")).is_err());
         }
+    }
+
+    #[test]
+    fn manifest_metadata_is_optional_and_preserved_without_interpretation() {
+        let temp = package();
+        write_manifest(temp.path(), VALID);
+        let without_metadata = ManifestPlan::load(&temp.path().join("contract.yaml")).unwrap();
+        assert_eq!(without_metadata.manifest.metadata, None);
+
+        let with_metadata = VALID.replace(
+            "filesystem:",
+            "metadata: {schema_sources: [contracts/a/schema, contracts/b/schema], owner: {team: platform, enabled: true, limits: [1, 2]}}\nfilesystem:",
+        );
+        write_manifest(temp.path(), &with_metadata);
+        let plan = ManifestPlan::load(&temp.path().join("contract.yaml")).unwrap();
+        let metadata = plan.manifest.metadata.unwrap();
+        assert_eq!(
+            metadata["schema_sources"],
+            serde_json::json!(["contracts/a/schema", "contracts/b/schema"])
+        );
+        assert_eq!(
+            metadata["owner"],
+            serde_json::json!({"team": "platform", "enabled": true, "limits": [1, 2]})
+        );
     }
 
     #[test]
