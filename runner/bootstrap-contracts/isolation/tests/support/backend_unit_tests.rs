@@ -17,6 +17,94 @@ fn fixture_fd() -> libc::c_long {
 }
 
 #[test]
+fn contract_commands_get_unique_temporary_directories_cleaned_after_exit() {
+    let root = tempfile::tempdir().expect("contract root");
+    let report = root.path().join("temporary-environment.txt");
+    let script = "printf '%s\\n%s\\n%s\\n' \"$TMPDIR\" \"$TMP\" \"$TEMP\" > \"$1\"; touch \"$TMPDIR/contract-marker\"";
+    let command = vec![
+        "/bin/sh".to_string(),
+        "-c".to_string(),
+        script.to_string(),
+        "contract-command".to_string(),
+        report.to_string_lossy().into_owned(),
+    ];
+    let mut supported = vec![Backend::None, Backend::TempDir];
+    if crate::backend::probe_bubblewrap(None).is_ok() {
+        supported.push(Backend::Bubblewrap);
+    }
+    if crate::backend::probe_landlock(None).is_ok() {
+        supported.push(Backend::Landlock);
+    }
+
+    let mut observed_host_dirs = Vec::new();
+    for backend in supported {
+        let output = run(
+            backend,
+            root.path(),
+            root.path(),
+            &[],
+            &[".".to_string()],
+            &command,
+            b"",
+            None,
+            false,
+        )
+        .unwrap_or_else(|error| panic!("{backend:?} command failed: {error}"));
+        assert!(output.status.success(), "{backend:?} command failed");
+        let paths = fs::read_to_string(&report).expect("temporary env report");
+        let paths = paths.lines().collect::<Vec<_>>();
+        assert_eq!(paths.len(), 3);
+        assert!(paths.iter().all(|path| *path == paths[0]));
+        if backend != Backend::Bubblewrap {
+            assert!(PathBuf::from(paths[0]).starts_with(std::env::temp_dir()));
+            assert!(
+                !PathBuf::from(paths[0]).exists(),
+                "{backend:?} tempdir remains after command exit"
+            );
+            observed_host_dirs.push(paths[0].to_owned());
+        } else {
+            assert_eq!(paths[0], "/tmp/open-contract-command-tmp");
+        }
+    }
+    let host_dir_count = observed_host_dirs.len();
+    observed_host_dirs.sort();
+    observed_host_dirs.dedup();
+    assert_eq!(
+        observed_host_dirs.len(),
+        host_dir_count,
+        "each command gets a distinct tempdir"
+    );
+}
+
+#[test]
+fn command_temporary_directory_is_removed_after_nonzero_exit() {
+    let root = tempfile::tempdir().expect("contract root");
+    let report = root.path().join("temporary-environment.txt");
+    let command = vec![
+        "/bin/sh".to_string(),
+        "-c".to_string(),
+        "printf '%s' \"$TMPDIR\" > \"$1\"; touch \"$TMPDIR/contract-marker\"; exit 13".to_string(),
+        "contract-command".to_string(),
+        report.to_string_lossy().into_owned(),
+    ];
+    let output = run(
+        Backend::None,
+        root.path(),
+        root.path(),
+        &[],
+        &[],
+        &command,
+        b"",
+        None,
+        false,
+    )
+    .expect("nonzero status is still returned as command output");
+    assert_eq!(output.status.code(), Some(13));
+    let tmpdir = fs::read_to_string(report).expect("temporary path report");
+    assert!(!PathBuf::from(tmpdir).exists());
+}
+
+#[test]
 // Dataset cases cannot inject an OS-level failure while opening a Landlock
 // rule path. This checks that both the injected open error and a missing path
 // are returned as actionable errors.

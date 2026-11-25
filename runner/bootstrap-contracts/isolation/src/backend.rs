@@ -77,6 +77,7 @@ fn probe_isolated_command(
             &[],
             &plan.runtime,
             false,
+            package.path(),
         )?,
         ProbeBackend::Landlock => run_landlock(
             package.path(),
@@ -86,6 +87,7 @@ fn probe_isolated_command(
             &plan.command,
             &[],
             &plan.runtime,
+            package.path(),
         )?,
     };
     if output.status.success() {
@@ -112,13 +114,19 @@ pub(super) fn run_prepared(
 ) -> Result<Output, String> {
     let runtime = plan.runtime;
     let argv = plan.command;
+    let command_tmp = tempfile::Builder::new()
+        .prefix("open-contract-command-")
+        .tempdir()
+        .map_err(|error| format!("cannot create contract command temporary directory: {error}"))?;
     match backend {
         Backend::TempDir | Backend::None => {
             let root = package_root
                 .canonicalize()
                 .map_err(|error| error.to_string())?;
             let cwd = checked_working_directory(&root, working_directory)?;
-            let mut command = command(&argv, &cwd.host, &runtime.environment);
+            let mut environment = runtime.environment.clone();
+            set_temp_environment(&mut environment, command_tmp.path());
+            let mut command = command(&argv, &cwd.host, &environment);
             collect_output(&mut command, input)
         }
         Backend::Bubblewrap => run_bubblewrap(
@@ -130,6 +138,7 @@ pub(super) fn run_prepared(
             input,
             &runtime,
             tempdir_mode,
+            command_tmp.path(),
         ),
         Backend::Landlock => run_landlock(
             package_root,
@@ -139,6 +148,7 @@ pub(super) fn run_prepared(
             &argv,
             input,
             &runtime,
+            command_tmp.path(),
         ),
     }
 }
@@ -478,6 +488,7 @@ fn run_bubblewrap(
     input: &[u8],
     runtime: &Runtime,
     tempdir_mode: bool,
+    command_tmp: &Path,
 ) -> Result<Output, String> {
     let bwrap = find_executable("bwrap")
         .ok_or_else(|| "bwrap is not installed or not on PATH".to_string())?;
@@ -509,6 +520,11 @@ fn run_bubblewrap(
         "/contract".into(),
     ]);
     created.insert("/contract".into());
+    created.insert("/tmp".into());
+    let guest_tmp = Path::new("/tmp/open-contract-command-tmp");
+    args.extend(["--dir".into(), guest_tmp.to_string_lossy().into_owned()]);
+    created.insert(guest_tmp.to_string_lossy().into_owned());
+    bind_writable(&mut args, command_tmp, guest_tmp, &mut created);
     args.push("--dir".into());
     args.push(guest.clone());
     created.insert(guest.clone());
@@ -539,7 +555,8 @@ fn run_bubblewrap(
 
     let mut child = Command::new(bwrap);
     child.args(args).arg("--chdir").arg(guest_cwd);
-    let safe_env = safe_environment(&runtime.environment);
+    let mut safe_env = safe_environment(&runtime.environment);
+    set_temp_environment(&mut safe_env, guest_tmp);
     for (key, value) in &safe_env {
         child.arg("--setenv").arg(key).arg(value);
     }
@@ -564,6 +581,7 @@ fn run_landlock(
     argv: &[String],
     input: &[u8],
     runtime: &Runtime,
+    command_tmp: &Path,
 ) -> Result<Output, String> {
     let root = package_root
         .canonicalize()
@@ -579,9 +597,12 @@ fn run_landlock(
     for path in &runtime.roots {
         allowed.push((path.clone(), false));
     }
+    allowed.push((command_tmp.to_path_buf(), true));
     let rules = landlock_rules(&allowed)?;
     let ruleset = create_landlock_ruleset(&rules).map_err(|error| error.to_string())?;
-    let mut child = command(argv, &cwd.host, &safe_environment(&runtime.environment));
+    let mut environment = safe_environment(&runtime.environment);
+    set_temp_environment(&mut environment, command_tmp);
+    let mut child = command(argv, &cwd.host, &environment);
     unsafe {
         child.pre_exec(landlock_pre_exec(ruleset, install_landlock));
     }
@@ -770,6 +791,13 @@ fn safe_environment(runtime: &BTreeMap<String, String>) -> BTreeMap<String, Stri
             .map(|(key, value)| (key.clone(), value.clone())),
     );
     environment
+}
+
+fn set_temp_environment(environment: &mut BTreeMap<String, String>, path: &Path) {
+    let path = path.to_string_lossy().into_owned();
+    for key in ["TMPDIR", "TMP", "TEMP"] {
+        environment.insert(key.to_owned(), path.clone());
+    }
 }
 
 #[cfg(target_os = "linux")]

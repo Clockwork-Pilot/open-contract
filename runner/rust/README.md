@@ -119,9 +119,17 @@ Landlock enforce the declared paths using their native mechanisms.
 
 Nested contracts in a `tempdir` run share one randomized temporary tree. In
 the direct modes, nested contracts remain at their source paths in the
-checkout. Rust invokes each contract's declared command once for its full
-batch. The runner uses only the runtime manifest named by `language_adapter`;
-it does not infer adapter dependencies from a language name.
+checkout. For every invocation of a contract's `execution.command`, Rust
+creates a unique temporary directory under the standard OS temporary root and
+sets `TMPDIR`, `TMP`, and `TEMP` to that path. The directory is removed by the
+runner after the command exits, including when it returns a failure status.
+Bubblewrap exposes that directory inside its private `/tmp`; Landlock grants
+the command write access to only that temporary directory. Contract commands
+should use these variables or their language's standard temporary-file API
+instead of creating static scratch directories without a specific need. Rust
+invokes each contract's declared command once for its full batch. The runner
+uses only the runtime manifest named by `language_adapter`; it does not infer
+adapter dependencies from a language name.
 
 For `bwrap` and `landlock`, the runner selects the corresponding bundled system
 runtime YAML from `runner/isolation-runtime/<backend>.yaml`. Override that
