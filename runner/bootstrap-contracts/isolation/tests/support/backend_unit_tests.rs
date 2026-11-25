@@ -1,8 +1,8 @@
 use crate::backend::{
-    canonicalize_runner_root, collect_output, collect_output_with_wait, create_landlock_ruleset,
+    collect_output, collect_output_with_wait, create_landlock_ruleset,
     create_landlock_ruleset_with, install_landlock, install_landlock_with, landlock_pre_exec,
-    landlock_rules, landlock_rules_with_open, open_landlock_rule_path, run,
-    runtime_command_roots_for_executable, runtime_with_root_path, LandlockCall,
+    landlock_rules, landlock_rules_with_open, open_landlock_rule_path, run, runtime,
+    runtime_command_roots_for_executable, LandlockCall,
 };
 use crate::Backend;
 use std::fs;
@@ -10,6 +10,49 @@ use std::io;
 use std::os::fd::FromRawFd;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
+
+#[test]
+fn embedded_isolation_runtime_defaults_do_not_require_runner_checkout() {
+    for backend in [Backend::Bubblewrap, Backend::Landlock] {
+        runtime(backend, None)
+            .unwrap_or_else(|error| panic!("{backend:?} embedded runtime failed: {error}"));
+    }
+}
+
+#[test]
+fn isolation_runtime_override_is_loaded_without_runner_checkout() {
+    let temporary = tempfile::tempdir().expect("temporary directory");
+    let readable = temporary
+        .path()
+        .canonicalize()
+        .expect("canonical temp path");
+    let manifest = temporary.path().join("override.yaml");
+    fs::write(
+        &manifest,
+        format!(
+            "version: 1\nread_only:\n  - {}\ncommand_executable: false\n",
+            readable.display()
+        ),
+    )
+    .expect("write override manifest");
+    runtime(Backend::Bubblewrap, Some(&manifest))
+        .expect("explicit override should not need the runner checkout");
+
+    fs::write(&manifest, "version: 2\n").expect("write invalid override manifest");
+    let error = match runtime(Backend::Bubblewrap, Some(&manifest)) {
+        Ok(_) => panic!("unsupported override version must fail validation"),
+        Err(error) => error,
+    };
+    assert!(error.contains("unsupported isolation runtime manifest version 2"));
+}
+
+#[test]
+fn backends_without_runtime_manifests_do_not_require_runner_checkout() {
+    for backend in [Backend::None, Backend::TempDir] {
+        runtime(backend, None)
+            .unwrap_or_else(|error| panic!("{backend:?} runtime unexpectedly failed: {error}"));
+    }
+}
 
 fn fixture_fd() -> libc::c_long {
     let path = std::ffi::CString::new("/dev/null").unwrap_or_default();
@@ -288,13 +331,7 @@ pub(crate) fn exercise_backend_error_paths() -> Result<(), String> {
     };
     assert!(wait_error.contains("injected wait failure"));
 
-    assert!(canonicalize_runner_root(&root.path().join("missing-runner-root")).is_err());
-    assert!(runtime_with_root_path(
-        Backend::None,
-        None,
-        &root.path().join("missing-configured-runner-root"),
-    )
-    .is_err());
+    runtime(Backend::None, None).expect("none backend does not use runtime manifests");
 
     let ruleset_fd = fixture_fd();
     if ruleset_fd < 0 {

@@ -360,36 +360,30 @@ struct IsolationRuntimeManifest {
     command_executable: bool,
 }
 
-fn runtime(
+pub(super) fn runtime(
     backend: Backend,
     isolation_runtime: Option<&Path>,
 ) -> Result<Runtime, String> {
-    runtime_with_root_path(
-        backend,
-        isolation_runtime,
-        &Path::new(env!("CARGO_MANIFEST_DIR")).join("../../.."),
-    )
-}
-
-pub(super) fn runtime_with_root_path(
-    backend: Backend,
-    isolation_runtime: Option<&Path>,
-    runner_root: &Path,
-) -> Result<Runtime, String> {
-    let repository = canonicalize_runner_root(runner_root)?;
     let mut runtime = Runtime {
         roots: Vec::new(),
         environment: BTreeMap::new(),
         command_executable: false,
     };
     if let Some(runtime_name) = backend.runtime_manifest_name() {
-        let runtime_manifest = match isolation_runtime {
-            Some(path) => path.to_path_buf(),
-            None => repository
-                .join("runner/isolation-runtime")
-                .join(format!("{runtime_name}.yaml")),
-        };
-        add_isolation_runtime(&mut runtime, &runtime_manifest)?;
+        if let Some(path) = isolation_runtime {
+            add_isolation_runtime(&mut runtime, path)?;
+        } else {
+            let manifest = match runtime_name {
+                "bwrap" => include_str!("../../../isolation-runtime/bwrap.yaml"),
+                "landlock" => include_str!("../../../isolation-runtime/landlock.yaml"),
+                _ => unreachable!("Backend only names supported runtime manifests"),
+            };
+            add_isolation_runtime_contents(
+                &mut runtime,
+                &format!("embedded {runtime_name} runtime manifest"),
+                manifest.as_bytes(),
+            )?;
+        }
     }
     runtime.roots.sort();
     runtime.roots.dedup();
@@ -403,12 +397,16 @@ fn add_isolation_runtime(runtime: &mut Runtime, manifest_path: &Path) -> Result<
             manifest_path.display()
         )
     })?;
-    let manifest: IsolationRuntimeManifest = serde_yaml::from_slice(&bytes).map_err(|error| {
-        format!(
-            "invalid isolation runtime manifest {}: {error}",
-            manifest_path.display()
-        )
-    })?;
+    add_isolation_runtime_contents(runtime, &manifest_path.display().to_string(), &bytes)
+}
+
+fn add_isolation_runtime_contents(
+    runtime: &mut Runtime,
+    source: &str,
+    bytes: &[u8],
+) -> Result<(), String> {
+    let manifest: IsolationRuntimeManifest = serde_yaml::from_slice(bytes)
+        .map_err(|error| format!("invalid isolation runtime manifest {source}: {error}"))?;
     if manifest.version != 1 {
         return Err(format!(
             "unsupported isolation runtime manifest version {}",
@@ -677,11 +675,6 @@ fn guest_root(root: &Path, tempdir_mode: bool) -> Result<String, String> {
 
 fn guest_path_within_root(guest: &str, source: &CheckedPath) -> PathBuf {
     Path::new(guest).join(&source.relative)
-}
-
-pub(super) fn canonicalize_runner_root(path: &Path) -> Result<PathBuf, String> {
-    path.canonicalize()
-        .map_err(|error| format!("runner root is unavailable: {error}"))
 }
 
 fn map_package_argument(argument: &str, root: &Path, guest: &str) -> String {
