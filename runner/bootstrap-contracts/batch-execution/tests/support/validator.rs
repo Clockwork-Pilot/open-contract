@@ -150,6 +150,18 @@ fn validate_dataset_entry_with_adapter(
         "coverage_sources": [validator],
         "filesystem": {"read": [dataset_name, validator], "write": []}
     });
+    if let Some(external_read_path) = input["external_read_path"].as_str() {
+        manifest["filesystem"]["read"]
+            .as_array_mut()
+            .ok_or_else(|| "fixture read list must be an array".to_string())?
+            .push(json!(external_read_path));
+    }
+    if let Some(duplicate_read_path) = input["duplicate_read_path"].as_str() {
+        manifest["filesystem"]["read"]
+            .as_array_mut()
+            .ok_or_else(|| "fixture read list must be an array".to_string())?
+            .push(json!(duplicate_read_path));
+    }
     if input["support"].as_bool() == Some(true) || input["support_path"].is_string() {
         let support = input["support_path"]
             .as_str()
@@ -189,7 +201,8 @@ fn validate_dataset_entry_with_adapter(
             Some("landlock") => Backend::Landlock,
             _ => return Err("show-isolation-plan requires a supported backend".into()),
         };
-        let actual = match show_isolation_plan(&manifest_path, backend, None) {
+        let isolation_runtime = input["isolation_runtime"].as_str().map(PathBuf::from);
+        let actual = match show_isolation_plan(&manifest_path, backend, isolation_runtime) {
             Ok(output) => json!({"plan": output}),
             Err(error) => json!({"error": error}),
         };
@@ -336,13 +349,7 @@ fn add_nested_contract(package: &Path, input: &Value, manifest: &mut Value) -> R
             "version: '1'\nname: shared\ndatasets: [dataset.json]\ncoverage_sources: [validator.py]\nfilesystem: {read: [dataset.json, validator.py], write: []}\n",
         )?;
         manifest["nested_contracts"] = json!(["left/open-contract.yaml", "right/open-contract.yaml"]);
-        manifest["filesystem"]["read"] = json!([
-            "dataset.json",
-            "validator.py",
-            "left",
-            "right",
-            "shared"
-        ]);
+        manifest["filesystem"]["read"] = json!(["dataset.json", "validator.py", "left", "right", "shared"]);
         return Ok(());
     }
     if !duplicate_name && !cycle && !nested_contract {
@@ -383,7 +390,10 @@ fn add_nested_contract(package: &Path, input: &Value, manifest: &mut Value) -> R
         "version: '1'\nname: {name}\ndatasets: [dataset.json]\ncoverage_sources: [validator.py]\n{nested}filesystem:\n  read: [dataset.json, validator.py{}]\n  write: []\n",
         if cycle { format!(", {child_filename}") } else { String::new() }
     );
-    write(nested_manifest, &child_manifest)?;
+    write(nested_manifest.clone(), &child_manifest)?;
+    if input["bad_nested_manifest"].as_bool() == Some(true) {
+        write(nested_manifest, "version: [\n")?;
+    }
     manifest["nested_contracts"] = json!([nested_manifest_path]);
     let reads = if input["support"].as_bool() == Some(true) || input["support_path"].is_string() {
         let support = input["support_path"]

@@ -162,8 +162,8 @@ pub fn show_isolation_plan(
     isolation_runtime: Option<PathBuf>,
 ) -> Result<String, String> {
     let root = ManifestPlan::load(manifest_path)?;
-    let tree = StagedTree::create_for_backend(&root, backend, isolation_runtime)?;
     let mut output = String::new();
+    let tree_result = StagedTree::create_for_backend(&root, backend, isolation_runtime);
 
     let backend_name = match backend {
         Backend::TempDir => "tempdir",
@@ -179,59 +179,178 @@ pub fn show_isolation_plan(
             "Filesystem enforcement: none (contract files are copied to a temporary tree)\n",
         );
     }
+    write_backend_mounts(&mut output, backend);
+    let (plans, traversal_diagnostics) = preview_contract_plans(&root);
+    let mut diagnostics = traversal_diagnostics;
+    let (read_paths, write_paths, display_root) = match &tree_result {
+        Ok(tree) => (
+            tree.read.clone(),
+            tree.write.clone(),
+            Some(tree.root.as_path()),
+        ),
+        Err(error) => {
+            diagnostics.push(format!("filesystem staging is incomplete: {error}"));
+            let (read, write) = declared_plan_paths(&plans);
+            (read, write, None)
+        }
+    };
     output.push_str("Contract read-only paths:\n");
-    for path in &tree.read {
-        let full_path = tree.root.join(path);
-        let kind = if full_path.is_dir() {
-            "recursive"
-        } else {
-            "file"
-        };
-        output.push_str(&format!("  {path} ({kind})\n"));
-    }
+    write_plan_paths(&mut output, &read_paths, display_root);
     output.push_str("Contract writable paths:\n");
-    for path in &tree.write {
-        let full_path = tree.root.join(path);
-        let kind = if full_path.is_dir() {
-            "recursive"
-        } else {
-            "file"
-        };
-        output.push_str(&format!("  {path} ({kind})\n"));
-    }
+    write_plan_paths(&mut output, &write_paths, display_root);
 
-    for (manifest, prefix) in &tree.manifests {
-        let execution = manifest.manifest.execution.as_ref().ok_or_else(|| {
-            format!(
-                "contract {} is missing execution.command",
-                manifest.manifest.name
-            )
-        })?;
-        let working_directory = tree.root.join(prefix);
-        let command = tree.plan_command_at(backend, &working_directory, &execution.command)?;
+    for (manifest, prefix) in &plans {
         output.push_str(&format!("Contract {}:\n", manifest.manifest.name));
-        output.push_str(&format!(
-            "  Working directory: {}\n",
-            command.working_directory.display()
-        ));
-        output.push_str(&format!("  Command argv: {:?}\n", command.command));
-        if let Some(executable) = command.resolved_executable {
-            output.push_str(&format!(
-                "  Resolved executable: {}\n",
-                executable.display()
-            ));
+        let execution = manifest.manifest.execution.as_ref();
+        match (&tree_result, execution) {
+            (Ok(tree), Some(execution)) => {
+                let working_directory = tree.root.join(prefix);
+                match tree.plan_command_at(backend, &working_directory, &execution.command) {
+                    Ok(command) => {
+                        write_command_plan(&mut output, &command);
+                    }
+                    Err(error) => {
+                        output.push_str(&format!(
+                            "  Working directory: {}\n",
+                            working_directory.display()
+                        ));
+                        output.push_str(&format!("  Command argv: {:?}\n", execution.command));
+                        output.push_str("  Runtime plan: unavailable\n");
+                        diagnostics.push(format!(
+                            "contract {} runtime plan is incomplete: {error}",
+                            manifest.manifest.name
+                        ));
+                    }
+                }
+            }
+            (Err(_), Some(execution)) => {
+                output.push_str(&format!(
+                    "  Working directory: {}\n",
+                    manifest.package_root.join(prefix).display()
+                ));
+                output.push_str(&format!("  Command argv: {:?}\n", execution.command));
+                output.push_str("  Runtime plan: unavailable (filesystem staging failed)\n");
+            }
+            (_, None) => {
+                output.push_str(&format!(
+                    "  Working directory: {}\n",
+                    manifest.package_root.join(prefix).display()
+                ));
+                output.push_str("  Command: unavailable (execution.command is missing)\n");
+                diagnostics.push(format!(
+                    "contract {} is missing execution.command",
+                    manifest.manifest.name
+                ));
+            }
         }
-        output.push_str("  Runtime read-only paths:\n");
-        for path in command.runtime_roots {
-            let kind = if path.is_dir() { "recursive" } else { "file" };
-            output.push_str(&format!("    {} ({kind})\n", path.display()));
-        }
-        if backend == Backend::Bubblewrap {
-            output.push_str("  Bubblewrap fixed mounts: /proc, /dev, /tmp, /contract\n");
-            output.push_str("  Bubblewrap contract root: /contract/<randomized-root>\n");
+    }
+    if !diagnostics.is_empty() {
+        output.push_str("Plan diagnostics (some details may be unavailable):\n");
+        for diagnostic in diagnostics {
+            output.push_str(&format!("  Warning: {diagnostic}\n"));
         }
     }
     Ok(output)
+}
+
+fn write_command_plan(output: &mut String, command: &runner_isolation::StagedCommandPlan) {
+    output.push_str(&format!(
+        "  Working directory: {}\n",
+        command.working_directory.display()
+    ));
+    output.push_str(&format!("  Command argv: {:?}\n", command.command));
+    if let Some(executable) = &command.resolved_executable {
+        output.push_str(&format!(
+            "  Resolved executable: {}\n",
+            executable.display()
+        ));
+    }
+    output.push_str("  Runtime read-only paths:\n");
+    for path in &command.runtime_roots {
+        let kind = if path.is_dir() { "recursive" } else { "file" };
+        output.push_str(&format!("    {} ({kind})\n", path.display()));
+    }
+}
+
+fn write_backend_mounts(output: &mut String, backend: Backend) {
+    if backend == Backend::Bubblewrap {
+        output.push_str("Bubblewrap fixed mounts: /proc, /dev, /tmp, /contract\n");
+        output.push_str("Bubblewrap contract root: /contract/<randomized-root>\n");
+    }
+}
+
+fn preview_contract_plans(root: &ManifestPlan) -> (Vec<(ManifestPlan, PathBuf)>, Vec<String>) {
+    let mut plans = vec![(root.clone(), PathBuf::new())];
+    let mut diagnostics = Vec::new();
+    let mut index = 0;
+    while index < plans.len() {
+        let (parent, _) = plans[index].clone();
+        for nested in &parent.manifest.nested_contracts {
+            match runner_manifest::resolve_nested_manifest_path(&parent.package_root, nested)
+                .and_then(ManifestPlan::load)
+            {
+                Ok(child) => {
+                    let child_prefix = child
+                        .package_root
+                        .strip_prefix(&root.package_root)
+                        .unwrap_or(child.package_root.as_path())
+                        .to_path_buf();
+                    if !plans
+                        .iter()
+                        .any(|(existing, _)| existing.manifest_path == child.manifest_path)
+                    {
+                        plans.push((child, child_prefix));
+                    }
+                }
+                Err(error) => diagnostics.push(format!(
+                    "nested contract {nested:?} declared by {} could not be loaded: {error}",
+                    parent.manifest.name
+                )),
+            }
+        }
+        index += 1;
+    }
+    (plans, diagnostics)
+}
+
+fn declared_plan_paths(plans: &[(ManifestPlan, PathBuf)]) -> (Vec<String>, Vec<String>) {
+    let mut read = Vec::new();
+    let mut write = Vec::new();
+    for (manifest, prefix) in plans {
+        for (entries, destination) in [
+            (&manifest.manifest.filesystem.read, &mut read),
+            (&manifest.manifest.filesystem.write, &mut write),
+        ] {
+            for raw in entries {
+                let path = Path::new(raw);
+                let display = if path.is_absolute() {
+                    path.display().to_string()
+                } else {
+                    prefix.join(path).display().to_string()
+                };
+                if !destination.contains(&display) {
+                    destination.push(display);
+                }
+            }
+        }
+    }
+    (read, write)
+}
+
+fn write_plan_paths(output: &mut String, paths: &[String], display_root: Option<&Path>) {
+    for path in paths {
+        let candidate = display_root.map_or_else(|| PathBuf::from(path), |root| root.join(path));
+        let kind = if candidate.is_dir() {
+            "recursive"
+        } else if candidate.is_file() {
+            "file"
+        } else if candidate.extension().is_some() {
+            "file"
+        } else {
+            "recursive"
+        };
+        output.push_str(&format!("  {path} ({kind})\n"));
+    }
 }
 
 /// Contract command contract: each command receives one complete flattened

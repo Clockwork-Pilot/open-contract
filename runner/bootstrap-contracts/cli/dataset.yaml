@@ -1142,6 +1142,29 @@ cases:
   predicate: .exit_code == 0 AND .stderr == "" AND .stdout != ""
   expected: {}
   coverage_fingerprint: cb5d5bfedd386fb737f054f71f0719b5
+- id: show-plan-prints-partial-plan-before-staging-warning
+  setup: true
+  input:
+    args:
+    - show-isolation-plan
+    - contract.yaml
+    - --isolation
+    - tempdir
+    files:
+      contract.yaml: "version: '1'\nname: cli-partial-plan-fixture\nfilesystem:\n\
+        \  read:\n  - dataset.json\n  - validator.py\n  - /etc/ssl/certs/ca-certificates.crt\n\
+        \  write: []\nexecution:\n  command:\n  - /bin/true\ndatasets:\n- dataset.json\n\
+        coverage_sources:\n- validator.py\n"
+      dataset.json: '{"version":1,"cases":[]}'
+      validator.py: 'def validate(value): return value
+
+        '
+  predicate: .exit_code == 0 AND .stderr == "" AND contains(.stdout, "Contract read-only
+    paths:") AND contains(.stdout, "/etc/ssl/certs/ca-certificates.crt") AND contains(.stdout,
+    "Command argv:") AND contains(.stdout, "Plan diagnostics") AND contains(.stdout,
+    "outside the staged source root")
+  expected: {}
+  coverage_fingerprint: 053a49536e267cccb47b8ef5401ae0f7
 - id: reports-validator-error-without-actual-output
   setup: true
   input:
