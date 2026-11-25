@@ -8,12 +8,12 @@ cases:
     exit_code: 2
     stdout: ''
     stderr: 'contract-runner: usage: contract-runner <run-manifest|show-isolation-plan>
-      <contract.yaml> [--isolation <auto|tempdir|none|bwrap|landlock>] [--isolation-runtime
+      <manifest-path> [--isolation <auto|tempdir|none|bwrap|landlock>] [--isolation-runtime
       <path>] [--coverage-report <path>] [--disable-fingerprints|--update-fingerprints]
       [--no-nested-contracts]
 
       '
-  coverage_fingerprint: 2f496d6de5c212f94a99b14d5da3c253
+  coverage_fingerprint: 56c78783f7c7fdfad4f14495d8b51a2b
 - id: unknown-subcommand-is-rejected
   setup: false
   input:
@@ -23,12 +23,12 @@ cases:
     exit_code: 2
     stdout: ''
     stderr: 'contract-runner: usage: contract-runner <run-manifest|show-isolation-plan>
-      <contract.yaml> [--isolation <auto|tempdir|none|bwrap|landlock>] [--isolation-runtime
+      <manifest-path> [--isolation <auto|tempdir|none|bwrap|landlock>] [--isolation-runtime
       <path>] [--coverage-report <path>] [--disable-fingerprints|--update-fingerprints]
       [--no-nested-contracts]
 
       '
-  coverage_fingerprint: 2f496d6de5c212f94a99b14d5da3c253
+  coverage_fingerprint: 56c78783f7c7fdfad4f14495d8b51a2b
 - id: show-plan-requires-manifest
   setup: false
   input:
@@ -53,12 +53,122 @@ cases:
 
       '
   coverage_fingerprint: d0aa6557d82b95e61b9422b28739b6ee
+- id: run-manifest-accepts-open-contract-yaml
+  setup: false
+  input:
+    args:
+    - run-manifest
+    - open-contract.yaml
+    - --isolation
+    - none
+  expected:
+    exit_code: 2
+    stdout: 'Isolation mode: none
+
+      '
+    stderr: 'contract-runner: contract execution: No such file or directory (os error
+      2)
+
+      '
+  coverage_fingerprint: d13839645f947be03fe57cbde4a58845
+- id: run-manifest-accepts-qualified-open-contract-yaml
+  setup: false
+  input:
+    args:
+    - run-manifest
+    - open-contract.debug.yaml
+    - --isolation
+    - none
+  expected:
+    exit_code: 2
+    stdout: 'Isolation mode: none
+
+      '
+    stderr: 'contract-runner: contract execution: No such file or directory (os error
+      2)
+
+      '
+  coverage_fingerprint: d13839645f947be03fe57cbde4a58845
+- id: run-manifest-accepts-prefixed-open-contract-yml
+  setup: false
+  input:
+    args:
+    - run-manifest
+    - debug.open-contract.yml
+    - --isolation
+    - none
+  expected:
+    exit_code: 2
+    stdout: 'Isolation mode: none
+
+      '
+    stderr: 'contract-runner: contract execution: No such file or directory (os error
+      2)
+
+      '
+  coverage_fingerprint: d13839645f947be03fe57cbde4a58845
+- id: run-manifest-rejects-unmarked-root-filename
+  setup: false
+  input:
+    args:
+    - run-manifest
+    - contract.yaml
+  expected:
+    exit_code: 2
+    stdout: ''
+    stderr: 'contract-runner: run-manifest manifest filename must contain a dot-delimited
+      open-contract segment before .yaml or .yml
+
+      '
+  coverage_fingerprint: 09ca52d8acfbe83945f0bc64cbb2ddb0
+- id: run-manifest-rejects-marker-substring
+  setup: false
+  input:
+    args:
+    - run-manifest
+    - debug.open-contracting.yaml
+  expected:
+    exit_code: 2
+    stdout: ''
+    stderr: 'contract-runner: run-manifest manifest filename must contain a dot-delimited
+      open-contract segment before .yaml or .yml
+
+      '
+  coverage_fingerprint: 09ca52d8acfbe83945f0bc64cbb2ddb0
+- id: run-manifest-rejects-unsupported-extension
+  setup: false
+  input:
+    args:
+    - run-manifest
+    - open-contract.json
+  expected:
+    exit_code: 2
+    stdout: ''
+    stderr: 'contract-runner: run-manifest manifest filename must contain a dot-delimited
+      open-contract segment before .yaml or .yml
+
+      '
+  coverage_fingerprint: 09ca52d8acfbe83945f0bc64cbb2ddb0
+- id: run-manifest-rejects-path-without-basename
+  setup: false
+  input:
+    args:
+    - run-manifest
+    - .
+  expected:
+    exit_code: 2
+    stdout: ''
+    stderr: 'contract-runner: run-manifest manifest filename must contain a dot-delimited
+      open-contract segment before .yaml or .yml
+
+      '
+  coverage_fingerprint: 09ca52d8acfbe83945f0bc64cbb2ddb0
 - id: run-manifest-defaults-to-auto-isolation
   setup: true
   input:
     args:
     - run-manifest
-    - missing.yaml
+    - open-contract.yaml
     environment: {}
     files:
       bin/bwrap: '#!/bin/sh
@@ -73,13 +183,13 @@ cases:
 
       '
   predicate: 'contains(.stdout, ''Isolation auto selected: bwrap'')'
-  coverage_fingerprint: dae75aecce3f6f3fd23a1f3128a9582e
+  coverage_fingerprint: 573787cb42145b9ca18db44e5c35f44e
 - id: run-manifest-explicitly-selects-landlock
   setup: false
   input:
     args:
     - run-manifest
-    - missing.yaml
+    - open-contract.yaml
     - --isolation
     - landlock
   expected:
@@ -91,13 +201,13 @@ cases:
       2)
 
       '
-  coverage_fingerprint: 149ff0f00e1654e6b3e0616deee6f705
+  coverage_fingerprint: 6f6a88f6027f2721a3cf994b14bafe78
 - id: run-manifest-auto-prefers-bwrap
   setup: true
   input:
     args:
     - run-manifest
-    - missing.yaml
+    - open-contract.yaml
     - --isolation
     - auto
     environment: {}
@@ -114,13 +224,13 @@ cases:
 
       '
   predicate: 'contains(.stdout, ''Isolation auto selected: bwrap'')'
-  coverage_fingerprint: d3ef239ffb20fd738efa3c1874ee9141
+  coverage_fingerprint: 07d1e72509bb138c8c56412c6a365462
 - id: run-manifest-auto-falls-back-to-tempdir
   setup: false
   input:
     args:
     - run-manifest
-    - missing.yaml
+    - open-contract.yaml
     - --isolation
     - auto
     - --isolation-runtime
@@ -132,13 +242,13 @@ cases:
 
       '
   predicate: 'contains(.stdout, ''Isolation auto selected: tempdir'')'
-  coverage_fingerprint: bcdd1126499c50010404f82db10a3a49
+  coverage_fingerprint: d8428d33e662a65cac2c341c76d95e08
 - id: run-manifest-auto-falls-back-to-none
   setup: true
   input:
     args:
     - run-manifest
-    - missing.yaml
+    - open-contract.yaml
     - --isolation
     - auto
     - --isolation-runtime
@@ -153,13 +263,13 @@ cases:
 
       '
   predicate: 'contains(.stdout, ''Isolation auto selected: none'')'
-  coverage_fingerprint: d005dfc1ed2e8863368fc11c0a526704
+  coverage_fingerprint: e2e737bb056f30463ddebab261db4502
 - id: run-manifest-uses-isolation-environment
   setup: true
   input:
     args:
     - run-manifest
-    - missing.yaml
+    - open-contract.yaml
     environment:
       OPEN_CONTRACT_ISOLATION: none
   expected:
@@ -171,13 +281,13 @@ cases:
       2)
 
       '
-  coverage_fingerprint: 8cd51e67f8aeb2fe27ce0052ae720839
+  coverage_fingerprint: 8f1aedc8c9e501f4167a143f1a0b4f39
 - id: run-manifest-rejects-invalid-isolation-environment
   setup: true
   input:
     args:
     - run-manifest
-    - missing.yaml
+    - open-contract.yaml
     environment:
       OPEN_CONTRACT_ISOLATION: invalid
   expected:
@@ -187,13 +297,13 @@ cases:
       tempdir, none, bwrap, or landlock
 
       '
-  coverage_fingerprint: ce1c812188a7bb050f11da6dd4054b5e
+  coverage_fingerprint: d22032ba77473c69013291b94f80ba7a
 - id: rejects-unknown-option
   setup: false
   input:
     args:
     - run-manifest
-    - missing.yaml
+    - open-contract.yaml
     - --isolation
     - none
     - --unknown
@@ -203,13 +313,13 @@ cases:
     stderr: 'contract-runner: unknown argument: --unknown
 
       '
-  coverage_fingerprint: 5bd1b1587b4b5551bde0209daf701683
+  coverage_fingerprint: 24953803aec3273269b3bd8ea01ad249
 - id: rejects-invalid-isolation-backend
   setup: false
   input:
     args:
     - run-manifest
-    - missing.yaml
+    - open-contract.yaml
     - --isolation
     - invalid
   expected:
@@ -219,13 +329,13 @@ cases:
       tempdir, none, bwrap, or landlock
 
       '
-  coverage_fingerprint: 5e343dc256762f80dc65e75c22dda71a
+  coverage_fingerprint: daa467ca42628882bbdad1a5dc06cd44
 - id: rejects-runtime-with-no-isolation
   setup: false
   input:
     args:
     - run-manifest
-    - missing.yaml
+    - open-contract.yaml
     - --isolation
     - none
     - --isolation-runtime
@@ -239,13 +349,13 @@ cases:
       none
 
       '
-  coverage_fingerprint: 0c2c1272f4360c9548fa8fb641fe8c70
+  coverage_fingerprint: cea66fb32d784ff9bbbb70ee685ab9ba
 - id: rejects-runtime-with-tempdir
   setup: false
   input:
     args:
     - run-manifest
-    - missing.yaml
+    - open-contract.yaml
     - --isolation
     - tempdir
     - --isolation-runtime
@@ -259,13 +369,13 @@ cases:
       tempdir
 
       '
-  coverage_fingerprint: 05947cb10fb72ce7f4644f95fdea3339
+  coverage_fingerprint: 43b32faac1e0557a387c561002a202da
 - id: show-plan-defaults-to-auto-isolation
   setup: true
   input:
     args:
     - show-isolation-plan
-    - missing.yaml
+    - open-contract.yaml
     environment: {}
   expected:
     exit_code: 2
@@ -280,7 +390,7 @@ cases:
   input:
     args:
     - show-isolation-plan
-    - missing.yaml
+    - open-contract.yaml
     environment:
       OPEN_CONTRACT_ISOLATION: none
   expected:
@@ -296,7 +406,7 @@ cases:
   input:
     args:
     - show-isolation-plan
-    - missing.yaml
+    - open-contract.yaml
     environment:
       OPEN_CONTRACT_ISOLATION: invalid
   expected:
@@ -312,7 +422,7 @@ cases:
   input:
     args:
     - run-manifest
-    - missing.yaml
+    - open-contract.yaml
     environment:
       OPEN_CONTRACT_ISOLATION: none
       OPEN_CONTRACT_DISABLE_FINGERPRINTS: 'false'
@@ -325,13 +435,13 @@ cases:
       2)
 
       '
-  coverage_fingerprint: d40cdd25222b08a38cf506821a277052
+  coverage_fingerprint: ba51fa9a9fa49381b83fcf1ddee04043
 - id: rejects-invalid-fingerprint-environment
   setup: true
   input:
     args:
     - run-manifest
-    - missing.yaml
+    - open-contract.yaml
     environment:
       OPEN_CONTRACT_ISOLATION: none
       OPEN_CONTRACT_DISABLE_FINGERPRINTS: invalid
@@ -344,13 +454,13 @@ cases:
       yes/no, or on/off
 
       '
-  coverage_fingerprint: 545e6d3d6db92b02ecca54aff0900740
+  coverage_fingerprint: 49635a96d8945914b3e76efd8e5fc927
 - id: show-plan-requires-isolation-value
   setup: false
   input:
     args:
     - show-isolation-plan
-    - missing.yaml
+    - open-contract.yaml
     - --isolation
   expected:
     exit_code: 2
@@ -364,7 +474,7 @@ cases:
   input:
     args:
     - show-isolation-plan
-    - missing.yaml
+    - open-contract.yaml
     - --isolation
     - invalid
   expected:
@@ -380,7 +490,7 @@ cases:
   input:
     args:
     - run-manifest
-    - missing.yaml
+    - open-contract.yaml
     - --isolation
   expected:
     exit_code: 2
@@ -388,13 +498,13 @@ cases:
     stderr: 'contract-runner: missing isolation backend
 
       '
-  coverage_fingerprint: 36a73890915811d5afaa5e74f347d0de
+  coverage_fingerprint: 85c147aca2675015e35a59de886cc9eb
 - id: coverage-option-requires-path
   setup: false
   input:
     args:
     - run-manifest
-    - missing.yaml
+    - open-contract.yaml
     - --isolation
     - none
     - --coverage-report
@@ -404,13 +514,13 @@ cases:
     stderr: 'contract-runner: missing coverage report path
 
       '
-  coverage_fingerprint: cbd7895c762e48e5cf551b38333cb99f
+  coverage_fingerprint: 3ed7f015318e673b06657f6a6f539611
 - id: runtime-option-requires-path
   setup: false
   input:
     args:
     - run-manifest
-    - missing.yaml
+    - open-contract.yaml
     - --isolation
     - landlock
     - --isolation-runtime
@@ -420,20 +530,20 @@ cases:
     stderr: 'contract-runner: missing isolation runtime path
 
       '
-  coverage_fingerprint: f24f9398c80e4e981d568f0ea2e28d89
+  coverage_fingerprint: b4ec6ebd13ddb0f61d3d481e3b65e6e2
 - id: runs-the-complete-contract-input
   setup: true
   input:
     args:
     - run-manifest
-    - contract.yaml
+    - open-contract.yaml
     - --isolation
     - none
     - --coverage-report
     - coverage.json
     - --update-fingerprints
     files:
-      contract.yaml: "version: '1'\nname: cli-smoke-fixture\ncoverage:\n  minimum_line_percent:\
+      open-contract.yaml: "version: '1'\nname: cli-smoke-fixture\ncoverage:\n  minimum_line_percent:\
         \ 0\nfilesystem:\n  read:\n  - dataset.yaml\n  - validator.py\n  - adapter.py\n\
         \  - tests/check.py\n  write: []\nexecution:\n  command:\n  - python3\n  -\
         \ adapter.py\ndatasets:\n- dataset.yaml\ncoverage_sources:\n- validator.py\n\
@@ -510,33 +620,33 @@ cases:
           expected:
             value: 2
           coverage_fingerprint: 867714e81b27e269f9a7f3b13bdc37ae
-  coverage_fingerprint: 45296aba7fee9fc2866e51d55dd164a0
+  coverage_fingerprint: 643219a308f9ff233c64b2c364d52365
 - id: lists-contracts-executed-through-recursive-nesting
   setup: true
   input:
     args:
     - run-manifest
-    - contract.yaml
+    - open-contract.yaml
     - --isolation
     - none
     - --coverage-report
     - coverage.json
     - --disable-fingerprints
     files:
-      contract.yaml: "version: '1'\nname: nested-root\ndatasets: [dataset.yaml]\n\
+      open-contract.yaml: "version: '1'\nname: nested-root\ndatasets: [dataset.yaml]\n\
         coverage: {minimum_line_percent: 0}\ncoverage_sources: [validator.py]\nnested_contracts:\
-        \ [child/contract.yaml]\nfilesystem:\n  read: [dataset.yaml, validator.py,\
-        \ adapter.py, child/contract.yaml]\n  write: []\nexecution: {command: [python3,\
-        \ adapter.py]}\n"
-      child/contract.yaml: "version: '1'\nname: nested-child\ndatasets: [dataset.yaml]\n\
-        coverage: {minimum_line_percent: 0}\ncoverage_sources: [validator.py]\nnested_contracts:\
-        \ [grandchild/contract.yaml]\nfilesystem:\n  read: [dataset.yaml, validator.py,\
-        \ adapter.py, grandchild/contract.yaml]\n  write: []\nexecution: {command:\
+        \ [child/open-contract.yaml]\nfilesystem:\n  read: [dataset.yaml, validator.py,\
+        \ adapter.py, child/open-contract.yaml]\n  write: []\nexecution: {command:\
         \ [python3, adapter.py]}\n"
-      child/grandchild/contract.yaml: "version: '1'\nname: nested-grandchild\ndatasets:\
-        \ [dataset.yaml]\ncoverage: {minimum_line_percent: 0}\ncoverage_sources: [validator.py]\n\
-        filesystem:\n  read: [dataset.yaml, validator.py, adapter.py]\n  write: []\n\
-        execution: {command: [python3, adapter.py]}\n"
+      child/open-contract.yaml: "version: '1'\nname: nested-child\ndatasets: [dataset.yaml]\n\
+        coverage: {minimum_line_percent: 0}\ncoverage_sources: [validator.py]\nnested_contracts:\
+        \ [grandchild/open-contract.yaml]\nfilesystem:\n  read: [dataset.yaml, validator.py,\
+        \ adapter.py, grandchild/open-contract.yaml]\n  write: []\nexecution: {command:\
+        \ [python3, adapter.py]}\n"
+      child/grandchild/open-contract.yaml: "version: '1'\nname: nested-grandchild\n\
+        datasets: [dataset.yaml]\ncoverage: {minimum_line_percent: 0}\ncoverage_sources:\
+        \ [validator.py]\nfilesystem:\n  read: [dataset.yaml, validator.py, adapter.py]\n\
+        \  write: []\nexecution: {command: [python3, adapter.py]}\n"
       dataset.yaml: "version: 1\ncases:\n- id: echo\n  input: {value: 1}\n  expected:\
         \ {value: 1}\n  coverage_fingerprint: 60c6194cbdc58033999a1fb07d147da8\n"
       child/dataset.yaml: "version: 1\ncases:\n- id: echo\n  input: {value: 2}\n \
@@ -586,13 +696,13 @@ cases:
         status: passed
       - contract: nested-grandchild
         status: passed
-  coverage_fingerprint: 6a6a3438eb66cfa7217e13e442abe8a5
+  coverage_fingerprint: 11ff0875038a953cc314c4c8a6752f7b
 - id: run-manifest-skips-nested-contracts
   setup: true
   input:
     args:
     - run-manifest
-    - contract.yaml
+    - open-contract.yaml
     - --isolation
     - none
     - --coverage-report
@@ -602,10 +712,10 @@ cases:
     environment:
       OPEN_CONTRACT_DISABLE_FINGERPRINTS: '1'
     files:
-      contract.yaml: "version: '1'\nname: cli-root-only\ncoverage: {minimum_line_percent:\
-        \ 0}\nfilesystem:\n  read: [dataset.json, validator.py, adapter.py, child/contract.yaml]\n\
+      open-contract.yaml: "version: '1'\nname: cli-root-only\ncoverage: {minimum_line_percent:\
+        \ 0}\nfilesystem:\n  read: [dataset.json, validator.py, adapter.py, child/open-contract.yaml]\n\
         \  write: []\nexecution: {command: [python3, adapter.py]}\ndatasets: [dataset.json]\n\
-        coverage_sources: [validator.py]\nnested_contracts: [child/contract.yaml]\n"
+        coverage_sources: [validator.py]\nnested_contracts: [child/open-contract.yaml]\n"
       dataset.json: '{"version":1,"cases":[{"id":"root","input":{"value":1},"expected":{"value":1},"coverage_fingerprint":"867714e81b27e269f9a7f3b13bdc37ae"}]}'
       validator.py: "def validate(value):\n    return value\n"
       adapter.py: "import json, sys\nrequest = json.load(sys.stdin)\nresults = []\n\
@@ -615,7 +725,7 @@ cases:
         print(json.dumps({\"results\": results, \"coverage\": {\"sources\": [\"validator.py\"\
         ]}, \"coverage_scopes\": scopes, \"coverage_lines\": [{\"path\": \"validator.py\"\
         , \"executable_lines\": [1], \"covered_lines\": [1]}]}))\n"
-      child/contract.yaml: 'version: ''1''
+      child/open-contract.yaml: 'version: ''1''
 
         name: cli-child
 
@@ -650,13 +760,13 @@ cases:
       contracts:
       - contract: cli-root-only
         status: passed
-  coverage_fingerprint: 26da32795e8bd63df6ee2deac815605b
+  coverage_fingerprint: 0ccb966f0111eb7c8d02daec8eabcdb3
 - id: reports-incomplete-contract-coverage
   setup: true
   input:
     args:
     - run-manifest
-    - contract.yaml
+    - open-contract.yaml
     - --isolation
     - none
     - --coverage-report
@@ -664,7 +774,7 @@ cases:
     environment:
       OPEN_CONTRACT_DISABLE_FINGERPRINTS: '1'
     files:
-      contract.yaml: "version: '1'\nname: cli-incomplete-coverage-fixture\ncoverage:\n\
+      open-contract.yaml: "version: '1'\nname: cli-incomplete-coverage-fixture\ncoverage:\n\
         \  minimum_line_percent: 0\nfilesystem:\n  read:\n  - dataset.json\n  - validator.py\n\
         \  - adapter.py\n  write: []\nexecution:\n  command:\n  - python3\n  - adapter.py\n\
         datasets:\n- dataset.json\ncoverage_sources:\n- validator.py\n"
@@ -699,19 +809,19 @@ cases:
       report
 
       '
-  coverage_fingerprint: 65f62ce8b3839c5e14129e1f7d92e7e0
+  coverage_fingerprint: f9e55813629dc270ba1b461f0e492d1c
 - id: reports-coverage-write-failure
   setup: true
   input:
     args:
     - run-manifest
-    - contract.yaml
+    - open-contract.yaml
     - --isolation
     - none
     - --coverage-report
     - coverage.json
     files:
-      contract.yaml: "version: '1'\nname: cli-smoke-fixture\ncoverage:\n  minimum_line_percent:\
+      open-contract.yaml: "version: '1'\nname: cli-smoke-fixture\ncoverage:\n  minimum_line_percent:\
         \ 0\nfilesystem:\n  read:\n  - dataset.json\n  - validator.py\n  - adapter.py\n\
         \  - tests/check.py\n  write: []\nexecution:\n  command:\n  - python3\n  -\
         \ adapter.py\ndatasets:\n- dataset.json\ncoverage_sources:\n- validator.py\n\
@@ -740,19 +850,19 @@ cases:
       (os error 21)
 
       '
-  coverage_fingerprint: 264d946e5c87ea653299697c2ac4a0ca
+  coverage_fingerprint: 25bde494ff45ee732e3cae4da0366438
 - id: reports-contract-execution-failure
   setup: true
   input:
     args:
     - run-manifest
-    - contract.yaml
+    - open-contract.yaml
     - --isolation
     - none
     - --coverage-report
     - coverage.json
     files:
-      contract.yaml: "version: '1'\nname: cli-smoke-fixture\ncoverage:\n  minimum_line_percent:\
+      open-contract.yaml: "version: '1'\nname: cli-smoke-fixture\ncoverage:\n  minimum_line_percent:\
         \ 0\nfilesystem:\n  read:\n  - dataset.json\n  - validator.py\n  - adapter.py\n\
         \  - tests/check.py\n  write: []\nexecution:\n  command:\n  - cli-command-that-does-not-exist\n\
         datasets:\n- dataset.json\ncoverage_sources:\n- validator.py\nsupplemental_tests:\n\
@@ -780,19 +890,19 @@ cases:
       cli-command-that-does-not-exist: No such file or directory (os error 2)
 
       '
-  coverage_fingerprint: e858f4c7f8ec4667bef97325e81bfe3a
+  coverage_fingerprint: a44fdd73e38f3c9ee09ae5845989ea1a
 - id: reports-dataset-case-failure
   setup: true
   input:
     args:
     - run-manifest
-    - contract.yaml
+    - open-contract.yaml
     - --isolation
     - none
     - --coverage-report
     - coverage.json
     files:
-      contract.yaml: "version: '1'\nname: cli-smoke-fixture\ncoverage:\n  minimum_line_percent:\
+      open-contract.yaml: "version: '1'\nname: cli-smoke-fixture\ncoverage:\n  minimum_line_percent:\
         \ 0\nfilesystem:\n  read:\n  - dataset.json\n  - validator.py\n  - adapter.py\n\
         \  - tests/check.py\n  write: []\nexecution:\n  command:\n  - python3\n  -\
         \ adapter.py\ndatasets:\n- dataset.json\ncoverage_sources:\n- validator.py\n\
@@ -819,19 +929,19 @@ cases:
     stderr: 'contract-runner: 2/3 dataset cases passed across 1 contract(s)
 
       '
-  coverage_fingerprint: 486ca6cc711993ef7bd3946a98e2c800
+  coverage_fingerprint: 738d986d77f5b81a72a270ea423de8b9
 - id: reports-supplemental-test-failure
   setup: true
   input:
     args:
     - run-manifest
-    - contract.yaml
+    - open-contract.yaml
     - --isolation
     - none
     - --coverage-report
     - coverage.json
     files:
-      contract.yaml: "version: '1'\nname: cli-smoke-fixture\ncoverage:\n  minimum_line_percent:\
+      open-contract.yaml: "version: '1'\nname: cli-smoke-fixture\ncoverage:\n  minimum_line_percent:\
         \ 0\nfilesystem:\n  read:\n  - dataset.json\n  - validator.py\n  - adapter.py\n\
         \  - tests/check.py\n  write: []\nexecution:\n  command:\n  - python3\n  -\
         \ adapter.py\ndatasets:\n- dataset.json\ncoverage_sources:\n- validator.py\n\
@@ -859,19 +969,19 @@ cases:
       report
 
       '
-  coverage_fingerprint: 5d60e3e0c0a130561c80bfa967dc8af5
+  coverage_fingerprint: 69e0a4d19c90182ef420a7319e30a96c
 - id: reports-coverage-directory-creation-failure
   setup: true
   input:
     args:
     - run-manifest
-    - contract.yaml
+    - open-contract.yaml
     - --isolation
     - none
     - --coverage-report
     - blocked/report.json
     files:
-      contract.yaml: "version: '1'\nname: cli-smoke-fixture\ncoverage:\n  minimum_line_percent:\
+      open-contract.yaml: "version: '1'\nname: cli-smoke-fixture\ncoverage:\n  minimum_line_percent:\
         \ 0\nfilesystem:\n  read:\n  - dataset.json\n  - validator.py\n  - adapter.py\n\
         \  - tests/check.py\n  write: []\nexecution:\n  command:\n  - python3\n  -\
         \ adapter.py\ndatasets:\n- dataset.json\ncoverage_sources:\n- validator.py\n\
@@ -900,13 +1010,13 @@ cases:
       exists (os error 17)
 
       '
-  coverage_fingerprint: 82945626e8ef7edf5809c63c658bd290
+  coverage_fingerprint: a650dfbcc60a9238185efc1b8af66e12
 - id: run-manifest-rejects-missing-manifest-with-bwrap
   setup: false
   input:
     args:
     - run-manifest
-    - missing.yaml
+    - open-contract.yaml
     - --isolation
     - bwrap
   expected:
@@ -918,7 +1028,7 @@ cases:
       2)
 
       '
-  coverage_fingerprint: 19202f77e94c462e02da553c06444512
+  coverage_fingerprint: 6badc0551f0936b78f84459d0e25f675
 - id: show-plan-rejects-unknown-option
   setup: false
   input:
@@ -1037,13 +1147,13 @@ cases:
   input:
     args:
     - run-manifest
-    - contract.yaml
+    - open-contract.yaml
     - --isolation
     - none
     - --coverage-report
     - coverage.json
     files:
-      contract.yaml: "version: '1'\nname: cli-validator-error-fixture\ncoverage:\n\
+      open-contract.yaml: "version: '1'\nname: cli-validator-error-fixture\ncoverage:\n\
         \  minimum_line_percent: 0\nfilesystem:\n  read:\n  - dataset.json\n  - validator.py\n\
         \  - adapter.py\n  write: []\nexecution:\n  command:\n  - python3\n  - adapter.py\n\
         datasets:\n- dataset.json\ncoverage_sources:\n- validator.py\n"
@@ -1065,19 +1175,19 @@ cases:
     stderr: 'contract-runner: 0/1 dataset cases passed across 1 contract(s)
 
       '
-  coverage_fingerprint: 486ca6cc711993ef7bd3946a98e2c800
+  coverage_fingerprint: 738d986d77f5b81a72a270ea423de8b9
 - id: reports-result-fingerprint-mismatch
   setup: true
   input:
     args:
     - run-manifest
-    - contract.yaml
+    - open-contract.yaml
     - --isolation
     - none
     - --coverage-report
     - coverage.json
     files:
-      contract.yaml: "version: '1'\nname: cli-smoke-fixture\ncoverage:\n  minimum_line_percent:\
+      open-contract.yaml: "version: '1'\nname: cli-smoke-fixture\ncoverage:\n  minimum_line_percent:\
         \ 0\nfilesystem:\n  read:\n  - dataset.json\n  - validator.py\n  - adapter.py\n\
         \  - tests/check.py\n  write: []\nexecution:\n  command:\n  - python3\n  -\
         \ adapter.py\ndatasets:\n- dataset.json\ncoverage_sources:\n- validator.py\n\
@@ -1106,19 +1216,19 @@ cases:
     stderr: 'contract-runner: 0/1 dataset cases passed across 1 contract(s)
 
       '
-  coverage_fingerprint: 486ca6cc711993ef7bd3946a98e2c800
+  coverage_fingerprint: 738d986d77f5b81a72a270ea423de8b9
 - id: reports-step-fingerprint-mismatch
   setup: true
   input:
     args:
     - run-manifest
-    - contract.yaml
+    - open-contract.yaml
     - --isolation
     - none
     - --coverage-report
     - coverage.json
     files:
-      contract.yaml: "version: '1'\nname: cli-smoke-fixture\ncoverage:\n  minimum_line_percent:\
+      open-contract.yaml: "version: '1'\nname: cli-smoke-fixture\ncoverage:\n  minimum_line_percent:\
         \ 0\nfilesystem:\n  read:\n  - dataset.json\n  - validator.py\n  - adapter.py\n\
         \  - tests/check.py\n  write: []\nexecution:\n  command:\n  - python3\n  -\
         \ adapter.py\ndatasets:\n- dataset.json\ncoverage_sources:\n- validator.py\n\
@@ -1147,19 +1257,19 @@ cases:
     stderr: 'contract-runner: 0/1 dataset cases passed across 1 contract(s)
 
       '
-  coverage_fingerprint: 486ca6cc711993ef7bd3946a98e2c800
+  coverage_fingerprint: 738d986d77f5b81a72a270ea423de8b9
 - id: reports-missing-coverage-scope
   setup: true
   input:
     args:
     - run-manifest
-    - contract.yaml
+    - open-contract.yaml
     - --isolation
     - none
     - --coverage-report
     - coverage.json
     files:
-      contract.yaml: "version: '1'\nname: cli-smoke-fixture\ncoverage:\n  minimum_line_percent:\
+      open-contract.yaml: "version: '1'\nname: cli-smoke-fixture\ncoverage:\n  minimum_line_percent:\
         \ 0\nfilesystem:\n  read:\n  - dataset.json\n  - validator.py\n  - adapter.py\n\
         \  - tests/check.py\n  write: []\nexecution:\n  command:\n  - python3\n  -\
         \ adapter.py\ndatasets:\n- dataset.json\ncoverage_sources:\n- validator.py\n\
@@ -1192,19 +1302,19 @@ cases:
     stderr: 'contract-runner: 0/3 dataset cases passed across 1 contract(s)
 
       '
-  coverage_fingerprint: 486ca6cc711993ef7bd3946a98e2c800
+  coverage_fingerprint: 738d986d77f5b81a72a270ea423de8b9
 - id: reports-below-target-coverage-threshold
   setup: true
   input:
     args:
     - run-manifest
-    - contract.yaml
+    - open-contract.yaml
     - --isolation
     - none
     - --coverage-report
     - coverage.json
     files:
-      contract.yaml: "version: '1'\nname: cli-smoke-fixture\ncoverage:\n  minimum_line_percent:\
+      open-contract.yaml: "version: '1'\nname: cli-smoke-fixture\ncoverage:\n  minimum_line_percent:\
         \ 100\nfilesystem:\n  read:\n  - dataset.json\n  - validator.py\n  - adapter.py\n\
         \  write: []\nexecution:\n  command:\n  - python3\n  - adapter.py\ndatasets:\n\
         - dataset.json\ncoverage_sources:\n- validator.py\n"
@@ -1249,19 +1359,19 @@ cases:
       report
 
       '
-  coverage_fingerprint: 804cb7b09fa7f37e8f09a6164153a1ba
+  coverage_fingerprint: 493cc41ac32f0cfc8bc7fbaffbd213ce
 - id: resolves-relative-coverage-scope-path
   setup: true
   input:
     args:
     - run-manifest
-    - contract.yaml
+    - open-contract.yaml
     - --isolation
     - none
     - --coverage-report
     - coverage.json
     files:
-      contract.yaml: "version: '1'\nname: cli-smoke-fixture\ncoverage:\n  minimum_line_percent:\
+      open-contract.yaml: "version: '1'\nname: cli-smoke-fixture\ncoverage:\n  minimum_line_percent:\
         \ 0\nfilesystem:\n  read:\n  - dataset.json\n  - src/validator.py\n  - adapter.py\n\
         \  write: []\nexecution:\n  command:\n  - python3\n  - adapter.py\ndatasets:\n\
         - dataset.json\ncoverage_sources:\n- src/validator.py\n"
@@ -1280,8 +1390,8 @@ cases:
     stdout: "Isolation mode: none\nContracts executed:\n  cli-smoke-fixture: 3/3 cases\
       \ passed\nDataset cases: 3/3 passed across 1 contract(s)\nCoverage report: coverage.json\n"
     stderr: ''
-  coverage_fingerprint: 46d2ba2b99e83a9ee74e637cc47993b8
-- coverage_fingerprint: 769ec4f7e5d805c24b515c37370a889e
+  coverage_fingerprint: 4cbde4d6e8ce879d0984901b9d040d2f
+- coverage_fingerprint: 66bbba7cddab239072eb4cb0082f5df9
   expected:
     coverage_report:
       version: 1
@@ -1307,7 +1417,7 @@ cases:
   input:
     args:
     - run-manifest
-    - contract.yaml
+    - open-contract.yaml
     - --isolation
     - none
     - --coverage-report
@@ -1326,11 +1436,11 @@ cases:
         : True, \"passed\": True, \"native_report\": {\"format\": \"fixture\"}},\n\
         \    \"additional_coverage_lines\": [{\"path\": \"validator.py\", \"executable_lines\"\
         : [1], \"covered_lines\": [1]}]\n}))\n"
-      contract.yaml: "version: '1'\nname: cli-current-pins-fixture\ncoverage:\n  minimum_line_percent:\
-        \ 0\nfilesystem:\n  read:\n  - dataset.yaml\n  - validator.py\n  - adapter.py\n\
-        \  - tests/check.py\n  write: []\nexecution:\n  command:\n  - python3\n  -\
-        \ adapter.py\ndatasets:\n- dataset.yaml\ncoverage_sources:\n- validator.py\n\
-        supplemental_tests:\n- tests/check.py\n"
+      open-contract.yaml: "version: '1'\nname: cli-current-pins-fixture\ncoverage:\n\
+        \  minimum_line_percent: 0\nfilesystem:\n  read:\n  - dataset.yaml\n  - validator.py\n\
+        \  - adapter.py\n  - tests/check.py\n  write: []\nexecution:\n  command:\n\
+        \  - python3\n  - adapter.py\ndatasets:\n- dataset.yaml\ncoverage_sources:\n\
+        - validator.py\nsupplemental_tests:\n- tests/check.py\n"
       dataset.yaml: "version: 1\ncases:\n- id: echo\n  input:\n    value: 7\n  expected:\n\
         \    value: 7\n  coverage_fingerprint: 867714e81b27e269f9a7f3b13bdc37ae\n\
         - id: echo-text\n  input:\n    value: text\n  expected:\n    value: text\n\
@@ -1342,13 +1452,13 @@ cases:
       tests/check.py: "def run():\n    return True\n"
       validator.py: "def validate(value):\n    return value\n"
   setup: true
-- coverage_fingerprint: 34d0a616f02eaf6ffd973e0724a0ec42
+- coverage_fingerprint: 32d9e71e8fc336dda55e362f2820d58b
   expected: {}
   id: update-fingerprints-skips-failed-case
   input:
     args:
     - run-manifest
-    - contract.yaml
+    - open-contract.yaml
     - --isolation
     - none
     - --coverage-report
@@ -1367,8 +1477,8 @@ cases:
         : True, \"passed\": True, \"native_report\": {\"format\": \"fixture\"}},\n\
         \    \"additional_coverage_lines\": [{\"path\": \"validator.py\", \"executable_lines\"\
         : [1], \"covered_lines\": [1]}]\n}))\n"
-      contract.yaml: "version: '1'\nname: cli-failed-update-fixture\ncoverage:\n \
-        \ minimum_line_percent: 0\nfilesystem:\n  read:\n  - dataset.yaml\n  - validator.py\n\
+      open-contract.yaml: "version: '1'\nname: cli-failed-update-fixture\ncoverage:\n\
+        \  minimum_line_percent: 0\nfilesystem:\n  read:\n  - dataset.yaml\n  - validator.py\n\
         \  - adapter.py\n  - tests/check.py\n  write: []\nexecution:\n  command:\n\
         \  - python3\n  - adapter.py\ndatasets:\n- dataset.yaml\ncoverage_sources:\n\
         - validator.py\nsupplemental_tests:\n- tests/check.py\n"
@@ -1391,7 +1501,7 @@ cases:
   input:
     args:
     - run-manifest
-    - missing.yaml
+    - open-contract.yaml
     - --disable-fingerprints
     - --update-fingerprints
   expected:
@@ -1400,13 +1510,13 @@ cases:
     stderr: 'contract-runner: --update-fingerprints cannot be combined with --disable-fingerprints
 
       '
-  coverage_fingerprint: c0955f81c5b0b1deb306daf63c8b31c8
+  coverage_fingerprint: 74416cfa104134b60429001dbd409d48
 - id: rejects-fingerprint-update-disabled-by-environment
   setup: true
   input:
     args:
     - run-manifest
-    - missing.yaml
+    - open-contract.yaml
     - --update-fingerprints
     - --isolation
     - none
@@ -1420,20 +1530,20 @@ cases:
     stderr: 'contract-runner: --update-fingerprints cannot be used when OPEN_CONTRACT_DISABLE_FINGERPRINTS=1
 
       '
-  coverage_fingerprint: 3c9edfed54294c9ee38394a53c70b138
+  coverage_fingerprint: 9a5091c9048e4f854bdc6d719f1fcdd5
 - id: update-fingerprints-requires-readable-dataset
   setup: true
   input:
     args:
     - run-manifest
-    - contract.yaml
+    - open-contract.yaml
     - --isolation
     - none
     - --coverage-report
     - coverage.json
     - --update-fingerprints
     files:
-      contract.yaml: "version: '1'\nname: update-fingerprints-requires-readable-dataset\n\
+      open-contract.yaml: "version: '1'\nname: update-fingerprints-requires-readable-dataset\n\
         coverage:\n  minimum_line_percent: 0\nfilesystem:\n  read:\n  - dataset.yaml\n\
         \  - validator.py\n  - adapter.py\n  write: []\nexecution:\n  command:\n \
         \ - python3\n  - adapter.py\ndatasets:\n- dataset.yaml\ncoverage_sources:\n\
@@ -1461,20 +1571,20 @@ cases:
         :[1],\"covered_lines\":[1]}]}))\n"
   expected: {}
   predicate: .exit_code == 2 AND contains(.stderr, 'cannot read dataset')
-  coverage_fingerprint: f8ca5d2e8d0ac3898622b34c0fac34d9
+  coverage_fingerprint: 0a36947afaf4d56c8eba624d40f814bf
 - id: update-fingerprints-requires-valid-dataset
   setup: true
   input:
     args:
     - run-manifest
-    - contract.yaml
+    - open-contract.yaml
     - --isolation
     - none
     - --coverage-report
     - coverage.json
     - --update-fingerprints
     files:
-      contract.yaml: "version: '1'\nname: update-fingerprints-requires-valid-dataset\n\
+      open-contract.yaml: "version: '1'\nname: update-fingerprints-requires-valid-dataset\n\
         coverage:\n  minimum_line_percent: 0\nfilesystem:\n  read:\n  - dataset.yaml\n\
         \  - validator.py\n  - adapter.py\n  write: []\nexecution:\n  command:\n \
         \ - python3\n  - adapter.py\ndatasets:\n- dataset.yaml\ncoverage_sources:\n\
@@ -1502,20 +1612,20 @@ cases:
         :[1],\"covered_lines\":[1]}]}))\n"
   expected: {}
   predicate: .exit_code == 2 AND contains(.stderr, 'YAML dataset error')
-  coverage_fingerprint: c77fb680eb4f597b0c4e63d85765ff04
+  coverage_fingerprint: 8740dd75e3b16b84f8fb3ca72f2e9346
 - id: update-fingerprints-requires-cases-list
   setup: true
   input:
     args:
     - run-manifest
-    - contract.yaml
+    - open-contract.yaml
     - --isolation
     - none
     - --coverage-report
     - coverage.json
     - --update-fingerprints
     files:
-      contract.yaml: "version: '1'\nname: update-fingerprints-requires-cases-list\n\
+      open-contract.yaml: "version: '1'\nname: update-fingerprints-requires-cases-list\n\
         coverage:\n  minimum_line_percent: 0\nfilesystem:\n  read:\n  - dataset.yaml\n\
         \  - validator.py\n  - adapter.py\n  write: []\nexecution:\n  command:\n \
         \ - python3\n  - adapter.py\ndatasets:\n- dataset.yaml\ncoverage_sources:\n\
@@ -1543,23 +1653,24 @@ cases:
         :[1],\"covered_lines\":[1]}]}))\n"
   expected: {}
   predicate: .exit_code == 2 AND contains(.stderr, 'dataset has no cases array')
-  coverage_fingerprint: 52784d934003769eb85a10ff5cc56bcc
+  coverage_fingerprint: 7642b6d82e0b6f1d28faba5f19f9c017
 - id: update-fingerprints-requires-case-id
   setup: true
   input:
     args:
     - run-manifest
-    - contract.yaml
+    - open-contract.yaml
     - --isolation
     - none
     - --coverage-report
     - coverage.json
     - --update-fingerprints
     files:
-      contract.yaml: "version: '1'\nname: update-fingerprints-requires-case-id\ncoverage:\n\
-        \  minimum_line_percent: 0\nfilesystem:\n  read:\n  - dataset.yaml\n  - validator.py\n\
-        \  - adapter.py\n  write: []\nexecution:\n  command:\n  - python3\n  - adapter.py\n\
-        datasets:\n- dataset.yaml\ncoverage_sources:\n- validator.py\n"
+      open-contract.yaml: "version: '1'\nname: update-fingerprints-requires-case-id\n\
+        coverage:\n  minimum_line_percent: 0\nfilesystem:\n  read:\n  - dataset.yaml\n\
+        \  - validator.py\n  - adapter.py\n  write: []\nexecution:\n  command:\n \
+        \ - python3\n  - adapter.py\ndatasets:\n- dataset.yaml\ncoverage_sources:\n\
+        - validator.py\n"
       dataset.yaml: "version: 1\ncases:\n- id: one\n  input:\n    value: 7\n  expected:\n\
         \    value: 7\n  coverage_fingerprint: '11111111111111111111111111111111'\n"
       validator.py: 'def validate(value): return value
@@ -1583,23 +1694,24 @@ cases:
         :[1],\"covered_lines\":[1]}]}))\n"
   expected: {}
   predicate: .exit_code == 2 AND contains(.stderr, 'case one not found')
-  coverage_fingerprint: bfce97164f7568887f25bd0bd277fb3e
+  coverage_fingerprint: 4351a0a752781d89c1c00d2831137d2e
 - id: update-fingerprints-requires-step-id
   setup: true
   input:
     args:
     - run-manifest
-    - contract.yaml
+    - open-contract.yaml
     - --isolation
     - none
     - --coverage-report
     - coverage.json
     - --update-fingerprints
     files:
-      contract.yaml: "version: '1'\nname: update-fingerprints-requires-step-id\ncoverage:\n\
-        \  minimum_line_percent: 0\nfilesystem:\n  read:\n  - dataset.yaml\n  - validator.py\n\
-        \  - adapter.py\n  write: []\nexecution:\n  command:\n  - python3\n  - adapter.py\n\
-        datasets:\n- dataset.yaml\ncoverage_sources:\n- validator.py\n"
+      open-contract.yaml: "version: '1'\nname: update-fingerprints-requires-step-id\n\
+        coverage:\n  minimum_line_percent: 0\nfilesystem:\n  read:\n  - dataset.yaml\n\
+        \  - validator.py\n  - adapter.py\n  write: []\nexecution:\n  command:\n \
+        \ - python3\n  - adapter.py\ndatasets:\n- dataset.yaml\ncoverage_sources:\n\
+        - validator.py\n"
       dataset.yaml: "version: 1\ncases:\n- id: one\n  steps:\n  - id: step\n    input:\n\
         \      value: 7\n    expected:\n      value: 7\n    coverage_fingerprint:\
         \ '11111111111111111111111111111111'\n"
@@ -1624,20 +1736,20 @@ cases:
         :[1],\"covered_lines\":[1]}]}))\n"
   expected: {}
   predicate: .exit_code == 2 AND contains(.stderr, 'step one/step not found')
-  coverage_fingerprint: 1571a86b5214665bdf9c0920f050399b
+  coverage_fingerprint: 69bdd51d5ccc954ce874953ac844bfa3
 - id: update-fingerprints-requires-writable-dataset
   setup: true
   input:
     args:
     - run-manifest
-    - contract.yaml
+    - open-contract.yaml
     - --isolation
     - none
     - --coverage-report
     - coverage.json
     - --update-fingerprints
     files:
-      contract.yaml: "version: '1'\nname: update-fingerprints-requires-writable-dataset\n\
+      open-contract.yaml: "version: '1'\nname: update-fingerprints-requires-writable-dataset\n\
         coverage:\n  minimum_line_percent: 0\nfilesystem:\n  read:\n  - dataset.yaml\n\
         \  - validator.py\n  - adapter.py\n  write: []\nexecution:\n  command:\n \
         \ - python3\n  - adapter.py\ndatasets:\n- dataset.yaml\ncoverage_sources:\n\
@@ -1665,20 +1777,20 @@ cases:
         :[1],\"covered_lines\":[1]}]}))\n"
   expected: {}
   predicate: .exit_code == 2 AND contains(.stderr, 'cannot update dataset')
-  coverage_fingerprint: 66afc35d6113b1b9515e975693f9b5e5
+  coverage_fingerprint: e9849e1bc2dffbda2a83e7a5f76aa9e5
 - id: update-fingerprints-requires-json-serializable-dataset
   setup: true
   input:
     args:
     - run-manifest
-    - contract.yaml
+    - open-contract.yaml
     - --isolation
     - none
     - --coverage-report
     - coverage.json
     - --update-fingerprints
     files:
-      contract.yaml: "version: '1'\nname: update-fingerprints-requires-json-serializable-dataset\n\
+      open-contract.yaml: "version: '1'\nname: update-fingerprints-requires-json-serializable-dataset\n\
         coverage:\n  minimum_line_percent: 0\nfilesystem:\n  read:\n  - dataset.json\n\
         \  - validator.py\n  - adapter.py\n  write: []\nexecution:\n  command:\n \
         \ - python3\n  - adapter.py\ndatasets:\n- dataset.json\ncoverage_sources:\n\
@@ -1705,8 +1817,8 @@ cases:
         :[1],\"covered_lines\":[1]}]}))\n"
   expected: {}
   predicate: .exit_code == 2 AND contains(.stderr, 'JSON dataset error')
-  coverage_fingerprint: fedb3f0d2be1642cc79d4b00b13fce38
-- coverage_fingerprint: 45296aba7fee9fc2866e51d55dd164a0
+  coverage_fingerprint: 61fc24cbdfa50d5084c2a1534f561167
+- coverage_fingerprint: 643219a308f9ff233c64b2c364d52365
   expected:
     coverage_report:
       version: 1
@@ -1760,7 +1872,7 @@ cases:
   input:
     args:
     - run-manifest
-    - contract.yaml
+    - open-contract.yaml
     - --isolation
     - none
     - --coverage-report
@@ -1779,11 +1891,11 @@ cases:
         : True, \"passed\": True, \"native_report\": {\"format\": \"fixture\"}},\n\
         \    \"additional_coverage_lines\": [{\"path\": \"validator.py\", \"executable_lines\"\
         : [1], \"covered_lines\": [1]}]\n}))\n"
-      contract.yaml: "version: '1'\nname: cli-current-pins-fixture\ncoverage:\n  minimum_line_percent:\
-        \ 0\nfilesystem:\n  read:\n  - dataset.json\n  - validator.py\n  - adapter.py\n\
-        \  - tests/check.py\n  write: []\nexecution:\n  command:\n  - python3\n  -\
-        \ adapter.py\ndatasets:\n- dataset.json\ncoverage_sources:\n- validator.py\n\
-        supplemental_tests:\n- tests/check.py\n"
+      open-contract.yaml: "version: '1'\nname: cli-current-pins-fixture\ncoverage:\n\
+        \  minimum_line_percent: 0\nfilesystem:\n  read:\n  - dataset.json\n  - validator.py\n\
+        \  - adapter.py\n  - tests/check.py\n  write: []\nexecution:\n  command:\n\
+        \  - python3\n  - adapter.py\ndatasets:\n- dataset.json\ncoverage_sources:\n\
+        - validator.py\nsupplemental_tests:\n- tests/check.py\n"
       tests/check.py: "def run():\n    return True\n"
       validator.py: "def validate(value):\n    return value\n"
       dataset.json: '{"version":1,"cases":[{"id":"echo","input":{"value":7},"expected":{"value":7},"coverage_fingerprint":"11111111111111111111111111111111"},{"id":"echo-text","input":{"value":"text"},"expected":{"value":"text"},"coverage_fingerprint":"867714e81b27e269f9a7f3b13bdc37ae"},{"id":"sequence","steps":[{"id":"first","input":{"value":1},"expected":{"value":1},"coverage_fingerprint":"867714e81b27e269f9a7f3b13bdc37ae"},{"id":"second","input":{"value":2},"expected":{"value":2},"coverage_fingerprint":"867714e81b27e269f9a7f3b13bdc37ae"}]}]}'
@@ -1793,14 +1905,14 @@ cases:
   input:
     args:
     - run-manifest
-    - contract.yaml
+    - open-contract.yaml
     - --isolation
     - none
     - --coverage-report
     - coverage.json
     - --update-fingerprints
     files:
-      contract.yaml: "version: '1'\nname: update-fingerprints-requires-case-mapping\n\
+      open-contract.yaml: "version: '1'\nname: update-fingerprints-requires-case-mapping\n\
         coverage:\n  minimum_line_percent: 0\nfilesystem:\n  read:\n  - dataset.yaml\n\
         \  - validator.py\n  - adapter.py\n  write: []\nexecution:\n  command:\n \
         \ - python3\n  - adapter.py\ndatasets:\n- dataset.yaml\ncoverage_sources:\n\
@@ -1831,20 +1943,20 @@ cases:
         :[{\"path\":\"validator.py\",\"executable_lines\":[1],\"covered_lines\":[1]}]}))\n"
   expected: {}
   predicate: .exit_code == 2 AND contains(.stderr, 'case one not found')
-  coverage_fingerprint: ac5cd5f2091f6549866326b9376844ef
+  coverage_fingerprint: 5363084e3d797f47730c0e12839974b3
 - id: update-fingerprints-requires-string-case-id
   setup: true
   input:
     args:
     - run-manifest
-    - contract.yaml
+    - open-contract.yaml
     - --isolation
     - none
     - --coverage-report
     - coverage.json
     - --update-fingerprints
     files:
-      contract.yaml: "version: '1'\nname: update-fingerprints-requires-string-case-id\n\
+      open-contract.yaml: "version: '1'\nname: update-fingerprints-requires-string-case-id\n\
         coverage:\n  minimum_line_percent: 0\nfilesystem:\n  read:\n  - dataset.yaml\n\
         \  - validator.py\n  - adapter.py\n  write: []\nexecution:\n  command:\n \
         \ - python3\n  - adapter.py\ndatasets:\n- dataset.yaml\ncoverage_sources:\n\
@@ -1875,14 +1987,14 @@ cases:
         :[{\"path\":\"validator.py\",\"executable_lines\":[1],\"covered_lines\":[1]}]}))\n"
   expected: {}
   predicate: .exit_code == 2 AND contains(.stderr, 'case one not found')
-  coverage_fingerprint: 42fe074321f86adff0babb06d4db5ff7
-- coverage_fingerprint: ee720d4d632cffe0dff79edffeebb13b
+  coverage_fingerprint: 4aa53b7617e6017cd65ef28d1b789b77
+- coverage_fingerprint: 453d0d3efbe425fd1be1192891286b52
   expected: {}
   id: update-fingerprints-requires-case-id-field
   input:
     args:
     - run-manifest
-    - contract.yaml
+    - open-contract.yaml
     - --isolation
     - none
     - --coverage-report
@@ -1906,7 +2018,7 @@ cases:
         n  extra: !fixture thing\\n\")\nprint(json.dumps({\"results\":results,\"coverage\"\
         :{\"sources\":[\"validator.py\"]},\"coverage_scopes\":scopes,\"coverage_lines\"\
         :[{\"path\":\"validator.py\",\"executable_lines\":[1],\"covered_lines\":[1]}]}))\n"
-      contract.yaml: "version: '1'\nname: update-fingerprints-requires-case-id-field\n\
+      open-contract.yaml: "version: '1'\nname: update-fingerprints-requires-case-id-field\n\
         coverage:\n  minimum_line_percent: 0\nfilesystem:\n  read:\n  - dataset.yaml\n\
         \  - validator.py\n  - adapter.py\n  write: []\nexecution:\n  command:\n \
         \ - python3\n  - adapter.py\ndatasets:\n- dataset.yaml\ncoverage_sources:\n\
@@ -2032,7 +2144,7 @@ cases:
   input:
     args:
     - run-manifest
-    - contract.yaml
+    - open-contract.yaml
     - --isolation
     - none
     - --coverage-report
@@ -2040,7 +2152,7 @@ cases:
     environment:
       OPEN_CONTRACT_DISABLE_FINGERPRINTS: '1'
     files:
-      contract.yaml: "version: '1'\nname: cli-zero-line-coverage-fixture\ncoverage:\n\
+      open-contract.yaml: "version: '1'\nname: cli-zero-line-coverage-fixture\ncoverage:\n\
         \  minimum_line_percent: 0\nfilesystem:\n  read:\n  - dataset.json\n  - validator.py\n\
         \  - adapter.py\n  write: []\nexecution:\n  command:\n  - python3\n  - adapter.py\n\
         datasets:\n- dataset.json\ncoverage_sources:\n- validator.py\n"
@@ -2078,4 +2190,4 @@ cases:
           percent: 0.0
           threshold_met: false
   predicate: contains(.stderr, 'coverage requirements not met')
-  coverage_fingerprint: c9dce72bd888fbd47ee867623ae3d9bf
+  coverage_fingerprint: d80877f322cbad305e2b272146765f48

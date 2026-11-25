@@ -38,5 +38,5 @@ chmod +x "$parent/contract-command" "$parent/child/contract-command"
 
 make -C contract-languages/rust install-dependencies
 "$cargo" run --manifest-path runner/rust/Cargo.toml -- run-manifest \
-  "$parent/contract.yaml" --isolation "$isolation" \
+  "$parent/open-contract.yaml" --isolation "$isolation" \
   --coverage-report .coverage/rust-nested-report.json

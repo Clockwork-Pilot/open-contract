@@ -5,6 +5,7 @@ use runner_batch::{
     CoverageScope, ExecutionKey, FingerprintMode, ManifestBatchAdapter,
 };
 use runner_isolation::{Backend, StagedTree};
+use runner_manifest::{Coverage, FileSystem, Manifest, ManifestPlan};
 use runner_verification::{match_output, MatchKind};
 use serde_json::{json, Value};
 use std::fs;
@@ -67,6 +68,19 @@ fn validate_dataset_entry_with_adapter(
     let id = entry.id.as_str();
     let input = &entry.input;
     let expected = entry.expected_value()?;
+    if input["operation"] == "validate-runner-manifest-filename" {
+        let path = input["path"]
+            .as_str()
+            .ok_or_else(|| "validate-runner-manifest-filename requires input.path".to_string())?;
+        return check_public_output(
+            &json!({"valid": runner_batch::has_open_contract_filename(Path::new(path))}),
+            expected,
+            entry.predicate.as_deref(),
+        );
+    }
+    if input["operation"] == "validate-nested-manifest-filenames" {
+        return validate_nested_manifest_filename_fixture(input, expected, entry.predicate.as_deref());
+    }
     if input["operation"].as_str() == Some("validate-adapter-coverage") {
         let payloads = input["payloads"]
             .as_array()
@@ -214,6 +228,73 @@ fn validate_dataset_entry_with_adapter(
     check_expected(result, expected, entry.predicate.as_deref())
 }
 
+fn validate_nested_manifest_filename_fixture(
+    input: &Value,
+    expected: &Value,
+    predicate: Option<&str>,
+) -> Result<(), String> {
+    let package = tempdir().map_err(|error| format!("nested manifest fixture: {error}"))?;
+    let nested_paths = input["nested_contracts"]
+        .as_array()
+        .ok_or_else(|| "nested filename fixture requires nested_contracts".to_string())?
+        .iter()
+        .map(|path| {
+            path.as_str()
+                .map(str::to_owned)
+                .ok_or_else(|| "nested_contracts items must be strings".to_string())
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    if let Some(path) = nested_paths.first() {
+        if path.starts_with("../") {
+            // Deliberately leave the path unresolved to exercise the runner's
+            // error propagation for an invalid nested reference.
+        } else {
+            let child_path = package.path().join(path);
+            if let Some(parent) = child_path.parent() {
+                fs::create_dir_all(parent).map_err(|error| error.to_string())?;
+            }
+            fs::write(child_path.parent().unwrap().join("dataset.json"), "{}")
+                .map_err(|error| error.to_string())?;
+            fs::write(
+                child_path.parent().unwrap().join("validator.py"),
+                "def validate(value): return value\n",
+            )
+            .map_err(|error| error.to_string())?;
+            let contents = input["child_manifest"]
+                .as_str()
+                .unwrap_or("version: '1'\nname: child\ndatasets: [dataset.json]\ncoverage_sources: [validator.py]\nfilesystem: {read: [dataset.json, validator.py], write: []}\n");
+            fs::write(child_path, contents).map_err(|error| error.to_string())?;
+        }
+    }
+    let plan = ManifestPlan {
+        manifest: Manifest {
+            version: "1".into(),
+            name: "fixture-root".into(),
+            datasets: vec!["dataset.json".into()],
+            coverage_sources: vec!["validator.py".into()],
+            metadata: None,
+            supplemental_tests: Vec::new(),
+            nested_contracts: nested_paths,
+            directories: Default::default(),
+            coverage: Coverage::default(),
+            execution: None,
+            language_adapter: None,
+            filesystem: FileSystem {
+                read: Vec::new(),
+                write: Vec::new(),
+            },
+        },
+        manifest_path: package.path().join("root.open-contract.yaml"),
+        package_root: package.path().to_path_buf(),
+        language_adapter: None,
+    };
+    let actual = match runner_batch::validate_nested_manifest_filenames(&plan) {
+        Ok(()) => json!({"valid": true}),
+        Err(error) => json!({"valid": false, "error": error}),
+    };
+    check_public_output(&actual, expected, predicate)
+}
+
 fn add_nested_contract(package: &Path, input: &Value, manifest: &mut Value) -> Result<(), String> {
     let duplicate_name = input["duplicate_nested_name"].as_bool() == Some(true);
     let cycle = input["nested_cycle"].as_bool() == Some(true);
@@ -226,11 +307,11 @@ fn add_nested_contract(package: &Path, input: &Value, manifest: &mut Value) -> R
         write(child.join("dataset.json"), r#"{"version":1,"cases":[{"id":"child","input":{"value":2},"expected":{"value":2}}]}"#)?;
         write(child.join("validator.py"), "def validate(value): return value\n")?;
         write(
-            child.join("contract.yaml"),
+            child.join("open-contract.yaml"),
             "version: '1'\nname: child\ndatasets: [dataset.json]\ncoverage_sources: [validator.py]\nfilesystem: {read: [dataset.json, validator.py], write: []}\n",
         )?;
-        manifest["nested_contracts"] = json!(["child/contract.yaml"]);
-        manifest["filesystem"]["read"] = json!(["dataset.json", "validator.py", "child/contract.yaml"]);
+        manifest["nested_contracts"] = json!(["child/open-contract.yaml"]);
+        manifest["filesystem"]["read"] = json!(["dataset.json", "validator.py", "child/open-contract.yaml"]);
         return Ok(());
     }
     if shared_nested {
@@ -240,9 +321,9 @@ fn add_nested_contract(package: &Path, input: &Value, manifest: &mut Value) -> R
             write(child.join("dataset.json"), r#"{"version":1,"cases":[{"id":"branch","input":{"value":1},"expected":{"value":1},"coverage_fingerprint":"880ae786fa1c0630fe9158b7962fd8a2"}]}"#)?;
             write(child.join("validator.py"), "def validate(value): return value\n")?;
             write(
-                child.join("contract.yaml"),
+                child.join("open-contract.yaml"),
                 &format!(
-                    "version: '1'\nname: {name}\ndatasets: [dataset.json]\ncoverage_sources: [validator.py]\nnested_contracts: [../shared/contract.yaml]\nfilesystem:\n  read: [dataset.json, validator.py, ../shared/contract.yaml]\n  write: []\n"
+                    "version: '1'\nname: {name}\ndatasets: [dataset.json]\ncoverage_sources: [validator.py]\nnested_contracts: [../shared/open-contract.yaml]\nfilesystem:\n  read: [dataset.json, validator.py, ../shared/open-contract.yaml]\n  write: []\n"
                 ),
             )?;
         }
@@ -251,10 +332,10 @@ fn add_nested_contract(package: &Path, input: &Value, manifest: &mut Value) -> R
         write(shared.join("dataset.json"), r#"{"version":1,"cases":[{"id":"shared","input":{"value":1},"expected":{"value":1},"coverage_fingerprint":"880ae786fa1c0630fe9158b7962fd8a2"}]}"#)?;
         write(shared.join("validator.py"), "def validate(value): return value\n")?;
         write(
-            shared.join("contract.yaml"),
+            shared.join("open-contract.yaml"),
             "version: '1'\nname: shared\ndatasets: [dataset.json]\ncoverage_sources: [validator.py]\nfilesystem: {read: [dataset.json, validator.py], write: []}\n",
         )?;
-        manifest["nested_contracts"] = json!(["left/contract.yaml", "right/contract.yaml"]);
+        manifest["nested_contracts"] = json!(["left/open-contract.yaml", "right/open-contract.yaml"]);
         manifest["filesystem"]["read"] = json!([
             "dataset.json",
             "validator.py",
@@ -267,8 +348,15 @@ fn add_nested_contract(package: &Path, input: &Value, manifest: &mut Value) -> R
     if !duplicate_name && !cycle && !nested_contract {
         return Ok(());
     }
-    let child = package.join("child");
-    fs::create_dir_all(&child).map_err(|error| format!("create nested fixture: {error}"))?;
+    let nested_manifest_path = input["nested_manifest_path"]
+        .as_str()
+        .unwrap_or("child/open-contract.yaml");
+    let nested_manifest_path = Path::new(nested_manifest_path);
+    let nested_manifest = package.join(nested_manifest_path);
+    let child = nested_manifest
+        .parent()
+        .ok_or_else(|| "nested manifest path must have a parent".to_string())?;
+    fs::create_dir_all(child).map_err(|error| format!("create nested fixture: {error}"))?;
     write(
         child.join("dataset.json"),
         r#"{"version":1,"cases":[{"id":"child","input":{},"expected":{},"coverage_fingerprint":"880ae786fa1c0630fe9158b7962fd8a2"}]}"#,
@@ -282,17 +370,21 @@ fn add_nested_contract(package: &Path, input: &Value, manifest: &mut Value) -> R
     } else {
         "nested-child"
     };
+    let child_filename = nested_manifest_path
+        .file_name()
+        .and_then(|value| value.to_str())
+        .ok_or_else(|| "nested manifest path must have a filename".to_string())?;
     let nested = if cycle {
-        "  nested_contracts: [contract.yaml]\n"
+        format!("  nested_contracts: [{child_filename}]\n")
     } else {
-        ""
+        String::new()
     };
     let child_manifest = format!(
         "version: '1'\nname: {name}\ndatasets: [dataset.json]\ncoverage_sources: [validator.py]\n{nested}filesystem:\n  read: [dataset.json, validator.py{}]\n  write: []\n",
-        if cycle { ", contract.yaml" } else { "" }
+        if cycle { format!(", {child_filename}") } else { String::new() }
     );
-    write(child.join("contract.yaml"), &child_manifest)?;
-    manifest["nested_contracts"] = json!(["child/contract.yaml"]);
+    write(nested_manifest, &child_manifest)?;
+    manifest["nested_contracts"] = json!([nested_manifest_path]);
     let reads = if input["support"].as_bool() == Some(true) || input["support_path"].is_string() {
         let support = input["support_path"]
             .as_str()
@@ -301,10 +393,10 @@ fn add_nested_contract(package: &Path, input: &Value, manifest: &mut Value) -> R
             "dataset.json",
             "validator.py",
             support,
-            "child/contract.yaml"
+            nested_manifest_path
         ])
     } else {
-        json!(["dataset.json", "validator.py", "child/contract.yaml"])
+        json!(["dataset.json", "validator.py", nested_manifest_path])
     };
     manifest["filesystem"]["read"] = reads;
     Ok(())
@@ -379,7 +471,7 @@ fn configure_case_setup(
             let child_manifest = input["child_manifest_yaml"]
                 .as_str()
                 .ok_or_else(|| "nested case requires child_manifest_yaml".to_string())?;
-            write(child.join("contract.yaml"), child_manifest)?;
+            write(child.join("open-contract.yaml"), child_manifest)?;
             Ok(())
         }
         id if id.starts_with("manifest-adapter-") || id.starts_with("supplemental-") => {

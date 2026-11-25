@@ -1,6 +1,6 @@
 use runner_batch::{
-    run_contract_tree_with_fingerprint_mode_and_nested_contracts, show_isolation_plan, BatchReport,
-    FingerprintMode, ManifestBatchAdapter,
+    has_open_contract_filename, run_contract_tree_with_fingerprint_mode_and_nested_contracts,
+    show_isolation_plan, BatchReport, FingerprintMode, ManifestBatchAdapter,
 };
 use runner_errors::ContractError;
 use runner_isolation::{auto_backend, Backend};
@@ -40,9 +40,16 @@ fn run(mut args: impl Iterator<Item = String>, stdout: &mut String) -> Result<()
         return Ok(());
     }
     if subcommand.as_deref() != Some("run-manifest") {
-        return Err((2, "usage: contract-runner <run-manifest|show-isolation-plan> <contract.yaml> [--isolation <auto|tempdir|none|bwrap|landlock>] [--isolation-runtime <path>] [--coverage-report <path>] [--disable-fingerprints|--update-fingerprints] [--no-nested-contracts]".into()).into());
+        return Err((2, "usage: contract-runner <run-manifest|show-isolation-plan> <manifest-path> [--isolation <auto|tempdir|none|bwrap|landlock>] [--isolation-runtime <path>] [--coverage-report <path>] [--disable-fingerprints|--update-fingerprints] [--no-nested-contracts]".into()).into());
     }
     let manifest = PathBuf::from(args.next().ok_or((2, "missing manifest path".into()))?);
+    if !has_open_contract_filename(&manifest) {
+        return Err((
+            2,
+            "run-manifest manifest filename must contain a dot-delimited open-contract segment before .yaml or .yml".into(),
+        )
+            .into());
+    }
     let mut backend = None;
     let mut isolation_runtime = None;
     let mut coverage_report = PathBuf::from(".coverage/latest.json");

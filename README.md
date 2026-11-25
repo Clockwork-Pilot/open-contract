@@ -57,7 +57,7 @@ Select the isolation backend when invoking the Rust runner:
 
 ```sh
 cargo run --manifest-path runner/rust/Cargo.toml -- \
-  run-manifest runner/bootstrap-contracts/batch-execution/contract.yaml \
+  run-manifest examples/javascript/open-contract.yaml \
   --isolation landlock
 ```
 
@@ -177,7 +177,7 @@ can map source coverage to lines differently. Rustup installs the configured
 toolchain and `llvm-tools-preview` component when they are missing.
 
 For runner-executed datasets, run
-`cargo run --manifest-path runner/rust/Cargo.toml -- run-manifest <contract.yaml> --update-fingerprints`
+`cargo run --manifest-path runner/rust/Cargo.toml -- run-manifest <open-contract.yaml> --update-fingerprints`
 to write observed fingerprints back to the root and nested dataset files.
 The runner prints each changed case or step and its old/new fingerprints,
 along with the covered files and lines. It writes updates only when all dataset

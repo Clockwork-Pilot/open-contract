@@ -170,11 +170,11 @@ version: "1"
 name: python-root
 datasets: [dataset.json]
 coverage_sources: [validator.py]
-nested_contracts: [child/contract.yaml]
+nested_contracts: [child/open-contract.yaml]
 execution:
   command: [python3, run-contract.py]
 filesystem:
-  read: [dataset.json, validator.py, run-contract.py, child/contract.yaml, "{python_adapter}", "{python_dependencies}"]
+  read: [dataset.json, validator.py, run-contract.py, child/open-contract.yaml, "{python_adapter}", "{python_dependencies}"]
   write: []
 "#, python_adapter = python_adapter.display(), python_dependencies = python_dependencies.display()),
     )
@@ -195,7 +195,7 @@ filesystem:
     )
     .unwrap();
     std::fs::write(
-        child.join("contract.yaml"),
+        child.join("open-contract.yaml"),
         format!(r#"
 version: "1"
 name: javascript-child
@@ -543,7 +543,7 @@ fn manifest_supplemental_coverage_is_separate_and_fails_the_coverage_gate() {
     )
     .unwrap();
     std::fs::write(
-        package.path().join("child/contract.yaml"),
+        package.path().join("child/open-contract.yaml"),
         "version: '1'\nname: child-supplemental-fixture\ndatasets: [dataset.json], coverage_sources: [validator.py], supplemental_tests: [tests/supplemental.py]\nfilesystem: {read: [dataset.json, validator.py, tests/supplemental.py], write: []}\n",
     )
     .unwrap();
@@ -555,9 +555,9 @@ name: supplemental-coverage-fixture
 datasets: [dataset.json]
 coverage_sources: [validator.py]
 supplemental_tests: [tests/supplemental.py]
-nested_contracts: [child/contract.yaml]
+nested_contracts: [child/open-contract.yaml]
 filesystem:
-  read: [dataset.json, validator.py, tests/supplemental.py, child/contract.yaml]
+  read: [dataset.json, validator.py, tests/supplemental.py, child/open-contract.yaml]
   write: [reports]
 "#,
     )

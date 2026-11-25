@@ -10,7 +10,7 @@ coverage for the declared Python sources.
 Run it from the Open Contract root. The Rust runner invokes the Python adapter command declared in the manifest:
 
 ```sh
-cargo run --manifest-path runner/rust/Cargo.toml -- run-manifest examples/python/predicate/contract.yaml --isolation auto
+cargo run --manifest-path runner/rust/Cargo.toml -- run-manifest examples/python/predicate/open-contract.yaml --isolation auto
 ```
 
 The coverage report is written to `.coverage/examples/python-predicate.json`.

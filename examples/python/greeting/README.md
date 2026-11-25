@@ -11,7 +11,7 @@ predicate evaluator with a broader dataset.
 Run the contract through the Rust runner:
 
 ```sh
-cargo run --manifest-path runner/rust/Cargo.toml -- run-manifest examples/python/greeting/contract.yaml --isolation auto
+cargo run --manifest-path runner/rust/Cargo.toml -- run-manifest examples/python/greeting/open-contract.yaml --isolation auto
 ```
 
 Set `OPEN_CONTRACT_ISOLATION=landlock` or `OPEN_CONTRACT_ISOLATION=bwrap` to

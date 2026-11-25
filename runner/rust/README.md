@@ -31,9 +31,14 @@ other steps run sequentially.
 The executable supports two commands:
 
 ```sh
-contract-runner run-manifest <contract.yaml> [options]
-contract-runner show-isolation-plan <contract.yaml> [options]
+contract-runner run-manifest <manifest-path> [options]
+contract-runner show-isolation-plan <manifest-path> [options]
 ```
+
+For `run-manifest`, every manifest loaded for execution, including nested
+manifests, must have a filename whose stem contains an exact dot-delimited
+`open-contract` segment and ends in `.yaml` or `.yml`. With
+`--no-nested-contracts`, only the root manifest is loaded for execution.
 
 `run-manifest` executes the dataset and writes its coverage report. It accepts
 all options in the table below. `show-isolation-plan` only resolves and prints
@@ -94,7 +99,7 @@ of the runtime manifest's `entrypoint`. The wrapper imports that file directly.
 Run the Rust executor with runtime-selected isolation:
 
 ```sh
-cargo run --manifest-path runner/rust/Cargo.toml -- run-manifest contract.yaml \
+cargo run --manifest-path runner/rust/Cargo.toml -- run-manifest open-contract.yaml \
   --isolation landlock \
   --coverage-report /tmp/contract-coverage.json
 ```
@@ -105,7 +110,7 @@ omitted. An explicit command-line value takes precedence. This also applies to
 
 ```sh
 OPEN_CONTRACT_ISOLATION=landlock cargo run --manifest-path runner/rust/Cargo.toml -- \
-  run-manifest contract.yaml
+  run-manifest open-contract.yaml
 ```
 
 `tempdir`, `none`, `bwrap`, and `landlock` are runtime execution choices.
@@ -139,7 +144,7 @@ environment values passed to the isolated command. Paths must exist. For
 example:
 
 ```sh
-cargo run --manifest-path runner/rust/Cargo.toml -- run-manifest contract.yaml \
+cargo run --manifest-path runner/rust/Cargo.toml -- run-manifest open-contract.yaml \
   --isolation bwrap \
   --isolation-runtime ./runtime/bwrap.yaml
 ```

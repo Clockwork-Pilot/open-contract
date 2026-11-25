@@ -139,6 +139,21 @@ pub struct ContractBatch {
     pub coverage_fingerprints: bool,
 }
 
+/// Whether a manifest filename contains the marker required for runner
+/// execution. The marker must be a complete dot-delimited stem segment.
+pub fn has_open_contract_filename(path: &Path) -> bool {
+    let Some(filename) = path.file_name().and_then(|name| name.to_str()) else {
+        return false;
+    };
+    let Some(stem) = filename
+        .strip_suffix(".yaml")
+        .or_else(|| filename.strip_suffix(".yml"))
+    else {
+        return false;
+    };
+    stem.split('.').any(|segment| segment == "open-contract")
+}
+
 /// Resolve the filesystem and command plan for a contract tree without
 /// executing its declared commands.
 pub fn show_isolation_plan(
@@ -501,6 +516,9 @@ pub fn run_contract_tree_with_fingerprint_mode_and_nested_contracts(
     let require_fingerprints = fingerprint_mode == FingerprintMode::Check;
     let compare_fingerprints = fingerprint_mode == FingerprintMode::Check;
     let root = ManifestPlan::load(manifest_path)?;
+    if include_nested_contracts {
+        validate_nested_manifest_filenames(&root)?;
+    }
     let tree = StagedTree::create_for_backend_with_nested_contracts(
         &root,
         backend,
@@ -629,6 +647,45 @@ pub fn run_contract_tree_with_fingerprint_mode_and_nested_contracts(
         )?);
     }
     Ok(report)
+}
+
+/// Validate every nested manifest in a plan before the runner executes it.
+pub fn validate_nested_manifest_filenames(root: &ManifestPlan) -> Result<(), String> {
+    validate_nested_manifest_filenames_recursive(
+        root,
+        &mut Vec::new(),
+        &mut std::collections::HashSet::new(),
+    )
+}
+
+fn validate_nested_manifest_filenames_recursive(
+    plan: &ManifestPlan,
+    stack: &mut Vec<PathBuf>,
+    visited: &mut std::collections::HashSet<PathBuf>,
+) -> Result<(), String> {
+    if stack.contains(&plan.manifest_path) {
+        return Err(format!(
+            "nested contract cycle detected: {}",
+            plan.manifest_path.display()
+        ));
+    }
+    if !visited.insert(plan.manifest_path.clone()) {
+        return Ok(());
+    }
+    stack.push(plan.manifest_path.clone());
+    for child_name in &plan.manifest.nested_contracts {
+        let child_path = runner_manifest::resolve_nested_manifest_path(&plan.package_root, child_name)?;
+        if !has_open_contract_filename(&child_path) {
+            return Err(format!(
+                "nested manifest filename must contain a dot-delimited open-contract segment before .yaml or .yml: {}",
+                child_path.display()
+            ));
+        }
+        let child = ManifestPlan::load(child_path)?;
+        validate_nested_manifest_filenames_recursive(&child, stack, visited)?;
+    }
+    stack.pop();
+    Ok(())
 }
 
 fn validate_declared_coverage_sources(

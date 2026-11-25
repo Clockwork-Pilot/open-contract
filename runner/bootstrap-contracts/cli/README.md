@@ -35,3 +35,10 @@ make check-cli-contract-html
 The check runs the full dataset and requires 100% function, instantiation, line,
 and LLVM region coverage plus matching 32-character fingerprints. Coverage
 artifacts are written under the root `.coverage/bootstrap-contracts/` directory.
+
+Every manifest loaded for execution by `run-manifest`, including nested
+manifests, must have a filename whose stem contains an exact dot-delimited
+`open-contract` segment and ends in `.yaml` or `.yml`. When
+`--no-nested-contracts` is used, only the root manifest is loaded for execution.
+`show-isolation-plan` remains a read-only inspection command and accepts any
+root manifest filename.

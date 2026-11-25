@@ -4,7 +4,7 @@ coverage:
   minimum_line_percent: 100
 datasets: [dataset.yaml]
 coverage_sources: [src/implementation.rs]
-nested_contracts: [child/contract.yaml]
+nested_contracts: [child/open-contract.yaml]
 execution:
   command:
     - env
@@ -22,7 +22,7 @@ filesystem:
     - src/validator.rs
     - src/implementation.rs
     - contract-command
-    - child/contract.yaml
+    - child/open-contract.yaml
     - .deps
     - .open-contract-work
   write:

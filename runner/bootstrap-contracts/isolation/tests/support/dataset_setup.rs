@@ -7,6 +7,7 @@ enum CaseSetup {
     AutoLandlockFails,
     AutoNoTrueExecutable,
     AutoNoTemporaryDirectory,
+    CommandNoTemporaryDirectory,
     UnusableTemporaryDirectory,
     HideBubblewrapFromPath,
     MockBubblewrapLauncher,
@@ -67,6 +68,10 @@ const CASE_SETUP_BY_ID: &[(&str, CaseSetup)] = &[
     (
         "auto-backend-falls-back-to-none",
         CaseSetup::AutoNoTemporaryDirectory,
+    ),
+    (
+        "command-reports-temporary-directory-failure",
+        CaseSetup::CommandNoTemporaryDirectory,
     ),
     (
         "staged-tree-rejects-unusable-temporary-directory",
@@ -736,6 +741,11 @@ pub(super) fn run_with_case_setup<T: Send>(
                     EnvironmentGuard::set("TMPDIR", blocker.path().as_os_str().to_owned());
                 run()
             })
+        }
+        (true, Some(CaseSetup::CommandNoTemporaryDirectory)) => {
+            let blocker = tempfile::NamedTempFile::new().map_err(|error| error.to_string())?;
+            let _tmpdir = EnvironmentGuard::set("TMPDIR", blocker.path().as_os_str().to_owned());
+            run()
         }
         (true, Some(CaseSetup::HideBubblewrapFromPath)) => {
             let _path = EnvironmentGuard::clear("PATH");
