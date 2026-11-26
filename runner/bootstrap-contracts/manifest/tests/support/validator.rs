@@ -50,7 +50,7 @@ mod profile;
 
 fn validate_case(package: &PathBuf, case: &DatasetCase) -> Result<(), String> {
     let input = &case.input;
-    let setup_case = manifest_setup_case(case.id.as_str(), case.setup)?;
+    let setup_case = manifest_setup_case(case.id.as_str(), case.setup.as_deref())?;
     let operation = input["operation"]
         .as_str()
         .ok_or_else(|| "input.operation must be a string".to_string())?;
@@ -109,7 +109,10 @@ fn validate_case(package: &PathBuf, case: &DatasetCase) -> Result<(), String> {
     match_output(&actual, case.expected.as_ref(), case.predicate.as_deref()).map(|_| ())
 }
 
-fn manifest_setup_case(case_id: &str, setup: bool) -> Result<Option<&str>, String> {
+fn manifest_setup_case<'a>(
+    case_id: &str,
+    setup: Option<&'a str>,
+) -> Result<Option<&'a str>, String> {
     let requires_setup = matches!(
         case_id,
         "read-path-symlink-escape"
@@ -133,12 +136,13 @@ fn manifest_setup_case(case_id: &str, setup: bool) -> Result<Option<&str>, Strin
             | "nested-contract-file-parent-rejected"
             | "nested-contract-current-directory-component"
     );
-    if setup != requires_setup {
+    let expected_setup = requires_setup.then_some(case_id);
+    if setup != expected_setup {
         return Err(format!(
-            "dataset case {case_id:?} setup must be {requires_setup}"
+            "dataset case {case_id:?} setup must be {expected_setup:?}"
         ));
     }
-    Ok(requires_setup.then_some(case_id))
+    Ok(setup)
 }
 
 fn run_manifest_case(input: &Value, setup_case: Option<&str>) -> Result<bool, String> {
@@ -277,11 +281,8 @@ fn run_manifest_case(input: &Value, setup_case: Option<&str>) -> Result<bool, St
             std::fs::create_dir_all(&sibling).map_err(|error| error.to_string())?;
             write_valid_contract_package(&sibling)?;
             #[cfg(unix)]
-            std::os::unix::fs::symlink(
-                sibling.join("contract.yaml"),
-                sibling.join("linked.yaml"),
-            )
-            .map_err(|error| error.to_string())?;
+            std::os::unix::fs::symlink(sibling.join("contract.yaml"), sibling.join("linked.yaml"))
+                .map_err(|error| error.to_string())?;
             #[cfg(not(unix))]
             return Err("nested manifest symlink fixture requires a Unix host".into());
         }
@@ -319,7 +320,9 @@ fn run_manifest_case(input: &Value, setup_case: Option<&str>) -> Result<bool, St
             .err()
             .ok_or_else(|| "missing nested manifest was unexpectedly accepted".to_string())?;
         if !error.contains("cannot resolve nested contract manifest") {
-            return Err(format!("missing nested manifest error was unclear: {error}"));
+            return Err(format!(
+                "missing nested manifest error was unclear: {error}"
+            ));
         }
     }
     if matches!(
@@ -360,7 +363,10 @@ fn run_manifest_case(input: &Value, setup_case: Option<&str>) -> Result<bool, St
                     error.unwrap()
                 ));
             }
-        } else if !error.as_deref().is_some_and(|error| error.contains(expected_error)) {
+        } else if !error
+            .as_deref()
+            .is_some_and(|error| error.contains(expected_error))
+        {
             return Err(format!(
                 "nested manifest setup {setup_case:?} expected error containing {expected_error:?}, got {error:?}"
             ));
@@ -378,10 +384,12 @@ fn run_manifest_case(input: &Value, setup_case: Option<&str>) -> Result<bool, St
 
 fn write_valid_contract_package(root: &std::path::Path) -> Result<(), String> {
     std::fs::create_dir_all(root).map_err(|error| error.to_string())?;
-    std::fs::write(root.join("dataset.json"), "{}")
-        .map_err(|error| error.to_string())?;
-    std::fs::write(root.join("validator.py"), "def validate(value): return value\n")
-        .map_err(|error| error.to_string())?;
+    std::fs::write(root.join("dataset.json"), "{}").map_err(|error| error.to_string())?;
+    std::fs::write(
+        root.join("validator.py"),
+        "def validate(value): return value\n",
+    )
+    .map_err(|error| error.to_string())?;
     std::fs::write(
         root.join("contract.yaml"),
         "version: '1'\nname: child\ndatasets: [dataset.json]\ncoverage_sources: [validator.py]\nfilesystem: {read: [dataset.json, validator.py], write: []}\n",

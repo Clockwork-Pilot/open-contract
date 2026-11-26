@@ -5914,6 +5914,17 @@
       },
       "expected": true,
       "coverage_fingerprint": "f252f017c80b7cc4e01941572d8eafe8"
+    },
+    {
+      "id": "operator-cannot-start-a-primary",
+      "input": {
+        "json": {
+          "n": 5
+        },
+        "predicate": "== .n"
+      },
+      "expected": false,
+      "coverage_fingerprint": "eda21a6738b11b085e2b8b9450298c14"
     }
   ]
 }

@@ -118,14 +118,24 @@ impl BatchAdapter for EchoBatch {
                         }],
                     })
                     .collect(),
-                coverage_lines: std::iter::once(batch.manifest.manifest.coverage_sources[0].clone())
-                    .chain(batch.manifest.manifest.coverage_sources.iter().skip(1).cloned())
-                    .map(|path| open_contract_core::batch::CoverageLineFile {
-                        path,
-                        executable_lines: vec![1],
-                        covered_lines: vec![1],
-                    })
-                    .collect(),
+                coverage_lines: std::iter::once(
+                    batch.manifest.manifest.coverage_sources[0].clone(),
+                )
+                .chain(
+                    batch
+                        .manifest
+                        .manifest
+                        .coverage_sources
+                        .iter()
+                        .skip(1)
+                        .cloned(),
+                )
+                .map(|path| open_contract_core::batch::CoverageLineFile {
+                    path,
+                    executable_lines: vec![1],
+                    covered_lines: vec![1],
+                })
+                .collect(),
                 ..AdapterBatch::default()
             })
             .collect())
@@ -478,7 +488,7 @@ fn cli_saves_report_and_returns_nonzero_when_manifest_coverage_threshold_is_miss
         &manifest,
         source.replace(
             "name: python-root\n",
-            "name: python-root\ncoverage: {minimum_line_percent: 100}\n",
+            "name: python-root\nminimum_coverage_percent: 100\n",
         ),
     )
     .unwrap();
@@ -504,7 +514,7 @@ fn cli_saves_report_and_returns_nonzero_when_manifest_coverage_threshold_is_miss
     )
     .unwrap();
     assert_eq!(report["coverage_complete"], false);
-    assert_eq!(report["contracts"][0]["minimum_line_percent"], json!(100.0));
+    assert_eq!(report["contracts"][0]["minimum_coverage_percent"], json!(100.0));
 }
 
 #[test]

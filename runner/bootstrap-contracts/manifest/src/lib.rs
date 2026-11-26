@@ -10,6 +10,8 @@ pub struct Manifest {
     pub name: String,
     pub datasets: Vec<String>,
     pub coverage_sources: Vec<String>,
+    #[serde(default = "default_minimum_coverage_percent")]
+    pub minimum_coverage_percent: f64,
     #[serde(default)]
     pub metadata: Option<BTreeMap<String, serde_json::Value>>,
     #[serde(default)]
@@ -19,30 +21,13 @@ pub struct Manifest {
     #[serde(default)]
     pub directories: BTreeMap<String, String>,
     #[serde(default)]
-    pub coverage: Coverage,
-    #[serde(default)]
     pub execution: Option<ExecutionCommand>,
     #[serde(default)]
     pub language_adapter: Option<String>,
     pub filesystem: FileSystem,
 }
 
-#[derive(Clone, Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct Coverage {
-    #[serde(default = "default_minimum_line_percent")]
-    pub minimum_line_percent: f64,
-}
-
-impl Default for Coverage {
-    fn default() -> Self {
-        Self {
-            minimum_line_percent: default_minimum_line_percent(),
-        }
-    }
-}
-
-fn default_minimum_line_percent() -> f64 {
+fn default_minimum_coverage_percent() -> f64 {
     100.0
 }
 
@@ -110,10 +95,10 @@ impl ManifestPlan {
             &manifest.coverage_sources,
             &manifest.directories,
         )?;
-        if !manifest.coverage.minimum_line_percent.is_finite()
-            || !(0.0..=100.0).contains(&manifest.coverage.minimum_line_percent)
+        if !manifest.minimum_coverage_percent.is_finite()
+            || !(0.0..=100.0).contains(&manifest.minimum_coverage_percent)
         {
-            return Err("coverage.minimum_line_percent must be between 0 and 100".into());
+            return Err("minimum_coverage_percent must be between 0 and 100".into());
         }
         if let Some(execution) = &manifest.execution {
             if execution.command.is_empty() || execution.command[0].trim().is_empty() {
@@ -623,18 +608,46 @@ mod tests {
         let temp = package();
         write_manifest(temp.path(), VALID);
         let plan = ManifestPlan::load(&temp.path().join("contract.yaml")).unwrap();
-        assert_eq!(plan.manifest.coverage.minimum_line_percent, 100.0);
+        assert_eq!(plan.manifest.minimum_coverage_percent, 100.0);
 
         write_manifest(
             temp.path(),
             &VALID.replace(
                 "datasets: [dataset.json]",
-                "datasets: [dataset.json]\ncoverage: {minimum_line_percent: 101}",
+                "datasets: [dataset.json]\nminimum_coverage_percent: 101",
             ),
         );
         assert!(ManifestPlan::load(&temp.path().join("contract.yaml"))
             .unwrap_err()
-            .contains("coverage.minimum_line_percent"));
+            .contains("minimum_coverage_percent"));
+    }
+
+    #[test]
+    fn legacy_nested_coverage_threshold_is_rejected() {
+        let temp = package();
+        write_manifest(
+            temp.path(),
+            &VALID.replace(
+                "datasets: [dataset.json]",
+                "datasets: [dataset.json]\ncoverage: {minimum_line_percent: 100}",
+            ),
+        );
+        let error = ManifestPlan::load(&temp.path().join("contract.yaml")).unwrap_err();
+        assert!(error.contains("unknown field `coverage`"));
+    }
+
+    #[test]
+    fn one_coverage_threshold_is_loaded_for_every_metric() {
+        let temp = package();
+        write_manifest(
+            temp.path(),
+            &VALID.replace(
+                "datasets: [dataset.json]",
+                "datasets: [dataset.json]\nminimum_coverage_percent: 90",
+            ),
+        );
+        let plan = ManifestPlan::load(&temp.path().join("contract.yaml")).unwrap();
+        assert_eq!(plan.manifest.minimum_coverage_percent, 90.0);
     }
 
     #[test]

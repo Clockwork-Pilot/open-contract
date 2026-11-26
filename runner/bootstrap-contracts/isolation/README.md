@@ -12,7 +12,7 @@ cases.
 The integration-test validator in `tests/support/validator.rs` reads dataset
 entries and calls the public isolation API. Harness setup is mapped by dataset
 case ID in `tests/support/dataset_setup.rs`, outside the public input. A case
-that uses setup declares `setup: true` beside its `id`. Setup may prepare
+that uses setup declares a fixture ID in `setup` beside its `id`. Setup may prepare
 external conditions before the public call: `bubblewrap-unavailable` hides
 `bwrap` from `PATH`, and the successful command case supplies a test launcher
 because this environment does not permit Bubblewrap user namespaces. The case

@@ -10,6 +10,7 @@
     "name": {"type": "string", "minLength": 1},
     "datasets": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/pathReference"}, "uniqueItems": true},
     "coverage_sources": {"type": "array", "items": {"$ref": "#/$defs/coverageSourceReference"}, "uniqueItems": true, "description": "Package-relative public API implementation files or glob patterns. The runner resolves only the declared patterns."},
+    "minimum_coverage_percent": {"type": "number", "minimum": 0, "maximum": 100, "default": 100},
     "metadata": {"type": "object", "description": "Optional consumer-owned data. Open Contract preserves it but does not interpret it or use it to plan or execute contracts.", "additionalProperties": true},
     "supplemental_tests": {"type": "array", "items": {"$ref": "#/$defs/pathReference"}, "uniqueItems": true},
     "nested_contracts": {"type": "array", "items": {"$ref": "#/$defs/nestedManifestReference"}, "uniqueItems": true, "description": "Relative YAML manifest paths resolved from this manifest; paths may traverse to sibling contract packages."},
@@ -18,13 +19,6 @@
       "description": "Named package-relative directory roots referenced as @alias/path.",
       "propertyNames": {"pattern": "^[A-Za-z][A-Za-z0-9_-]*$"},
       "additionalProperties": {"$ref": "#/$defs/packagePath"}
-    },
-    "coverage": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "minimum_line_percent": {"type": "number", "minimum": 0, "maximum": 100, "default": 100}
-      }
     },
     "execution": {
       "type": "object",

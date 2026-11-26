@@ -1,7 +1,6 @@
 version: "1"
 name: python-greeting-example
-coverage:
-  minimum_line_percent: 100
+minimum_coverage_percent: 100
 datasets: [dataset.json]
 coverage_sources: [validator.py]
 execution:

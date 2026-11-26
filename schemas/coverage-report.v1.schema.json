@@ -15,11 +15,12 @@
   "$defs": {
     "contract": {
       "type": "object",
-      "required": ["contract", "status", "minimum_line_percent", "sources", "dataset", "aggregate", "supplemental_tests", "native_report"],
+      "required": ["contract", "status", "minimum_coverage_percent", "datasets", "sources", "union", "aggregate", "supplemental_tests", "native_report"],
       "properties": {
         "contract": {"type": "string", "minLength": 1},
         "status": {"enum": ["passed", "failed"]},
-        "minimum_line_percent": {"type": "number", "minimum": 0, "maximum": 100},
+        "minimum_coverage_percent": {"type": "number", "minimum": 0, "maximum": 100},
+        "datasets": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
         "sources": {
           "type": "object",
           "required": ["status", "declared", "covered", "missing"],
@@ -31,7 +32,7 @@
           },
           "additionalProperties": false
         },
-        "dataset": {"$ref": "#/$defs/totals"},
+        "union": {"$ref": "#/$defs/totals"},
         "aggregate": {"$ref": "#/$defs/totals"},
         "supplemental_tests": {"type": ["object", "null"]},
         "native_report": true
@@ -40,13 +41,52 @@
     },
     "totals": {
       "type": "object",
-      "required": ["covered_lines", "executable_lines", "percent", "files"],
+      "required": ["covered_lines", "executable_lines", "percent", "metrics", "files"],
       "properties": {
         "covered_lines": {"type": "integer", "minimum": 0},
         "executable_lines": {"type": "integer", "minimum": 0},
         "percent": {"type": "number", "minimum": 0, "maximum": 100},
         "threshold_met": {"type": "boolean"},
+        "metrics": {
+          "type": "object",
+          "required": ["line", "statement", "function", "branch", "region", "instantiation"],
+          "properties": {
+            "line": {"$ref": "#/$defs/metricOutcome"},
+            "statement": {"$ref": "#/$defs/metricOutcome"},
+            "function": {"$ref": "#/$defs/metricOutcome"},
+            "branch": {"$ref": "#/$defs/metricOutcome"},
+            "region": {"$ref": "#/$defs/metricOutcome"},
+            "instantiation": {"$ref": "#/$defs/metricOutcome"}
+          },
+          "additionalProperties": false
+        },
         "files": {"type": "array", "items": {"$ref": "#/$defs/file"}}
+      },
+      "additionalProperties": false
+    },
+    "metricOutcome": {
+      "type": "object",
+      "required": ["status", "covered", "total", "percent", "minimum_percent", "threshold_met", "files"],
+      "properties": {
+        "status": {"enum": ["available", "unavailable"]},
+        "covered": {"type": ["integer", "null"], "minimum": 0},
+        "total": {"type": ["integer", "null"], "minimum": 0},
+        "percent": {"type": ["number", "null"], "minimum": 0, "maximum": 100},
+        "minimum_percent": {"type": ["number", "null"], "minimum": 0, "maximum": 100},
+        "threshold_met": {"type": ["boolean", "null"]},
+        "files": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["path", "covered", "total"],
+            "properties": {
+              "path": {"type": "string", "minLength": 1},
+              "covered": {"type": "integer", "minimum": 0},
+              "total": {"type": "integer", "minimum": 0}
+            },
+            "additionalProperties": false
+          }
+        }
       },
       "additionalProperties": false
     },

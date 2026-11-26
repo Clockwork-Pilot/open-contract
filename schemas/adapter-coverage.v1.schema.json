@@ -7,11 +7,38 @@
   "properties": {
     "coverage": {"type": ["object", "null"]},
     "coverage_lines": {"$ref": "#/$defs/files"},
+    "coverage_metrics": {
+      "type": "object",
+      "propertyNames": {"enum": ["line", "statement", "function", "branch", "region", "instantiation"]},
+      "additionalProperties": {"$ref": "#/$defs/metric"}
+    },
     "additional_test_coverage": {"type": ["object", "null"]},
     "additional_coverage_lines": {"$ref": "#/$defs/files"}
   },
   "additionalProperties": false,
   "$defs": {
+    "metric": {
+      "type": "object",
+      "required": ["covered", "total", "files"],
+      "properties": {
+        "covered": {"type": "integer", "minimum": 0},
+        "total": {"type": "integer", "minimum": 0},
+        "files": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["path", "covered", "total"],
+            "properties": {
+              "path": {"type": "string", "minLength": 1},
+              "covered": {"type": "integer", "minimum": 0},
+              "total": {"type": "integer", "minimum": 0}
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
     "files": {
       "type": "array",
       "items": {"$ref": "#/$defs/file"}

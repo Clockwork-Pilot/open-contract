@@ -76,7 +76,9 @@ def run_dataset(request, validator_loader=None):
                     if first.get("parallel") is True:
                         case_id = first["key"]["case_id"]
                         for candidate in requests[index + 1:]:
-                            if candidate["key"]["case_id"] != case_id or candidate.get("parallel") is not True:
+                            if (candidate["key"].get("dataset_id") != first["key"].get("dataset_id")
+                                    or candidate["key"]["case_id"] != case_id
+                                    or candidate.get("parallel") is not True):
                                 break
                             group.append(candidate)
                     context = _coverage_context([item["key"] for item in group])
@@ -103,6 +105,9 @@ def run_dataset(request, validator_loader=None):
         contexts_by_file[name] = data.contexts_by_lineno(name)
     coverage_lines = _normalized_coverage_lines(
         coverage, package_root, coverage_sources
+    )
+    coverage_metrics = _normalized_coverage_metrics(
+        coverage, package_root, coverage_sources, coverage_lines
     )
     native = {"format": "coverage.py", "sources": sorted(files), "files": files}
     scopes = []
@@ -145,6 +150,7 @@ def run_dataset(request, validator_loader=None):
         "coverage": native,
         "coverage_scopes": scopes,
         "coverage_lines": sorted(coverage_lines, key=lambda item: item["path"]),
+        "coverage_metrics": coverage_metrics,
         "additional_test_coverage": additional_report,
         "additional_coverage_lines": additional_coverage_lines,
     }
@@ -211,6 +217,38 @@ def _coverage_percent(files) -> float:
     executable = sum(len(set(file["executable_lines"])) for file in files)
     covered = sum(len(set(file["covered_lines"]).intersection(file["executable_lines"])) for file in files)
     return covered * 100.0 / executable if executable else 0.0
+
+
+def _normalized_coverage_metrics(coverage: Coverage, package_root: Path, declared_sources: list[str], coverage_lines):
+    metrics = {}
+
+    def add(name, path, covered, total):
+        metric = metrics.setdefault(name, {"covered": 0, "total": 0, "files": []})
+        metric["covered"] += covered
+        metric["total"] += total
+        metric["files"].append({"path": path, "covered": covered, "total": total})
+
+    for file in coverage_lines:
+        add(
+            "line",
+            file["path"],
+            len(file["covered_lines"]),
+            len(file["executable_lines"]),
+        )
+    for source in _declared_source_files(package_root, declared_sources):
+        try:
+            analysis = coverage._analyze(str(source))
+        except Exception as error:
+            raise RuntimeError(f"cannot calculate metrics for declared source {source}: {error}") from error
+        path = source.relative_to(package_root).as_posix()
+        numbers = analysis.numbers
+        if numbers.n_statements:
+            add("statement", path, numbers.n_executed, numbers.n_statements)
+        if numbers.n_branches:
+            add("branch", path, numbers.n_executed_branches, numbers.n_branches)
+    for metric in metrics.values():
+        metric["files"].sort(key=lambda item: item["path"])
+    return metrics
 
 
 def _run_supplemental_tests(test_files, root: Path, package_root: Path, coverage_sources):

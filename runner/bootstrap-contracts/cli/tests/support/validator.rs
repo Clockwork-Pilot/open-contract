@@ -61,12 +61,12 @@ fn validate(case: &DatasetCase) -> Result<(), String> {
             .ok_or("invalid_coverage_report_field must be a string")?;
         let mut report = valid_coverage_report();
         match field {
-            "dataset-object" => report["contracts"][0]["dataset"] = json!([]),
+            "dataset-object" => report["contracts"][0]["union"] = json!([]),
             "duplicate-lines" => {
-                report["contracts"][0]["dataset"]["files"][0]["executable_lines"] = json!([1, 1]);
+                report["contracts"][0]["union"]["files"][0]["executable_lines"] = json!([1, 1]);
             }
             "zero-line" => {
-                report["contracts"][0]["dataset"]["files"][0]["executable_lines"] = json!([0]);
+                report["contracts"][0]["union"]["files"][0]["executable_lines"] = json!([0]);
             }
             other => return Err(format!("unknown invalid coverage report field: {other}")),
         }
@@ -96,23 +96,30 @@ fn validate(case: &DatasetCase) -> Result<(), String> {
         .map_err(|error| format!("coverage report schema result did not match: {error}"));
     }
     if let Some(fixture) = input.get("write_invalid_coverage_report") {
-        use runner_batch::CoverageRecord;
+        use runner_batch::{CoverageMetricOutcome, CoverageRecord};
 
-        let minimum_line_percent = fixture
-            .get("minimum_line_percent")
+        let minimum_coverage_percent = fixture
+            .get("minimum_coverage_percent")
             .and_then(Value::as_f64)
-            .ok_or("write_invalid_coverage_report.minimum_line_percent must be a number")?;
+            .ok_or("write_invalid_coverage_report.minimum_coverage_percent must be a number")?;
+        let metric_outcomes: std::collections::BTreeMap<String, CoverageMetricOutcome> =
+            serde_json::from_value(sample_metrics(false))
+                .map_err(|error| format!("invalid sample metric outcomes: {error}"))?;
         let report = runner_batch::BatchReport {
             results: Vec::new(),
             coverage: vec![CoverageRecord {
                 contract: "invalid-report-fixture".into(),
-                dataset_path: PathBuf::from("dataset.json"),
-                minimum_line_percent,
+                dataset_paths: vec![PathBuf::from("dataset.json")],
+                datasets: vec!["dataset.json".into()],
+                minimum_coverage_percent,
                 dataset_covered_lines: 0,
                 dataset_executable_lines: 0,
                 combined_covered_lines: 0,
                 combined_executable_lines: 0,
                 line_threshold_met: false,
+                coverage_threshold_met: false,
+                dataset_metrics: metric_outcomes.clone(),
+                aggregate_metrics: metric_outcomes,
                 native_report: Value::Null,
                 declared_sources: Vec::new(),
                 covered_sources: Vec::new(),
@@ -152,13 +159,15 @@ fn validate(case: &DatasetCase) -> Result<(), String> {
         .collect::<Result<Vec<_>, _>>()?;
     let files = input.get("files").and_then(Value::as_object);
     let has_environment = input.get("environment").is_some();
-    if case.setup != (files.is_some() || has_environment) {
+    let needs_fixture = files.is_some() || has_environment;
+    let expected_setup = needs_fixture.then_some(case.id.as_str());
+    if case.setup.as_deref() != expected_setup {
         return Err(
-            "setup must be true exactly when the case supplies CLI filesystem or environment input"
+            "setup must name the case fixture exactly when CLI filesystem or environment input is supplied"
                 .into(),
         );
     }
-    let temporary = if case.setup {
+    let temporary = if case.setup.is_some() {
         Some(
             tempfile::tempdir()
                 .map_err(|error| format!("cannot create CLI working directory: {error}"))?,
@@ -199,19 +208,44 @@ fn validate(case: &DatasetCase) -> Result<(), String> {
     let actual = {
         let _environment = CliEnvironmentGuard::apply(
             input.get("environment"),
-            case.id.as_str(),
+            case.setup.as_deref().unwrap_or(case.id.as_str()),
             temporary.as_ref().map(tempfile::TempDir::path),
         )?;
         crate::execute(&arguments)
     };
     std::env::set_current_dir(original_directory)
         .map_err(|error| format!("cannot restore current directory: {error}"))?;
+    let metric_summary = actual
+        .stdout
+        .lines()
+        .filter(|line| line.starts_with("    Coverage metrics:"))
+        .collect::<Vec<_>>()
+        .join("\n");
+    let normalized_stdout = without_coverage_metric_summary(&actual.stdout);
     let mut actual_value = json!({
         "exit_code": actual.exit_code,
-        "stdout": actual.stdout,
+        "stdout": normalized_stdout,
         "stderr": actual.stderr,
     });
-    let expected = case.expected_value()?;
+    let mut expected = case.expected_value()?.clone();
+    if let Some(expected_summary) = expected
+        .as_object_mut()
+        .and_then(|expected| expected.remove("coverage_metrics_summary"))
+    {
+        match_output(
+            &Value::String(metric_summary),
+            Some(&expected_summary),
+            None,
+        )
+        .map_err(|error| format!("coverage metric CLI summary did not match: {error}"))?;
+    }
+    if let Some(stdout) = expected
+        .as_object_mut()
+        .and_then(|expected| expected.get_mut("stdout"))
+        .and_then(|value| value.as_str().map(without_coverage_metric_summary))
+    {
+        expected["stdout"] = Value::String(stdout);
+    }
     if expected.get("coverage_report").is_some() {
         let report_arg = arguments
             .windows(2)
@@ -262,10 +296,22 @@ fn validate(case: &DatasetCase) -> Result<(), String> {
         };
         actual_value["updated_dataset"] = dataset;
     }
-    match_output(&actual_value, Some(expected), case.predicate.as_deref()).map_err(|error| {
+    match_output(&actual_value, Some(&expected), case.predicate.as_deref()).map_err(|error| {
         format!("complete CLI result did not match: {error}; actual: {actual_value}")
     })?;
     Ok(())
+}
+
+fn without_coverage_metric_summary(output: &str) -> String {
+    let mut normalized = output
+        .lines()
+        .filter(|line| !line.starts_with("    Coverage metrics:"))
+        .collect::<Vec<_>>()
+        .join("\n");
+    if output.ends_with('\n') {
+        normalized.push('\n');
+    }
+    normalized
 }
 
 fn valid_coverage_report() -> Value {
@@ -274,17 +320,19 @@ fn valid_coverage_report() -> Value {
         "contracts": [{
             "contract": "schema-fixture",
             "status": "passed",
-            "minimum_line_percent": 100,
+            "minimum_coverage_percent": 100,
+            "datasets": ["dataset.json"],
             "sources": {
                 "status": "complete",
                 "declared": ["src/validator.py"],
                 "covered": ["src/validator.py"],
                 "missing": []
             },
-            "dataset": {
+            "union": {
                 "covered_lines": 1,
                 "executable_lines": 1,
                 "percent": 100,
+                "metrics": sample_metrics(true),
                 "files": [{
                     "path": "src/validator.py",
                     "executable_lines": [1],
@@ -297,6 +345,7 @@ fn valid_coverage_report() -> Value {
                 "executable_lines": 1,
                 "percent": 100,
                 "threshold_met": true,
+                "metrics": sample_metrics(true),
                 "files": [{
                     "path": "src/validator.py",
                     "executable_lines": [1],
@@ -308,6 +357,42 @@ fn valid_coverage_report() -> Value {
             "native_report": null
         }]
     })
+}
+
+fn sample_metrics(line_passes: bool) -> Value {
+    let mut metrics = serde_json::Map::new();
+    for name in [
+        "line",
+        "statement",
+        "function",
+        "branch",
+        "region",
+        "instantiation",
+    ] {
+        let outcome = if name == "line" {
+            json!({
+                "status": "available",
+                "covered": 1,
+                "total": 1,
+                "percent": 100,
+                "minimum_percent": 100,
+                "threshold_met": line_passes,
+                "files": [{"path":"src/validator.py", "covered":1, "total":1}]
+            })
+        } else {
+            json!({
+                "status": "unavailable",
+                "covered": null,
+                "total": null,
+                "percent": null,
+                "minimum_percent": null,
+                "threshold_met": null,
+                "files": []
+            })
+        };
+        metrics.insert(name.to_owned(), outcome);
+    }
+    Value::Object(metrics)
 }
 
 struct CliEnvironmentGuard {

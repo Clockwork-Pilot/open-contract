@@ -102,7 +102,7 @@ pub(crate) fn validate_case(
     if case.input["operation"] == "stage-contract-tree" {
         dataset_setup::run_staging_failure(
             case.id.as_str(),
-            case.setup,
+            case.setup.as_deref(),
             plan,
             &case.input,
             case.expected.as_ref(),
@@ -113,7 +113,7 @@ pub(crate) fn validate_case(
     if case.input["operation"] == "stage-backend" {
         dataset_setup::run_staging_backend(
             case.id.as_str(),
-            case.setup,
+            case.setup.as_deref(),
             plan,
             &case.input,
             case.expected.as_ref(),
@@ -122,7 +122,7 @@ pub(crate) fn validate_case(
         return Ok(package.to_path_buf());
     }
     if case.input["operation"] == "auto-backend" {
-        dataset_setup::run_with_case_setup(case.id.as_str(), case.setup, package, || {
+        dataset_setup::run_with_case_setup(case.id.as_str(), case.setup.as_deref(), package, || {
             let runtime = case.input["isolation_runtime"].as_str().map(Path::new);
             let (backend, attempts) = runner_isolation::auto_backend(runtime);
             let observed_backend = match backend {
@@ -155,7 +155,7 @@ pub(crate) fn validate_case(
         ensure!(previous != &tree.root, "root was not randomized");
     }
     let package_root = tree.root.clone();
-    dataset_setup::run_with_case_setup(case.id.as_str(), case.setup, &package_root, || {
+    dataset_setup::run_with_case_setup(case.id.as_str(), case.setup.as_deref(), &package_root, || {
         validate_case_with_tree(package, case, tree)
     })?;
     Ok(current_root)

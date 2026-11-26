@@ -28,6 +28,9 @@ test('coverage reports only explicitly declared public source files', async () =
 		assert.ok(report.coverage.result.length > 0);
 		assert.ok(report.coverage.result.every((entry) => entry.url === 'validator.mjs'));
 		assert.deepEqual(report.coverage_lines.map((entry) => entry.path), ['validator.mjs']);
+		assert.ok(report.coverage_metrics.function.total >= 1);
+		assert.equal(report.coverage_metrics.function.covered, 1);
+		assert.equal(report.coverage_metrics.statement.files[0].path, 'validator.mjs');
 	} finally {
 		process.chdir(originalDirectory);
 		await rm(packageRoot, { recursive: true, force: true });
@@ -67,6 +70,10 @@ test('parallel steps share one coverage scope and receive setup context', async 
 		assert.deepEqual(report.coverage_lines[0].covered_lines, [...new Set(report.coverage_lines[0].covered_lines)].sort((a, b) => a - b));
 		assert.ok(report.coverage_lines[0].covered_lines.every((line) => report.coverage_lines[0].executable_lines.includes(line)));
 		assert.equal(report.results.length, 2);
+		assert.ok(report.coverage_metrics.branch.total > 0);
+		assert.ok(report.coverage_metrics.branch.covered > 0);
+		assert.ok(report.coverage_metrics.branch.covered <= report.coverage_metrics.branch.total);
+		assert.equal(report.coverage_metrics.line.total, report.coverage_lines[0].executable_lines.length);
 		assert.deepEqual(report.coverage_scopes[0].files, report.coverage_scopes[1].files);
 		assert.equal(report.results[0].key.case_id, 'same');
 	} finally {
@@ -75,7 +82,7 @@ test('parallel steps share one coverage scope and receive setup context', async 
 	}
 });
 
-test('disabling fingerprints keeps aggregate dataset line coverage', async () => {
+test('coverage metrics aggregate across dataset requests when fingerprints are disabled', async () => {
 	const packageRoot = await mkdtemp(path.join(os.tmpdir(), 'open-contract-js-coverage-'));
 	const originalDirectory = process.cwd();
 	const validatorPath = path.join(packageRoot, 'validator.mjs');
@@ -101,6 +108,12 @@ test('disabling fingerprints keeps aggregate dataset line coverage', async () =>
 		assert.equal(report.coverage_lines.length, 1);
 		assert.deepEqual(report.coverage_lines[0].covered_lines, report.coverage_lines[0].executable_lines);
 		assert.ok(report.coverage_lines[0].executable_lines.every((line) => Number.isInteger(line) && line > 0));
+		for (const name of ['statement', 'function', 'branch']) {
+			assert.equal(report.coverage_metrics[name].covered, report.coverage_metrics[name].total, `${name} coverage should union every request`);
+		}
+		assert.deepEqual(report.coverage_metrics.branch.files.map((file) => file.path), ['validator.mjs']);
+		const nativeProfiles = report.coverage.result.flatMap((script) => script.functions ?? []);
+		assert.ok(nativeProfiles.some((profile) => profile.ranges?.some((range) => range.count === 0)), 'native report should retain uncovered range locations');
 	} finally {
 		process.chdir(originalDirectory);
 		await rm(packageRoot, { recursive: true, force: true });

@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::{Component, Path, PathBuf};
 
 #[jsonschema::validator(path = "../../../schemas/dataset.v1.schema.json")]
 struct DatasetSchema;
@@ -62,6 +62,8 @@ pub struct StepSpec {
 pub struct ExecutionKey {
     pub case_id: String,
     pub step_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub dataset_id: Option<String>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -93,6 +95,9 @@ pub struct AdapterBatch {
     /// Rust runner's uncovered-line report.
     #[serde(default)]
     pub coverage_lines: Vec<CoverageLineFile>,
+    /// Per-metric counts and file totals reported by the language coverage tool.
+    #[serde(default)]
+    pub coverage_metrics: std::collections::BTreeMap<String, CoverageMetricCounts>,
     /// Adapter-owned summary for explicitly declared supplemental tests.
     #[serde(default)]
     pub additional_test_coverage: Option<Value>,
@@ -106,6 +111,36 @@ pub struct CoverageLineFile {
     pub path: String,
     pub executable_lines: Vec<u32>,
     pub covered_lines: Vec<u32>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, Default)]
+#[serde(deny_unknown_fields)]
+pub struct CoverageMetricCounts {
+    pub covered: u64,
+    pub total: u64,
+    #[serde(default)]
+    pub files: Vec<CoverageMetricFile>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct CoverageMetricFile {
+    pub path: String,
+    pub covered: u64,
+    pub total: u64,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct CoverageMetricOutcome {
+    pub status: String,
+    pub covered: Option<u64>,
+    pub total: Option<u64>,
+    pub percent: Option<f64>,
+    pub minimum_percent: Option<f64>,
+    pub threshold_met: Option<bool>,
+    #[serde(default)]
+    pub files: Vec<CoverageMetricFile>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -354,8 +389,9 @@ fn write_plan_paths(output: &mut String, paths: &[String], display_root: Option<
 }
 
 /// Contract command contract: each command receives one complete flattened
-/// dataset batch and returns raw outputs/errors and coverage. Rust owns matching
-/// and predicate verification after the batch.
+/// request batch for all datasets declared by one contract and returns raw
+/// outputs/errors and their union coverage. Dataset identity stays on each key
+/// so Rust can verify each dataset's cases and fingerprints independently.
 pub trait BatchAdapter {
     fn execute_tree(
         &self,
@@ -432,11 +468,12 @@ fn decode_batch_output(bytes: &[u8], contract: &str) -> Result<AdapterBatch, Str
 pub fn validate_adapter_coverage_payload(value: &Value, contract: &str) -> Result<(), String> {
     let coverage = json!({
         "coverage": value.get("coverage").cloned().unwrap_or(Value::Null),
-        "coverage_lines": value.get("coverage_lines").cloned().unwrap_or(Value::Null),
+        "coverage_lines": value.get("coverage_lines").cloned().unwrap_or_else(|| json!([])),
+        "coverage_metrics": value.get("coverage_metrics").cloned().unwrap_or_else(|| json!({})),
         "additional_test_coverage": value.get("additional_test_coverage").cloned().unwrap_or(Value::Null),
         "additional_coverage_lines": value.get("additional_coverage_lines").cloned().unwrap_or_else(|| json!([])),
     });
-    if let Some(error) = AdapterCoverageSchema::iter_errors(&coverage).next() {
+    if let Err(error) = AdapterCoverageSchema::validate(&coverage) {
         return Err(format!(
             "contract {contract} returned invalid adapter coverage at {}: {}",
             error.instance_path(),
@@ -478,6 +515,50 @@ pub fn validate_adapter_coverage_payload(value: &Value, contract: &str) -> Resul
             }
         }
     }
+    // The JSON Schema validation above guarantees object shape, known metric
+    // names, and the required metric and file fields. Keep the checks below
+    // for cross-field invariants that JSON Schema cannot express.
+    let metrics: std::collections::BTreeMap<String, CoverageMetricCounts> =
+        serde_json::from_value(coverage["coverage_metrics"].clone()).map_err(|error| {
+            format!("contract {contract} returned invalid adapter coverage metrics: {error}")
+        })?;
+    for (name, metric) in metrics {
+        let covered = metric.covered;
+        let total = metric.total;
+        if covered > total {
+            return Err(format!("contract {contract} returned invalid adapter coverage at /coverage_metrics/{name}: covered count exceeds total"));
+        }
+        let mut file_paths = std::collections::HashSet::new();
+        let mut file_covered = 0_u64;
+        let mut file_total = 0_u64;
+        for (index, file) in metric.files.into_iter().enumerate() {
+            let path = file.path;
+            if !file_paths.insert(path.clone()) {
+                return Err(format!("contract {contract} returned invalid adapter coverage at /coverage_metrics/{name}/files/{index}/path: duplicate file path {path:?}"));
+            }
+            let source_path = Path::new(&path);
+            if path.is_empty()
+                || source_path.is_absolute()
+                || source_path.components().any(|part| !matches!(part, Component::Normal(_)))
+            {
+                return Err(format!("contract {contract} returned invalid adapter coverage at /coverage_metrics/{name}/files/{index}/path: path must be package-relative"));
+            }
+            let covered_count = file.covered;
+            let total_count = file.total;
+            if covered_count > total_count {
+                return Err(format!("contract {contract} returned invalid adapter coverage at /coverage_metrics/{name}/files/{index}: covered count exceeds total"));
+            }
+            file_covered = file_covered.checked_add(covered_count).ok_or_else(|| {
+                format!("contract {contract} returned invalid adapter coverage at /coverage_metrics/{name}/files: covered count overflow")
+            })?;
+            file_total = file_total.checked_add(total_count).ok_or_else(|| {
+                format!("contract {contract} returned invalid adapter coverage at /coverage_metrics/{name}/files: total count overflow")
+            })?;
+        }
+        if (file_covered, file_total) != (covered, total) {
+            return Err(format!("contract {contract} returned invalid adapter coverage at /coverage_metrics/{name}: file counts do not add up to the metric totals"));
+        }
+    }
     Ok(())
 }
 
@@ -485,9 +566,14 @@ fn adapter_coverage_value(batch: &AdapterBatch) -> Value {
     json!({
         "coverage": batch.coverage,
         "coverage_lines": batch.coverage_lines,
+        "coverage_metrics": batch.coverage_metrics,
         "additional_test_coverage": batch.additional_test_coverage,
         "additional_coverage_lines": batch.additional_coverage_lines,
     })
+}
+
+fn coverage_metric_names() -> &'static [&'static str] {
+    &["line", "statement", "function", "branch", "region", "instantiation"]
 }
 
 fn strictly_increasing(lines: &[Value]) -> bool {
@@ -519,19 +605,25 @@ pub struct ContractResult {
     pub steps: Vec<StepResult>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub coverage: Option<CoverageFingerprint>,
+    #[serde(skip)]
+    pub dataset_path: PathBuf,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CoverageRecord {
     pub contract: String,
     #[serde(skip)]
-    pub dataset_path: PathBuf,
-    pub minimum_line_percent: f64,
+    pub dataset_paths: Vec<PathBuf>,
+    pub datasets: Vec<String>,
+    pub minimum_coverage_percent: f64,
     pub dataset_covered_lines: usize,
     pub dataset_executable_lines: usize,
     pub combined_covered_lines: usize,
     pub combined_executable_lines: usize,
     pub line_threshold_met: bool,
+    pub coverage_threshold_met: bool,
+    pub dataset_metrics: std::collections::BTreeMap<String, CoverageMetricOutcome>,
+    pub aggregate_metrics: std::collections::BTreeMap<String, CoverageMetricOutcome>,
     pub native_report: Value,
     pub declared_sources: Vec<String>,
     pub covered_sources: Vec<String>,
@@ -669,17 +761,49 @@ pub fn run_contract_tree_with_fingerprint_mode_and_nested_contracts(
             checks_by_contract.push(checks);
         }
     }
-    let adapter_batches = adapter.execute_tree(&tree, backend, &batches)?;
-    if adapter_batches.len() != batches.len() {
+    // Execute every dataset for a contract in one adapter batch. Native metric
+    // totals then represent the true union of locations reached by all those
+    // datasets. Dataset identity is carried separately from case_id so the
+    // validator still receives the user's original case id and fingerprints
+    // remain independently keyed per dataset.
+    let mut contract_batches: Vec<ContractBatch> = Vec::new();
+    let mut dataset_indexes_by_contract: Vec<Vec<usize>> = Vec::new();
+    let mut contract_index_by_name = std::collections::HashMap::new();
+    for (dataset_index, dataset_batch) in batches.iter().enumerate() {
+        let name = &dataset_batch.manifest.manifest.name;
+        let contract_index = if let Some(index) = contract_index_by_name.get(name) {
+            *index
+        } else {
+            let index = contract_batches.len();
+            contract_index_by_name.insert(name.clone(), index);
+            let mut combined = dataset_batch.clone();
+            combined.requests.clear();
+            contract_batches.push(combined);
+            dataset_indexes_by_contract.push(Vec::new());
+            index
+        };
+        let local_dataset_index = dataset_indexes_by_contract[contract_index].len();
+        dataset_indexes_by_contract[contract_index].push(dataset_index);
+        for request in &dataset_batch.requests {
+            let mut request = request.clone();
+            request.key.dataset_id = Some(local_dataset_index.to_string());
+            contract_batches[contract_index].requests.push(request);
+        }
+    }
+    let adapter_batches = adapter.execute_tree(&tree, backend, &contract_batches)?;
+    if adapter_batches.len() != contract_batches.len() {
         return Err(format!(
             "adapter returned {} contract batches for {} requested packages",
             adapter_batches.len(),
-            batches.len()
+            contract_batches.len()
         ));
     }
     let mut report = BatchReport::default();
-    for ((batch, checks), mut adapter_batch) in
-        batches.iter().zip(checks_by_contract).zip(adapter_batches)
+    let mut checks_by_contract = checks_by_contract.into_iter().map(Some).collect::<Vec<_>>();
+    for ((batch, dataset_indexes), mut adapter_batch) in contract_batches
+        .iter()
+        .zip(dataset_indexes_by_contract)
+        .zip(adapter_batches)
     {
         let adapter_value = adapter_coverage_value(&adapter_batch);
         validate_adapter_coverage_payload(&adapter_value, &batch.manifest.manifest.name)?;
@@ -688,12 +812,22 @@ pub fn run_contract_tree_with_fingerprint_mode_and_nested_contracts(
             &batch.manifest.manifest.coverage_sources,
             &batch.manifest.manifest.name,
         )?;
+        if let Some(line_metric) = adapter_batch.coverage_metrics.get("line") {
+            let (covered, total) = line_coverage_totals(&adapter_batch.coverage_lines);
+            if (line_metric.covered, line_metric.total) != (covered as u64, total as u64) {
+                return Err(format!(
+                    "contract {} reported line metric totals that do not match coverage_lines",
+                    batch.manifest.manifest.name
+                ));
+            }
+        }
         let additional_test_coverage = validate_additional_test_coverage(batch, &adapter_batch)?;
         prefix_line_coverage_paths(&batch.package_prefix, &mut adapter_batch.coverage_lines);
         prefix_line_coverage_paths(
             &batch.package_prefix,
             &mut adapter_batch.additional_coverage_lines,
         );
+        prefix_coverage_metric_paths(&batch.package_prefix, &mut adapter_batch.coverage_metrics);
         prefix_native_coverage_sources(&batch.package_prefix, &mut adapter_batch.coverage);
         let (dataset_covered_lines, dataset_executable_lines) =
             line_coverage_totals(&adapter_batch.coverage_lines);
@@ -703,21 +837,52 @@ pub fn run_contract_tree_with_fingerprint_mode_and_nested_contracts(
         );
         let (combined_covered_lines, combined_executable_lines) =
             line_coverage_totals(&combined_lines);
-        let minimum_line_percent = batch.manifest.manifest.coverage.minimum_line_percent;
-        let combined_percent = coverage_percent(combined_covered_lines, combined_executable_lines);
-        let line_threshold_met = combined_executable_lines > 0
-            && combined_percent + f64::EPSILON >= minimum_line_percent;
-        let outputs = index_results(adapter_batch.results)?;
-        let mut fingerprint_source_lines = std::collections::HashMap::new();
-        let coverage_scopes = if coverage_fingerprints {
-            index_coverage_scopes(
-                batch,
-                adapter_batch.coverage_scopes,
-                &mut fingerprint_source_lines,
-            )?
-        } else {
-            std::collections::HashMap::new()
-        };
+        let minimum_coverage_percent = batch.manifest.manifest.minimum_coverage_percent;
+        let dataset_metrics = coverage_metric_outcomes(
+            &adapter_batch.coverage_metrics,
+            &adapter_batch.coverage_lines,
+            minimum_coverage_percent,
+        );
+        let aggregate_metrics = coverage_metric_outcomes(
+            &adapter_batch.coverage_metrics,
+            &combined_lines,
+            minimum_coverage_percent,
+        );
+        let line_threshold_met = aggregate_metrics
+            .get("line")
+            .and_then(|metric| metric.threshold_met)
+            .unwrap_or(false);
+        let coverage_threshold_met = aggregate_metrics
+            .values()
+            .all(|metric| metric.threshold_met != Some(false));
+        let mut results_by_dataset = vec![Vec::new(); dataset_indexes.len()];
+        let mut scopes_by_dataset = vec![Vec::new(); dataset_indexes.len()];
+        for mut result in adapter_batch.results.drain(..) {
+            let dataset_index = result
+                .key
+                .dataset_id
+                .as_deref()
+                .and_then(|value| value.parse::<usize>().ok())
+                .ok_or_else(|| format!("contract {} adapter result has no dataset identity", batch.manifest.manifest.name))?;
+            result.key.dataset_id = None;
+            results_by_dataset
+                .get_mut(dataset_index)
+                .ok_or_else(|| format!("contract {} adapter result has invalid dataset identity", batch.manifest.manifest.name))?
+                .push(result);
+        }
+        for mut scope in adapter_batch.coverage_scopes.drain(..) {
+            let dataset_index = scope
+                .key
+                .dataset_id
+                .as_deref()
+                .and_then(|value| value.parse::<usize>().ok())
+                .ok_or_else(|| format!("contract {} coverage scope has no dataset identity", batch.manifest.manifest.name))?;
+            scope.key.dataset_id = None;
+            scopes_by_dataset
+                .get_mut(dataset_index)
+                .ok_or_else(|| format!("contract {} coverage scope has invalid dataset identity", batch.manifest.manifest.name))?
+                .push(scope);
+        }
         let declared_sources = declared_sources(batch);
         let covered_sources = adapter_batch
             .coverage
@@ -736,13 +901,30 @@ pub fn run_contract_tree_with_fingerprint_mode_and_nested_contracts(
             .collect();
         report.coverage.push(CoverageRecord {
             contract: batch.manifest.manifest.name.clone(),
-            dataset_path: batch.dataset_path.clone(),
-            minimum_line_percent,
+            dataset_paths: dataset_indexes
+                .iter()
+                .map(|index| batches[*index].dataset_path.clone())
+                .collect(),
+            datasets: dataset_indexes
+                .iter()
+                .map(|index| {
+                    batches[*index]
+                        .dataset_path
+                        .strip_prefix(&batch.manifest.package_root)
+                        .unwrap_or(&batches[*index].dataset_path)
+                        .to_string_lossy()
+                        .into_owned()
+                })
+                .collect(),
+            minimum_coverage_percent,
             dataset_covered_lines,
             dataset_executable_lines,
             combined_covered_lines,
             combined_executable_lines,
             line_threshold_met,
+            coverage_threshold_met,
+            dataset_metrics,
+            aggregate_metrics,
             native_report: adapter_batch.coverage.unwrap_or(Value::Null),
             declared_sources,
             covered_sources: {
@@ -755,15 +937,33 @@ pub fn run_contract_tree_with_fingerprint_mode_and_nested_contracts(
             additional_test_coverage,
             additional_line_coverage: adapter_batch.additional_coverage_lines,
         });
-        report.results.extend(verify_dataset(
-            &batch.manifest.manifest,
-            checks,
-            outputs,
-            &coverage_scopes,
-            &fingerprint_source_lines,
-            coverage_fingerprints,
-            compare_fingerprints,
-        )?);
+        for (local_dataset_index, dataset_index) in dataset_indexes.into_iter().enumerate() {
+            let dataset_batch = &batches[dataset_index];
+            let outputs = index_results(std::mem::take(&mut results_by_dataset[local_dataset_index]))?;
+            let mut fingerprint_source_lines = std::collections::HashMap::new();
+            let coverage_scopes = if coverage_fingerprints {
+                index_coverage_scopes(
+                    dataset_batch,
+                    std::mem::take(&mut scopes_by_dataset[local_dataset_index]),
+                    &mut fingerprint_source_lines,
+                )?
+            } else {
+                std::collections::HashMap::new()
+            };
+            let mut dataset_results = verify_dataset(
+                &dataset_batch.manifest.manifest,
+                checks_by_contract[dataset_index].take().unwrap_or_default(),
+                outputs,
+                &coverage_scopes,
+                &fingerprint_source_lines,
+                coverage_fingerprints,
+                compare_fingerprints,
+            )?;
+            for result in &mut dataset_results {
+                result.dataset_path = dataset_batch.dataset_path.clone();
+            }
+            report.results.extend(dataset_results);
+        }
     }
     Ok(report)
 }
@@ -820,6 +1020,16 @@ fn validate_declared_coverage_sources(
             ));
         }
     }
+    for (metric, counts) in &batch.coverage_metrics {
+        for file in &counts.files {
+            if !is_allowed(&file.path, declared_sources) {
+                return Err(format!(
+                    "contract {contract} reported {metric} coverage for source outside coverage_sources: {}",
+                    file.path
+                ));
+            }
+        }
+    }
     if let Some(sources) = batch.coverage.as_ref()
         .and_then(|report| report.get("sources"))
         .and_then(Value::as_array)
@@ -858,6 +1068,20 @@ fn prefix_native_coverage_sources(prefix: &Path, coverage: &mut Option<Value>) {
     for source in sources {
         if let Some(path) = source.as_str().map(str::to_owned) {
             *source = Value::String(prefix.join(path).to_string_lossy().replace('\\', "/"));
+        }
+    }
+}
+
+fn prefix_coverage_metric_paths(
+    prefix: &Path,
+    metrics: &mut std::collections::BTreeMap<String, CoverageMetricCounts>,
+) {
+    if prefix.as_os_str().is_empty() || prefix == Path::new(".") {
+        return;
+    }
+    for metric in metrics.values_mut() {
+        for file in &mut metric.files {
+            file.path = prefix.join(&file.path).to_string_lossy().replace('\\', "/");
         }
     }
 }
@@ -975,6 +1199,63 @@ fn line_coverage_totals(files: &[CoverageLineFile]) -> (usize, usize) {
     )
 }
 
+fn coverage_metric_outcomes(
+    reported: &std::collections::BTreeMap<String, CoverageMetricCounts>,
+    line_files: &[CoverageLineFile],
+    minimum_coverage_percent: f64,
+) -> std::collections::BTreeMap<String, CoverageMetricOutcome> {
+    let (line_covered, line_total) = line_coverage_totals(line_files);
+    let mut metrics = reported.clone();
+    metrics.insert(
+        "line".into(),
+        CoverageMetricCounts {
+            covered: line_covered as u64,
+            total: line_total as u64,
+            files: line_files
+                .iter()
+                .map(|file| CoverageMetricFile {
+                    path: file.path.clone(),
+                    covered: file.covered_lines.iter().copied().collect::<std::collections::BTreeSet<_>>().len() as u64,
+                    total: file.executable_lines.iter().copied().collect::<std::collections::BTreeSet<_>>().len() as u64,
+                })
+                .collect(),
+        },
+    );
+    coverage_metric_names()
+        .iter()
+        .map(|name| {
+            let outcome = if let Some(counts) = metrics.get(*name) {
+                let minimum_percent = minimum_coverage_percent;
+                let percent = if counts.total == 0 {
+                    0.0
+                } else {
+                    counts.covered as f64 * 100.0 / counts.total as f64
+                };
+                CoverageMetricOutcome {
+                    status: "available".into(),
+                    covered: Some(counts.covered),
+                    total: Some(counts.total),
+                    percent: Some(percent),
+                    minimum_percent: Some(minimum_percent),
+                    threshold_met: Some(counts.total > 0 && percent + f64::EPSILON >= minimum_percent),
+                    files: counts.files.clone(),
+                }
+            } else {
+                CoverageMetricOutcome {
+                    status: "unavailable".into(),
+                    covered: None,
+                    total: None,
+                    percent: None,
+                    minimum_percent: None,
+                    threshold_met: None,
+                    files: Vec::new(),
+                }
+            };
+            ((*name).to_owned(), outcome)
+        })
+        .collect()
+}
+
 fn merge_line_coverage(
     dataset: &[CoverageLineFile],
     supplemental: &[CoverageLineFile],
@@ -999,14 +1280,6 @@ fn merge_line_coverage(
             covered_lines: covered.into_iter().collect(),
         })
         .collect()
-}
-
-fn coverage_percent(covered: usize, executable: usize) -> f64 {
-    if executable == 0 {
-        0.0
-    } else {
-        covered as f64 * 100.0 / executable as f64
-    }
 }
 
 fn coverage_line_json(files: &[CoverageLineFile]) -> Vec<Value> {
@@ -1240,7 +1513,7 @@ fn coverage_for_key(
     let Some(mut coverage) = scopes.get(key).cloned() else {
         return (
             None,
-            expected.map(|_| format!("coverage fingerprint unavailable for {:?}", key)),
+            expected.map(|_| format!("coverage fingerprint unavailable for {}", execution_key_debug(key))),
         );
     };
     if expected.is_some() && coverage.files.iter().all(|file| file.lines.is_empty()) {
@@ -1265,6 +1538,19 @@ fn coverage_for_key(
         )
     });
     (Some(coverage), mismatch)
+}
+
+fn execution_key_debug(key: &ExecutionKey) -> String {
+    match &key.step_id {
+        Some(step_id) => format!(
+            "ExecutionKey {{ case_id: {:?}, step_id: Some({:?}) }}",
+            key.case_id, step_id
+        ),
+        None => format!(
+            "ExecutionKey {{ case_id: {:?}, step_id: None }}",
+            key.case_id
+        ),
+    }
 }
 
 fn coverage_for_files(
@@ -1345,6 +1631,7 @@ fn flatten_dataset_with_fingerprints(
                     key: ExecutionKey {
                         case_id: call.id.clone(),
                         step_id: None,
+                        dataset_id: None,
                     },
                     input: call.input.clone(),
                     setup: call.setup.clone(),
@@ -1375,6 +1662,7 @@ fn flatten_dataset_with_fingerprints(
                         key: ExecutionKey {
                             case_id: sequence.id.clone(),
                             step_id: Some(step.id.clone()),
+                            dataset_id: None,
                         },
                         input: step.input.clone(),
                         setup: step.setup.clone(),
@@ -1453,6 +1741,7 @@ fn verify_dataset(
                 let key = ExecutionKey {
                     case_id: case.id.clone(),
                     step_id: None,
+                    dataset_id: None,
                 };
                 let result = outputs
                     .remove(&key)
@@ -1481,6 +1770,7 @@ fn verify_dataset(
                     error: error.or(coverage_error),
                     steps: vec![],
                     coverage,
+                    dataset_path: PathBuf::new(),
                 });
             }
             Check::Sequence(case) => {
@@ -1492,6 +1782,7 @@ fn verify_dataset(
                     let key = ExecutionKey {
                         case_id: case.id.clone(),
                         step_id: Some(step.id.clone()),
+                        dataset_id: None,
                     };
                     let result = outputs.remove(&key).ok_or_else(|| {
                         format!("adapter omitted result for {}/{}", case.id, step.id)
@@ -1538,6 +1829,7 @@ fn verify_dataset(
                     error: first_error,
                     steps: step_results,
                     coverage: case_coverage,
+                    dataset_path: PathBuf::new(),
                 });
             }
         }

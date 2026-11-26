@@ -60,7 +60,7 @@ try {
 		if (first.parallel === true) {
 			for (let next = index + 1; next < requests.length; next += 1) {
 				const candidate = requests[next];
-				if (candidate.key.case_id !== firstCaseKey || candidate.parallel !== true) break;
+				if (candidate.key.dataset_id !== first.key.dataset_id || candidate.key.case_id !== firstCaseKey || candidate.parallel !== true) break;
 				batch.push(candidate);
 			}
 		}
@@ -192,6 +192,9 @@ const coverage = {
 	sources: [...new Set(files.map((item) => item.url))].sort(),
 	result: files,
 };
+const coverageMetrics = await normalizedCoverageMetrics(
+	coverageSnapshots, packageRoot, request.coverage_sources ?? [], coverageLines,
+);
 const scopes = request.coverage_fingerprints === false
 	? []
 	: requests.map((item) => coverageScopes.get(JSON.stringify(item.key)) ?? ({ key: item.key, files: [] }));
@@ -203,9 +206,103 @@ return {
 	coverage,
 	coverage_scopes: scopes,
 	coverage_lines: coverageLines,
+	coverage_metrics: coverageMetrics,
 	additional_test_coverage: additionalTestCoverage,
 	additional_coverage_lines: additionalCoverageLines,
 };
+}
+
+async function normalizedCoverageMetrics(snapshots, sourceRoot, declaredSources, coverageLines) {
+	const profiles = new Map();
+	for (const snapshot of snapshots) {
+		const snapshotProfiles = new Map();
+		for (const script of snapshot.result ?? []) {
+			if (!script.url?.startsWith('file:')) continue;
+			const filename = path.resolve(fileURLToPath(script.url));
+			if (filename !== sourceRoot && !filename.startsWith(`${sourceRoot}${path.sep}`)) continue;
+			const relative = path.relative(sourceRoot, filename).split(path.sep).join('/');
+			if (!declaredSources.some((entry) => relative === entry || relative.startsWith(`${entry.replace(/\/$/, '')}/`))) continue;
+			const functions = snapshotProfiles.get(filename) ?? [];
+			functions.push(...(script.functions ?? []));
+			snapshotProfiles.set(filename, functions);
+		}
+		for (const [filename, functions] of snapshotProfiles) {
+			const sourceProfiles = profiles.get(filename) ?? [];
+			sourceProfiles.push(functions);
+			profiles.set(filename, sourceProfiles);
+		}
+	}
+	const metrics = new Map();
+	const add = (name, file) => {
+		const metric = metrics.get(name) ?? { covered: 0, total: 0, files: [] };
+		metric.covered += file.covered;
+		metric.total += file.total;
+		metric.files.push(file);
+		metrics.set(name, metric);
+	};
+	for (const file of coverageLines) {
+		add('line', {
+			path: file.path,
+			covered: file.covered_lines.length,
+			total: file.executable_lines.length,
+		});
+	}
+	for (const filename of await declaredSourceFiles(sourceRoot, declaredSources)) {
+		const statements = new Map();
+		const functions = new Map();
+		const branches = new Map();
+		for (const profile of profiles.get(filename) ?? []) {
+			const converter = v8ToIstanbul(filename);
+			await converter.load();
+			converter.applyCoverage(profile);
+			const converted = converter.toIstanbul();
+			const record = converted[filename] ?? Object.values(converted)[0];
+			if (!record) continue;
+			for (const [id, location] of Object.entries(record.statementMap ?? {})) {
+				const key = JSON.stringify(location);
+				statements.set(key, { location, covered: (statements.get(key)?.covered ?? false) || Number(record.s?.[id] ?? 0) > 0 });
+			}
+			for (const [id, location] of Object.entries(record.fnMap ?? {})) {
+				const key = JSON.stringify(location);
+				functions.set(key, (functions.get(key) ?? false) || Number(record.f?.[id] ?? 0) > 0);
+			}
+			for (const [id, branch] of Object.entries(record.branchMap ?? {})) {
+				const counts = record.b?.[id] ?? [];
+				for (let index = 0; index < branch.locations.length; index += 1) {
+					const location = branch.locations[index];
+					const key = JSON.stringify(location);
+					branches.set(key, { location, covered: (branches.get(key)?.covered ?? false) || Number(counts[index] ?? 0) > 0 });
+				}
+			}
+		}
+		for (const [key, branch] of branches) {
+			if (branch.covered) continue;
+			const startLine = Number(branch.location.start?.line);
+			const endLine = Number(branch.location.end?.line);
+			const coveredInRange = [...statements.values()].some(({ location, covered }) => {
+				const line = Number(location.start?.line);
+				return covered && Number.isInteger(line) && line >= startLine && line <= endLine;
+			});
+			branches.set(key, { ...branch, covered: coveredInRange });
+		}
+		const relative = path.relative(sourceRoot, filename).split(path.sep).join('/');
+		for (const [name, values] of [
+			['statement', statements],
+			['function', functions],
+			['branch', branches],
+		]) {
+			if (!values.size) continue;
+			add(name, {
+				path: relative,
+				covered: [...values.values()].filter((value) => typeof value === 'boolean' ? value : value.covered).length,
+				total: values.size,
+			});
+		}
+	}
+	return Object.fromEntries([...metrics.entries()].map(([name, metric]) => [
+		name,
+		{ ...metric, files: metric.files.sort((left, right) => left.path.localeCompare(right.path)) },
+	]));
 }
 
 async function normalizedLineCoverage(snapshots, sourceRoot, declaredSources) {

@@ -76,7 +76,7 @@ fn validate_case(_: &Dataset, case: &DatasetCase) -> Result<(), String> {
             let serialized = serde_json::to_string(&dataset).map_err(|error| error.to_string())?;
             let case = &dataset.cases[0];
             if case.coverage_fingerprint.as_deref() != Some("00000000000000000000000000000000")
-                || case.setup
+                || case.setup.is_some()
                 || case.expected != Some(Value::Null)
                 || serialized.contains("\"setup\"")
             {

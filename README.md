@@ -199,6 +199,16 @@ ranges. It always writes the full report to
 different location. A run exits nonzero when cases fail, a required fingerprint
 is missing or mismatched, or the manifest's coverage threshold is not met.
 
+Set `minimum_coverage_percent` once at the top level of the Open Contract
+manifest. This one percentage applies to every supported coverage metric the
+runner reports, including lines, statements, functions, branches, regions, and
+instantiations. A metric passes only when its measured coverage meets that
+shared minimum. Coverage from all datasets declared by a contract is unioned
+before this threshold is enforced, while each case keeps its own independent
+coverage fingerprint. There are no separate per-metric thresholds. The old
+nested `coverage` configuration is rejected; manifests must use the top-level
+key.
+
 Run the runner, bootstrap-contract coverage checks, and language support checks
 with:
 

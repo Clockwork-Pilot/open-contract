@@ -20,8 +20,8 @@ pub struct DatasetCase {
         skip_serializing_if = "Option::is_none"
     )]
     pub coverage_fingerprint: Option<String>,
-    #[serde(default, skip_serializing_if = "is_false")]
-    pub setup: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub setup: Option<String>,
     #[serde(
         default,
         deserialize_with = "deserialize_expected",
@@ -30,10 +30,6 @@ pub struct DatasetCase {
     pub expected: Option<Value>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub predicate: Option<String>,
-}
-
-fn is_false(value: &bool) -> bool {
-    !value
 }
 
 fn missing_coverage_fingerprint() -> Option<String> {

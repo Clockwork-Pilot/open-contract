@@ -3,7 +3,7 @@
   "cases": [
     {
       "id": "load-json",
-      "setup": true,
+      "setup": "load-json",
       "input": {
         "operation": "load",
         "extension": "json",
@@ -16,7 +16,7 @@
     },
     {
       "id": "load-yaml",
-      "setup": true,
+      "setup": "load-yaml",
       "input": {
         "operation": "load",
         "extension": "yaml",
@@ -29,7 +29,7 @@
     },
     {
       "id": "load-yml",
-      "setup": true,
+      "setup": "load-yml",
       "input": {
         "operation": "load",
         "extension": "yml",
@@ -42,7 +42,7 @@
     },
     {
       "id": "invalid-json",
-      "setup": true,
+      "setup": "invalid-json",
       "input": {
         "operation": "load-error",
         "extension": "json",
@@ -56,7 +56,7 @@
     },
     {
       "id": "invalid-yaml",
-      "setup": true,
+      "setup": "invalid-yaml",
       "input": {
         "operation": "load-error",
         "extension": "yaml",
@@ -70,7 +70,7 @@
     },
     {
       "id": "unsupported-extension",
-      "setup": true,
+      "setup": "unsupported-extension",
       "input": {
         "operation": "load-error",
         "extension": "txt",
@@ -84,7 +84,7 @@
     },
     {
       "id": "extension-required",
-      "setup": true,
+      "setup": "extension-required",
       "input": {
         "operation": "load-error",
         "extension": "",
@@ -98,7 +98,7 @@
     },
     {
       "id": "missing-file",
-      "setup": true,
+      "setup": "missing-file",
       "input": {
         "operation": "missing-file",
         "error": "cannot read dataset"
@@ -110,20 +110,20 @@
     },
     {
       "id": "round-trip-default-fields",
-      "setup": true,
+      "setup": "round-trip-default-fields",
       "input": {
         "operation": "round-trip",
         "extension": "json",
         "document": "{\"version\":1,\"cases\":[{\"id\":\"plain\",\"input\":null,\"expected\":null}]}"
       },
-      "coverage_fingerprint": "8409ce1a809e96076c499c2d302dd4a3",
+      "coverage_fingerprint": "128a1256f872f23216e9936c5fd00c72",
       "expected": {
         "ok": true
       }
     },
     {
       "id": "missing-case-result-assertion",
-      "setup": true,
+      "setup": "missing-case-result-assertion",
       "input": {
         "operation": "missing-expected",
         "extension": "json",
@@ -136,7 +136,7 @@
     },
     {
       "id": "run-valid-dataset",
-      "setup": true,
+      "setup": "run-valid-dataset",
       "input": {
         "operation": "run",
         "extension": "json",
@@ -149,7 +149,7 @@
     },
     {
       "id": "run-unsupported-version",
-      "setup": true,
+      "setup": "run-unsupported-version",
       "input": {
         "operation": "run-error",
         "extension": "json",
@@ -163,7 +163,7 @@
     },
     {
       "id": "run-empty-cases",
-      "setup": true,
+      "setup": "run-empty-cases",
       "input": {
         "operation": "run-error",
         "extension": "json",
@@ -177,7 +177,7 @@
     },
     {
       "id": "run-case-without-result-assertion",
-      "setup": true,
+      "setup": "run-case-without-result-assertion",
       "input": {
         "operation": "run-error",
         "extension": "json",
@@ -191,7 +191,7 @@
     },
     {
       "id": "run-validator-error-is-qualified",
-      "setup": true,
+      "setup": "run-validator-error-is-qualified",
       "input": {
         "operation": "run-validator-error",
         "extension": "json",
@@ -204,7 +204,7 @@
     },
     {
       "id": "run-load-error-is-reported",
-      "setup": true,
+      "setup": "run-load-error-is-reported",
       "input": {
         "operation": "run-error",
         "extension": "json",

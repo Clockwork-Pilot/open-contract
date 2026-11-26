@@ -28,6 +28,123 @@ fn adapter_coverage_schema_rejects_duplicate_and_unsorted_lines() {
 }
 
 #[test]
+fn adapter_coverage_metric_counts_must_match_their_files() {
+    let valid = json!({
+        "coverage_lines": [{"path":"validator.py", "executable_lines":[1, 2], "covered_lines":[1]}],
+        "coverage_metrics": {
+            "statement": {
+                "covered": 1,
+                "total": 2,
+                "files": [{"path":"validator.py", "covered":1, "total":2}]
+            }
+        }
+    });
+    assert!(validate_adapter_coverage_payload(&valid, "metric-fixture").is_ok());
+
+    let mismatched = json!({
+        "coverage_lines": [],
+        "coverage_metrics": {
+            "function": {
+                "covered": 1,
+                "total": 3,
+                "files": [{"path":"validator.py", "covered":1, "total":2}]
+            }
+        }
+    });
+    assert!(validate_adapter_coverage_payload(&mismatched, "metric-fixture")
+        .unwrap_err()
+        .contains("file counts do not add up"));
+}
+
+#[test]
+fn unavailable_metrics_remain_unavailable_under_the_shared_threshold() {
+    let reported = std::collections::BTreeMap::from([(
+        "function".to_owned(),
+        CoverageMetricCounts {
+            covered: 1,
+            total: 2,
+            files: vec![CoverageMetricFile {
+                path: "validator.py".into(),
+                covered: 1,
+                total: 2,
+            }],
+        },
+    )]);
+    let lines = vec![CoverageLineFile {
+        path: "validator.py".into(),
+        executable_lines: vec![1],
+        covered_lines: vec![1],
+    }];
+    let outcomes = coverage_metric_outcomes(&reported, &lines, 100.0);
+    assert_eq!(outcomes["line"].threshold_met, Some(true));
+    assert_eq!(outcomes["function"].threshold_met, Some(false));
+    assert_eq!(outcomes["instantiation"].status, "unavailable");
+    assert_eq!(outcomes["instantiation"].threshold_met, None);
+    assert_eq!(outcomes["statement"].status, "unavailable");
+    assert_eq!(outcomes["statement"].threshold_met, None);
+}
+
+#[test]
+fn every_metric_threshold_accepts_exact_and_rejects_below_threshold_values() {
+    for name in coverage_metric_names() {
+        let is_line = *name == "line";
+        let exact_reported = if is_line {
+            std::collections::BTreeMap::new()
+        } else {
+            std::collections::BTreeMap::from([(
+                (*name).to_owned(),
+                CoverageMetricCounts {
+                    covered: 1,
+                    total: 1,
+                    files: vec![CoverageMetricFile {
+                        path: "validator.py".into(),
+                        covered: 1,
+                        total: 1,
+                    }],
+                },
+            )])
+        };
+        let exact_lines = vec![CoverageLineFile {
+            path: "validator.py".into(),
+            executable_lines: vec![1],
+            covered_lines: vec![1],
+        }];
+        let exact = coverage_metric_outcomes(&exact_reported, &exact_lines, 100.0);
+        assert_eq!(exact[*name].percent, Some(100.0), "{name} exact threshold");
+        assert_eq!(exact[*name].threshold_met, Some(true), "{name} exact threshold");
+
+        let below_reported = if is_line {
+            std::collections::BTreeMap::new()
+        } else {
+            std::collections::BTreeMap::from([(
+                (*name).to_owned(),
+                CoverageMetricCounts {
+                    covered: 1,
+                    total: 2,
+                    files: vec![CoverageMetricFile {
+                        path: "validator.py".into(),
+                        covered: 1,
+                        total: 2,
+                    }],
+                },
+            )])
+        };
+        let below_lines = vec![CoverageLineFile {
+            path: "validator.py".into(),
+            executable_lines: vec![1, 2],
+            covered_lines: vec![1],
+        }];
+        let below = coverage_metric_outcomes(
+            &below_reported,
+            &below_lines,
+            100.0,
+        );
+        assert_eq!(below[*name].percent, Some(50.0), "{name} below threshold");
+        assert_eq!(below[*name].threshold_met, Some(false), "{name} below threshold");
+    }
+}
+
+#[test]
 fn adapter_coverage_rejects_sources_outside_manifest_whitelist() {
     let valid = AdapterBatch {
         coverage: Some(json!({"sources": ["src/public.rs"]})),
@@ -122,6 +239,7 @@ fn adapter_result_index_rejects_duplicate_keys() {
     let key = ExecutionKey {
         case_id: "c".into(),
         step_id: None,
+    dataset_id: None,
     };
     let result = AdapterResult {
         key: key.clone(),
@@ -146,6 +264,7 @@ fn coverage_scope_validation_rejects_missing_and_invalid_fingerprints() {
     let key = ExecutionKey {
         case_id: "c".into(),
         step_id: None,
+    dataset_id: None,
     };
     let empty = std::collections::HashMap::new();
     let (coverage, error) =
@@ -235,6 +354,7 @@ fn verification_matches_error_outputs_and_rejects_missing_outputs() {
         key: ExecutionKey {
             case_id: "c".into(),
             step_id: None,
+            dataset_id: None,
         },
         output: None,
         error: Some("invalid input".into()),

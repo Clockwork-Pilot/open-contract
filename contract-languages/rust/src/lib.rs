@@ -75,6 +75,7 @@ pub fn run_dataset(
         let mut end = index + 1;
         if first["parallel"].as_bool() == Some(true) {
             while end < requests.len()
+                && requests[end]["key"]["dataset_id"] == first["key"]["dataset_id"]
                 && requests[end]["key"]["case_id"].as_str() == Some(case_id)
                 && requests[end]["parallel"].as_bool() == Some(true)
             {
@@ -140,6 +141,7 @@ pub fn run_dataset(
         "coverage": coverage.native_report,
         "coverage_scopes": coverage.scopes,
         "coverage_lines": coverage.lines,
+        "coverage_metrics": coverage.metrics,
     }))
 }
 
@@ -170,6 +172,7 @@ fn unavailable_coverage(sources: &[String]) -> CoverageReport {
         }),
         scopes: Vec::new(),
         lines: Vec::new(),
+        metrics: json!({}),
     }
 }
 
@@ -177,6 +180,7 @@ struct CoverageReport {
     native_report: Value,
     scopes: Vec<Value>,
     lines: Vec<Value>,
+    metrics: Value,
 }
 
 #[cfg(coverage)]
@@ -269,11 +273,106 @@ mod llvm_coverage {
             .iter()
             .filter_map(|item| item.get("path").and_then(Value::as_str))
             .collect::<Vec<_>>();
+        let metrics = normalized_coverage_metrics(
+            &aggregate_report,
+            package_root,
+            declared_sources,
+            &lines,
+        );
         Ok(CoverageReport {
             native_report: json!({ "format": "llvm-cov-export", "sources": sources, "report": aggregate_report }),
             scopes: coverage_scopes,
             lines,
+            metrics,
         })
+    }
+
+    fn normalized_coverage_metrics(
+        report: &Value,
+        package_root: &Path,
+        declared: &[String],
+        line_files: &[Value],
+    ) -> Value {
+        let categories = [
+            ("function", "functions"),
+            ("branch", "branches"),
+            ("region", "regions"),
+            ("instantiation", "instantiations"),
+        ];
+        let mut metrics = serde_json::Map::new();
+        let line_files = line_files
+            .iter()
+            .filter_map(|file| {
+                let path = file.get("path")?.as_str()?;
+                let covered = file.get("covered_lines")?.as_array()?.len() as u64;
+                let total = file.get("executable_lines")?.as_array()?.len() as u64;
+                Some(json!({ "path": path, "covered": covered, "total": total }))
+            })
+            .collect::<Vec<_>>();
+        let line_covered = line_files
+            .iter()
+            .map(|file| file["covered"].as_u64().unwrap_or(0))
+            .sum::<u64>();
+        let line_total = line_files
+            .iter()
+            .map(|file| file["total"].as_u64().unwrap_or(0))
+            .sum::<u64>();
+        if line_total > 0 {
+            metrics.insert(
+                "line".into(),
+                json!({ "covered": line_covered, "total": line_total, "files": line_files }),
+            );
+        }
+        for (name, category) in categories {
+            let mut covered = 0_u64;
+            let mut total = 0_u64;
+            let mut files = Vec::new();
+            for data in report
+                .get("data")
+                .and_then(Value::as_array)
+                .into_iter()
+                .flatten()
+            {
+                for file in data
+                    .get("files")
+                    .and_then(Value::as_array)
+                    .into_iter()
+                    .flatten()
+                {
+                    let Some(summary) = file.get("summary").and_then(|value| value.get(category))
+                    else {
+                        continue;
+                    };
+                    let Some(count) = summary.get("count").and_then(Value::as_u64) else {
+                        continue;
+                    };
+                    let Some(file_covered) = summary.get("covered").and_then(Value::as_u64) else {
+                        continue;
+                    };
+                    let Some(filename) = file.get("filename").and_then(Value::as_str) else {
+                        continue;
+                    };
+                    let Some(path) = package_relative(filename, package_root, declared) else {
+                        continue;
+                    };
+                    total += count;
+                    covered += file_covered;
+                    files.push(json!({ "path": path, "covered": file_covered, "total": count }));
+                }
+            }
+            if total > 0 {
+                files.sort_by(|left, right| left["path"].as_str().cmp(&right["path"].as_str()));
+                metrics.insert(
+                    name.to_owned(),
+                    json!({
+                        "covered": covered,
+                        "total": total,
+                        "files": files,
+                    }),
+                );
+            }
+        }
+        Value::Object(metrics)
     }
 
     fn tool(variable: &str, fallback: &str, package_root: &Path) -> PathBuf {
@@ -575,7 +674,7 @@ mod llvm_coverage {
 
     #[cfg(test)]
     mod tests {
-        use super::filter_export_to_declared_sources;
+        use super::{filter_export_to_declared_sources, normalized_coverage_metrics};
         use serde_json::json;
         use std::fs;
 
@@ -616,6 +715,49 @@ mod llvm_coverage {
             assert_eq!(data["totals"]["lines"]["covered"], 1);
 
             fs::remove_dir_all(root).unwrap();
+        }
+
+        #[test]
+        fn llvm_metrics_preserve_every_native_total_and_file_count() {
+            let root = std::env::temp_dir().join(format!(
+                "open-contract-coverage-metrics-test-{}",
+                std::process::id()
+            ));
+            let public = root.join("src/public.rs").to_string_lossy().into_owned();
+            let report = json!({"data": [{"files": [{
+                "filename": public,
+                "summary": {
+                    "lines": {"count": 8, "covered": 7, "percent": 87.5},
+                    "functions": {"count": 3, "covered": 2, "percent": 66.7},
+                    "branches": {"count": 4, "covered": 3, "percent": 75.0},
+                    "regions": {"count": 10, "covered": 9, "percent": 90.0},
+                    "instantiations": {"count": 5, "covered": 4, "percent": 80.0}
+                }
+            }]}]});
+
+            let line_files = vec![json!({
+                "path": "src/public.rs",
+                "executable_lines": [1, 2],
+                "covered_lines": [1],
+            })];
+            let metrics = normalized_coverage_metrics(
+                &report,
+                &root,
+                &["src/public.rs".into()],
+                &line_files,
+            );
+            for (name, covered, total) in [
+                ("line", 1, 2),
+                ("function", 2, 3),
+                ("branch", 3, 4),
+                ("region", 9, 10),
+                ("instantiation", 4, 5),
+            ] {
+                assert_eq!(metrics[name]["covered"], covered);
+                assert_eq!(metrics[name]["total"], total);
+                assert_eq!(metrics[name]["files"][0]["path"], "src/public.rs");
+            }
+            fs::remove_dir_all(root).ok();
         }
     }
 }

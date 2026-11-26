@@ -208,17 +208,17 @@ const CASE_SETUP_BY_ID: &[(&str, CaseSetup)] = &[
 
 pub(super) fn run_staging_failure(
     case_id: &str,
-    setup_enabled: bool,
+    setup_id: Option<&str>,
     plan: &runner_manifest::ManifestPlan,
     input: &serde_json::Value,
     expected: Option<&serde_json::Value>,
     predicate: Option<&str>,
 ) -> Result<(), String> {
     let mut plan = plan.clone();
-    let temporary = if setup_enabled {
+    let temporary = if setup_id == Some(case_id) {
         if case_id != "staged-tree-rejects-unusable-temporary-directory" {
             return Err(format!(
-                "dataset case {case_id:?} has unexpected setup: true"
+                "dataset case {case_id:?} has unexpected setup fixture {setup_id:?}"
             ));
         }
         let temporary = tempfile::tempdir().map_err(|error| error.to_string())?;
@@ -231,7 +231,7 @@ pub(super) fn run_staging_failure(
         return result;
     } else {
         if case_id == "staged-tree-rejects-unusable-temporary-directory" {
-            return Err(format!("dataset case {case_id:?} must declare setup: true"));
+            return Err(format!("dataset case {case_id:?} must declare setup fixture {case_id:?}"));
         }
         None::<tempfile::TempDir>
     };
@@ -297,7 +297,7 @@ fn run_staging_case(
 
 pub(super) fn run_staging_backend(
     case_id: &str,
-    setup_enabled: bool,
+    setup_id: Option<&str>,
     root_plan: &runner_manifest::ManifestPlan,
     input: &serde_json::Value,
     expected: Option<&serde_json::Value>,
@@ -314,8 +314,8 @@ pub(super) fn run_staging_backend(
             | "nested-child-tempdir-rejects-absolute-read-outside-tree"
             | "nested-child-tempdir-rejects-absolute-write-outside-tree"
     ) {
-        if !setup_enabled {
-            return Err(format!("dataset case {case_id:?} must declare setup: true"));
+        if setup_id != Some(case_id) {
+            return Err(format!("dataset case {case_id:?} must declare setup fixture {case_id:?}"));
         }
         let temporary = tempfile::tempdir().map_err(|error| error.to_string())?;
         let parent = temporary.path().join("parent");
@@ -374,7 +374,7 @@ pub(super) fn run_staging_backend(
         }
         return stage_backend_case(
             case_id,
-            setup_enabled,
+            setup_id,
             &plan,
             &adjusted_input,
             expected,
@@ -390,8 +390,8 @@ pub(super) fn run_staging_backend(
             | "direct-backend-reports-write-directory-error"
             | "stage-backend-bwrap-reports-missing-root"
     ) {
-        if !setup_enabled {
-            return Err(format!("dataset case {case_id:?} must declare setup: true"));
+        if setup_id != Some(case_id) {
+            return Err(format!("dataset case {case_id:?} must declare setup fixture {case_id:?}"));
         }
         let temporary = tempfile::tempdir().map_err(|error| error.to_string())?;
         let package = temporary.path().join("package");
@@ -408,15 +408,15 @@ pub(super) fn run_staging_backend(
         )
         .map_err(|error| error.to_string())?;
         let plan = runner_manifest::ManifestPlan::load(package.join("contract.yaml"))?;
-        return stage_backend_case(case_id, setup_enabled, &plan, input, expected, predicate);
+        return stage_backend_case(case_id, setup_id, &plan, input, expected, predicate);
     }
     if matches!(
         case_id,
         "tempdir-read-rejects-recursive-symlink-escape"
             | "tempdir-nested-contract-rejects-symlink-escape"
     ) {
-        if !setup_enabled {
-            return Err(format!("dataset case {case_id:?} must declare setup: true"));
+        if setup_id != Some(case_id) {
+            return Err(format!("dataset case {case_id:?} must declare setup fixture {case_id:?}"));
         }
         let temporary = tempfile::tempdir().map_err(|error| error.to_string())?;
         let package = temporary.path().join("package");
@@ -461,11 +461,11 @@ pub(super) fn run_staging_backend(
             #[cfg(not(unix))]
             return Err("nested symlink fixture requires a Unix host".into());
         }
-        return stage_backend_case(case_id, false, &plan, input, expected, predicate);
+        return stage_backend_case(case_id, None, &plan, input, expected, predicate);
     }
     stage_backend_case(
         case_id,
-        setup_enabled,
+        setup_id,
         root_plan,
         input,
         expected,
@@ -475,7 +475,7 @@ pub(super) fn run_staging_backend(
 
 fn stage_backend_case(
     case_id: &str,
-    setup_enabled: bool,
+    setup_id: Option<&str>,
     root_plan: &runner_manifest::ManifestPlan,
     input: &serde_json::Value,
     expected: Option<&serde_json::Value>,
@@ -543,7 +543,7 @@ fn stage_backend_case(
         ) {
             run_command()
         } else {
-            run_with_case_setup(case_id, setup_enabled, &tree.root, run_command)
+            run_with_case_setup(case_id, setup_id, &tree.root, run_command)
         };
         let actual = match output {
             Ok(output) => serde_json::json!({
@@ -556,9 +556,9 @@ fn stage_backend_case(
             expected.ok_or_else(|| "command completed without an expected output".to_string())?;
         return match_staging_output(&actual, expected, predicate);
     }
-    if setup_enabled {
+    if setup_id == Some(case_id) {
         return Err(format!(
-            "dataset case {case_id:?} declares unexpected setup: true"
+            "dataset case {case_id:?} declares unexpected setup fixture {setup_id:?}"
         ));
     }
     let actual = serde_json::json!({
@@ -699,42 +699,44 @@ fn string_list(value: &serde_json::Value, field: &str) -> Result<Vec<String>, St
 
 pub(super) fn run_with_case_setup<T: Send>(
     case_id: &str,
-    setup_enabled: bool,
+    setup_id: Option<&str>,
     package_root: &std::path::Path,
     run: impl FnOnce() -> Result<T, String> + Send,
 ) -> Result<T, String> {
-    let setup = CASE_SETUP_BY_ID
-        .iter()
-        .find_map(|(id, setup)| (*id == case_id).then_some(*setup));
-    match (setup_enabled, setup) {
-        (false, Some(_)) => Err(format!(
-            "dataset case {case_id:?} has test setup but does not declare setup: true"
+    let setup = setup_id.and_then(|fixture_id| {
+        CASE_SETUP_BY_ID
+            .iter()
+            .find_map(|(id, setup)| (*id == fixture_id).then_some(*setup))
+    });
+    match (setup_id, setup) {
+        (None, Some(_)) => Err(format!(
+            "dataset case {case_id:?} has a fixture but no setup ID"
         )),
-        (true, None) => Err(format!(
-            "dataset case {case_id:?} declares setup: true but has no test setup"
+        (Some(fixture_id), None) => Err(format!(
+            "dataset case {case_id:?} references unknown setup fixture {fixture_id:?}"
         )),
-        (true, Some(CaseSetup::UnusableTemporaryDirectory)) => Err(format!(
+        (Some(_), Some(CaseSetup::UnusableTemporaryDirectory)) => Err(format!(
             "dataset case {case_id:?} setup must run before staging"
         )),
-        (true, Some(CaseSetup::AutoBubblewrapSucceeds)) => {
+        (Some(_), Some(CaseSetup::AutoBubblewrapSucceeds)) => {
             run_with_bubblewrap_launcher("#!/bin/sh\nexit 0\n", run)
         }
-        (true, Some(CaseSetup::AutoBubblewrapFails)) => {
+        (Some(_), Some(CaseSetup::AutoBubblewrapFails)) => {
             run_with_bubblewrap_launcher("#!/bin/sh\nexit 125\n", run)
         }
-        (true, Some(CaseSetup::AutoBubblewrapMissing)) => run_with_true_only_path(run),
-        (true, Some(CaseSetup::AutoBubblewrapFailsWithMessage)) => {
+        (Some(_), Some(CaseSetup::AutoBubblewrapMissing)) => run_with_true_only_path(run),
+        (Some(_), Some(CaseSetup::AutoBubblewrapFailsWithMessage)) => {
             run_with_bubblewrap_launcher("#!/bin/sh\necho probe-failed >&2\nexit 125\n", run)
         }
-        (true, Some(CaseSetup::AutoNoTrueExecutable)) => {
+        (Some(_), Some(CaseSetup::AutoNoTrueExecutable)) => {
             let _path = EnvironmentGuard::clear("PATH");
             run()
         }
-        (true, Some(CaseSetup::AutoLandlockFails)) => with_landlock_filter(
+        (Some(_), Some(CaseSetup::AutoLandlockFails)) => with_landlock_filter(
             LandlockFilter::AbiQuery,
             || run_with_bubblewrap_launcher("#!/bin/sh\nexit 125\n", run),
         ),
-        (true, Some(CaseSetup::AutoNoTemporaryDirectory)) => {
+        (Some(_), Some(CaseSetup::AutoNoTemporaryDirectory)) => {
             let blocker = tempfile::NamedTempFile::new().map_err(|error| error.to_string())?;
             run_with_bubblewrap_launcher("#!/bin/sh\nexit 125\n", || {
                 let _tmpdir =
@@ -742,19 +744,19 @@ pub(super) fn run_with_case_setup<T: Send>(
                 run()
             })
         }
-        (true, Some(CaseSetup::CommandNoTemporaryDirectory)) => {
+        (Some(_), Some(CaseSetup::CommandNoTemporaryDirectory)) => {
             let blocker = tempfile::NamedTempFile::new().map_err(|error| error.to_string())?;
             let _tmpdir = EnvironmentGuard::set("TMPDIR", blocker.path().as_os_str().to_owned());
             run()
         }
-        (true, Some(CaseSetup::HideBubblewrapFromPath)) => {
+        (Some(_), Some(CaseSetup::HideBubblewrapFromPath)) => {
             let _path = EnvironmentGuard::clear("PATH");
             run()
         }
-        (true, Some(CaseSetup::MockBubblewrapLauncher)) => {
+        (Some(_), Some(CaseSetup::MockBubblewrapLauncher)) => {
             run_with_bubblewrap_launcher("#!/bin/sh\nwhile [ \"$#\" -gt 0 ]; do\n  if [ \"$1\" = \"--\" ]; then shift; exec \"$@\"; fi\n  shift\ndone\nexit 125\n", run)
         }
-        (true, Some(CaseSetup::BubblewrapPackageRoot)) => {
+        (Some(_), Some(CaseSetup::BubblewrapPackageRoot)) => {
             let _root = EnvironmentGuard::set(
                 "OPEN_CONTRACT_TEST_PACKAGE_ROOT",
                 package_root.as_os_str().to_owned(),
@@ -764,17 +766,17 @@ pub(super) fn run_with_case_setup<T: Send>(
                 run,
             )
         }
-        (true, Some(CaseSetup::PrintBubblewrapArguments)) => {
+        (Some(_), Some(CaseSetup::PrintBubblewrapArguments)) => {
             run_with_bubblewrap_launcher("#!/bin/sh\nprintf '%s\\n' \"$@\"\n", run)
         }
-        (true, Some(CaseSetup::StageBackendBubblewrapArguments)) => {
+        (Some(_), Some(CaseSetup::StageBackendBubblewrapArguments)) => {
             run_with_bubblewrap_launcher("#!/bin/sh\nprintf '%s\\n' \"$@\"\n", run)
         }
-        (true, Some(CaseSetup::SetEnvironmentValue)) => {
+        (Some(_), Some(CaseSetup::SetEnvironmentValue)) => {
             let _value = EnvironmentGuard::set("OPEN_CONTRACT_TEST_VALUE", "contract supplied value");
             run()
         }
-        (true, Some(CaseSetup::RelativeCommandExecutable)) => {
+        (Some(_), Some(CaseSetup::RelativeCommandExecutable)) => {
             #[cfg(unix)]
             std::os::unix::fs::symlink(
                 "/usr/bin/true",
@@ -785,11 +787,11 @@ pub(super) fn run_with_case_setup<T: Send>(
             return Err("relative executable fixture requires a Unix host".into());
             run()
         }
-        (true, Some(CaseSetup::ClearEnvironmentValue)) => {
+        (Some(_), Some(CaseSetup::ClearEnvironmentValue)) => {
             let _value = EnvironmentGuard::clear("OPEN_CONTRACT_TEST_UNSET");
             run()
         }
-        (true, Some(CaseSetup::InvalidUtf8EnvironmentValue)) => {
+        (Some(_), Some(CaseSetup::InvalidUtf8EnvironmentValue)) => {
             use std::os::unix::ffi::OsStringExt;
             let _value = EnvironmentGuard::set(
                 "OPEN_CONTRACT_TEST_INVALID_UTF8",
@@ -797,31 +799,31 @@ pub(super) fn run_with_case_setup<T: Send>(
             );
             run()
         }
-        (true, Some(CaseSetup::SetEmptyEnvironmentValue)) => {
+        (Some(_), Some(CaseSetup::SetEmptyEnvironmentValue)) => {
             let _value = EnvironmentGuard::set("OPEN_CONTRACT_TEST_EMPTY", "   ");
             run()
         }
-        (true, Some(CaseSetup::LandlockInstallationProbe)) => {
+        (Some(_), Some(CaseSetup::LandlockInstallationProbe)) => {
             crate::test_fixture::exercise_landlock_installation_paths()?;
             run()
         }
-        (true, Some(CaseSetup::BackendErrorPaths)) => {
+        (Some(_), Some(CaseSetup::BackendErrorPaths)) => {
             crate::test_fixture::exercise_backend_error_paths()?;
             run()
         }
-        (true, Some(CaseSetup::StagingCopyErrorPaths)) => {
+        (Some(_), Some(CaseSetup::StagingCopyErrorPaths)) => {
             crate::test_fixture::exercise_staging_copy_error_paths()?;
             run()
         }
-        (true, Some(CaseSetup::ClearLangEnvironmentValue)) => {
+        (Some(_), Some(CaseSetup::ClearLangEnvironmentValue)) => {
             let _lang = EnvironmentGuard::clear("LANG");
             run()
         }
-        (true, Some(CaseSetup::RemoveStagedRoot)) => {
+        (Some(_), Some(CaseSetup::RemoveStagedRoot)) => {
             std::fs::remove_dir_all(package_root).map_err(|error| error.to_string())?;
             run()
         }
-        (true, Some(CaseSetup::ReplaceWriteParentWithFile)) => {
+        (Some(_), Some(CaseSetup::ReplaceWriteParentWithFile)) => {
             let parent = package_root.join("setup/write-parent");
             std::fs::create_dir_all(parent.parent().expect("write parent has a parent"))
                 .map_err(|error| error.to_string())?;
@@ -832,42 +834,42 @@ pub(super) fn run_with_case_setup<T: Send>(
             return Err("write parent failure fixture requires a Unix host".into());
             run()
         }
-        (true, Some(CaseSetup::ReplaceWriteDirectoryWithFile)) => {
+        (Some(_), Some(CaseSetup::ReplaceWriteDirectoryWithFile)) => {
             let target = package_root.join("setup/write-directory");
             std::fs::create_dir_all(target.parent().expect("write directory has a parent"))
                 .map_err(|error| error.to_string())?;
             std::fs::write(target, "blocking file").map_err(|error| error.to_string())?;
             run()
         }
-        (true, Some(CaseSetup::RemoveStagedSupport)) => {
+        (Some(_), Some(CaseSetup::RemoveStagedSupport)) => {
             std::fs::remove_dir_all(package_root.join("support"))
                 .map_err(|error| error.to_string())?;
             run()
         }
-        (true, Some(CaseSetup::RemoveStagedWriteFile)) => {
+        (Some(_), Some(CaseSetup::RemoveStagedWriteFile)) => {
             std::fs::remove_file(package_root.join("reports/result.json"))
                 .map_err(|error| error.to_string())?;
             run()
         }
-        (true, Some(CaseSetup::LandlockOpenRulePathFailure)) => {
+        (Some(_), Some(CaseSetup::LandlockOpenRulePathFailure)) => {
             with_landlock_filter(LandlockFilter::OpenRulePath, run)
         }
-        (true, Some(CaseSetup::LandlockAbiQueryFailure)) => {
+        (Some(_), Some(CaseSetup::LandlockAbiQueryFailure)) => {
             with_landlock_filter(LandlockFilter::AbiQuery, run)
         }
-        (true, Some(CaseSetup::LandlockRulesetCreateFailure)) => {
+        (Some(_), Some(CaseSetup::LandlockRulesetCreateFailure)) => {
             with_landlock_filter(LandlockFilter::CreateRuleset, run)
         }
-        (true, Some(CaseSetup::LandlockAddPathRuleFailure)) => {
+        (Some(_), Some(CaseSetup::LandlockAddPathRuleFailure)) => {
             with_landlock_filter(LandlockFilter::AddPathRule, run)
         }
-        (true, Some(CaseSetup::LandlockSetNoNewPrivilegesFailure)) => {
+        (Some(_), Some(CaseSetup::LandlockSetNoNewPrivilegesFailure)) => {
             with_landlock_filter(LandlockFilter::SetNoNewPrivileges, run)
         }
-        (true, Some(CaseSetup::LandlockRestrictSelfFailure)) => {
+        (Some(_), Some(CaseSetup::LandlockRestrictSelfFailure)) => {
             with_landlock_filter(LandlockFilter::RestrictSelf, run)
         }
-        (false, None) => run(),
+        (None, None) => run(),
     }
 }
 

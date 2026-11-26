@@ -2,122 +2,721 @@
   "version": 1,
   "cases": [
     {
-      "id": "adapter-coverage-schema-validation",
+      "id": "adapter-coverage-valid-lines",
       "input": {
-        "operation": "validate-adapter-coverage",
-        "payloads": [
+        "coverage_lines": [
           {
-            "coverage_lines": [
-              {
-                "path": "validator.py",
-                "executable_lines": [
-                  1,
-                  2
-                ],
-                "covered_lines": [
-                  1
-                ]
-              }
-            ]
-          },
-          {
-            "coverage_lines": [
-              {
-                "path": "validator.py",
-                "executable_lines": [
-                  1
-                ],
-                "covered_lines": [
-                  "bad"
-                ]
-              }
-            ]
-          },
-          {
-            "coverage_lines": [
-              {
-                "path": "validator.py",
-                "executable_lines": [
-                  1
-                ],
-                "covered_lines": []
-              },
-              {
-                "path": "validator.py",
-                "executable_lines": [
-                  2
-                ],
-                "covered_lines": []
-              }
-            ]
-          },
-          {
-            "coverage_lines": [
-              {
-                "path": "validator.py",
-                "executable_lines": [
-                  2,
-                  1
-                ],
-                "covered_lines": []
-              }
-            ]
-          },
-          {
-            "coverage_lines": [
-              {
-                "path": "validator.py",
-                "executable_lines": [
-                  1,
-                  2
-                ],
-                "covered_lines": [
-                  2,
-                  1
-                ]
-              }
-            ]
-          },
-          {
-            "coverage_lines": [
-              {
-                "path": "validator.py",
-                "executable_lines": [
-                  1
-                ],
-                "covered_lines": [
-                  2
-                ]
-              }
-            ]
-          },
-          {
-            "coverage_lines": [
-              {
-                "path": "/validator.py",
-                "executable_lines": [
-                  1
-                ],
-                "covered_lines": []
-              }
-            ]
-          },
-          {
-            "coverage_lines": [
-              {
-                "path": "../validator.py",
-                "executable_lines": [
-                  1
-                ],
-                "covered_lines": []
-              }
+            "path": "validator.py",
+            "executable_lines": [
+              1,
+              2
+            ],
+            "covered_lines": [
+              1
             ]
           }
         ]
       },
-      "expected": {},
-      "predicate": ".checks.0.valid == true AND .checks.1.valid == false AND contains(.checks.1.error, 'coverage_lines') AND contains(.checks.2.error, 'duplicate file path') AND contains(.checks.3.error, 'executable_lines: line numbers must be sorted and unique') AND contains(.checks.4.error, 'covered_lines: line numbers must be sorted and unique') AND contains(.checks.5.error, 'every covered line must be executable') AND contains(.checks.6.error, 'path must be package-relative') AND contains(.checks.7.error, 'path must be package-relative')",
-      "coverage_fingerprint": "db198843770574aaa7daf84b45d70ce3"
+      "expected": {
+        "valid": true
+      },
+      "coverage_fingerprint": "f823a48813af7b771baad23561c96761"
+    },
+    {
+      "id": "adapter-coverage-rejects-invalid-executable-line",
+      "input": {
+        "coverage_lines": [
+          {
+            "path": "validator.py",
+            "executable_lines": [
+              "bad"
+            ],
+            "covered_lines": []
+          }
+        ]
+      },
+      "expected": {
+        "valid": false
+      },
+      "predicate": "exists(.error)",
+      "coverage_fingerprint": "2bd41a98769ad78ccb022dba18e5a719"
+    },
+    {
+      "id": "adapter-coverage-rejects-non-integer-line",
+      "input": {
+        "coverage_lines": [
+          {
+            "path": "validator.py",
+            "executable_lines": [
+              1
+            ],
+            "covered_lines": [
+              "bad"
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "valid": false,
+        "error": "contract schema-fixture returned invalid adapter coverage at /coverage_lines/0/covered_lines/0: \"bad\" is not of type \"integer\""
+      },
+      "coverage_fingerprint": "2bd41a98769ad78ccb022dba18e5a719"
+    },
+    {
+      "id": "adapter-coverage-rejects-duplicate-line-file",
+      "input": {
+        "coverage_lines": [
+          {
+            "path": "validator.py",
+            "executable_lines": [
+              1
+            ],
+            "covered_lines": []
+          },
+          {
+            "path": "validator.py",
+            "executable_lines": [
+              2
+            ],
+            "covered_lines": []
+          }
+        ]
+      },
+      "expected": {
+        "valid": false,
+        "error": "contract schema-fixture returned invalid adapter coverage at /coverage_lines/1/path: duplicate file path \"validator.py\""
+      },
+      "coverage_fingerprint": "ff56cb10dd114c03f2a03c8e77492898"
+    },
+    {
+      "id": "adapter-coverage-rejects-unsorted-executable-lines",
+      "input": {
+        "coverage_lines": [
+          {
+            "path": "validator.py",
+            "executable_lines": [
+              2,
+              1
+            ],
+            "covered_lines": []
+          }
+        ]
+      },
+      "expected": {
+        "valid": false,
+        "error": "contract schema-fixture returned invalid adapter coverage at /coverage_lines/0/executable_lines: line numbers must be sorted and unique"
+      },
+      "coverage_fingerprint": "d041999ac9a15beb7e7b74a0d0e125b4"
+    },
+    {
+      "id": "adapter-coverage-rejects-unsorted-covered-lines",
+      "input": {
+        "coverage_lines": [
+          {
+            "path": "validator.py",
+            "executable_lines": [
+              1,
+              2
+            ],
+            "covered_lines": [
+              2,
+              1
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "valid": false,
+        "error": "contract schema-fixture returned invalid adapter coverage at /coverage_lines/0/covered_lines: line numbers must be sorted and unique"
+      },
+      "coverage_fingerprint": "7171464c2f3dee42ae5cbf6404963077"
+    },
+    {
+      "id": "adapter-coverage-rejects-unexecutable-covered-line",
+      "input": {
+        "coverage_lines": [
+          {
+            "path": "validator.py",
+            "executable_lines": [
+              1
+            ],
+            "covered_lines": [
+              2
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "valid": false,
+        "error": "contract schema-fixture returned invalid adapter coverage at /coverage_lines/0/covered_lines: every covered line must be executable"
+      },
+      "coverage_fingerprint": "b482376a498c9c4af2659f176bcbc3eb"
+    },
+    {
+      "id": "adapter-coverage-rejects-absolute-line-path",
+      "input": {
+        "coverage_lines": [
+          {
+            "path": "/validator.py",
+            "executable_lines": [
+              1
+            ],
+            "covered_lines": []
+          }
+        ]
+      },
+      "expected": {
+        "valid": false,
+        "error": "contract schema-fixture returned invalid adapter coverage at /coverage_lines/0/path: path must be package-relative"
+      },
+      "coverage_fingerprint": "64f1a7770620aba06b3b2832d284a7af"
+    },
+    {
+      "id": "adapter-coverage-rejects-parent-line-path",
+      "input": {
+        "coverage_lines": [
+          {
+            "path": "../validator.py",
+            "executable_lines": [
+              1
+            ],
+            "covered_lines": []
+          }
+        ]
+      },
+      "expected": {
+        "valid": false,
+        "error": "contract schema-fixture returned invalid adapter coverage at /coverage_lines/0/path: path must be package-relative"
+      },
+      "coverage_fingerprint": "041819982d42e565ea414a44a017f9d6"
+    },
+    {
+      "id": "adapter-coverage-accepts-all-metrics",
+      "input": {
+        "coverage_metrics": {
+          "line": {
+            "covered": 1,
+            "total": 1,
+            "files": [
+              {
+                "path": "validator.py",
+                "covered": 1,
+                "total": 1
+              }
+            ]
+          },
+          "statement": {
+            "covered": 1,
+            "total": 1,
+            "files": [
+              {
+                "path": "validator.py",
+                "covered": 1,
+                "total": 1
+              }
+            ]
+          },
+          "function": {
+            "covered": 1,
+            "total": 1,
+            "files": [
+              {
+                "path": "validator.py",
+                "covered": 1,
+                "total": 1
+              }
+            ]
+          },
+          "branch": {
+            "covered": 1,
+            "total": 1,
+            "files": [
+              {
+                "path": "validator.py",
+                "covered": 1,
+                "total": 1
+              }
+            ]
+          },
+          "region": {
+            "covered": 1,
+            "total": 1,
+            "files": [
+              {
+                "path": "validator.py",
+                "covered": 1,
+                "total": 1
+              }
+            ]
+          },
+          "instantiation": {
+            "covered": 1,
+            "total": 1,
+            "files": [
+              {
+                "path": "validator.py",
+                "covered": 1,
+                "total": 1
+              }
+            ]
+          }
+        }
+      },
+      "expected": {
+        "valid": true
+      },
+      "coverage_fingerprint": "3dce672b9e9befe1f9f4fb981df2eca7"
+    },
+    {
+      "id": "adapter-coverage-rejects-unknown-metric",
+      "input": {
+        "coverage_metrics": {
+          "unknown": {
+            "covered": 1,
+            "total": 1,
+            "files": [
+              {
+                "path": "validator.py",
+                "covered": 1,
+                "total": 1
+              }
+            ]
+          }
+        }
+      },
+      "expected": {
+        "valid": false,
+        "error": "contract schema-fixture returned invalid adapter coverage at /coverage_metrics: \"unknown\" is not one of \"line\", \"statement\" or 4 other candidates"
+      },
+      "coverage_fingerprint": "2bd41a98769ad78ccb022dba18e5a719"
+    },
+    {
+      "id": "adapter-coverage-rejects-covered-over-total",
+      "input": {
+        "coverage_metrics": {
+          "statement": {
+            "covered": 2,
+            "total": 1,
+            "files": [
+              {
+                "path": "validator.py",
+                "covered": 2,
+                "total": 1
+              }
+            ]
+          }
+        }
+      },
+      "expected": {
+        "valid": false,
+        "error": "contract schema-fixture returned invalid adapter coverage at /coverage_metrics/statement: covered count exceeds total"
+      },
+      "coverage_fingerprint": "c7a9a226af3e6e0ab6253adde810038d"
+    },
+    {
+      "id": "adapter-coverage-rejects-file-total-mismatch",
+      "input": {
+        "coverage_metrics": {
+          "statement": {
+            "covered": 1,
+            "total": 1,
+            "files": []
+          }
+        }
+      },
+      "expected": {
+        "valid": false,
+        "error": "contract schema-fixture returned invalid adapter coverage at /coverage_metrics/statement: file counts do not add up to the metric totals"
+      },
+      "coverage_fingerprint": "5d857af05e1ec53f79b66afb136e2d65"
+    },
+    {
+      "id": "adapter-coverage-rejects-duplicate-metric-file",
+      "input": {
+        "coverage_metrics": {
+          "statement": {
+            "covered": 1,
+            "total": 1,
+            "files": [
+              {
+                "path": "validator.py",
+                "covered": 1,
+                "total": 1
+              },
+              {
+                "path": "validator.py",
+                "covered": 0,
+                "total": 0
+              }
+            ]
+          }
+        }
+      },
+      "expected": {
+        "valid": false,
+        "error": "contract schema-fixture returned invalid adapter coverage at /coverage_metrics/statement/files/1/path: duplicate file path \"validator.py\""
+      },
+      "coverage_fingerprint": "c051a7076c3f49c7731026f80eafe4f9"
+    },
+    {
+      "id": "adapter-coverage-rejects-metric-path-traversal",
+      "input": {
+        "coverage_metrics": {
+          "statement": {
+            "covered": 1,
+            "total": 1,
+            "files": [
+              {
+                "path": "../private.py",
+                "covered": 1,
+                "total": 1
+              }
+            ]
+          }
+        }
+      },
+      "expected": {
+        "valid": false,
+        "error": "contract schema-fixture returned invalid adapter coverage at /coverage_metrics/statement/files/0/path: path must be package-relative"
+      },
+      "coverage_fingerprint": "58628948125ec18144d60ac214a24863"
+    },
+    {
+      "id": "adapter-coverage-rejects-empty-metric-path",
+      "input": {
+        "coverage_metrics": {
+          "statement": {
+            "covered": 1,
+            "total": 1,
+            "files": [
+              {
+                "path": "",
+                "covered": 1,
+                "total": 1
+              }
+            ]
+          }
+        }
+      },
+      "expected": {
+        "valid": false,
+        "error": "contract schema-fixture returned invalid adapter coverage at /coverage_metrics/statement/files/0/path: \"\" is shorter than 1 character"
+      },
+      "coverage_fingerprint": "f6b0cef0cc7e81e52419e1a1eaa7f3e1"
+    },
+    {
+      "id": "adapter-coverage-rejects-absolute-metric-path",
+      "input": {
+        "coverage_metrics": {
+          "statement": {
+            "covered": 1,
+            "total": 1,
+            "files": [
+              {
+                "path": "/private.py",
+                "covered": 1,
+                "total": 1
+              }
+            ]
+          }
+        }
+      },
+      "expected": {
+        "valid": false,
+        "error": "contract schema-fixture returned invalid adapter coverage at /coverage_metrics/statement/files/0/path: path must be package-relative"
+      },
+      "coverage_fingerprint": "219d158a91abfd6821cc670f4d1c345f"
+    },
+    {
+      "id": "adapter-coverage-accepts-metric-files",
+      "input": {
+        "coverage_metrics": {
+          "statement": {
+            "covered": 1,
+            "total": 1,
+            "files": [
+              {
+                "path": "validator.py",
+                "covered": 1,
+                "total": 1
+              }
+            ]
+          }
+        }
+      },
+      "expected": {
+        "valid": true
+      },
+      "coverage_fingerprint": "3dce672b9e9befe1f9f4fb981df2eca7"
+    },
+    {
+      "id": "adapter-coverage-accepts-zero-counts",
+      "input": {
+        "coverage_metrics": {
+          "statement": {
+            "covered": 1,
+            "total": 2,
+            "files": [
+              {
+                "path": "validator.py",
+                "covered": 1,
+                "total": 2
+              }
+            ]
+          }
+        }
+      },
+      "expected": {
+        "valid": true
+      },
+      "coverage_fingerprint": "3dce672b9e9befe1f9f4fb981df2eca7"
+    },
+    {
+      "id": "adapter-coverage-rejects-metric-file-covered-over-total",
+      "input": {
+        "coverage_metrics": {
+          "statement": {
+            "covered": 2,
+            "total": 2,
+            "files": [
+              {
+                "path": "validator.py",
+                "covered": 2,
+                "total": 1
+              }
+            ]
+          }
+        }
+      },
+      "expected": {
+        "valid": false,
+        "error": "contract schema-fixture returned invalid adapter coverage at /coverage_metrics/statement/files/0: covered count exceeds total"
+      },
+      "coverage_fingerprint": "ee30a3bd12fa244958d11b189dd56ac4"
+    },
+    {
+      "id": "adapter-coverage-rejects-metric-total-mismatch",
+      "input": {
+        "coverage_metrics": {
+          "statement": {
+            "covered": 1,
+            "total": 2,
+            "files": [
+              {
+                "path": "validator.py",
+                "covered": 1,
+                "total": 1
+              }
+            ]
+          }
+        }
+      },
+      "expected": {
+        "valid": false,
+        "error": "contract schema-fixture returned invalid adapter coverage at /coverage_metrics/statement: file counts do not add up to the metric totals"
+      },
+      "coverage_fingerprint": "da82c285a3b34fa2f0c25bdc610b38db"
+    },
+    {
+      "id": "adapter-coverage-rejects-invalid-summary-types",
+      "input": {
+        "coverage": "bad",
+        "additional_test_coverage": "bad"
+      },
+      "expected": {
+        "valid": false
+      },
+      "predicate": "exists(.error)",
+      "coverage_fingerprint": "2bd41a98769ad78ccb022dba18e5a719"
+    },
+    {
+      "id": "adapter-coverage-rejects-invalid-additional-line",
+      "input": {
+        "additional_coverage_lines": [
+          {
+            "path": "validator.py",
+            "executable_lines": [
+              "bad"
+            ],
+            "covered_lines": []
+          }
+        ]
+      },
+      "expected": {
+        "valid": false
+      },
+      "predicate": "exists(.error)",
+      "coverage_fingerprint": "2bd41a98769ad78ccb022dba18e5a719"
+    },
+    {
+      "id": "adapter-coverage-rejects-multiple-metric-schema-errors",
+      "input": {
+        "coverage_metrics": {
+          "statement": {
+            "covered": "bad",
+            "total": "bad",
+            "files": "bad"
+          }
+        }
+      },
+      "expected": {
+        "valid": false
+      },
+      "predicate": "exists(.error)",
+      "coverage_fingerprint": "2bd41a98769ad78ccb022dba18e5a719"
+    },
+    {
+      "id": "adapter-coverage-rejects-noninteger-metric-count",
+      "input": {
+        "coverage_metrics": {
+          "statement": {
+            "covered": "1",
+            "total": 1,
+            "files": []
+          }
+        }
+      },
+      "expected": {
+        "valid": false
+      },
+      "predicate": "exists(.error)",
+      "coverage_fingerprint": "2bd41a98769ad78ccb022dba18e5a719"
+    },
+    {
+      "id": "adapter-coverage-rejects-covered-outside-u64",
+      "input": {
+        "coverage_metrics": {
+          "statement": {
+            "covered": 18446744073709551616,
+            "total": 0,
+            "files": []
+          }
+        }
+      },
+      "expected": {
+        "valid": false
+      },
+      "predicate": "exists(.error)",
+      "coverage_fingerprint": "29880391640a373342d5b3061b227698"
+    },
+    {
+      "id": "adapter-coverage-rejects-total-outside-u64",
+      "input": {
+        "coverage_metrics": {
+          "statement": {
+            "covered": 0,
+            "total": 18446744073709551616,
+            "files": []
+          }
+        }
+      },
+      "expected": {
+        "valid": false
+      },
+      "predicate": "exists(.error)",
+      "coverage_fingerprint": "29880391640a373342d5b3061b227698"
+    },
+    {
+      "id": "adapter-coverage-rejects-file-covered-outside-u64",
+      "input": {
+        "coverage_metrics": {
+          "statement": {
+            "covered": 0,
+            "total": 0,
+            "files": [
+              {
+                "path": "validator.py",
+                "covered": 18446744073709551616,
+                "total": 0
+              }
+            ]
+          }
+        }
+      },
+      "expected": {
+        "valid": false
+      },
+      "predicate": "exists(.error)",
+      "coverage_fingerprint": "29880391640a373342d5b3061b227698"
+    },
+    {
+      "id": "adapter-coverage-rejects-file-total-outside-u64",
+      "input": {
+        "coverage_metrics": {
+          "statement": {
+            "covered": 0,
+            "total": 0,
+            "files": [
+              {
+                "path": "validator.py",
+                "covered": 0,
+                "total": 18446744073709551616
+              }
+            ]
+          }
+        }
+      },
+      "expected": {
+        "valid": false
+      },
+      "predicate": "exists(.error)",
+      "coverage_fingerprint": "29880391640a373342d5b3061b227698"
+    },
+    {
+      "id": "adapter-coverage-rejects-covered-overflow",
+      "input": {
+        "coverage_metrics": {
+          "statement": {
+            "covered": 18446744073709551615,
+            "total": 18446744073709551615,
+            "files": [
+              {
+                "path": "validator.py",
+                "covered": 18446744073709551615,
+                "total": 18446744073709551615
+              },
+              {
+                "path": "other.py",
+                "covered": 1,
+                "total": 1
+              }
+            ]
+          }
+        }
+      },
+      "expected": {
+        "valid": false,
+        "error": "contract schema-fixture returned invalid adapter coverage at /coverage_metrics/statement/files: covered count overflow"
+      },
+      "coverage_fingerprint": "4a8c71355e25f3a86f43c2c6c2522d72"
+    },
+    {
+      "id": "adapter-coverage-rejects-total-overflow",
+      "input": {
+        "coverage_metrics": {
+          "statement": {
+            "covered": 0,
+            "total": 18446744073709551615,
+            "files": [
+              {
+                "path": "validator.py",
+                "covered": 0,
+                "total": 18446744073709551615
+              },
+              {
+                "path": "other.py",
+                "covered": 0,
+                "total": 1
+              }
+            ]
+          }
+        }
+      },
+      "expected": {
+        "valid": false,
+        "error": "contract schema-fixture returned invalid adapter coverage at /coverage_metrics/statement/files: total count overflow"
+      },
+      "coverage_fingerprint": "f0bc2cdca3051632b19e720bdd139c72"
     },
     {
       "id": "exact-output",
@@ -145,7 +744,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "f40f0e3581781222a315a11f0508a533"
+      "coverage_fingerprint": "fd3239fcaa3c2ba298872c8504dd02c2"
     },
     {
       "id": "predicate-only",
@@ -171,7 +770,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "f5128c27b382b10c5e827621724ba64e"
+      "coverage_fingerprint": "e724d7152eaf961cd964dbb142e43b61"
     },
     {
       "id": "expected-and-predicate",
@@ -200,7 +799,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "5254e5ecb2650bc76b781debd5ae2fd7"
+      "coverage_fingerprint": "dad70086fb35f9ba2aa21483f4b78b59"
     },
     {
       "id": "yaml-dataset",
@@ -215,7 +814,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "593e50c634cea37d7346bb4bcdfd03af"
+      "coverage_fingerprint": "16d3594dc82a39a505fd1ffd0c78be62"
     },
     {
       "id": "yml-dataset",
@@ -230,7 +829,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "593e50c634cea37d7346bb4bcdfd03af"
+      "coverage_fingerprint": "16d3594dc82a39a505fd1ffd0c78be62"
     },
     {
       "id": "expected-subset-and-predicate",
@@ -260,7 +859,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "5254e5ecb2650bc76b781debd5ae2fd7"
+      "coverage_fingerprint": "dad70086fb35f9ba2aa21483f4b78b59"
     },
     {
       "id": "wrong-exact-output",
@@ -288,7 +887,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "d48bc889bb1ca6bb159c51ded41ca38f",
+      "coverage_fingerprint": "a54dc96acac8a0ec2f079f754189860e",
       "predicate": "contains(.results.0.error, 'output did not match expected subset')"
     },
     {
@@ -316,7 +915,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "d48bc889bb1ca6bb159c51ded41ca38f",
+      "coverage_fingerprint": "a54dc96acac8a0ec2f079f754189860e",
       "predicate": "contains(.results.0.error, 'output did not satisfy predicate')"
     },
     {
@@ -359,7 +958,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "a0679e4cce22935713df62269222e263"
+      "coverage_fingerprint": "d07224062677f8d35e90b12c26400066"
     },
     {
       "id": "sequence-aggregate-mismatch",
@@ -392,7 +991,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "55ff801c77fee5f2cd877c45ef39ff58",
+      "coverage_fingerprint": "ea47bc8c10e72bc1e05e997ffbe9ce19",
       "predicate": ".results.0.passed == true"
     },
     {
@@ -767,7 +1366,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "55ff801c77fee5f2cd877c45ef39ff58"
+      "coverage_fingerprint": "ea47bc8c10e72bc1e05e997ffbe9ce19"
     },
     {
       "id": "sequence-aggregate-predicate",
@@ -800,7 +1399,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "55ff801c77fee5f2cd877c45ef39ff58"
+      "coverage_fingerprint": "ea47bc8c10e72bc1e05e997ffbe9ce19"
     },
     {
       "id": "sequence-aggregate-expected-and-predicate",
@@ -833,7 +1432,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "55ff801c77fee5f2cd877c45ef39ff58"
+      "coverage_fingerprint": "ea47bc8c10e72bc1e05e997ffbe9ce19"
     },
     {
       "id": "sequence-case-fingerprint-match",
@@ -866,7 +1465,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "55ff801c77fee5f2cd877c45ef39ff58"
+      "coverage_fingerprint": "ea47bc8c10e72bc1e05e997ffbe9ce19"
     },
     {
       "id": "mismatched-fingerprint",
@@ -894,7 +1493,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "be9c4ab922965ea4156cfd5aa774556b",
+      "coverage_fingerprint": "68425eec8c3a56ebc2d80ccfe534cc49",
       "predicate": "contains(.results.0.error, 'coverage fingerprint mismatch')"
     },
     {
@@ -994,7 +1593,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "55ff801c77fee5f2cd877c45ef39ff58",
+      "coverage_fingerprint": "ea47bc8c10e72bc1e05e997ffbe9ce19",
       "predicate": ".results.0.passed == true"
     },
     {
@@ -1028,7 +1627,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "257a3c58a5d785bd91eb60a0e8b91728",
+      "coverage_fingerprint": "2b69b72bb44c3b19f714aff07300c2d2",
       "predicate": "contains(.results.0.error, 'coverage fingerprint mismatch')"
     },
     {
@@ -1190,7 +1789,7 @@
     },
     {
       "id": "manifest-adapter-executes-batch",
-      "setup": true,
+      "setup": "manifest-adapter-executes-batch",
       "input": {
         "coverage_fingerprints": false,
         "command": [
@@ -1237,7 +1836,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "8f19813a067f4dbf819a03098a5d2a2f"
+      "coverage_fingerprint": "94ee9cf2096118fdfbe89f72be8fb7b5"
     },
     {
       "id": "show-isolation-plan-rejects-invalid-manifest",
@@ -1274,7 +1873,7 @@
     },
     {
       "id": "manifest-adapter-missing-execution",
-      "setup": true,
+      "setup": "manifest-adapter-missing-execution",
       "input": {
         "dataset": {
           "version": 1,
@@ -1293,12 +1892,12 @@
         }
       },
       "expected": {},
-      "coverage_fingerprint": "9e739d3ab73432788ebafe27f8af0bff",
+      "coverage_fingerprint": "b22ec6e213e52393e00dbe06f637588e",
       "predicate": "contains(.error, 'missing execution.command')"
     },
     {
       "id": "manifest-adapter-command-fails",
-      "setup": true,
+      "setup": "manifest-adapter-command-fails",
       "input": {
         "dataset": {
           "version": 1,
@@ -1321,12 +1920,12 @@
         ]
       },
       "expected": {},
-      "coverage_fingerprint": "3baf11d278ee28c3bcb3c2e4eedb9560",
+      "coverage_fingerprint": "c9f3f47bd05e50c3fa97e5f208f8519b",
       "predicate": "contains(.error, 'execution.command failed')"
     },
     {
       "id": "manifest-adapter-returns-invalid-json",
-      "setup": true,
+      "setup": "manifest-adapter-returns-invalid-json",
       "input": {
         "dataset": {
           "version": 1,
@@ -1349,12 +1948,12 @@
         ]
       },
       "expected": {},
-      "coverage_fingerprint": "339e38e868a5c49bbefe72263b06a70f",
+      "coverage_fingerprint": "f7c13a39d866bd64c5c25a08e0713833",
       "predicate": "contains(.error, 'invalid batch JSON')"
     },
     {
       "id": "manifest-adapter-command-fails-with-stdout",
-      "setup": true,
+      "setup": "manifest-adapter-command-fails-with-stdout",
       "input": {
         "dataset": {
           "version": 1,
@@ -1377,12 +1976,12 @@
         ]
       },
       "expected": {},
-      "coverage_fingerprint": "cd3549123f39eeb99abc0179e3399160",
+      "coverage_fingerprint": "7c101ad1e782a810c816dec6cccbd3fb",
       "predicate": "contains(.error, 'stdout diagnostic')"
     },
     {
       "id": "manifest-adapter-command-fails-with-stderr",
-      "setup": true,
+      "setup": "manifest-adapter-command-fails-with-stderr",
       "input": {
         "dataset": {
           "version": 1,
@@ -1405,12 +2004,12 @@
         ]
       },
       "expected": {},
-      "coverage_fingerprint": "c0dc6ef012fe3ce2925b9bd6e079dc7b",
+      "coverage_fingerprint": "fb601adcd899895171eff999c5ff9aa2",
       "predicate": "contains(.error, 'stderr diagnostic')"
     },
     {
       "id": "manifest-adapter-returns-invalid-batch-data",
-      "setup": true,
+      "setup": "manifest-adapter-returns-invalid-batch-data",
       "input": {
         "dataset": {
           "version": 1,
@@ -1434,11 +2033,11 @@
       },
       "expected": {},
       "predicate": "contains(.error, 'invalid batch data')",
-      "coverage_fingerprint": "843c91a903fa8dcf933ed27341542f15"
+      "coverage_fingerprint": "fad8c8f45b0b71f833ea060f6227cd52"
     },
     {
       "id": "manifest-adapter-returns-invalid-coverage-data",
-      "setup": true,
+      "setup": "manifest-adapter-returns-invalid-coverage-data",
       "input": {
         "dataset": {
           "version": 1,
@@ -1462,11 +2061,11 @@
       },
       "expected": {},
       "predicate": "contains(.error, 'every covered line must be executable')",
-      "coverage_fingerprint": "13396d35cd182a4880789dbb5558034c"
+      "coverage_fingerprint": "38bf183e77cfc81b683c30e9c4a6b3f7"
     },
     {
       "id": "manifest-adapter-returns-no-results",
-      "setup": true,
+      "setup": "manifest-adapter-returns-no-results",
       "input": {
         "dataset": {
           "version": 1,
@@ -1489,12 +2088,12 @@
         ]
       },
       "expected": {},
-      "coverage_fingerprint": "9d0ef74ce9a5f57118ce410dbb2cc89d",
+      "coverage_fingerprint": "5fe915925a7214a42d16a8651adc535b",
       "predicate": "contains(.error, 'returned no batch results')"
     },
     {
       "id": "supplemental-coverage-is-reported",
-      "setup": true,
+      "setup": "supplemental-coverage-is-reported",
       "input": {
         "supplemental_tests": true,
         "command": [
@@ -1524,12 +2123,12 @@
           }
         ]
       },
-      "coverage_fingerprint": "0bda065b815109bf61af0ee36a602171",
+      "coverage_fingerprint": "36fded84a992d0fdf2f8bd9d0a52eecc",
       "predicate": ".coverage.0.additional_test_coverage.status == 'passed'"
     },
     {
       "id": "load-dataset-reports-missing-file",
-      "setup": true,
+      "setup": "load-dataset-reports-missing-file",
       "input": {
         "path": "missing-dataset.json"
       },
@@ -1539,7 +2138,7 @@
     },
     {
       "id": "dataset-adapter-error-expected-as-output",
-      "setup": true,
+      "setup": "dataset-adapter-error-expected-as-output",
       "input": {
         "dataset": {
           "version": 1,
@@ -1563,11 +2162,11 @@
           }
         ]
       },
-      "coverage_fingerprint": "5254e5ecb2650bc76b781debd5ae2fd7"
+      "coverage_fingerprint": "dad70086fb35f9ba2aa21483f4b78b59"
     },
     {
       "id": "dataset-adapter-unexpected-error",
-      "setup": true,
+      "setup": "dataset-adapter-unexpected-error",
       "input": {
         "dataset": {
           "version": 1,
@@ -1592,12 +2191,12 @@
           }
         ]
       },
-      "coverage_fingerprint": "d48bc889bb1ca6bb159c51ded41ca38f",
+      "coverage_fingerprint": "a54dc96acac8a0ec2f079f754189860e",
       "predicate": "contains(.results.0.error, 'output did not match expected subset')"
     },
     {
       "id": "dataset-adapter-no-output",
-      "setup": true,
+      "setup": "dataset-adapter-no-output",
       "input": {
         "dataset": {
           "version": 1,
@@ -1622,12 +2221,12 @@
           }
         ]
       },
-      "coverage_fingerprint": "765009c4a23e1545d8bc12a540d75ce0",
+      "coverage_fingerprint": "a36ca524e8b95c7f6ce45a1907561c76",
       "predicate": "contains(.results.0.error, 'neither output nor error')"
     },
     {
       "id": "dataset-adapter-omits-result",
-      "setup": true,
+      "setup": "dataset-adapter-omits-result",
       "input": {
         "dataset": {
           "version": 1,
@@ -1646,12 +2245,12 @@
         }
       },
       "expected": {},
-      "coverage_fingerprint": "730a0ada4b90873ba5d36ba2e54241a8",
+      "coverage_fingerprint": "7c57b0acf6ab39e29e13b7df1e73f70d",
       "predicate": "contains(.error, 'adapter omitted result')"
     },
     {
       "id": "dataset-adapter-missing-coverage",
-      "setup": true,
+      "setup": "dataset-adapter-missing-coverage",
       "input": {
         "dataset": {
           "version": 1,
@@ -1676,12 +2275,12 @@
           }
         ]
       },
-      "coverage_fingerprint": "aabef6a51dafbbbfa97183caebeea8dc",
+      "coverage_fingerprint": "2cf43ac8b6de890cb7cb1ed10c9ec87d",
       "predicate": "contains(.results.0.error, 'coverage fingerprint unavailable')"
     },
     {
       "id": "dataset-adapter-duplicate-result",
-      "setup": true,
+      "setup": "dataset-adapter-duplicate-result",
       "input": {
         "dataset": {
           "version": 1,
@@ -1700,12 +2299,12 @@
         }
       },
       "expected": {},
-      "coverage_fingerprint": "86b4c0a72d2a1ace2a185435dfac7163",
+      "coverage_fingerprint": "afa854fa25016111ffdb5adc574ca3d2",
       "predicate": "contains(.error, 'duplicate result keys')"
     },
     {
       "id": "dataset-adapter-extra-result",
-      "setup": true,
+      "setup": "dataset-adapter-extra-result",
       "input": {
         "dataset": {
           "version": 1,
@@ -1724,12 +2323,12 @@
         }
       },
       "expected": {},
-      "coverage_fingerprint": "e7ee5bbf6d6405424b26cb42e31aad84",
+      "coverage_fingerprint": "abdbb9484d78fc6421862fd1afb742f0",
       "predicate": "contains(.error, 'results that were not requested')"
     },
     {
       "id": "dataset-adapter-invalid-coverage-path",
-      "setup": true,
+      "setup": "dataset-adapter-invalid-coverage-path",
       "input": {
         "dataset": {
           "version": 1,
@@ -1748,12 +2347,12 @@
         }
       },
       "expected": {},
-      "coverage_fingerprint": "60558fae13cb077ce6ab399dfb0854d4",
+      "coverage_fingerprint": "2d5ec5dea54f7c21b5737eb8b5f02e93",
       "predicate": "contains(.error, 'must stay within the package')"
     },
     {
       "id": "dataset-adapter-unrequested-coverage",
-      "setup": true,
+      "setup": "dataset-adapter-unrequested-coverage",
       "input": {
         "dataset": {
           "version": 1,
@@ -1772,12 +2371,12 @@
         }
       },
       "expected": {},
-      "coverage_fingerprint": "6958be4e6b724295118fc49244e8dd77",
+      "coverage_fingerprint": "1337da75c6143f5a36322e86e337de03",
       "predicate": "contains(.error, 'unrequested execution key')"
     },
     {
       "id": "dataset-adapter-duplicate-coverage",
-      "setup": true,
+      "setup": "dataset-adapter-duplicate-coverage",
       "input": {
         "dataset": {
           "version": 1,
@@ -1796,12 +2395,12 @@
         }
       },
       "expected": {},
-      "coverage_fingerprint": "6b033f98fe6cba0ef89d744b5cffbf9b",
+      "coverage_fingerprint": "6284ccc8d0209c90fd2387e3672f3e34",
       "predicate": "contains(.error, 'duplicate coverage scope')"
     },
     {
       "id": "dataset-adapter-zero-coverage-line",
-      "setup": true,
+      "setup": "dataset-adapter-zero-coverage-line",
       "input": {
         "dataset": {
           "version": 1,
@@ -1820,12 +2419,12 @@
         }
       },
       "expected": {},
-      "coverage_fingerprint": "9682a901580db0c5cf94366b40af231d",
+      "coverage_fingerprint": "e761a964f4012705e79f72be26dfa1bb",
       "predicate": "contains(.error, 'line numbers must be positive')"
     },
     {
       "id": "dataset-adapter-missing-step-result",
-      "setup": true,
+      "setup": "dataset-adapter-missing-step-result",
       "input": {
         "dataset": {
           "version": 1,
@@ -1849,7 +2448,7 @@
         }
       },
       "expected": {},
-      "coverage_fingerprint": "c36863a4d4566c9dd83ef8f64e30fa5b",
+      "coverage_fingerprint": "b2271a654ae0fb8747a6025e461875da",
       "predicate": "contains(.error, 'adapter omitted result')"
     },
     {
@@ -1878,7 +2477,7 @@
     },
     {
       "id": "dataset-adapter-error",
-      "setup": true,
+      "setup": "dataset-adapter-error",
       "input": {
         "dataset": {
           "version": 1,
@@ -1897,12 +2496,12 @@
         }
       },
       "expected": {},
-      "coverage_fingerprint": "c0984233354bf197152c75bece41b8b1",
+      "coverage_fingerprint": "7a3049ca1369e1beedb538c757986883",
       "predicate": "contains(.error, 'fixture adapter failure')"
     },
     {
       "id": "dataset-adapter-missing-batch",
-      "setup": true,
+      "setup": "dataset-adapter-missing-batch",
       "input": {
         "dataset": {
           "version": 1,
@@ -1921,12 +2520,12 @@
         }
       },
       "expected": {},
-      "coverage_fingerprint": "503513c20e755740d31f561377772c07",
+      "coverage_fingerprint": "430526c57bfa7255dc1d8252eeeee8a2",
       "predicate": "contains(.error, 'adapter returned 0 contract batches')"
     },
     {
       "id": "dataset-adapter-covered-line-outside-executable",
-      "setup": true,
+      "setup": "dataset-adapter-covered-line-outside-executable",
       "input": {
         "dataset": {
           "version": 1,
@@ -1946,11 +2545,11 @@
       },
       "expected": {},
       "predicate": "contains(.error, 'every covered line must be executable')",
-      "coverage_fingerprint": "b1430354305258422d591314304c29c5"
+      "coverage_fingerprint": "4d28ec40b187673b0e5d80e2b82be20a"
     },
     {
       "id": "dataset-adapter-no-line-coverage",
-      "setup": true,
+      "setup": "dataset-adapter-no-line-coverage",
       "input": {
         "dataset": {
           "version": 1,
@@ -1975,11 +2574,11 @@
           }
         ]
       },
-      "coverage_fingerprint": "c982b4676308bbbb1e2f3dc665578590"
+      "coverage_fingerprint": "8833ccd312f05c4f0ffdf87851ce195f"
     },
     {
       "id": "dataset-adapter-empty-coverage-scope",
-      "setup": true,
+      "setup": "dataset-adapter-empty-coverage-scope",
       "input": {
         "dataset": {
           "version": 1,
@@ -2004,12 +2603,12 @@
           }
         ]
       },
-      "coverage_fingerprint": "7fc97b32eebef080a5533d257707e546",
+      "coverage_fingerprint": "19fb89a561a973869ee86d224c00d240",
       "predicate": "contains(.results.0.error, 'zero covered lines')"
     },
     {
       "id": "dataset-adapter-error-output-mismatch",
-      "setup": true,
+      "setup": "dataset-adapter-error-output-mismatch",
       "input": {
         "dataset": {
           "version": 1,
@@ -2035,12 +2634,12 @@
           }
         ]
       },
-      "coverage_fingerprint": "d48bc889bb1ca6bb159c51ded41ca38f",
+      "coverage_fingerprint": "a54dc96acac8a0ec2f079f754189860e",
       "predicate": "contains(.results.0.error, 'output did not match expected subset')"
     },
     {
       "id": "dataset-adapter-missing-step-coverage",
-      "setup": true,
+      "setup": "dataset-adapter-missing-step-coverage",
       "input": {
         "dataset": {
           "version": 1,
@@ -2070,12 +2669,12 @@
           }
         ]
       },
-      "coverage_fingerprint": "cb01347bed8debba6aae2ac3fba0ef76",
+      "coverage_fingerprint": "3162ccbd2f11af8dabf6104ed0a03feb",
       "predicate": "contains(.results.0.error, 'coverage fingerprint unavailable')"
     },
     {
       "id": "dataset-adapter-nested-contract-tree",
-      "setup": true,
+      "setup": "dataset-adapter-nested-contract-tree",
       "input": {
         "dataset": {
           "version": 1,
@@ -2120,7 +2719,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "6d2525c73eba1cdc6cba9050b816d761"
+      "coverage_fingerprint": "479d3ff2cf6722bf79887313fde415ab"
     },
     {
       "id": "runner-manifest-filename-accepts-yaml",
@@ -2246,7 +2845,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "dfe36e2c158c6b42b7f61750c105c18a"
+      "coverage_fingerprint": "7fa4f9cbca67d0eb1184f8c5aef113af"
     },
     {
       "id": "dataset-adapter-rejects-unmarked-nested-manifest",
@@ -2261,7 +2860,7 @@
     },
     {
       "id": "dataset-adapter-root-only-contract-tree",
-      "setup": true,
+      "setup": "dataset-adapter-root-only-contract-tree",
       "input": {
         "include_nested_contracts": false,
         "dataset": {
@@ -2293,11 +2892,11 @@
           }
         ]
       },
-      "coverage_fingerprint": "647f766c20923021f02034084a7a243c"
+      "coverage_fingerprint": "7f104a7960c0f80c42a80c1840729df0"
     },
     {
       "id": "dataset-adapter-shared-nested-contract-runs-once",
-      "setup": true,
+      "setup": "dataset-adapter-shared-nested-contract-runs-once",
       "input": {
         "shared_nested_contract": true,
         "dataset": {
@@ -2350,11 +2949,11 @@
           }
         ]
       },
-      "coverage_fingerprint": "32c325f4276aaf898cd6f5b18b9caf21"
+      "coverage_fingerprint": "bde2fb27e084ab77b99250c0769c4371"
     },
     {
       "id": "dataset-adapter-duplicate-nested-name",
-      "setup": true,
+      "setup": "dataset-adapter-duplicate-nested-name",
       "input": {
         "dataset": {
           "version": 1,
@@ -2420,7 +3019,7 @@
     },
     {
       "id": "dataset-adapter-step-error-output",
-      "setup": true,
+      "setup": "dataset-adapter-step-error-output",
       "input": {
         "dataset": {
           "version": 1,
@@ -2450,11 +3049,11 @@
           }
         ]
       },
-      "coverage_fingerprint": "b71e620a87eddd29e8c810769a37e1c0"
+      "coverage_fingerprint": "4a7e41cb02e8ce87e894e37dbdcaf9a9"
     },
     {
       "id": "dataset-adapter-step-predicate-mismatch",
-      "setup": true,
+      "setup": "dataset-adapter-step-predicate-mismatch",
       "input": {
         "dataset": {
           "version": 1,
@@ -2484,7 +3083,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "8f5c731c01e40cc0da9daf8597de4474",
+      "coverage_fingerprint": "f89f2619d4e92a564a2791701cb84a3d",
       "predicate": "contains(.results.0.error, 'output did not satisfy predicate')"
     },
     {
@@ -2517,7 +3116,7 @@
     },
     {
       "id": "dataset-adapter-sequence-empty-coverage",
-      "setup": true,
+      "setup": "dataset-adapter-sequence-empty-coverage",
       "input": {
         "dataset": {
           "version": 1,
@@ -2545,12 +3144,12 @@
           }
         ]
       },
-      "coverage_fingerprint": "6b81fddcfbcf8b0c0b8d938c8b647c80",
+      "coverage_fingerprint": "fb8beab1c2583c4308c0d6b677d3d353",
       "predicate": "contains(.results.0.error, 'zero covered lines')"
     },
     {
       "id": "dataset-adapter-empty-coverage-files",
-      "setup": true,
+      "setup": "dataset-adapter-empty-coverage-files",
       "input": {
         "dataset": {
           "version": 1,
@@ -2575,12 +3174,12 @@
           }
         ]
       },
-      "coverage_fingerprint": "a4c0f6a4fc7ee93d0e5a3c1d8f437651",
+      "coverage_fingerprint": "2123cc4fa733870f8c5ca702d7072d4d",
       "predicate": "contains(.results.0.error, 'zero covered lines')"
     },
     {
       "id": "dataset-adapter-undeclared-coverage-source",
-      "setup": true,
+      "setup": "dataset-adapter-undeclared-coverage-source",
       "input": {
         "dataset": {
           "version": 1,
@@ -2599,7 +3198,7 @@
         }
       },
       "expected": {},
-      "coverage_fingerprint": "03896d3da4b9acfc96a9acecbdc7aa4a",
+      "coverage_fingerprint": "ad21e7685318aa08fb88007e62b04a1c",
       "predicate": "contains(.error, 'undeclared contract source')"
     },
     {
@@ -2629,7 +3228,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "f40f0e3581781222a315a11f0508a533"
+      "coverage_fingerprint": "fd3239fcaa3c2ba298872c8504dd02c2"
     },
     {
       "id": "dataset-adapter-escaped-coverage-path",
@@ -2658,7 +3257,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "2e69fecda809c869247aff2ad4aac852"
+      "coverage_fingerprint": "74b124e35783eb56e32d9cebeef17f4f"
     },
     {
       "id": "run-contract-tree-rejects-invalid-manifest",
@@ -2755,11 +3354,11 @@
           }
         ]
       },
-      "coverage_fingerprint": "b3870a59ac47b0e4b1bf94017a3b96e7"
+      "coverage_fingerprint": "d6c764b6511068d1936e2377a8d38751"
     },
     {
       "id": "manifest-adapter-command-cannot-start",
-      "setup": true,
+      "setup": "manifest-adapter-command-cannot-start",
       "input": {
         "command": [
           "/definitely/missing/open-contract-adapter"
@@ -2781,12 +3380,12 @@
         }
       },
       "expected": {},
-      "coverage_fingerprint": "425e1d515f06a2eb90b07f9e1ad2901a",
+      "coverage_fingerprint": "2e3cfd2186c1d980b66cfddb247d8261",
       "predicate": "contains(.error, 'No such file or directory')"
     },
     {
       "id": "dataset-adapter-native-coverage-no-sources",
-      "setup": true,
+      "setup": "dataset-adapter-native-coverage-no-sources",
       "input": {
         "nested_contract": true,
         "dataset": {
@@ -2815,11 +3414,11 @@
           }
         ]
       },
-      "coverage_fingerprint": "a775db3d8ab13fd9a1f075912a752323"
+      "coverage_fingerprint": "e0d756020b10a1a1f13ec65d4201b220"
     },
     {
       "id": "dataset-adapter-native-coverage-non-string-source",
-      "setup": true,
+      "setup": "dataset-adapter-native-coverage-non-string-source",
       "input": {
         "nested_contract": true,
         "dataset": {
@@ -2848,11 +3447,11 @@
           }
         ]
       },
-      "coverage_fingerprint": "0944ed56032c479d04cecbdd41165c59"
+      "coverage_fingerprint": "aea98d1a4f5cb8e75661833da86aa1bf"
     },
     {
       "id": "dataset-adapter-native-coverage-undeclared-source",
-      "setup": true,
+      "setup": "dataset-adapter-native-coverage-undeclared-source",
       "input": {
         "nested_contract": true,
         "dataset": {
@@ -2872,12 +3471,12 @@
         }
       },
       "expected": {},
-      "coverage_fingerprint": "c2a4350b0aeb98ff9869b5fca9c2396f",
+      "coverage_fingerprint": "f6747ceabe539b0ba1888621ee127a74",
       "predicate": "contains(.error, 'outside coverage_sources')"
     },
     {
       "id": "dataset-adapter-coverage-lines-undeclared-source",
-      "setup": true,
+      "setup": "dataset-adapter-coverage-lines-undeclared-source",
       "input": {
         "nested_contract": true,
         "dataset": {
@@ -2897,12 +3496,12 @@
         }
       },
       "expected": {},
-      "coverage_fingerprint": "80de88c7532b1b4ed88345d2032b8508",
+      "coverage_fingerprint": "0ffdb8263b2a4e4985c99b1e496487bb",
       "predicate": "contains(.error, 'outside coverage_sources')"
     },
     {
       "id": "supplemental-tests-low-dataset-coverage",
-      "setup": true,
+      "setup": "supplemental-tests-low-dataset-coverage",
       "input": {
         "command": [
           "python3",
@@ -2926,12 +3525,12 @@
         "supplemental_tests": true
       },
       "expected": {},
-      "coverage_fingerprint": "d8d312ee93477b1c3a0f78c112872694",
+      "coverage_fingerprint": "9f197195ed3e009b7bd7365f74a14464",
       "predicate": "contains(.error, '90% is required')"
     },
     {
       "id": "supplemental-coverage-without-tests",
-      "setup": true,
+      "setup": "supplemental-coverage-without-tests",
       "input": {
         "command": [
           "python3",
@@ -2954,12 +3553,12 @@
         }
       },
       "expected": {},
-      "coverage_fingerprint": "6653213a31edc633c61e00539061db0b",
+      "coverage_fingerprint": "027bc08ab6cbee62eea4052939e68ce1",
       "predicate": "contains(.error, 'without manifest-declared tests')"
     },
     {
       "id": "supplemental-coverage-missing-report",
-      "setup": true,
+      "setup": "supplemental-coverage-missing-report",
       "input": {
         "command": [
           "python3",
@@ -2983,12 +3582,12 @@
         "supplemental_tests": true
       },
       "expected": {},
-      "coverage_fingerprint": "44404727a2f1728e32d62d662e2b4f69",
+      "coverage_fingerprint": "bfdf6e31c71ce5a84c5bea57b5faced4",
       "predicate": "contains(.error, 'omitted supplemental test results')"
     },
     {
       "id": "supplemental-tests-failed",
-      "setup": true,
+      "setup": "supplemental-tests-failed",
       "input": {
         "command": [
           "python3",
@@ -3018,12 +3617,12 @@
           }
         ]
       },
-      "coverage_fingerprint": "1daeec9d11f7c51f82f7e35f387eb91b",
+      "coverage_fingerprint": "d8b349d74cf2fe5e681e00fb6b6d72fe",
       "predicate": ".coverage.0.additional_test_coverage.status == 'failed'"
     },
     {
       "id": "supplemental-tests-skipped",
-      "setup": true,
+      "setup": "supplemental-tests-skipped",
       "input": {
         "command": [
           "python3",
@@ -3053,12 +3652,12 @@
           }
         ]
       },
-      "coverage_fingerprint": "83204f201e1fc9036a40d30a3e902cb3",
+      "coverage_fingerprint": "f871de14e9c88f4b573f781cc0797c46",
       "predicate": ".coverage.0.additional_test_coverage.status == 'skipped'"
     },
     {
       "id": "supplemental-tests-no-executable-lines",
-      "setup": true,
+      "setup": "supplemental-tests-no-executable-lines",
       "input": {
         "command": [
           "python3",
@@ -3088,12 +3687,12 @@
           }
         ]
       },
-      "coverage_fingerprint": "568d5d316e22b3fc7663fc1a0bf7dcac",
+      "coverage_fingerprint": "d8cd04cd0e32a2de92bf35127fbd4751",
       "predicate": ".coverage.0.additional_test_coverage.status == 'skipped'"
     },
     {
       "id": "supplemental-tests-coverage-without-run",
-      "setup": true,
+      "setup": "supplemental-tests-coverage-without-run",
       "input": {
         "command": [
           "python3",
@@ -3117,12 +3716,12 @@
         "supplemental_tests": true
       },
       "expected": {},
-      "coverage_fingerprint": "5c2985fd86b6c8a7fda5e578f8007e07",
+      "coverage_fingerprint": "7834b43d08f9a3b1f8734c89aee5e991",
       "predicate": "contains(.error, 'without running its tests')"
     },
     {
       "id": "dataset-adapter-multiple-step-error-outputs",
-      "setup": true,
+      "setup": "dataset-adapter-multiple-step-error-outputs",
       "input": {
         "dataset": {
           "version": 1,
@@ -3160,12 +3759,12 @@
           }
         ]
       },
-      "coverage_fingerprint": "c3d57236fbaaaea341c83853e01dae80",
+      "coverage_fingerprint": "955aa16ce566639817bd984622b4424c",
       "predicate": "contains(.results.0.error, 'output did not satisfy predicate')"
     },
     {
       "id": "dataset-adapter-multiple-coverage-lines",
-      "setup": true,
+      "setup": "dataset-adapter-multiple-coverage-lines",
       "input": {
         "support": true,
         "dataset": {
@@ -3191,11 +3790,11 @@
           }
         ]
       },
-      "coverage_fingerprint": "f40f0e3581781222a315a11f0508a533"
+      "coverage_fingerprint": "fd3239fcaa3c2ba298872c8504dd02c2"
     },
     {
       "id": "run-contract-tree-staging-rejects-symlink-escape",
-      "setup": true,
+      "setup": "run-contract-tree-staging-rejects-symlink-escape",
       "input": {
         "backend": "tempdir",
         "dataset": {
@@ -3220,7 +3819,7 @@
     },
     {
       "id": "supplemental-tests-not-executed",
-      "setup": true,
+      "setup": "supplemental-tests-not-executed",
       "input": {
         "supplemental_tests": true,
         "command": [
@@ -3244,12 +3843,12 @@
         }
       },
       "expected": {},
-      "coverage_fingerprint": "b9323f79a7f91841090c7d418d34df04",
+      "coverage_fingerprint": "d6e18515d1fdb925eaeeb39a7b456965",
       "predicate": "contains(.error, 'did not execute manifest-declared supplemental tests')"
     },
     {
       "id": "show-isolation-plan-staging-rejects-symlink-escape",
-      "setup": true,
+      "setup": "show-isolation-plan-staging-rejects-symlink-escape",
       "input": {
         "operation": "show-isolation-plan",
         "backend": "tempdir",
@@ -3368,7 +3967,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "55ff801c77fee5f2cd877c45ef39ff58"
+      "coverage_fingerprint": "ea47bc8c10e72bc1e05e997ffbe9ce19"
     },
     {
       "id": "sequence-rejects-empty-steps",
@@ -3437,7 +4036,7 @@
     },
     {
       "id": "dataset-adapter-coverage-source-unavailable",
-      "setup": true,
+      "setup": "dataset-adapter-coverage-source-unavailable",
       "input": {
         "support": false,
         "dataset": {
@@ -3458,11 +4057,11 @@
       },
       "expected": {},
       "predicate": "contains(.error, 'cannot read source for coverage fingerprint')",
-      "coverage_fingerprint": "050c462f66daa9ee31911a013451dcfa"
+      "coverage_fingerprint": "f3c7ae48917aa02cd14eadc9e0537a69"
     },
     {
       "id": "dataset-adapter-coverage-line-out-of-range",
-      "setup": true,
+      "setup": "dataset-adapter-coverage-line-out-of-range",
       "input": {
         "support": false,
         "dataset": {
@@ -3484,7 +4083,7 @@
       "expected": {
         "error": "coverage line 4294967295 is outside source file validator.py"
       },
-      "coverage_fingerprint": "9fdf792f7ade1c8fab2a98f287f37974"
+      "coverage_fingerprint": "e1687f685326288a4fe2b16acc39c824"
     },
     {
       "id": "dataset-version-out-of-range",
@@ -3497,6 +4096,520 @@
       "expected": {},
       "predicate": "exists(.error)",
       "coverage_fingerprint": "ee4d539d30c38a3c7483ff313b238946"
+    },
+    {
+      "id": "dataset-adapter-coverage-metric-exact",
+      "input": {
+        "coverage_metrics": {
+          "line": {
+            "covered": 1,
+            "total": 1,
+            "files": [
+              {
+                "path": "validator.py",
+                "covered": 1,
+                "total": 1
+              }
+            ]
+          },
+          "statement": {
+            "covered": 1,
+            "total": 1,
+            "files": [
+              {
+                "path": "validator.py",
+                "covered": 1,
+                "total": 1
+              }
+            ]
+          },
+          "function": {
+            "covered": 1,
+            "total": 1,
+            "files": [
+              {
+                "path": "validator.py",
+                "covered": 1,
+                "total": 1
+              }
+            ]
+          },
+          "branch": {
+            "covered": 1,
+            "total": 1,
+            "files": [
+              {
+                "path": "validator.py",
+                "covered": 1,
+                "total": 1
+              }
+            ]
+          },
+          "region": {
+            "covered": 1,
+            "total": 1,
+            "files": [
+              {
+                "path": "validator.py",
+                "covered": 1,
+                "total": 1
+              }
+            ]
+          },
+          "instantiation": {
+            "covered": 1,
+            "total": 1,
+            "files": [
+              {
+                "path": "validator.py",
+                "covered": 1,
+                "total": 1
+              }
+            ]
+          }
+        },
+        "minimum_coverage_percent": 100
+      },
+      "expected": {
+        "coverage": [
+          {
+            "coverage_threshold_met": true,
+            "aggregate_metrics": {
+              "line": {
+                "status": "available",
+                "threshold_met": true,
+                "percent": 100.0
+              },
+              "statement": {
+                "status": "available",
+                "threshold_met": true,
+                "percent": 100.0
+              },
+              "function": {
+                "status": "available",
+                "threshold_met": true,
+                "percent": 100.0
+              },
+              "branch": {
+                "status": "available",
+                "threshold_met": true,
+                "percent": 100.0
+              },
+              "region": {
+                "status": "available",
+                "threshold_met": true,
+                "percent": 100.0
+              },
+              "instantiation": {
+                "status": "available",
+                "threshold_met": true,
+                "percent": 100.0
+              }
+            }
+          }
+        ]
+      },
+      "coverage_fingerprint": "43d96c5ac9e0bae799c7e36585bf260c"
+    },
+    {
+      "id": "dataset-adapter-coverage-metric-below",
+      "input": {
+        "coverage_metrics": {
+          "line": {
+            "covered": 1,
+            "total": 2,
+            "files": [
+              {
+                "path": "validator.py",
+                "covered": 1,
+                "total": 2
+              }
+            ]
+          },
+          "statement": {
+            "covered": 1,
+            "total": 2,
+            "files": [
+              {
+                "path": "validator.py",
+                "covered": 1,
+                "total": 2
+              }
+            ]
+          },
+          "function": {
+            "covered": 1,
+            "total": 2,
+            "files": [
+              {
+                "path": "validator.py",
+                "covered": 1,
+                "total": 2
+              }
+            ]
+          },
+          "branch": {
+            "covered": 1,
+            "total": 2,
+            "files": [
+              {
+                "path": "validator.py",
+                "covered": 1,
+                "total": 2
+              }
+            ]
+          },
+          "region": {
+            "covered": 1,
+            "total": 2,
+            "files": [
+              {
+                "path": "validator.py",
+                "covered": 1,
+                "total": 2
+              }
+            ]
+          },
+          "instantiation": {
+            "covered": 1,
+            "total": 2,
+            "files": [
+              {
+                "path": "validator.py",
+                "covered": 1,
+                "total": 2
+              }
+            ]
+          }
+        },
+        "minimum_coverage_percent": 51
+      },
+      "expected": {
+        "coverage": [
+          {
+            "coverage_threshold_met": false,
+            "aggregate_metrics": {
+              "line": {
+                "status": "available",
+                "threshold_met": false,
+                "percent": 50.0
+              },
+              "statement": {
+                "status": "available",
+                "threshold_met": false,
+                "percent": 50.0
+              },
+              "function": {
+                "status": "available",
+                "threshold_met": false,
+                "percent": 50.0
+              },
+              "branch": {
+                "status": "available",
+                "threshold_met": false,
+                "percent": 50.0
+              },
+              "region": {
+                "status": "available",
+                "threshold_met": false,
+                "percent": 50.0
+              },
+              "instantiation": {
+                "status": "available",
+                "threshold_met": false,
+                "percent": 50.0
+              }
+            }
+          }
+        ]
+      },
+      "coverage_fingerprint": "43d96c5ac9e0bae799c7e36585bf260c"
+    },
+    {
+      "id": "dataset-adapter-coverage-metric-unavailable",
+      "input": {
+        "coverage_metrics": {
+          "statement": {
+            "covered": 1,
+            "total": 1,
+            "files": [
+              {
+                "path": "validator.py",
+                "covered": 1,
+                "total": 1
+              }
+            ]
+          }
+        },
+        "minimum_coverage_percent": 51
+      },
+      "expected": {
+        "coverage": [
+          {
+            "coverage_threshold_met": true,
+            "aggregate_metrics": {
+              "function": {
+                "status": "unavailable",
+                "threshold_met": null,
+                "percent": null
+              }
+            }
+          }
+        ]
+      },
+      "coverage_fingerprint": "5fc892e723ab6ecd18a7cd6c8ea8fcb8"
+    },
+    {
+      "id": "dataset-adapter-coverage-metric-undeclared-source",
+      "input": {
+        "coverage_metrics": {
+          "statement": {
+            "covered": 1,
+            "total": 1,
+            "files": [
+              {
+                "path": "private.py",
+                "covered": 1,
+                "total": 1
+              }
+            ]
+          }
+        }
+      },
+      "expected": {},
+      "predicate": "contains(.error, 'reported statement coverage for source outside coverage_sources')",
+      "coverage_fingerprint": "f52c89cf052d568a22d2bbcbf867892f"
+    },
+    {
+      "id": "dataset-adapter-coverage-metric-line-mismatch",
+      "input": {
+        "coverage_metrics": {
+          "line": {
+            "covered": 1,
+            "total": 2,
+            "files": [
+              {
+                "path": "validator.py",
+                "covered": 1,
+                "total": 2
+              }
+            ]
+          }
+        }
+      },
+      "expected": {
+        "error": "contract batch-case-dataset-adapter-coverage-metric-line-mismatch reported line metric totals that do not match coverage_lines"
+      },
+      "coverage_fingerprint": "7cfe49761667240670cac51cc18ca0ed"
+    },
+    {
+      "id": "dataset-adapter-coverage-metric-nested-paths",
+      "setup": "dataset-adapter-coverage-metric-nested-paths",
+      "input": {
+        "nested_contract": true,
+        "coverage_metrics": {
+          "statement": {
+            "covered": 1,
+            "total": 1,
+            "files": [
+              {
+                "path": "validator.py",
+                "covered": 1,
+                "total": 1
+              }
+            ]
+          }
+        }
+      },
+      "expected": {
+        "coverage": [
+          {
+            "aggregate_metrics": {
+              "statement": {
+                "files": [
+                  {
+                    "path": "validator.py"
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "aggregate_metrics": {
+              "statement": {
+                "files": [
+                  {
+                    "path": "child/validator.py"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "coverage_fingerprint": "6e786ac7a6a22a26d77c79ee627da226"
+    },
+    {
+      "id": "dataset-adapter-union-coverage",
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "first",
+              "input": {
+                "value": 1
+              },
+              "expected": {
+                "value": 1
+              },
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
+            }
+          ]
+        },
+        "second_dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "second",
+              "input": {
+                "value": 2
+              },
+              "expected": {
+                "value": 2
+              },
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
+            }
+          ]
+        },
+        "coverage_metrics": {
+          "statement": {
+            "covered": 2,
+            "total": 2,
+            "files": [
+              {
+                "path": "validator.py",
+                "covered": 2,
+                "total": 2
+              }
+            ]
+          }
+        }
+      },
+      "expected": {
+        "coverage": [
+          {
+            "coverage_threshold_met": true,
+            "datasets": [
+              "dataset.json",
+              "second-dataset.json"
+            ]
+          }
+        ],
+        "results": [
+          {
+            "case_id": "first",
+            "passed": true
+          },
+          {
+            "case_id": "second",
+            "passed": true
+          }
+        ]
+      },
+      "coverage_fingerprint": "0e0d702d297e11f3a564d7381299618b"
+    },
+    {
+      "id": "dataset-adapter-missing-result-dataset-identity",
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "case",
+              "input": {
+                "value": 1
+              },
+              "expected": {
+                "value": 1
+              },
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
+            }
+          ]
+        }
+      },
+      "expected": {},
+      "predicate": "contains(.error, 'adapter result has no dataset identity')",
+      "coverage_fingerprint": "d3d96d0faf6ced46c63adf6a1d6c5003"
+    },
+    {
+      "id": "dataset-adapter-missing-scope-dataset-identity",
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "case",
+              "input": {
+                "value": 1
+              },
+              "expected": {
+                "value": 1
+              },
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
+            }
+          ]
+        }
+      },
+      "expected": {},
+      "predicate": "contains(.error, 'coverage scope has no dataset identity')",
+      "coverage_fingerprint": "34e8433867493e2a20b66bc53de5e71a"
+    },
+    {
+      "id": "dataset-adapter-invalid-result-dataset-identity",
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "case",
+              "input": {
+                "value": 1
+              },
+              "expected": {
+                "value": 1
+              },
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
+            }
+          ]
+        }
+      },
+      "expected": {},
+      "predicate": "contains(.error, 'adapter result has invalid dataset identity')",
+      "coverage_fingerprint": "c284b742af6d64de08c11bb642614c78"
+    },
+    {
+      "id": "dataset-adapter-invalid-scope-dataset-identity",
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "case",
+              "input": {
+                "value": 1
+              },
+              "expected": {
+                "value": 1
+              },
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
+            }
+          ]
+        }
+      },
+      "expected": {},
+      "predicate": "contains(.error, 'coverage scope has invalid dataset identity')",
+      "coverage_fingerprint": "b78212cd82249a59f9fc6ed50745c490"
     }
   ]
 }

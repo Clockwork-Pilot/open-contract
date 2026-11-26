@@ -11,20 +11,23 @@ every case to pin its observed 32-character fingerprint. Unit tests may cover
 internal helper behavior that the public interface cannot expose, but their
 coverage does not fill dataset gaps.
 
-When a case needs an external condition, mark it with `setup: true`. The
-validator maps the case ID to setup such as a controlled adapter executable,
+When a case needs an external condition, give it a setup fixture ID. The
+validator resolves that ID to setup such as a controlled adapter executable,
 then passes the case's actual input through the public batch API and checks the
 returned result. Setup does not supply the expected result or call private
 implementation helpers. Fixture controls stay outside `input`.
 
 For consumer contracts, the Rust runner reads the manifest, starts the selected
-isolation boundary, executes its declared language-adapter command once for the
-contract tree, and verifies returned outputs afterward. Language adapters only
-execute validators and report results and coverage; they do not read datasets,
-iterate cases or steps, evaluate predicates, or provide isolation. That runtime
-path is exercised when running consumer contracts. The batch bootstrap
-contract focuses on public batch behavior. Unit tests are reserved for internal
-behaviors the public batch interface cannot expose.
+isolation boundary, and executes each contract's declared language-adapter
+command once with requests flattened from all of that contract's datasets.
+The adapter measures their coverage together so the runner can enforce the
+shared threshold on the contract-wide union. Dataset identity remains on each
+request key, preserving each case's own result and coverage fingerprint.
+Language adapters only execute validators and report results and coverage; they
+do not read datasets, evaluate predicates, or provide isolation. That runtime
+path is exercised when running consumer contracts. The batch bootstrap contract
+focuses on public batch behavior. Unit tests are reserved for internal behaviors
+the public batch interface cannot expose.
 
 Datasets use format version 1 and may be JSON or YAML. The shared shape has
 only a root `cases` list. A case is either one validator call or an ordered

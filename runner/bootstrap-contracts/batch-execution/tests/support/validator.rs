@@ -5,7 +5,7 @@ use runner_batch::{
     CoverageScope, ExecutionKey, FingerprintMode, ManifestBatchAdapter,
 };
 use runner_isolation::{Backend, StagedTree};
-use runner_manifest::{Coverage, FileSystem, Manifest, ManifestPlan};
+use runner_manifest::{FileSystem, Manifest, ManifestPlan};
 use runner_verification::{match_output, MatchKind};
 use serde_json::{json, Value};
 use std::fs;
@@ -46,14 +46,24 @@ mod profile;
 /// Validate one dataset entry by constructing the requested contract input and
 /// invoking the batch runner's public contract execution API.
 pub(super) fn validate_dataset_entry(entry: &DatasetCase) -> Result<(), String> {
+    let input = &entry.input;
     let adapter: &dyn BatchAdapter = match entry.id.as_str() {
         id if id.starts_with("manifest-adapter-") || id.starts_with("supplemental-") => {
             &ManifestBatchAdapter
         }
         id if id.starts_with("dataset-adapter-") => {
+            let coverage_metrics = input["coverage_metrics"]
+                .as_object()
+                .map(|_| serde_json::from_value(input["coverage_metrics"].clone()))
+                .transpose()
+                .map_err(|error| format!("invalid fixture coverage_metrics: {error}"))?
+                .unwrap_or_default();
             return validate_dataset_entry_with_adapter(
                 entry,
-                &ScenarioDatasetAdapter { id: id.to_owned() },
+                &ScenarioDatasetAdapter {
+                    id: id.to_owned(),
+                    coverage_metrics,
+                },
             );
         }
         _ => &IdentityDatasetAdapter,
@@ -68,6 +78,13 @@ fn validate_dataset_entry_with_adapter(
     let id = entry.id.as_str();
     let input = &entry.input;
     let expected = entry.expected_value()?;
+    if id.starts_with("adapter-coverage-") {
+        let actual = match runner_batch::validate_adapter_coverage_payload(input, "schema-fixture") {
+            Ok(()) => json!({"valid": true}),
+            Err(error) => json!({"valid": false, "error": error}),
+        };
+        return check_public_output(&actual, expected, entry.predicate.as_deref());
+    }
     if input["operation"] == "validate-runner-manifest-filename" {
         let path = input["path"]
             .as_str()
@@ -81,30 +98,11 @@ fn validate_dataset_entry_with_adapter(
     if input["operation"] == "validate-nested-manifest-filenames" {
         return validate_nested_manifest_filename_fixture(input, expected, entry.predicate.as_deref());
     }
-    if input["operation"].as_str() == Some("validate-adapter-coverage") {
-        let payloads = input["payloads"]
-            .as_array()
-            .ok_or_else(|| "validate-adapter-coverage requires input.payloads".to_string())?;
-        let checks = payloads
-            .iter()
-            .map(|payload| {
-                match runner_batch::validate_adapter_coverage_payload(payload, "schema-fixture") {
-                    Ok(()) => json!({"valid": true}),
-                    Err(error) => json!({"valid": false, "error": error}),
-                }
-            })
-            .collect::<Vec<_>>();
-        return check_public_output(
-            &json!({"checks": checks}),
-            expected,
-            entry.predicate.as_deref(),
-        );
-    }
     let fixture = tempdir().map_err(|error| format!("fixture directory: {error}"))?;
     let package = fixture.path();
     if id == "load-dataset-reports-missing-file" {
-        if !entry.setup {
-            return Err("missing-file case requires setup: true".into());
+        if entry.setup.as_deref() != Some(id) {
+            return Err("missing-file case requires its fixture ID in setup".into());
         }
         let relative_path = input["path"]
             .as_str()
@@ -142,14 +140,29 @@ fn validate_dataset_entry_with_adapter(
     };
     write_bytes(&dataset_path, &dataset_bytes)?;
 
+    let second_dataset_name = "second-dataset.json";
+    let has_second_dataset = input.get("second_dataset").is_some();
+    if let Some(second_dataset) = input.get("second_dataset") {
+        write_bytes(
+            &package.join(second_dataset_name),
+            &serde_json::to_vec(second_dataset).map_err(|error| error.to_string())?,
+        )?;
+    }
+
     let name = format!("batch-case-{id}");
     let mut manifest = json!({
         "version": "1",
         "name": name,
-        "datasets": [dataset_name],
+        "datasets": if has_second_dataset { vec![dataset_name.clone(), second_dataset_name.into()] } else { vec![dataset_name.clone()] },
         "coverage_sources": [validator],
         "filesystem": {"read": [dataset_name, validator], "write": []}
     });
+    if has_second_dataset {
+        manifest["filesystem"]["read"].as_array_mut().unwrap().push(json!(second_dataset_name));
+    }
+    if let Some(minimum_coverage_percent) = input.get("minimum_coverage_percent") {
+        manifest["minimum_coverage_percent"] = minimum_coverage_percent.clone();
+    }
     if let Some(external_read_path) = input["external_read_path"].as_str() {
         manifest["filesystem"]["read"]
             .as_array_mut()
@@ -182,8 +195,8 @@ fn validate_dataset_entry_with_adapter(
     if let Some(command) = input["command"].as_array() {
         manifest["execution"] = json!({"command": command});
     }
-    if entry.setup {
-        configure_case_setup(id, input, package, &mut manifest)?;
+    if let Some(setup_id) = entry.setup.as_deref() {
+        configure_case_setup(setup_id, input, package, &mut manifest)?;
     }
     add_nested_contract(package, input, &mut manifest)?;
     let manifest_path = package.join("contract.yaml");
@@ -289,7 +302,7 @@ fn validate_nested_manifest_filename_fixture(
             supplemental_tests: Vec::new(),
             nested_contracts: nested_paths,
             directories: Default::default(),
-            coverage: Coverage::default(),
+            minimum_coverage_percent: 100.0,
             execution: None,
             language_adapter: None,
             filesystem: FileSystem {
@@ -382,7 +395,7 @@ fn add_nested_contract(package: &Path, input: &Value, manifest: &mut Value) -> R
         .and_then(|value| value.to_str())
         .ok_or_else(|| "nested manifest path must have a filename".to_string())?;
     let nested = if cycle {
-        format!("  nested_contracts: [{child_filename}]\n")
+        format!("nested_contracts: [{child_filename}]\n")
     } else {
         String::new()
     };
@@ -446,6 +459,7 @@ fn configure_case_setup(
         | "dataset-adapter-multiple-coverage-lines"
         | "dataset-adapter-coverage-source-unavailable"
         | "dataset-adapter-coverage-line-out-of-range"
+        | "dataset-adapter-coverage-metric-nested-paths"
         | "dataset-adapter-covered-line-outside-executable"
         | "dataset-adapter-no-line-coverage"
         | "dataset-adapter-missing-step-coverage"
@@ -664,6 +678,7 @@ struct IdentityDatasetAdapter;
 
 struct ScenarioDatasetAdapter {
     id: String,
+    coverage_metrics: std::collections::BTreeMap<String, runner_batch::CoverageMetricCounts>,
 }
 
 impl BatchAdapter for ScenarioDatasetAdapter {
@@ -674,7 +689,53 @@ impl BatchAdapter for ScenarioDatasetAdapter {
         batches: &[ContractBatch],
     ) -> Result<Vec<AdapterBatch>, String> {
         let mut outputs = IdentityDatasetAdapter.execute_tree(tree, backend, batches)?;
+        if self.id == "dataset-adapter-missing-result-dataset-identity" {
+            for batch in &mut outputs {
+                for result in &mut batch.results {
+                    result.key.dataset_id = None;
+                }
+            }
+        }
+        if self.id == "dataset-adapter-invalid-result-dataset-identity" {
+            for batch in &mut outputs {
+                for result in &mut batch.results {
+                    result.key.dataset_id = Some("9999".into());
+                }
+            }
+        }
+        if self.id == "dataset-adapter-missing-scope-dataset-identity" {
+            for batch in &mut outputs {
+                for scope in &mut batch.coverage_scopes {
+                    scope.key.dataset_id = None;
+                }
+            }
+        }
+        if self.id == "dataset-adapter-invalid-scope-dataset-identity" {
+            for batch in &mut outputs {
+                for scope in &mut batch.coverage_scopes {
+                    scope.key.dataset_id = Some("9999".into());
+                }
+            }
+        }
         for (contract_batch, batch) in batches.iter().zip(&mut outputs) {
+            batch.coverage_metrics = self.coverage_metrics.clone();
+            if self.id == "dataset-adapter-union-coverage" {
+                if batches.len() != 1 || contract_batch.requests.len() != 2 {
+                    return Err("datasets were not executed together for contract coverage".into());
+                }
+                batch.coverage_lines = vec![runner_batch::CoverageLineFile {
+                    path: contract_batch.manifest.manifest.coverage_sources[0].clone(),
+                    executable_lines: vec![1, 2],
+                    covered_lines: vec![1, 2],
+                }];
+            }
+            if self.id == "dataset-adapter-coverage-metric-below" {
+                batch.coverage_lines = vec![runner_batch::CoverageLineFile {
+                    path: contract_batch.manifest.manifest.coverage_sources[0].clone(),
+                    executable_lines: vec![1, 2],
+                    covered_lines: vec![1],
+                }];
+            }
             if self.id == "dataset-adapter-coverage-source-unavailable" {
                 fs::remove_file(contract_batch.manifest.package_root.join("validator.py"))
                     .map_err(|error| format!("remove coverage source fixture: {error}"))?;
@@ -725,6 +786,7 @@ impl BatchAdapter for ScenarioDatasetAdapter {
                     key: ExecutionKey {
                         case_id: "unrequested".into(),
                         step_id: None,
+                        dataset_id: contract_batch.requests.first().and_then(|request| request.key.dataset_id.clone()),
                     },
                     output: Some(json!({})),
                     error: None,

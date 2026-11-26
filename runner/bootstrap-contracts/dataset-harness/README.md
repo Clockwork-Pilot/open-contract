@@ -8,7 +8,7 @@ contract's own validator:
 version: 1
 cases:
   - id: example
-    setup: true # optional; declares an ID-mapped test setup outside input
+    setup: example-fixture # optional fixture ID, separate from input
     input: {value: 1}
     coverage_fingerprint: 0123456789abcdef0123456789abcdef
     expected: {value: 1}
@@ -22,16 +22,14 @@ expression as an input, that expression belongs inside `input`; the sibling
 case-level `predicate` describes a result assertion. The harness owns loading,
 envelope validation, case order, and case-qualified errors; each bootstrap
 contract owns behavior assertions.
-`setup` is optional and defaults to `false`; it indicates the validator must
-perform a case-ID-mapped test setup before calling the public implementation.
-Setup may prepare external conditions the dataset input cannot create, such as
-environment values, temporary filesystem state, a fake executable, or a
-controlled OS result. The validator must still pass the case's real `input` to
-the public function and compare its actual result with `expected` or the result
-predicate. Setup must not replace the public call, fabricate its result, or call
-implementation internals to add lines to the dataset fingerprint. Keep setup
-controls outside `input`; do not create placeholder cases or harness-only
-operations.
+`setup` is an optional fixture ID. The validator resolves that ID and prepares
+external conditions the real input cannot create, such as environment values,
+temporary filesystem state, a fake executable, or a controlled OS result. It
+must pass the case's `input` unchanged to the public function and compare the
+actual result with `expected` or the result predicate. Setup must not replace
+the public call, fabricate its result, or call implementation internals to add
+lines to the dataset fingerprint. Keep fixture state outside `input`; do not
+create placeholder cases or harness-only operations.
 Each case may declare a `coverage_fingerprint` pin for the implementation
 lines it covers. A missing pin is treated as the all-zero sentinel
 `00000000000000000000000000000000`. The shared coverage checker runs the

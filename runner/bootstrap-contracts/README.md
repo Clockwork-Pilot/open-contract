@@ -10,11 +10,11 @@ Dataset cases must exercise each component through its public interface with
 real input and observable expected results. A validator may use case-specific
 setup before the public call when the input alone cannot create an external
 condition, such as a temporary filesystem state, environment value, fake
-executable, or controlled OS result. Declare this with `setup: true` outside
-`input` and map the case ID to setup code in the test harness. After setup, the
-validator must pass the dataset's actual `input` to the public function and
-check the actual result. Setup must not replace the call, fabricate its result,
-or invoke implementation internals to add lines to dataset coverage. Keep
+executable, or controlled OS result. Declare this with an optional fixture ID
+in `setup`, outside `input`. The validator resolves that ID, prepares its
+fixture, and passes the dataset's actual `input` unchanged to the public
+function before checking its result. Setup must not replace the call, fabricate
+its result, or invoke implementation internals to add lines to dataset coverage. Keep
 fixture controls outside `input`; do not add harness-only operations or
 placeholder inputs.
 

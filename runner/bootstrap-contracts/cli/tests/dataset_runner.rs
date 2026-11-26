@@ -1,3 +1,5 @@
+pub use runner_cli::*;
+
 #[path = "support/validator.rs"]
 mod validator;
 

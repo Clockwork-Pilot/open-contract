@@ -369,35 +369,37 @@ pub(super) fn runtime(
         environment: BTreeMap::new(),
         command_executable: false,
     };
-    if let Some(runtime_name) = backend.runtime_manifest_name() {
-        if let Some(path) = isolation_runtime {
-            add_isolation_runtime(&mut runtime, path)?;
+    let embedded_runtime = match backend {
+        Backend::Bubblewrap => Some((
+            "bwrap",
+            include_str!("../../../isolation-runtime/bwrap.yaml"),
+        )),
+        Backend::Landlock => Some((
+            "landlock",
+            include_str!("../../../isolation-runtime/landlock.yaml"),
+        )),
+        Backend::TempDir | Backend::None => None,
+    };
+    if let Some((runtime_name, manifest)) = embedded_runtime {
+        let (source, manifest_bytes) = if let Some(path) = isolation_runtime {
+            let bytes = fs::read(path).map_err(|error| {
+                format!(
+                    "cannot read isolation runtime manifest {}: {error}",
+                    path.display()
+                )
+            })?;
+            (path.display().to_string(), bytes)
         } else {
-            let manifest = match runtime_name {
-                "bwrap" => include_str!("../../../isolation-runtime/bwrap.yaml"),
-                "landlock" => include_str!("../../../isolation-runtime/landlock.yaml"),
-                _ => unreachable!("Backend only names supported runtime manifests"),
-            };
-            add_isolation_runtime_contents(
-                &mut runtime,
-                &format!("embedded {runtime_name} runtime manifest"),
-                manifest.as_bytes(),
-            )?;
-        }
+            (
+                format!("embedded {runtime_name} runtime manifest"),
+                manifest.as_bytes().to_vec(),
+            )
+        };
+        add_isolation_runtime_contents(&mut runtime, &source, &manifest_bytes)?;
     }
     runtime.roots.sort();
     runtime.roots.dedup();
     Ok(runtime)
-}
-
-fn add_isolation_runtime(runtime: &mut Runtime, manifest_path: &Path) -> Result<(), String> {
-    let bytes = fs::read(manifest_path).map_err(|error| {
-        format!(
-            "cannot read isolation runtime manifest {}: {error}",
-            manifest_path.display()
-        )
-    })?;
-    add_isolation_runtime_contents(runtime, &manifest_path.display().to_string(), &bytes)
 }
 
 fn add_isolation_runtime_contents(

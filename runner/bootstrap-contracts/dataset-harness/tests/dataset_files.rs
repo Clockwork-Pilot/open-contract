@@ -14,7 +14,7 @@ fn loads_json_dataset_and_preserves_public_case_values() {
     assert_eq!(dataset.version, 1);
     assert_eq!(dataset.cases.len(), 1);
     assert_eq!(dataset.cases[0].id, "json-case");
-    assert!(dataset.cases[0].setup);
+    assert_eq!(dataset.cases[0].setup.as_deref(), Some("json-case"));
     assert_eq!(dataset.cases[0].input, json!({"value": 7}));
     assert_eq!(dataset.cases[0].expected, Some(json!({"value": 7})));
 }
@@ -25,7 +25,7 @@ fn loads_yaml_dataset_with_result_predicate() {
     assert_eq!(dataset.version, 1);
     assert_eq!(dataset.cases.len(), 1);
     assert_eq!(dataset.cases[0].id, "yaml-case");
-    assert!(!dataset.cases[0].setup);
+    assert_eq!(dataset.cases[0].setup, None);
     assert_eq!(dataset.cases[0].input, json!({"value": 9}));
     assert_eq!(dataset.cases[0].predicate.as_deref(), Some(".value == 9"));
 }

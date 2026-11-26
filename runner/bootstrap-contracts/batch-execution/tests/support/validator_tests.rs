@@ -767,7 +767,7 @@ fn harness_scenarios() -> Vec<HarnessScenario> {
                 ]
             }),
             expected: json!({
-                "error_contains": "invalid batch JSON"
+                "error_contains": "invalid batch data"
             }),
             adapter_behavior: None,
         },
@@ -821,7 +821,7 @@ fn harness_scenarios() -> Vec<HarnessScenario> {
                 "command": [
                     "python3",
                     "-c",
-                    "import json,sys; x=json.load(sys.stdin); r=x['requests'][0]; p=x['validator']; print(json.dumps({'results':[{'key':r['key'],'output':r['input']}], 'coverage':{'sources':[p]}, 'coverage_scopes':[{'key':r['key'],'files':[{'path':p,'lines':[1]}]}], 'coverage_lines':[{'path':p,'executable_lines':[1],'covered_lines':[1]}]}))"
+                    "import json,sys; x=json.load(sys.stdin); r=x['requests'][0]; p=x['coverage_sources'][0]; print(json.dumps({'results':[{'key':r['key'],'output':r['input']}], 'coverage':{'sources':[p]}, 'coverage_scopes':[{'key':r['key'],'files':[{'path':p,'lines':[1]}]}], 'coverage_lines':[{'path':p,'executable_lines':[1],'covered_lines':[1]}]}))"
                 ]
             }),
             expected: json!({
@@ -1473,6 +1473,7 @@ impl FixtureAdapter {
                 key: ExecutionKey {
                     case_id: "unexpected".into(),
                     step_id: None,
+                    dataset_id: batch.requests.first().and_then(|request| request.key.dataset_id.clone()),
                 },
                 output: Some(Value::Null),
                 error: None,
@@ -1494,6 +1495,7 @@ impl FixtureAdapter {
                     ExecutionKey {
                         case_id: "unexpected".into(),
                         step_id: None,
+                        dataset_id: request.key.dataset_id.clone(),
                     }
                 } else {
                     request.key.clone()

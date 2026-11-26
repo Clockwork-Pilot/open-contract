@@ -17,7 +17,9 @@ def test_coverage_lines_are_normalized_and_subset_of_executable_lines(tmp_path):
     (tmp_path / "validator.py").write_text(
         "from helper import answer\n"
         "def validate(value, context):\n"
-        "    return answer(value)\n",
+        "    if value:\n"
+        "        return answer(value)\n"
+        "    return {'ok': False}\n",
         encoding="utf-8",
     )
     entrypoint = tmp_path / "contract_entry.py"
@@ -60,3 +62,9 @@ def test_coverage_lines_are_normalized_and_subset_of_executable_lines(tmp_path):
     assert source["covered_lines"] == sorted(set(source["covered_lines"]))
     assert set(source["covered_lines"]) <= set(source["executable_lines"])
     assert source["covered_lines"]
+    assert report["coverage_metrics"]["line"]["covered"] == len(source["covered_lines"])
+    assert report["coverage_metrics"]["statement"]["total"] > 0
+    assert report["coverage_metrics"]["statement"]["covered"] == report["coverage_metrics"]["statement"]["total"]
+    assert report["coverage_metrics"]["branch"]["total"] > 0
+    assert report["coverage_metrics"]["branch"]["covered"] == report["coverage_metrics"]["branch"]["total"]
+    assert "function" not in report["coverage_metrics"]

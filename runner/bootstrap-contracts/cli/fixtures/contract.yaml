@@ -1,7 +1,6 @@
 version: "1"
 name: cli-smoke-fixture
-coverage:
-  minimum_line_percent: 0
+minimum_coverage_percent: 0
 datasets: [dataset.json]
 coverage_sources: [validator.py]
 supplemental_tests: [tests/check.py]

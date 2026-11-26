@@ -256,17 +256,22 @@ pub fn write_adapter_coverage_reports(
         .coverage
         .iter()
         .map(|record| {
-            let dataset_coverage = coverage_totals_json(
+            let union_coverage = coverage_totals_json(
                 record.dataset_covered_lines,
                 record.dataset_executable_lines,
                 &record.line_coverage,
-                None,
+                &record.dataset_metrics,
+                record
+                    .dataset_metrics
+                    .values()
+                    .all(|metric| metric.threshold_met != Some(false)),
             );
             let aggregate_coverage = coverage_totals_json(
                 record.combined_covered_lines,
                 record.combined_executable_lines,
                 &merge_coverage_files(&record.line_coverage, &record.additional_line_coverage),
-                Some(record.line_threshold_met),
+                &record.aggregate_metrics,
+                record.coverage_threshold_met,
             );
             let source_status = if record.missing_sources.is_empty() {
                 "complete"
@@ -274,7 +279,7 @@ pub fn write_adapter_coverage_reports(
                 "missing"
             };
             let status = if record.missing_sources.is_empty()
-                && record.line_threshold_met
+                && record.coverage_threshold_met
                 && record.additional_test_coverage["passed"] != false
             {
                 "passed"
@@ -284,14 +289,15 @@ pub fn write_adapter_coverage_reports(
             json!({
                 "contract": record.contract,
                 "status": status,
-                "minimum_line_percent": record.minimum_line_percent,
+                "minimum_coverage_percent": record.minimum_coverage_percent,
+                "datasets": record.datasets,
                 "sources": {
                     "status": source_status,
                     "declared": record.declared_sources,
                     "covered": record.covered_sources,
                     "missing": record.missing_sources,
                 },
-                "dataset": dataset_coverage,
+                "union": union_coverage,
                 "aggregate": aggregate_coverage,
                 "supplemental_tests": record.additional_test_coverage,
                 "native_report": record.native_report,
@@ -317,7 +323,7 @@ pub fn validate_coverage_report(report: &Value) -> Result<(), ContractError> {
     )
 }
 
-fn validate_coverage_report_with_schema(
+pub fn validate_coverage_report_with_schema(
     schema_json: &str,
     report: &Value,
 ) -> Result<(), ContractError> {
@@ -348,7 +354,8 @@ fn coverage_totals_json(
     covered: usize,
     executable: usize,
     files: &[runner_batch::CoverageLineFile],
-    threshold_met: Option<bool>,
+    metrics: &std::collections::BTreeMap<String, runner_batch::CoverageMetricOutcome>,
+    threshold_met: bool,
 ) -> Value {
     let percent = if executable == 0 {
         0.0
@@ -359,11 +366,10 @@ fn coverage_totals_json(
         "covered_lines": covered,
         "executable_lines": executable,
         "percent": percent,
+        "metrics": metrics,
         "files": files.iter().map(|file| coverage_file_json(file)).collect::<Vec<_>>(),
     });
-    if let Some(threshold_met) = threshold_met {
-        value["threshold_met"] = json!(threshold_met);
-    }
+    value["threshold_met"] = json!(threshold_met);
     value
 }
 
@@ -419,11 +425,12 @@ fn merge_coverage_files(
 fn update_dataset_fingerprints(report: &BatchReport) -> Result<String, ContractError> {
     let mut output = String::new();
     for coverage in &report.coverage {
+      for dataset_path in &coverage.dataset_paths {
         let mut pins = Vec::new();
         for result in report
             .results
             .iter()
-            .filter(|result| result.contract == coverage.contract)
+            .filter(|result| result.contract == coverage.contract && result.dataset_path == *dataset_path)
         {
             if result.steps.is_empty() {
                 pins.extend(result.coverage.as_ref().map(|fingerprint| {
@@ -446,7 +453,6 @@ fn update_dataset_fingerprints(report: &BatchReport) -> Result<String, ContractE
                 })
             }));
         }
-        let dataset_path = &coverage.dataset_path;
         let source = fs::read(dataset_path).map_err(|error| {
             ContractError::from((
                 2,
@@ -544,6 +550,7 @@ fn update_dataset_fingerprints(report: &BatchReport) -> Result<String, ContractE
                 .and_then(|name| name.to_str())
                 .unwrap_or("dataset")
         ));
+      }
     }
     if output.is_empty() {
         output.push_str("Fingerprints already match; no dataset changes made\n");
@@ -596,6 +603,38 @@ fn concise_summary(report: &BatchReport) -> String {
             "  {}: {passed}/{total} cases passed\n",
             contract.contract
         ));
+        output.push_str("    Coverage metrics: ");
+        output.push_str(
+            &contract
+                .aggregate_metrics
+                .iter()
+                .map(|(name, metric)| {
+                    match (
+                        metric.status.as_str(),
+                        metric.covered,
+                        metric.total,
+                        metric.percent,
+                        metric.minimum_percent,
+                        metric.threshold_met,
+                    ) {
+                        (
+                            "available",
+                            Some(covered),
+                            Some(total),
+                            Some(percent),
+                            Some(minimum),
+                            Some(met),
+                        ) => format!(
+                            "{name} {percent:.1}% ({covered}/{total}, minimum {minimum:.1}%, {})",
+                            if met { "pass" } else { "FAIL" }
+                        ),
+                        _ => format!("{name} unavailable"),
+                    }
+                })
+                .collect::<Vec<_>>()
+                .join("; "),
+        );
+        output.push('\n');
     }
     output.push_str(&format!(
         "Dataset cases: {}/{} passed across {} contract(s)\n",
@@ -634,7 +673,7 @@ fn report_coverage_complete(report: &BatchReport, coverage_fingerprints: bool) -
         && report.coverage.iter().all(|record| {
             record.missing_sources.is_empty()
                 && record.additional_test_coverage["passed"] != false
-                && record.line_threshold_met
+                && record.coverage_threshold_met
         })
         && !report.results.is_empty()
         && (!coverage_fingerprints
@@ -720,7 +759,3 @@ fn backend_name(backend: Backend) -> &'static str {
         Backend::Landlock => "landlock",
     }
 }
-
-#[cfg(test)]
-#[path = "../tests/unit_dataset_runner.rs"]
-mod dataset_runner_test;

@@ -218,7 +218,7 @@ pub(crate) fn exercise_copy_error_paths() -> Result<(), String> {
         let external_child = tempfile::tempdir().map_err(|error| error.to_string())?;
         fs::write(
             external_child.path().join("contract.yaml"),
-            "version: \"1\"\nname: child\ndatasets: [dataset.json]\ncoverage_sources: []\ncoverage:\n  minimum_line_percent: 100\nfilesystem:\n  read: [dataset.json, validator.txt]\n  write: []\n",
+            "version: \"1\"\nname: child\ndatasets: [dataset.json]\ncoverage_sources: []\nminimum_coverage_percent: 100\nfilesystem:\n  read: [dataset.json, validator.txt]\n  write: []\n",
         )
         .map_err(|error| error.to_string())?;
         fs::write(external_child.path().join("dataset.json"), "{}")

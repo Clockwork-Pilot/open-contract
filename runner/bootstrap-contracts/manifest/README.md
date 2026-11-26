@@ -27,8 +27,8 @@ Unset variables fail before command execution.
 
 Dataset cases provide package paths or manifest YAML directly. The validator
 materializes the package files needed by the manifest input. Cases requiring
-an extra external condition such as a symlink escape declare `setup: true`; the
-validator maps that case ID to setup, then passes the supplied manifest input
+an extra external condition such as a symlink escape declare a fixture ID in
+`setup`; the validator resolves that ID, then passes the supplied manifest input
 to the public parser and checks its actual result. Setup never replaces the
 public call. Results may use `expected`, a sibling result `predicate`, or both.
 The package check requires 100% function, instantiation, line, and region

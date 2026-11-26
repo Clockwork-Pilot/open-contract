@@ -4,12 +4,10 @@ This bootstrap package owns the command-line interface used by
 `runner/rust`. The Rust runner binary delegates its arguments to the public
 `runner_cli::execute` entry point; the dataset invokes that same function.
 
-The dataset shows complete CLI invocations. Each case gives the argument list,
-any input files the CLI reads, and the complete exit code, stdout, and stderr
-result. Cases with `setup: true` materialize those supplied files in a fresh
-working directory before calling the CLI. The validator does not map fixture
-IDs to hidden file contents or substitute a test-only operation for the CLI
-call.
+The dataset shows complete CLI invocations: each case gives its real argument
+input and complete exit code, stdout, and stderr result. A setup fixture ID
+resolves external files and environment values in the test fixture registry;
+the validator then passes the case's input unchanged to the CLI.
 
 `run-manifest` prints a `Contracts executed` section before the aggregate
 dataset summary. The section lists each contract in recursive traversal order
