@@ -51,6 +51,20 @@ contract user can provide and observe. Use ordinary unit tests for internal
 conditions the public interface cannot expose; those tests do not add dataset
 coverage. Unit tests may reuse dataset inputs as regression examples.
 
+Organize datasets to help a reader see the behavior a contract implements.
+Keep a small contract in one dataset when that is already clear; split larger
+sets when each group gives a useful view, such as normal use, meaningful
+boundaries, or failures. Use clear dataset names and representative cases as
+the guide. Descriptions and categories are optional and are not required by
+the dataset schema. Do not split cases only to sort them by size or code path.
+
+For example, a manifest may list `datasets/happy-path.yaml`,
+`datasets/boundaries.yaml`, and `datasets/failures.yaml` when those groups help
+explain the public behavior. This organization is for reading and maintenance:
+the runner executes every declared dataset together, applies the manifest's
+shared coverage threshold to their union, and retains each case's own coverage
+fingerprint. Dataset grouping does not provide selective execution.
+
 ## Run contracts
 
 Select the isolation backend when invoking the Rust runner:

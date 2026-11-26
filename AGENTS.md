@@ -60,6 +60,15 @@ not consumer-specific contracts.
   execute in order. There is no sequence-level input, expected result,
   predicate, or fingerprint. The runner checks each call's returned result
   against its sibling `expected` and optional `predicate`.
+- Organize consumer datasets to help readers understand the contract's behavior:
+  keep one dataset when it is clear enough, and split a larger set when focused
+  groups such as normal use, meaningful boundaries, or failures provide a useful
+  view. Use clear names and representative cases. Descriptions and semantic
+  categories remain optional; do not add schema requirements to police whether a
+  grouping is meaningful. Dataset grouping is for readers and maintenance, not
+  selective execution: all declared datasets run together, their coverage is
+  unioned before the shared manifest threshold is enforced, and case fingerprints
+  remain independent.
 - Keep the runner generic; consumer projects provide their own contracts and
   project-specific dependencies.
 - Keep bootstrap predicate contracts as the dataset predicate semantics and
