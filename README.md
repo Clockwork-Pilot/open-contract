@@ -77,14 +77,17 @@ cargo run --manifest-path runner/rust/Cargo.toml -- \
 
 The manifest declares `datasets`, public implementation files in
 `coverage_sources`, optional `supplemental_tests`, and optional
-`nested_contracts` directly at the top level. These package-relative paths must
-also be readable under `filesystem.read`. Coverage sources may use glob
-patterns; the runner expands only declared patterns and passes that exact
-resolved list to the language adapter. It does not infer or append source
-files. Keep test harnesses, validators, and helpers out of `coverage_sources`.
+`nested_contracts` directly at the top level. File paths are resolved from the
+manifest's package directory; relative paths may use `..` to reach parent
+directories. Resolved files must also be readable under `filesystem.read`.
+Coverage sources may use glob patterns; the runner expands only declared
+patterns and passes that exact resolved list to the language adapter. It does
+not infer or append source files. Keep test harnesses, validators, and helpers
+out of `coverage_sources`.
 
-Use `directories` to define named package-relative directory roots and refer to
-them as `@name/path` in path fields. For example:
+Use `directories` to define named directory roots relative to the package and
+refer to them as `@name/path` in path fields. Roots may use `..` to reach parent
+directories. For example:
 
 ```yaml
 directories:

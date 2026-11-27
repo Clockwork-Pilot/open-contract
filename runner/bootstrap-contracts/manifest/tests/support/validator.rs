@@ -125,6 +125,9 @@ fn manifest_setup_case<'a>(
             | "write-path-inaccessible-ancestor"
             | "coverage-glob-inaccessible-directory"
             | "accepts-relative-read-path-outside-package"
+            | "accepts-parent-relative-coverage-source"
+            | "accepts-parent-relative-dataset-schema"
+            | "dataset-schema-symlink-escape"
             | "nested-contract-sibling-manifest"
             | "nested-contract-multiple-parent-traversals"
             | "nested-contract-absolute-path-rejected"
@@ -187,6 +190,7 @@ fn run_manifest_case(input: &Value, setup_case: Option<&str>) -> Result<bool, St
         Some(
             "read-path-symlink-escape"
             | "declared-file-symlink-escape"
+            | "dataset-schema-symlink-escape"
             | "directory-alias-symlink-escape",
         ) => {
             let outside = temp.path().join("outside.json");
@@ -264,6 +268,17 @@ fn run_manifest_case(input: &Value, setup_case: Option<&str>) -> Result<bool, St
         }
         Some("accepts-relative-read-path-outside-package") => {
             std::fs::write(temp.path().join("outside.json"), "{}")
+                .map_err(|error| error.to_string())?;
+        }
+        Some("accepts-parent-relative-coverage-source") => {
+            std::fs::write(
+                temp.path().join("outside.py"),
+                "def external(): return True\n",
+            )
+            .map_err(|error| error.to_string())?;
+        }
+        Some("accepts-parent-relative-dataset-schema") => {
+            std::fs::write(temp.path().join("schema.json"), "{}\n")
                 .map_err(|error| error.to_string())?;
         }
         Some(

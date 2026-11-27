@@ -197,8 +197,7 @@ impl ManifestPlan {
             resolve_filesystem_path(&package_root, path, false)?;
         }
         for path in declared_files {
-            validate_package_path(path)?;
-            let resolved = resolve_inside(&package_root, path)?;
+            let resolved = resolve_filesystem_path(&package_root, path, true)?;
             if !resolved.is_file() {
                 return Err(format!("manifest file is not a regular file: {path}"));
             }
@@ -273,8 +272,7 @@ pub fn resolve_nested_manifest_path(package_root: &Path, raw: &str) -> Result<Pa
             }
         }
     }
-    let resolved = candidate
-        .canonicalize()
+    let resolved = resolve_filesystem_path(package_root, raw, true)
         .map_err(|error| format!("cannot resolve nested contract manifest {raw:?}: {error}"))?;
     if !resolved.is_file() {
         return Err(format!(
@@ -299,8 +297,7 @@ fn validate_directory_aliases(
         if !valid_name {
             return Err(format!("invalid directory alias name: {name:?}"));
         }
-        validate_package_path(raw_path)?;
-        let resolved = resolve_inside(package_root, raw_path)?;
+        let resolved = resolve_filesystem_path(package_root, raw_path, true)?;
         if !resolved.is_dir() {
             return Err(format!(
                 "directory alias @{name} does not name a directory: {raw_path}"
@@ -338,7 +335,11 @@ fn resolve_coverage_sources(
     let mut seen = std::collections::HashSet::new();
     for declaration in declarations {
         let pattern = resolve_directory_alias(declaration, aliases)?;
-        validate_package_path(&pattern)?;
+        if Path::new(&pattern).is_absolute() {
+            return Err(format!(
+                "coverage_sources path must be package-relative: {pattern}"
+            ));
+        }
         let absolute_pattern = package_root.join(&pattern).to_string_lossy().into_owned();
         let mut matches = glob::glob(&absolute_pattern)
             .map_err(|error| format!("invalid coverage_sources glob {pattern:?}: {error}"))?
@@ -351,8 +352,12 @@ fn resolve_coverage_sources(
             ));
         }
         for matched in matches {
-            let canonical = matched.canonicalize().map_err(|error| error.to_string())?;
-            if !canonical.starts_with(package_root) {
+            let raw_match = matched.to_string_lossy();
+            let canonical = resolve_filesystem_path(package_root, &raw_match, true)?;
+            if !relative_path_leaves_package(Path::new(&pattern))
+                && !Path::new(&pattern).is_absolute()
+                && !canonical.starts_with(package_root)
+            {
                 return Err(format!(
                     "coverage_sources path escapes its package: {pattern}"
                 ));
@@ -362,10 +367,6 @@ fn resolve_coverage_sources(
                     "coverage_sources entry is not a regular file: {pattern}"
                 ));
             }
-            // `pattern` is a validated package-relative path and `matched`
-            // came from globbing `package_root.join(pattern)`, so removing
-            // the package root is guaranteed by construction. The canonical
-            // path check above separately rejects symlink escapes.
             let relative = matched
                 .components()
                 .skip(package_root.components().count())
@@ -506,19 +507,6 @@ pub fn is_allowed(path: &str, allowed: &[String]) -> bool {
                 .strip_prefix(entry)
                 .is_some_and(|suffix| suffix.starts_with('/'))
     })
-}
-
-fn resolve_inside(root: &Path, raw: &str) -> Result<PathBuf, String> {
-    let candidate = root.join(raw);
-    let resolved = candidate
-        .canonicalize()
-        .map_err(|e| format!("{raw}: {e}"))?;
-    if !resolved.starts_with(root) {
-        return Err(format!(
-            "manifest path escapes its package through a symlink: {raw}"
-        ));
-    }
-    Ok(resolved)
 }
 
 fn canonicalize_path(path: &Path) -> Result<PathBuf, String> {
