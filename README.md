@@ -155,7 +155,12 @@ validates each dataset against this root-level Open Contracts schema before
 loading it; runner-specific checks then enforce unique IDs, valid setup
 fixtures, and observed coverage fingerprints.
 See [`schemas/README.md`](schemas/README.md) for how the dataset schema
-differs from the bundle schema.
+differs from the bundle schema. A manifest dataset entry may additionally
+reference YAML schemas for that dataset's call `input` and `expected` values.
+The Rust runner validates those values for standalone cases and sequence steps
+before adapter execution. See
+[`schemas/README.md`](schemas/README.md#per-dataset-value-schemas) for the
+manifest syntax and compact YAML dialect.
 
 Language adapters receive batches of inputs and return serialized outputs,
 errors, and native coverage. The Rust verifier compares outputs with exact

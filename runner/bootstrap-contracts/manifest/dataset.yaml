@@ -101,7 +101,7 @@ cases:
   expected:
     valid: false
 - id: valid-manifest-with-support-and-nested-contract
-  coverage_fingerprint: 881e055f706af858c55edd7c34ab037d
+  coverage_fingerprint: 7053b8913acea1cd2e0beff375f18f1d
   input:
     operation: manifest
     yaml: "version: '1'\nname: sample\nfilesystem:\n  read:\n  - dataset.json\n  -\
@@ -110,8 +110,53 @@ cases:
       - child/contract.yaml\n"
   expected:
     valid: true
+- id: manifest-dataset-entry-has-value-schema-paths
+  coverage_fingerprint: 0f09624df8577cfcb3cfc49498b6c0de
+  input:
+    operation: manifest
+    yaml: "version: '1'\nname: schema-manifest\ndatasets:\n  - path: dataset.json\n\
+      \    schema: schemas/values.yaml\ncoverage_sources: [validator.py]\nfilesystem:\n\
+      \  read: [dataset.json, validator.py, schemas/values.yaml]\n  write: []\n"
+  expected:
+    valid: true
+- id: manifest-dataset-schema-must-be-readable
+  coverage_fingerprint: b3ec22f55bfa424aa94ee93ba8a908e0
+  input:
+    operation: manifest
+    yaml: "version: '1'\nname: unreadable-schema-manifest\ndatasets:\n  - path: dataset.json\n\
+      \    schema: schemas/values.yaml\ncoverage_sources: [validator.py]\nfilesystem:\n\
+      \  read: [dataset.json, validator.py]\n  write: []\n"
+  expected:
+    valid: false
+- id: manifest-dataset-entry-may-omit-schema
+  coverage_fingerprint: 885eec55ce4d8f00c7e1f92129f25f08
+  input:
+    operation: manifest
+    yaml: "version: '1'\nname: schema-free-entry\ndatasets:\n  - path: dataset.json\n\
+      coverage_sources: [validator.py]\nfilesystem:\n  read: [dataset.json, validator.py]\n\
+      \  write: []\n"
+  expected:
+    valid: true
+- id: manifest-dataset-object-rejects-unknown-path-alias
+  coverage_fingerprint: 9ee1973c48f3f0f5438ce60210e0aefc
+  input:
+    operation: manifest
+    yaml: "version: '1'\nname: unknown-dataset-alias\ndatasets:\n  - path: '@missing/dataset.json'\n\
+      coverage_sources: [validator.py]\nfilesystem:\n  read: [dataset.json, validator.py]\n\
+      \  write: []\n"
+  expected:
+    valid: false
+- id: manifest-dataset-object-rejects-unknown-schema-alias
+  coverage_fingerprint: f046590fb5fa9390dcc73476a53ca80d
+  input:
+    operation: manifest
+    yaml: "version: '1'\nname: unknown-schema-alias\ndatasets:\n  - path: dataset.json\n\
+      \    schema: '@missing/values.yaml'\ncoverage_sources: [validator.py]\nfilesystem:\n\
+      \  read: [dataset.json, validator.py]\n  write: []\n"
+  expected:
+    valid: false
 - id: nested-contract-sibling-manifest
-  coverage_fingerprint: 443c231d8ce8675ec4df156c4a927a7d
+  coverage_fingerprint: 066a7de884ed1582205d1c6c973a86c0
   setup: nested-contract-sibling-manifest
   input:
     operation: manifest
@@ -121,7 +166,7 @@ cases:
   expected:
     valid: true
 - id: nested-contract-multiple-parent-traversals
-  coverage_fingerprint: 443c231d8ce8675ec4df156c4a927a7d
+  coverage_fingerprint: 066a7de884ed1582205d1c6c973a86c0
   setup: nested-contract-multiple-parent-traversals
   input:
     operation: manifest
@@ -132,7 +177,7 @@ cases:
   expected:
     valid: true
 - id: nested-contract-absolute-path-rejected
-  coverage_fingerprint: e7fd99cfaeb9625fd395e08453e36581
+  coverage_fingerprint: 299be2034e6579f0fb168ca7d5e74e69
   setup: nested-contract-absolute-path-rejected
   input:
     operation: manifest
@@ -142,7 +187,7 @@ cases:
   expected:
     valid: false
 - id: nested-contract-missing-manifest-rejected
-  coverage_fingerprint: 033668ddd76ffacb3e450c8db25d0886
+  coverage_fingerprint: 61c17fda694ab7f6d8288f8a67d4ae10
   setup: nested-contract-missing-manifest-rejected
   input:
     operation: manifest
@@ -152,7 +197,7 @@ cases:
   expected:
     valid: false
 - id: nested-contract-manifest-not-readable
-  coverage_fingerprint: 7deccc90b0578c79633293338e05f33c
+  coverage_fingerprint: 44e999cc40c53773e08d3b7eb0f6b77d
   setup: nested-contract-manifest-not-readable
   input:
     operation: manifest
@@ -162,7 +207,7 @@ cases:
   expected:
     valid: false
 - id: nested-contract-symlink-rejected
-  coverage_fingerprint: d52cfb83d99163e34c94b1592140a7e1
+  coverage_fingerprint: 49925cf96d74fb3a00b76619aff9b7ea
   setup: nested-contract-symlink-rejected
   input:
     operation: manifest
@@ -172,7 +217,7 @@ cases:
   expected:
     valid: false
 - id: nested-contract-empty-component-rejected
-  coverage_fingerprint: 6228c1da58c074b092390572d072289d
+  coverage_fingerprint: 91cd0fd6dc943c7bc7c7cf89e871c225
   setup: nested-contract-empty-component-rejected
   input:
     operation: manifest
@@ -182,7 +227,7 @@ cases:
   expected:
     valid: false
 - id: nested-contract-directory-rejected
-  coverage_fingerprint: 1de61643043a42ccaf5502221c3e5e7c
+  coverage_fingerprint: 7da268f7ef595f0f17d7bd13151b484d
   setup: nested-contract-directory-rejected
   input:
     operation: manifest
@@ -192,7 +237,7 @@ cases:
   expected:
     valid: false
 - id: nested-contract-file-parent-rejected
-  coverage_fingerprint: 8a2b6d12b4bec0d984a4994d026d0a4c
+  coverage_fingerprint: c238445003411fcb310715896c70923f
   setup: nested-contract-file-parent-rejected
   input:
     operation: manifest
@@ -203,7 +248,7 @@ cases:
   expected:
     valid: false
 - id: nested-contract-current-directory-component
-  coverage_fingerprint: 0354e4c75549d7075703e65ca4b25cd2
+  coverage_fingerprint: 70469bbe0a4d8235c1c4cd782c2c1325
   setup: nested-contract-current-directory-component
   input:
     operation: manifest
@@ -213,7 +258,7 @@ cases:
   expected:
     valid: true
 - id: nested-contract-empty-reference-rejected
-  coverage_fingerprint: 79a425acd655cfaf4274aa47a27ccfa6
+  coverage_fingerprint: d666142249b2c28e59e34bb7d8a45e4c
   input:
     operation: manifest
     yaml: "version: '1'\nname: parent\ndatasets: [dataset.json]\ncoverage_sources:\
@@ -222,7 +267,7 @@ cases:
   expected:
     valid: false
 - id: nested-contract-backslash-rejected
-  coverage_fingerprint: f52dc45a520eb5d235afe43c247b2e1e
+  coverage_fingerprint: 81382c60cefb0fe46a00fe0877f1b59c
   input:
     operation: manifest
     yaml: "version: '1'\nname: parent\ndatasets: [dataset.json]\ncoverage_sources:\
@@ -231,7 +276,7 @@ cases:
   expected:
     valid: false
 - id: nested-contract-drive-prefix-rejected
-  coverage_fingerprint: 26f6f830c7f7fef4033b6698c2eb3e1f
+  coverage_fingerprint: 86b6152b29de1bda057a3de5817bf2d5
   input:
     operation: manifest
     yaml: "version: '1'\nname: parent\ndatasets: [dataset.json]\ncoverage_sources:\
@@ -240,7 +285,7 @@ cases:
   expected:
     valid: false
 - id: invalid-line-coverage-threshold
-  coverage_fingerprint: c5239cb49b335e21a2aca976dc401f1f
+  coverage_fingerprint: 750382490a27df9cde7a0cf9cf85496e
   input:
     operation: manifest
     yaml: "version: '1'\nname: sample\nminimum_coverage_percent: 101\nfilesystem:\n\
@@ -249,7 +294,7 @@ cases:
   expected:
     valid: false
 - id: valid-manifest-with-explicit-supplemental-tests
-  coverage_fingerprint: df641172c293694971c600ba37c5ccc9
+  coverage_fingerprint: 4b2c2eeddfd96902822fb6b33055815c
   input:
     operation: manifest
     yaml: "version: '1'\nname: sample\nfilesystem:\n  read:\n  - dataset.json\n  -\
@@ -258,7 +303,7 @@ cases:
   expected:
     valid: true
 - id: valid-manifest-with-execution-command
-  coverage_fingerprint: 66a7b945697819ff28b2ab8a64eec777
+  coverage_fingerprint: b64e4674138b7998e7bd2b4e81004233
   input:
     operation: manifest
     yaml: "version: '1'\nname: sample\nexecution:\n  command:\n  - python3\n  - contract_entry.py\n\
@@ -267,7 +312,7 @@ cases:
   expected:
     valid: true
 - id: accepts-contract-with-explicit-public-source
-  coverage_fingerprint: 66a7b945697819ff28b2ab8a64eec777
+  coverage_fingerprint: b64e4674138b7998e7bd2b4e81004233
   input:
     operation: manifest
     yaml: "version: '1'\nname: sample\nexecution:\n  command:\n  - python3\n  - contract_entry.py\n\
@@ -276,7 +321,7 @@ cases:
   expected:
     valid: true
 - id: rejects-empty-language-adapter-reference
-  coverage_fingerprint: 8aeb731f6007b9bd6731b8c483864ec2
+  coverage_fingerprint: 5232b6a67eca1ba815cac6a40cfc7ef8
   input:
     operation: manifest
     yaml: "version: '1'\nname: sample\nlanguage_adapter: '  '\nfilesystem:\n  read:\n\
@@ -285,7 +330,7 @@ cases:
   expected:
     valid: false
 - id: rejects-path-as-language-adapter-reference
-  coverage_fingerprint: 17056f0198116f11da1552a2a576829a
+  coverage_fingerprint: da2307211390a71b189db3e36d240416
   input:
     operation: manifest
     yaml: "version: '1'\nname: sample\nlanguage_adapter: /opt/open-contract/languages/python\n\
@@ -294,7 +339,7 @@ cases:
   expected:
     valid: false
 - id: empty-execution-command
-  coverage_fingerprint: 744c48b0fb3b5205c82992a5056288c6
+  coverage_fingerprint: 9c19769fdd0addc1db571ea60e581d87
   input:
     operation: manifest
     yaml: "version: '1'\nname: sample\nexecution:\n  command: []\nfilesystem:\n  read:\n\
@@ -303,7 +348,7 @@ cases:
   expected:
     valid: false
 - id: blank-execution-command
-  coverage_fingerprint: 744c48b0fb3b5205c82992a5056288c6
+  coverage_fingerprint: 9c19769fdd0addc1db571ea60e581d87
   input:
     operation: manifest
     yaml: "version: '1'\nname: sample\nexecution:\n  command:\n  - '  '\nfilesystem:\n\
@@ -329,7 +374,7 @@ cases:
   expected:
     valid: false
 - id: missing-readable-path
-  coverage_fingerprint: b3bf3998aee17ec055e9a2c1efe493db
+  coverage_fingerprint: bfad6110c84c2aa0a3945485bfcfc0d7
   input:
     operation: manifest
     yaml: "version: '1'\nname: sample\nfilesystem:\n  read:\n  - dataset.json\n  -\
@@ -338,7 +383,7 @@ cases:
   expected:
     valid: false
 - id: accepts-absolute-write-path
-  coverage_fingerprint: db92316865cc06b7105d863eca07e7fd
+  coverage_fingerprint: f90de78e565580e359a27e5ab37f955e
   input:
     operation: manifest
     yaml: "version: '1'\nname: sample\nfilesystem:\n  read:\n  - dataset.json\n  -\
@@ -347,7 +392,7 @@ cases:
   expected:
     valid: true
 - id: accepts-absolute-read-path
-  coverage_fingerprint: 33af84c9742043cd7f34ce29da7c1697
+  coverage_fingerprint: f356e2e3af9309a0f62c1876106fd997
   input:
     operation: manifest
     yaml: "version: '1'\nname: sample\nfilesystem:\n  read:\n  - /\n  - dataset.json\n\
@@ -356,7 +401,7 @@ cases:
   expected:
     valid: true
 - id: rejects-empty-filesystem-path
-  coverage_fingerprint: 6ad60d12afe8711543897254ae31c533
+  coverage_fingerprint: 3bdc47ecdfd87b0214bb3900a904a995
   input:
     operation: manifest
     yaml: "version: '1'\nname: sample\nfilesystem:\n  read:\n  - ''\n  - dataset.json\n\
@@ -365,7 +410,7 @@ cases:
   expected:
     valid: false
 - id: rejects-nul-filesystem-path
-  coverage_fingerprint: 9745b466b2ccb5a026caa779f9c3e9b7
+  coverage_fingerprint: 85a064af43062de4ad7c27a2303d3a2c
   input:
     operation: manifest
     yaml: "version: '1'\nname: sample\nfilesystem:\n  read:\n  - \\0\n  - dataset.json\n\
@@ -374,7 +419,7 @@ cases:
   expected:
     valid: false
 - id: accepts-relative-read-path-outside-package
-  coverage_fingerprint: a85c7da99b17797e7e175e3e68c89768
+  coverage_fingerprint: f8ec8bf4bd2ba4c46de3600a5a9f7694
   setup: accepts-relative-read-path-outside-package
   input:
     operation: manifest
@@ -384,7 +429,7 @@ cases:
   expected:
     valid: true
 - id: accepts-relative-write-path-outside-package
-  coverage_fingerprint: c01c4cdd8c3f2adf9160f295a5305b8e
+  coverage_fingerprint: 03ce1c47fc658f219351e5c292c6b815
   input:
     operation: manifest
     yaml: "version: '1'\nname: sample\nfilesystem:\n  read:\n  - dataset.json\n  -\
@@ -393,7 +438,7 @@ cases:
   expected:
     valid: true
 - id: accepts-normalized-relative-write-path
-  coverage_fingerprint: 8e35dbebe8af1a70b106e3466e495c0c
+  coverage_fingerprint: 36ab79b35f0704427a7534ec8a583225
   input:
     operation: manifest
     yaml: "version: '1'\nname: sample\nfilesystem:\n  read:\n  - dataset.json\n  -\
@@ -402,7 +447,7 @@ cases:
   expected:
     valid: true
 - id: accepts-current-directory-write-path
-  coverage_fingerprint: 0be8a49d831782bc5f656768764baf9e
+  coverage_fingerprint: 8738180b1d33d50388b786b9409ada17
   input:
     operation: manifest
     yaml: "version: '1'\nname: sample\nfilesystem:\n  read:\n  - dataset.json\n  -\
@@ -411,7 +456,7 @@ cases:
   expected:
     valid: true
 - id: undeclared-validator-read
-  coverage_fingerprint: 5af191c865adf5e8ababff57231effdb
+  coverage_fingerprint: b7152c517e3582fbda016d08cd4eb3db
   input:
     operation: manifest
     yaml: "version: '1'\nname: sample\nfilesystem:\n  read:\n  - dataset.json\n  write:\
@@ -419,7 +464,7 @@ cases:
   expected:
     valid: false
 - id: missing-dataset-file
-  coverage_fingerprint: 9745b466b2ccb5a026caa779f9c3e9b7
+  coverage_fingerprint: 85a064af43062de4ad7c27a2303d3a2c
   input:
     operation: manifest
     yaml: "version: '1'\nname: sample\nfilesystem:\n  read:\n  - missing.json\n  -\
@@ -428,7 +473,7 @@ cases:
   expected:
     valid: false
 - id: directory-is-not-a-manifest-file
-  coverage_fingerprint: 39b15e4d5588e12e96f3d286744c9226
+  coverage_fingerprint: 26baa28c8b295ba997a06e6e33f32bdd
   input:
     operation: manifest
     yaml: "version: '1'\nname: sample\nfilesystem:\n  read:\n  - directory\n  - validator.py\n\
@@ -445,7 +490,7 @@ cases:
   expected:
     valid: false
 - id: read-path-symlink-escape
-  coverage_fingerprint: 8261bd773292c6d156e4a322ea6669ac
+  coverage_fingerprint: d935d73cad55418c7007ba7fc7bed528
   setup: read-path-symlink-escape
   input:
     operation: manifest
@@ -454,7 +499,7 @@ cases:
   expected:
     valid: false
 - id: declared-file-symlink-escape
-  coverage_fingerprint: c1188db66f2c47c921dbf8e78e4d2203
+  coverage_fingerprint: 83f05d16657e006b7f77036ec7a3bb76
   setup: declared-file-symlink-escape
   input:
     operation: manifest
@@ -463,7 +508,7 @@ cases:
   expected:
     valid: false
 - id: write-path-symlink-escape
-  coverage_fingerprint: 19ff6ab2ff11b1bcb4e63647fb97d796
+  coverage_fingerprint: 576af042054267b51ebb4964e600b56a
   setup: write-path-symlink-escape
   input:
     operation: manifest
@@ -501,7 +546,7 @@ cases:
   expected:
     valid: false
 - id: invalid-readable-package-path
-  coverage_fingerprint: fe210225f7cb43db2656f9d5caf492f0
+  coverage_fingerprint: d15e05d00ca2a3b371d4a2269d5382f7
   input:
     operation: manifest
     yaml: "version: '1'\nname: sample\nfilesystem:\n  read:\n  - ../secret\n  - dataset.json\n\
@@ -510,7 +555,7 @@ cases:
   expected:
     valid: false
 - id: invalid-declared-file-path
-  coverage_fingerprint: 0951923c689b92dd2cd5d3ce44d51633
+  coverage_fingerprint: 46386b430a2489dee21df02d731a57a7
   input:
     operation: manifest
     yaml: "version: '1'\nname: sample\nfilesystem:\n  read:\n  - dataset.json\n  -\
@@ -527,7 +572,7 @@ cases:
   expected:
     valid: false
 - id: declared-file-missing-outside-read-list
-  coverage_fingerprint: 0abc00006c6a3f5d25a46c0b94e527eb
+  coverage_fingerprint: ef6c00d4251a56358bb18614b90b89ae
   input:
     operation: manifest
     yaml: "version: '1'\nname: sample\nfilesystem:\n  read:\n  - dataset.json\n  -\
@@ -536,7 +581,7 @@ cases:
   expected:
     valid: false
 - id: write-path-dangling-symlink
-  coverage_fingerprint: 4aca67901c2a266fef653bd57f684b2c
+  coverage_fingerprint: c9ed6e2b8a66ffe5159f4f2f1b99fb2b
   setup: write-path-dangling-symlink
   input:
     operation: manifest
@@ -546,7 +591,7 @@ cases:
   expected:
     valid: false
 - id: write-path-existing-directory
-  coverage_fingerprint: ca8b8f54d49a027aa6c0d14d2c81521b
+  coverage_fingerprint: cf08b0b19705608715b17d6f2914e1cd
   input:
     operation: manifest
     yaml: "version: '1'\nname: sample\nfilesystem:\n  read:\n  - dataset.json\n  -\
@@ -555,7 +600,7 @@ cases:
   expected:
     valid: true
 - id: write-path-inaccessible-ancestor
-  coverage_fingerprint: df3321151daa5ae5660b49d89ebed1ba
+  coverage_fingerprint: 1db8406f27e9b436a9755a9976ef5973
   setup: write-path-inaccessible-ancestor
   input:
     operation: manifest
@@ -565,7 +610,7 @@ cases:
   expected:
     valid: false
 - id: write-path-parent-is-file
-  coverage_fingerprint: df3321151daa5ae5660b49d89ebed1ba
+  coverage_fingerprint: 1db8406f27e9b436a9755a9976ef5973
   input:
     operation: manifest
     yaml: "version: '1'\nname: sample\nfilesystem:\n  read:\n  - dataset.json\n  -\
@@ -574,7 +619,7 @@ cases:
   expected:
     valid: false
 - id: directory-aliases-and-coverage-globs-resolve
-  coverage_fingerprint: f7f6acb1c0e7b04c18c10d85d2d2d65e
+  coverage_fingerprint: bc03b712cb9a601267f97c8c274c1236
   input:
     operation: manifest
     yaml: "version: '1'\nname: aliased\ndirectories:\n  source: support\n  tests:\
@@ -642,7 +687,7 @@ cases:
   expected:
     valid: false
 - id: unknown-directory-alias-is-rejected
-  coverage_fingerprint: 1405ad7dba1bc92acda4363d6ed43215
+  coverage_fingerprint: 55f563df2cbc28319078127946eb3925
   input:
     operation: manifest
     yaml: 'version: ''1''
@@ -659,7 +704,7 @@ cases:
   expected:
     valid: false
 - id: directory-alias-without-suffix-does-not-name-a-file
-  coverage_fingerprint: 8899e2b2e67bd8a6e1f2a9abf91ce963
+  coverage_fingerprint: 60600c9f9f750d635303e722854e2e27
   input:
     operation: manifest
     yaml: 'version: ''1''
@@ -678,7 +723,7 @@ cases:
   expected:
     valid: false
 - id: coverage-glob-must-match-a-file
-  coverage_fingerprint: 33730af4a850f36a2da8bb024bf2f4c1
+  coverage_fingerprint: f1abf4e90035aab01c424dd716897a37
   input:
     operation: manifest
     yaml: 'version: ''1''
@@ -695,7 +740,7 @@ cases:
   expected:
     valid: false
 - id: invalid-coverage-glob-is-rejected
-  coverage_fingerprint: 8119b7385a68dcb53dcfbe0ed0728483
+  coverage_fingerprint: cd71425e2205ffa21365d50f76bffbcc
   input:
     operation: manifest
     yaml: 'version: ''1''
@@ -712,7 +757,7 @@ cases:
   expected:
     valid: false
 - id: coverage-glob-cannot-include-a-directory
-  coverage_fingerprint: def58880fe912e3a8f6c632de481eaac
+  coverage_fingerprint: 7f693e2463b17dbc72e9351685661cb9
   input:
     operation: manifest
     yaml: 'version: ''1''
@@ -729,7 +774,7 @@ cases:
   expected:
     valid: false
 - id: coverage-source-symlink-escape
-  coverage_fingerprint: 4daa14acb781689c100205beab978076
+  coverage_fingerprint: f29d854095020c19bdd1c7db444ef8ff
   setup: coverage-source-symlink-escape
   input:
     operation: manifest
@@ -747,7 +792,7 @@ cases:
   expected:
     valid: false
 - id: language-adapter-runtime-path-is-accepted
-  coverage_fingerprint: f0b923d5f3dd725600265c510a9d0955
+  coverage_fingerprint: d65f2c9d8bbe6fee6a310f81c71fa3db
   input:
     operation: manifest
     yaml: 'version: ''1''
@@ -766,7 +811,7 @@ cases:
   expected:
     valid: true
 - id: language-adapter-directory-is-rejected
-  coverage_fingerprint: 8b50099a107847f67073ba19105a35d8
+  coverage_fingerprint: a05c1cb25be65e7284580ec9322f2dba
   input:
     operation: manifest
     yaml: 'version: ''1''
@@ -785,7 +830,7 @@ cases:
   expected:
     valid: false
 - id: language-adapter-missing-runtime-is-rejected
-  coverage_fingerprint: 2c57fb445aeecf776618897324e59ecb
+  coverage_fingerprint: d46871937f04eea3ffde5ebf01aed73d
   input:
     operation: manifest
     yaml: 'version: ''1''
@@ -804,7 +849,7 @@ cases:
   expected:
     valid: false
 - id: manifest-requires-at-least-one-dataset
-  coverage_fingerprint: 89c320c6c2e945bbc641d4a2e520ce03
+  coverage_fingerprint: ba5cd8cbae568a96999ca6cacc63bcce
   input:
     operation: manifest
     yaml: 'version: ''1''
@@ -821,7 +866,7 @@ cases:
   expected:
     valid: false
 - id: supplemental-test-alias-must-exist
-  coverage_fingerprint: 01bf63f3636bc67b611f4b4874e82e62
+  coverage_fingerprint: 38a503ea57d46c3d361bad35b3c9d42f
   input:
     operation: manifest
     yaml: 'version: ''1''
@@ -840,7 +885,7 @@ cases:
   expected:
     valid: false
 - id: nested-contract-alias-must-exist
-  coverage_fingerprint: 66ee30e435f22c35cbffce6242a32423
+  coverage_fingerprint: b08fd70620c0faf2ee5a091ffedf2c3a
   input:
     operation: manifest
     yaml: 'version: ''1''
@@ -859,7 +904,7 @@ cases:
   expected:
     valid: false
 - id: filesystem-read-alias-must-exist
-  coverage_fingerprint: 31506e1d8369d85d1d82ad634f62da56
+  coverage_fingerprint: 7f12ec9a9c37174bfb528e66939298c7
   input:
     operation: manifest
     yaml: 'version: ''1''
@@ -876,7 +921,7 @@ cases:
   expected:
     valid: false
 - id: filesystem-write-alias-must-exist
-  coverage_fingerprint: 498ce0926156e6f2d198b23170e5d1da
+  coverage_fingerprint: be460265c6805cbdf1421873bac7e019
   input:
     operation: manifest
     yaml: 'version: ''1''
@@ -893,7 +938,7 @@ cases:
   expected:
     valid: false
 - id: coverage-glob-enumeration-error-is-rejected
-  coverage_fingerprint: 33730af4a850f36a2da8bb024bf2f4c1
+  coverage_fingerprint: f1abf4e90035aab01c424dd716897a37
   input:
     operation: manifest
     yaml: 'version: ''1''
@@ -910,7 +955,7 @@ cases:
   expected:
     valid: false
 - id: coverage-glob-dangling-match-is-rejected
-  coverage_fingerprint: 03af1e9796c36156d699be1c8f100d93
+  coverage_fingerprint: c19e653506e3978940b602c2c7f862ee
   setup: coverage-glob-dangling-match-is-rejected
   input:
     operation: manifest
@@ -948,7 +993,7 @@ cases:
   expected:
     valid: false
 - id: coverage-source-unknown-alias-is-rejected
-  coverage_fingerprint: 2e4cdde284f7849f6aa796ba07c78988
+  coverage_fingerprint: b2f6ac216fe46bf590b9a4c9fc9fb00a
   input:
     operation: manifest
     yaml: 'version: ''1''
@@ -965,7 +1010,7 @@ cases:
   expected:
     valid: false
 - id: coverage-source-package-escape-is-rejected
-  coverage_fingerprint: 035814ca12d78f0dc7884384a90861b8
+  coverage_fingerprint: aac2e05b2951f86d727499e2abfaa27d
   input:
     operation: manifest
     yaml: 'version: ''1''
@@ -982,7 +1027,7 @@ cases:
   expected:
     valid: false
 - id: coverage-glob-inaccessible-directory
-  coverage_fingerprint: 7002c6d9ede10c3180ab331e5b420ca2
+  coverage_fingerprint: 5faa5aaea09b34071d4087a0ab8a9541
   setup: coverage-glob-inaccessible-directory
   input:
     operation: manifest
@@ -1000,7 +1045,7 @@ cases:
   expected:
     valid: false
 - id: manifest-accepts-consumer-metadata
-  coverage_fingerprint: 54f6ea5183d3eed3cd4aa140eea2a188
+  coverage_fingerprint: ad93a5b6db7db9f9346671e7aa926273
   input:
     operation: manifest
     yaml: 'version: ''1''
@@ -1037,7 +1082,7 @@ cases:
       '
   expected:
     valid: true
-  coverage_fingerprint: efbd0027d9f911612097fc7cb09f20db
+  coverage_fingerprint: 6874a1a0f945c85d613253ca84ca6e0f
 - id: coverage-minimum-over-100
   input:
     operation: manifest
@@ -1056,7 +1101,7 @@ cases:
       '
   expected:
     valid: false
-  coverage_fingerprint: c5239cb49b335e21a2aca976dc401f1f
+  coverage_fingerprint: 750382490a27df9cde7a0cf9cf85496e
 - id: coverage-minimum-below-0
   input:
     operation: manifest
@@ -1075,7 +1120,7 @@ cases:
       '
   expected:
     valid: false
-  coverage_fingerprint: c5239cb49b335e21a2aca976dc401f1f
+  coverage_fingerprint: 750382490a27df9cde7a0cf9cf85496e
 - id: coverage-minimum-not-finite
   input:
     operation: manifest
@@ -1094,7 +1139,7 @@ cases:
       '
   expected:
     valid: false
-  coverage_fingerprint: c234fb87f5937cec4366b594ac16c6aa
+  coverage_fingerprint: b5306260d65119f884735dbd165bd90e
 - id: manifest-still-rejects-unknown-top-level-fields
   coverage_fingerprint: 2ee163302105a19bd0a55ff426fd9ea5
   input:

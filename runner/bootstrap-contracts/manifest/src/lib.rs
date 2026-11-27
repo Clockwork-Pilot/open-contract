@@ -8,7 +8,7 @@ use std::path::{Component, Path, PathBuf};
 pub struct Manifest {
     pub version: String,
     pub name: String,
-    pub datasets: Vec<String>,
+    pub datasets: Vec<DatasetDeclaration>,
     pub coverage_sources: Vec<String>,
     #[serde(default = "default_minimum_coverage_percent")]
     pub minimum_coverage_percent: f64,
@@ -25,6 +25,50 @@ pub struct Manifest {
     #[serde(default)]
     pub language_adapter: Option<String>,
     pub filesystem: FileSystem,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(untagged)]
+pub enum DatasetDeclaration {
+    Path(String),
+    Definition(DatasetDefinition),
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct DatasetDefinition {
+    pub path: String,
+    #[serde(default)]
+    pub schema: Option<String>,
+}
+
+impl DatasetDeclaration {
+    pub fn path(&self) -> &str {
+        match self {
+            Self::Path(path) => path,
+            Self::Definition(definition) => &definition.path,
+        }
+    }
+
+    pub fn schema(&self) -> Option<&str> {
+        match self {
+            Self::Path(_) => None,
+            Self::Definition(definition) => definition.schema.as_deref(),
+        }
+    }
+
+    fn resolve_aliases(&mut self, aliases: &BTreeMap<String, String>) -> Result<(), String> {
+        match self {
+            Self::Path(path) => *path = resolve_directory_alias(path, aliases)?,
+            Self::Definition(definition) => {
+                definition.path = resolve_directory_alias(&definition.path, aliases)?;
+                if let Some(path) = &mut definition.schema {
+                    *path = resolve_directory_alias(path, aliases)?;
+                }
+            }
+        }
+        Ok(())
+    }
 }
 
 fn default_minimum_coverage_percent() -> f64 {
@@ -75,8 +119,8 @@ impl ManifestPlan {
             return Err("manifest name must be non-empty".into());
         }
         validate_directory_aliases(&package_root, &manifest.directories)?;
-        for path in &mut manifest.datasets {
-            *path = resolve_directory_alias(path, &manifest.directories)?;
+        for dataset in &mut manifest.datasets {
+            dataset.resolve_aliases(&manifest.directories)?;
         }
         for path in &mut manifest.supplemental_tests {
             *path = resolve_directory_alias(path, &manifest.directories)?;
@@ -124,7 +168,11 @@ impl ManifestPlan {
         let mut declared_files = manifest
             .datasets
             .iter()
-            .map(String::as_str)
+            .flat_map(|dataset| {
+                [Some(dataset.path()), dataset.schema()]
+                    .into_iter()
+                    .flatten()
+            })
             .collect::<Vec<_>>();
         declared_files.extend(manifest.coverage_sources.iter().map(String::as_str));
         declared_files.extend(manifest.supplemental_tests.iter().map(String::as_str));

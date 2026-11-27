@@ -1,7 +1,9 @@
 version: "1"
 name: javascript-greeting-example
 minimum_coverage_percent: 100
-datasets: [dataset.yaml]
+datasets:
+  - path: dataset.yaml
+    schema: value-schema.yaml
 coverage_sources: [validator.mjs]
 execution:
   command: [node, run_contract.mjs]
@@ -11,4 +13,5 @@ filesystem:
     - dataset.yaml
     - validator.mjs
     - run_contract.mjs
+    - value-schema.yaml
   write: []

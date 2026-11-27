@@ -1,13 +1,53 @@
 #[path = "support/validator.rs"]
 mod validator;
 
-use runner_batch::load_dataset;
+use runner_batch::{load_dataset, load_dataset_with_schema};
 use std::fs;
 
 #[test]
 fn dataset_entries_exercise_public_api() {
     let cases = validator::execute_dataset().expect("batch execution dataset cases should pass");
     assert!(cases > 0, "batch execution dataset must contain cases");
+}
+
+#[test]
+fn per_dataset_yaml_schemas_validate_calls_and_sequence_steps() {
+    let directory = tempfile::tempdir().unwrap();
+    let first_dataset = directory.path().join("first.yaml");
+    let second_dataset = directory.path().join("second.yaml");
+    let first_schema = directory.path().join("first-schema.yaml");
+    let second_schema = directory.path().join("second-schema.yaml");
+    fs::write(
+        &first_dataset,
+        "version: 1\ncases:\n  - id: direct\n    input: {name: Ada}\n    expected: {ok: true}\n  - id: sequence\n    steps:\n      - id: one\n        input: {name: Grace}\n        expected: {ok: false}\n      - id: two\n        input: {name: Lin}\n        expected: {ok: true}\n",
+    )
+    .unwrap();
+    fs::write(
+        &second_dataset,
+        "version: 1\ncases:\n  - id: other-shape\n    input: 7\n    expected: done\n",
+    )
+    .unwrap();
+    fs::write(
+        &first_schema,
+        "input:\n  type: object\n  required: [name]\n  fields:\n    name: string\nexpected:\n  type: object\n  fields:\n    ok: boolean\n",
+    )
+    .unwrap();
+    fs::write(&second_schema, "input: integer\nexpected: string\n").unwrap();
+
+    load_dataset_with_schema(&first_dataset, Some(&first_schema))
+        .expect("the first dataset uses its own object schemas");
+    load_dataset_with_schema(&second_dataset, Some(&second_schema))
+        .expect("the second dataset may use different value shapes");
+
+    fs::write(
+        &first_dataset,
+        "version: 1\ncases:\n  - id: bad-step\n    steps:\n      - id: invalid\n        input: {name: 42}\n        expected: {ok: true}\n",
+    )
+    .unwrap();
+    let error = load_dataset_with_schema(&first_dataset, Some(&first_schema))
+        .expect_err("invalid step input must be rejected before execution");
+    assert!(error.contains("bad-step step invalid"));
+    assert!(error.contains("input at $.name: expected string"));
 }
 
 #[test]

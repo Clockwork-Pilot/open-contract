@@ -29,6 +29,51 @@ interchangeable: for example, the runner dataset schema does not define bundle
 boolean on an individual step; consecutive steps marked `true` may run
 together.
 
+## Per-dataset value schemas
+
+Manifest `datasets` entries may remain path strings, or use a mapping to
+associate that dataset with schemas for its user-defined values:
+
+```yaml
+datasets:
+  - path: datasets/create.yaml
+    schema: schemas/create.yaml
+```
+
+Schema references are package-relative paths (or declared directory aliases)
+and must also be readable through `filesystem.read`. Each schema is one YAML
+document with top-level `input` and/or `expected` definitions. The Rust runner
+applies each definition to every matching value in standalone cases and
+sequence steps. A missing `expected` is not validated; the dataset's normal
+expected-or-predicate rule still applies. These schemas do not describe or
+extend Open Contract's case, step, setup, predicate, parallel, or coverage
+fields.
+
+The compact value-schema dialect supports primitive type names (`string`,
+`integer`, `number`, `boolean`, `null`) and mappings for objects and arrays.
+Object mappings use `type: object`, optional `required`, and a `fields` mapping;
+unknown fields are allowed unless `additional: false` is set. Array mappings
+use `type: array` and an `items` schema. Any mapping may constrain values with
+`enum`; strings support `min_length` and `max_length`, arrays support
+`min_items` and `max_items`, and numbers support `minimum` and `maximum`.
+Unsupported types, keywords, and malformed schema definitions fail before the
+adapter runs. For example:
+
+```yaml
+input:
+  type: object
+  required: [name]
+  fields:
+    name: string
+    tags: {type: array, items: string}
+    age: {type: integer, minimum: 0}
+expected:
+  type: object
+  required: [accepted]
+  fields: {accepted: boolean}
+```
+
 The batch-execution bootstrap contract exercises the runner against
 `dataset.v1.schema.json`. The runner compiles that shared schema at build time
 and validates JSON and YAML datasets against it before deserializing them.
+It then applies any per-dataset YAML value schemas before adapter execution.

@@ -164,6 +164,12 @@ fn run_manifest_case(input: &Value, setup_case: Option<&str>) -> Result<bool, St
     .map_err(|error| error.to_string())?;
     std::fs::create_dir_all(root.join("support/nested")).map_err(|error| error.to_string())?;
     std::fs::create_dir_all(root.join("tests")).map_err(|error| error.to_string())?;
+    std::fs::create_dir_all(root.join("schemas")).map_err(|error| error.to_string())?;
+    std::fs::write(
+        root.join("schemas/values.yaml"),
+        "input: {type: object, fields: {value: integer}}\nexpected: {type: object, fields: {accepted: boolean}}\n",
+    )
+    .map_err(|error| error.to_string())?;
     std::fs::write(root.join("tests/extra.rs"), "fn supplemental_case() {}\n")
         .map_err(|error| error.to_string())?;
     std::fs::write(root.join("tests/data.json"), "{}\n").map_err(|error| error.to_string())?;

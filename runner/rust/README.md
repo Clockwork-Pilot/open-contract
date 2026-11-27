@@ -69,6 +69,13 @@ manifest declares the adapter entrypoint, files, and environment needed by
 contract's `filesystem.read`, which remains responsible for contract-owned
 inputs. Runtime paths are relative to the directory containing `runtime.yaml`.
 
+Each manifest `datasets` entry may be a legacy path string or a mapping with a
+`path` and optional `schema` reference. The YAML schema file groups top-level
+`input` and `expected` definitions and must be included in `filesystem.read`.
+The Rust runner validates every call input and each present expected value,
+including sequence steps, before it invokes the adapter. The schema dialect is documented in
+[`schemas/README.md`](../../schemas/README.md#per-dataset-value-schemas).
+
 For example, the command may launch a contract-owned Python wrapper that imports
 the resolved adapter entrypoint from the injected environment variable:
 

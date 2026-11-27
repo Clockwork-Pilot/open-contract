@@ -1,11 +1,12 @@
 use bootstrap_dataset_harness::{run_dataset, DatasetCase};
 use runner_batch::{
-    run_contract_tree, run_contract_tree_with_fingerprint_mode, run_contract_tree_with_options,
-    show_isolation_plan, AdapterBatch, AdapterResult, BatchAdapter, ContractBatch, CoverageFile,
-    CoverageScope, ExecutionKey, FingerprintMode, ManifestBatchAdapter,
+    load_dataset_with_schema, run_contract_tree, run_contract_tree_with_fingerprint_mode,
+    run_contract_tree_with_options, show_isolation_plan, AdapterBatch, AdapterResult, BatchAdapter,
+    ContractBatch, CoverageFile, CoverageScope, ExecutionKey, FingerprintMode,
+    ManifestBatchAdapter,
 };
 use runner_isolation::{Backend, StagedTree};
-use runner_manifest::{FileSystem, Manifest, ManifestPlan};
+use runner_manifest::{DatasetDeclaration, FileSystem, Manifest, ManifestPlan};
 use runner_verification::{match_output, MatchKind};
 use serde_json::{json, Value};
 use std::fs;
@@ -47,6 +48,9 @@ mod profile;
 /// invoking the batch runner's public contract execution API.
 pub(super) fn validate_dataset_entry(entry: &DatasetCase) -> Result<(), String> {
     let input = &entry.input;
+    if entry.id.starts_with("value-schema-") {
+        return validate_value_schema_case(entry);
+    }
     let adapter: &dyn BatchAdapter = match entry.id.as_str() {
         id if id.starts_with("manifest-adapter-") || id.starts_with("supplemental-") => {
             &ManifestBatchAdapter
@@ -71,6 +75,33 @@ pub(super) fn validate_dataset_entry(entry: &DatasetCase) -> Result<(), String> 
     validate_dataset_entry_with_adapter(entry, adapter)
 }
 
+fn validate_value_schema_case(entry: &DatasetCase) -> Result<(), String> {
+    let input = &entry.input;
+    let directory = tempdir().map_err(|error| format!("schema fixture directory: {error}"))?;
+    let dataset_path = directory.path().join("dataset.yaml");
+    let schema_path = directory.path().join("schema.yaml");
+    write(
+        dataset_path.clone(),
+        input["dataset"]
+            .as_str()
+            .ok_or("schema fixture requires dataset YAML")?,
+    )?;
+    if input["schema_missing"].as_bool() != Some(true) {
+        write(
+            schema_path.clone(),
+            input["schema"]
+                .as_str()
+                .ok_or("schema fixture requires schema YAML")?,
+        )?;
+    }
+    let result = load_dataset_with_schema(&dataset_path, Some(&schema_path));
+    let actual = match result {
+        Ok(_) => json!({"valid": true}),
+        Err(error) => json!({"valid": false, "error": error}),
+    };
+    check_public_output(&actual, entry.expected_value()?, entry.predicate.as_deref())
+}
+
 fn validate_dataset_entry_with_adapter(
     entry: &DatasetCase,
     adapter: &dyn BatchAdapter,
@@ -79,7 +110,8 @@ fn validate_dataset_entry_with_adapter(
     let input = &entry.input;
     let expected = entry.expected_value()?;
     if id.starts_with("adapter-coverage-") {
-        let actual = match runner_batch::validate_adapter_coverage_payload(input, "schema-fixture") {
+        let actual = match runner_batch::validate_adapter_coverage_payload(input, "schema-fixture")
+        {
             Ok(()) => json!({"valid": true}),
             Err(error) => json!({"valid": false, "error": error}),
         };
@@ -96,7 +128,11 @@ fn validate_dataset_entry_with_adapter(
         );
     }
     if input["operation"] == "validate-nested-manifest-filenames" {
-        return validate_nested_manifest_filename_fixture(input, expected, entry.predicate.as_deref());
+        return validate_nested_manifest_filename_fixture(
+            input,
+            expected,
+            entry.predicate.as_deref(),
+        );
     }
     let fixture = tempdir().map_err(|error| format!("fixture directory: {error}"))?;
     let package = fixture.path();
@@ -158,7 +194,39 @@ fn validate_dataset_entry_with_adapter(
         "filesystem": {"read": [dataset_name, validator], "write": []}
     });
     if has_second_dataset {
-        manifest["filesystem"]["read"].as_array_mut().unwrap().push(json!(second_dataset_name));
+        manifest["filesystem"]["read"]
+            .as_array_mut()
+            .unwrap()
+            .push(json!(second_dataset_name));
+    }
+    if input["value_schema"].as_bool() == Some(true) {
+        fs::create_dir_all(package.join("schemas"))
+            .map_err(|error| format!("create schema fixture directory: {error}"))?;
+        write(
+            package.join("schemas/object-values.yaml"),
+            "input: {type: object, required: [value], fields: {value: integer}}\nexpected: {type: object, required: [value], fields: {value: integer}}\n",
+        )?;
+        write(
+            package.join("schemas/integer-values.yaml"),
+            "input: integer\nexpected: integer\n",
+        )?;
+        manifest["datasets"] = json!([
+            {"path": dataset_name, "schema": "schemas/object-values.yaml"},
+            {"path": second_dataset_name, "schema": "schemas/integer-values.yaml"}
+        ]);
+        manifest["filesystem"]["read"] = json!([
+            dataset_name,
+            second_dataset_name,
+            validator,
+            "schemas/object-values.yaml",
+            "schemas/integer-values.yaml"
+        ]);
+        if input["invalid_value_schema"].as_bool() == Some(true) {
+            write(
+                package.join("schemas/object-values.yaml"),
+                "input: string\nexpected: {type: object, fields: {value: integer}}\n",
+            )?;
+        }
     }
     if let Some(minimum_coverage_percent) = input.get("minimum_coverage_percent") {
         manifest["minimum_coverage_percent"] = minimum_coverage_percent.clone();
@@ -187,7 +255,10 @@ fn validate_dataset_entry_with_adapter(
             package.join(support),
             "def support(value): return value\n# second source line\n",
         )?;
-        manifest["coverage_sources"].as_array_mut().unwrap().push(json!(support));
+        manifest["coverage_sources"]
+            .as_array_mut()
+            .unwrap()
+            .push(json!(support));
         manifest["filesystem"]["read"] = json!([dataset_name, validator, support]);
     }
     #[cfg(test)]
@@ -296,7 +367,7 @@ fn validate_nested_manifest_filename_fixture(
         manifest: Manifest {
             version: "1".into(),
             name: "fixture-root".into(),
-            datasets: vec!["dataset.json".into()],
+            datasets: vec![DatasetDeclaration::Path("dataset.json".into())],
             coverage_sources: vec!["validator.py".into()],
             metadata: None,
             supplemental_tests: Vec::new(),
@@ -330,22 +401,35 @@ fn add_nested_contract(package: &Path, input: &Value, manifest: &mut Value) -> R
     if root_only_fixture {
         let child = package.join("child");
         fs::create_dir_all(&child).map_err(|error| error.to_string())?;
-        write(child.join("dataset.json"), r#"{"version":1,"cases":[{"id":"child","input":{"value":2},"expected":{"value":2}}]}"#)?;
-        write(child.join("validator.py"), "def validate(value): return value\n")?;
+        write(
+            child.join("dataset.json"),
+            r#"{"version":1,"cases":[{"id":"child","input":{"value":2},"expected":{"value":2}}]}"#,
+        )?;
+        write(
+            child.join("validator.py"),
+            "def validate(value): return value\n",
+        )?;
         write(
             child.join("open-contract.yaml"),
             "version: '1'\nname: child\ndatasets: [dataset.json]\ncoverage_sources: [validator.py]\nfilesystem: {read: [dataset.json, validator.py], write: []}\n",
         )?;
         manifest["nested_contracts"] = json!(["child/open-contract.yaml"]);
-        manifest["filesystem"]["read"] = json!(["dataset.json", "validator.py", "child/open-contract.yaml"]);
+        manifest["filesystem"]["read"] =
+            json!(["dataset.json", "validator.py", "child/open-contract.yaml"]);
         return Ok(());
     }
     if shared_nested {
         for (directory, name) in [("left", "left"), ("right", "right")] {
             let child = package.join(directory);
             fs::create_dir_all(&child).map_err(|error| error.to_string())?;
-            write(child.join("dataset.json"), r#"{"version":1,"cases":[{"id":"branch","input":{"value":1},"expected":{"value":1},"coverage_fingerprint":"880ae786fa1c0630fe9158b7962fd8a2"}]}"#)?;
-            write(child.join("validator.py"), "def validate(value): return value\n")?;
+            write(
+                child.join("dataset.json"),
+                r#"{"version":1,"cases":[{"id":"branch","input":{"value":1},"expected":{"value":1},"coverage_fingerprint":"880ae786fa1c0630fe9158b7962fd8a2"}]}"#,
+            )?;
+            write(
+                child.join("validator.py"),
+                "def validate(value): return value\n",
+            )?;
             write(
                 child.join("open-contract.yaml"),
                 &format!(
@@ -355,14 +439,22 @@ fn add_nested_contract(package: &Path, input: &Value, manifest: &mut Value) -> R
         }
         let shared = package.join("shared");
         fs::create_dir_all(&shared).map_err(|error| error.to_string())?;
-        write(shared.join("dataset.json"), r#"{"version":1,"cases":[{"id":"shared","input":{"value":1},"expected":{"value":1},"coverage_fingerprint":"880ae786fa1c0630fe9158b7962fd8a2"}]}"#)?;
-        write(shared.join("validator.py"), "def validate(value): return value\n")?;
+        write(
+            shared.join("dataset.json"),
+            r#"{"version":1,"cases":[{"id":"shared","input":{"value":1},"expected":{"value":1},"coverage_fingerprint":"880ae786fa1c0630fe9158b7962fd8a2"}]}"#,
+        )?;
+        write(
+            shared.join("validator.py"),
+            "def validate(value): return value\n",
+        )?;
         write(
             shared.join("open-contract.yaml"),
             "version: '1'\nname: shared\ndatasets: [dataset.json]\ncoverage_sources: [validator.py]\nfilesystem: {read: [dataset.json, validator.py], write: []}\n",
         )?;
-        manifest["nested_contracts"] = json!(["left/open-contract.yaml", "right/open-contract.yaml"]);
-        manifest["filesystem"]["read"] = json!(["dataset.json", "validator.py", "left", "right", "shared"]);
+        manifest["nested_contracts"] =
+            json!(["left/open-contract.yaml", "right/open-contract.yaml"]);
+        manifest["filesystem"]["read"] =
+            json!(["dataset.json", "validator.py", "left", "right", "shared"]);
         return Ok(());
     }
     if !duplicate_name && !cycle && !nested_contract {
@@ -610,7 +702,10 @@ print(json.dumps({"results":[{"key":r["key"],"output":r["input"]} for r in reque
             };
             let adapter = "adapter.runner";
             write(package.join(adapter), script)?;
-            manifest["coverage_sources"].as_array_mut().unwrap().push(json!(adapter));
+            manifest["coverage_sources"]
+                .as_array_mut()
+                .unwrap()
+                .push(json!(adapter));
             manifest["filesystem"]["read"] = json!(["dataset.json", "validator.py", adapter]);
             if input["supplemental_tests"].as_bool() == Some(true) {
                 manifest["filesystem"]["read"]
@@ -786,7 +881,10 @@ impl BatchAdapter for ScenarioDatasetAdapter {
                     key: ExecutionKey {
                         case_id: "unrequested".into(),
                         step_id: None,
-                        dataset_id: contract_batch.requests.first().and_then(|request| request.key.dataset_id.clone()),
+                        dataset_id: contract_batch
+                            .requests
+                            .first()
+                            .and_then(|request| request.key.dataset_id.clone()),
                     },
                     output: Some(json!({})),
                     error: None,

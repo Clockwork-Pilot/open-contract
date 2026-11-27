@@ -1,0 +1,10 @@
+input:
+  type: object
+  fields:
+    name: string
+  additional: false
+expected:
+  type: object
+  fields:
+    greeting: string
+  additional: false

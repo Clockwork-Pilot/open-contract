@@ -539,7 +539,9 @@ pub fn validate_adapter_coverage_payload(value: &Value, contract: &str) -> Resul
             let source_path = Path::new(&path);
             if path.is_empty()
                 || source_path.is_absolute()
-                || source_path.components().any(|part| !matches!(part, Component::Normal(_)))
+                || source_path
+                    .components()
+                    .any(|part| !matches!(part, Component::Normal(_)))
             {
                 return Err(format!("contract {contract} returned invalid adapter coverage at /coverage_metrics/{name}/files/{index}/path: path must be package-relative"));
             }
@@ -573,7 +575,14 @@ fn adapter_coverage_value(batch: &AdapterBatch) -> Value {
 }
 
 fn coverage_metric_names() -> &'static [&'static str] {
-    &["line", "statement", "function", "branch", "region", "instantiation"]
+    &[
+        "line",
+        "statement",
+        "function",
+        "branch",
+        "region",
+        "instantiation",
+    ]
 }
 
 fn strictly_increasing(lines: &[Value]) -> bool {
@@ -746,9 +755,13 @@ pub fn run_contract_tree_with_fingerprint_mode_and_nested_contracts(
                 manifest.manifest.name
             ));
         }
-        for dataset_name in &manifest.manifest.datasets {
+        for dataset_spec in &manifest.manifest.datasets {
+            let dataset_name = dataset_spec.path();
             let data_path = manifest.package_root.join(dataset_name);
-            let dataset = load_dataset(&data_path)?;
+            let schema_path = dataset_spec
+                .schema()
+                .map(|path| manifest.package_root.join(path));
+            let dataset = load_dataset_with_schema(&data_path, schema_path.as_deref())?;
             let (requests, checks) =
                 flatten_dataset_with_fingerprints(&dataset, require_fingerprints)?;
             batches.push(ContractBatch {
@@ -863,11 +876,21 @@ pub fn run_contract_tree_with_fingerprint_mode_and_nested_contracts(
                 .dataset_id
                 .as_deref()
                 .and_then(|value| value.parse::<usize>().ok())
-                .ok_or_else(|| format!("contract {} adapter result has no dataset identity", batch.manifest.manifest.name))?;
+                .ok_or_else(|| {
+                    format!(
+                        "contract {} adapter result has no dataset identity",
+                        batch.manifest.manifest.name
+                    )
+                })?;
             result.key.dataset_id = None;
             results_by_dataset
                 .get_mut(dataset_index)
-                .ok_or_else(|| format!("contract {} adapter result has invalid dataset identity", batch.manifest.manifest.name))?
+                .ok_or_else(|| {
+                    format!(
+                        "contract {} adapter result has invalid dataset identity",
+                        batch.manifest.manifest.name
+                    )
+                })?
                 .push(result);
         }
         for mut scope in adapter_batch.coverage_scopes.drain(..) {
@@ -876,11 +899,21 @@ pub fn run_contract_tree_with_fingerprint_mode_and_nested_contracts(
                 .dataset_id
                 .as_deref()
                 .and_then(|value| value.parse::<usize>().ok())
-                .ok_or_else(|| format!("contract {} coverage scope has no dataset identity", batch.manifest.manifest.name))?;
+                .ok_or_else(|| {
+                    format!(
+                        "contract {} coverage scope has no dataset identity",
+                        batch.manifest.manifest.name
+                    )
+                })?;
             scope.key.dataset_id = None;
             scopes_by_dataset
                 .get_mut(dataset_index)
-                .ok_or_else(|| format!("contract {} coverage scope has invalid dataset identity", batch.manifest.manifest.name))?
+                .ok_or_else(|| {
+                    format!(
+                        "contract {} coverage scope has invalid dataset identity",
+                        batch.manifest.manifest.name
+                    )
+                })?
                 .push(scope);
         }
         let declared_sources = declared_sources(batch);
@@ -939,7 +972,8 @@ pub fn run_contract_tree_with_fingerprint_mode_and_nested_contracts(
         });
         for (local_dataset_index, dataset_index) in dataset_indexes.into_iter().enumerate() {
             let dataset_batch = &batches[dataset_index];
-            let outputs = index_results(std::mem::take(&mut results_by_dataset[local_dataset_index]))?;
+            let outputs =
+                index_results(std::mem::take(&mut results_by_dataset[local_dataset_index]))?;
             let mut fingerprint_source_lines = std::collections::HashMap::new();
             let coverage_scopes = if coverage_fingerprints {
                 index_coverage_scopes(
@@ -993,7 +1027,8 @@ fn validate_nested_manifest_filenames_recursive(
     }
     stack.push(plan.manifest_path.clone());
     for child_name in &plan.manifest.nested_contracts {
-        let child_path = runner_manifest::resolve_nested_manifest_path(&plan.package_root, child_name)?;
+        let child_path =
+            runner_manifest::resolve_nested_manifest_path(&plan.package_root, child_name)?;
         if !has_open_contract_filename(&child_path) {
             return Err(format!(
                 "nested manifest filename must contain a dot-delimited open-contract segment before .yaml or .yml: {}",
@@ -1012,7 +1047,11 @@ fn validate_declared_coverage_sources(
     declared_sources: &[String],
     contract: &str,
 ) -> Result<(), String> {
-    for file in batch.coverage_lines.iter().chain(batch.additional_coverage_lines.iter()) {
+    for file in batch
+        .coverage_lines
+        .iter()
+        .chain(batch.additional_coverage_lines.iter())
+    {
         if !is_allowed(&file.path, declared_sources) {
             return Err(format!(
                 "contract {contract} adapter reported coverage for source outside coverage_sources: {}",
@@ -1030,7 +1069,9 @@ fn validate_declared_coverage_sources(
             }
         }
     }
-    if let Some(sources) = batch.coverage.as_ref()
+    if let Some(sources) = batch
+        .coverage
+        .as_ref()
         .and_then(|report| report.get("sources"))
         .and_then(Value::as_array)
     {
@@ -1215,8 +1256,18 @@ fn coverage_metric_outcomes(
                 .iter()
                 .map(|file| CoverageMetricFile {
                     path: file.path.clone(),
-                    covered: file.covered_lines.iter().copied().collect::<std::collections::BTreeSet<_>>().len() as u64,
-                    total: file.executable_lines.iter().copied().collect::<std::collections::BTreeSet<_>>().len() as u64,
+                    covered: file
+                        .covered_lines
+                        .iter()
+                        .copied()
+                        .collect::<std::collections::BTreeSet<_>>()
+                        .len() as u64,
+                    total: file
+                        .executable_lines
+                        .iter()
+                        .copied()
+                        .collect::<std::collections::BTreeSet<_>>()
+                        .len() as u64,
                 })
                 .collect(),
         },
@@ -1237,7 +1288,9 @@ fn coverage_metric_outcomes(
                     total: Some(counts.total),
                     percent: Some(percent),
                     minimum_percent: Some(minimum_percent),
-                    threshold_met: Some(counts.total > 0 && percent + f64::EPSILON >= minimum_percent),
+                    threshold_met: Some(
+                        counts.total > 0 && percent + f64::EPSILON >= minimum_percent,
+                    ),
                     files: counts.files.clone(),
                 }
             } else {
@@ -1513,7 +1566,12 @@ fn coverage_for_key(
     let Some(mut coverage) = scopes.get(key).cloned() else {
         return (
             None,
-            expected.map(|_| format!("coverage fingerprint unavailable for {}", execution_key_debug(key))),
+            expected.map(|_| {
+                format!(
+                    "coverage fingerprint unavailable for {}",
+                    execution_key_debug(key)
+                )
+            }),
         );
     };
     if expected.is_some() && coverage.files.iter().all(|file| file.lines.is_empty()) {
@@ -1572,6 +1630,13 @@ fn compare_fingerprint(coverage: &mut CoverageFingerprint, expected: Option<&str
 }
 
 pub fn load_dataset(path: &Path) -> Result<Dataset, String> {
+    load_dataset_with_schema(path, None)
+}
+
+pub fn load_dataset_with_schema(
+    path: &Path,
+    schema_path: Option<&Path>,
+) -> Result<Dataset, String> {
     let bytes = fs::read(path).map_err(|e| e.to_string())?;
     let value: Value = match path.extension().and_then(|extension| extension.to_str()) {
         Some("json") => serde_json::from_slice(&bytes)
@@ -1585,7 +1650,453 @@ pub fn load_dataset(path: &Path) -> Result<Dataset, String> {
     };
     validate_dataset_schema(&value)
         .map_err(|error| format!("invalid dataset {}: {error}", path.display()))?;
-    serde_json::from_value(value).map_err(|e| format!("invalid dataset {}: {e}", path.display()))
+    let dataset: Dataset = serde_json::from_value(value)
+        .map_err(|e| format!("invalid dataset {}: {e}", path.display()))?;
+    let schema = schema_path
+        .map(load_value_schema)
+        .transpose()
+        .map_err(|error| {
+            format!(
+                "invalid value schema for dataset {}: {error}",
+                path.display()
+            )
+        })?;
+    validate_dataset_values(&dataset, schema.as_ref())
+        .map_err(|error| format!("invalid dataset {}: {error}", path.display()))?;
+    Ok(dataset)
+}
+
+#[derive(Clone, Debug)]
+struct DatasetValueSchemas {
+    input: Option<ValueSchema>,
+    expected: Option<ValueSchema>,
+}
+
+#[derive(Clone, Debug)]
+struct ValueSchema {
+    kind: ValueSchemaKind,
+    allowed: Option<Vec<Value>>,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum ValueSchemaType {
+    String,
+    Integer,
+    Number,
+    Boolean,
+    Null,
+    Object,
+    Array,
+}
+
+#[derive(Clone, Debug)]
+enum ValueSchemaKind {
+    String {
+        min: Option<u64>,
+        max: Option<u64>,
+    },
+    Integer {
+        min: Option<f64>,
+        max: Option<f64>,
+    },
+    Number {
+        min: Option<f64>,
+        max: Option<f64>,
+    },
+    Boolean,
+    Null,
+    Object {
+        fields: std::collections::BTreeMap<String, ValueSchema>,
+        required: Vec<String>,
+        additional: bool,
+    },
+    Array {
+        items: Box<ValueSchema>,
+        min: Option<u64>,
+        max: Option<u64>,
+    },
+}
+
+fn load_value_schema(path: &Path) -> Result<DatasetValueSchemas, String> {
+    let bytes =
+        fs::read(path).map_err(|error| format!("cannot read {}: {error}", path.display()))?;
+    let yaml: serde_yaml::Value = serde_yaml::from_slice(&bytes)
+        .map_err(|error| format!("cannot parse {}: {error}", path.display()))?;
+    let document = serde_json::to_value(yaml)
+        .map_err(|error| format!("cannot normalize {}: {error}", path.display()))?;
+    let definitions = document.as_object().ok_or_else(|| {
+        "schema document must be a mapping with input and/or expected".to_string()
+    })?;
+    if definitions.is_empty()
+        || definitions
+            .keys()
+            .any(|key| key != "input" && key != "expected")
+    {
+        return Err("schema document may contain only input and expected definitions".into());
+    }
+    let input = definitions
+        .get("input")
+        .map(|value| parse_value_schema(value, "input"))
+        .transpose()?;
+    let expected = definitions
+        .get("expected")
+        .map(|value| parse_value_schema(value, "expected"))
+        .transpose()?;
+    Ok(DatasetValueSchemas { input, expected })
+}
+
+fn parse_value_schema(value: &Value, location: &str) -> Result<ValueSchema, String> {
+    if let Some(type_name) = value.as_str() {
+        return parse_simple_schema(type_name, location);
+    }
+    let object = value
+        .as_object()
+        .ok_or_else(|| format!("{location}: schema must be a type name or mapping"))?;
+    let type_name = object
+        .get("type")
+        .and_then(Value::as_str)
+        .ok_or_else(|| format!("{location}: schema mapping requires a string type"))?;
+    let schema_type = match type_name {
+        "string" => ValueSchemaType::String,
+        "integer" => ValueSchemaType::Integer,
+        "number" => ValueSchemaType::Number,
+        "boolean" => ValueSchemaType::Boolean,
+        "null" => ValueSchemaType::Null,
+        "object" => ValueSchemaType::Object,
+        "array" => ValueSchemaType::Array,
+        _ => return Err(format!("{location}: unsupported type {type_name:?}")),
+    };
+    let common = ["type", "enum"];
+    let type_keys: &[&str] = match schema_type {
+        ValueSchemaType::String => &["min_length", "max_length"],
+        ValueSchemaType::Integer | ValueSchemaType::Number => &["minimum", "maximum"],
+        ValueSchemaType::Boolean | ValueSchemaType::Null => &[],
+        ValueSchemaType::Object => &["required", "fields", "additional"],
+        ValueSchemaType::Array => &["items", "min_items", "max_items"],
+    };
+    for key in object.keys() {
+        if !common.contains(&key.as_str()) && !type_keys.contains(&key.as_str()) {
+            return Err(format!(
+                "{location}: unsupported schema keyword {key:?} for {type_name}"
+            ));
+        }
+    }
+    let allowed = parse_enum(object.get("enum"), location)?;
+    let kind = match schema_type {
+        ValueSchemaType::String => {
+            let min = parse_u64_bound(object.get("min_length"), "min_length", location)?;
+            let max = parse_u64_bound(object.get("max_length"), "max_length", location)?;
+            check_bounds(min, max, "string length", location)?;
+            ValueSchemaKind::String { min, max }
+        }
+        ValueSchemaType::Integer | ValueSchemaType::Number => {
+            let min = parse_number_bound(object.get("minimum"), "minimum", location)?;
+            let max = parse_number_bound(object.get("maximum"), "maximum", location)?;
+            check_numeric_bounds(min, max, location)?;
+            if schema_type == ValueSchemaType::Integer {
+                ValueSchemaKind::Integer { min, max }
+            } else {
+                ValueSchemaKind::Number { min, max }
+            }
+        }
+        ValueSchemaType::Boolean => ValueSchemaKind::Boolean,
+        ValueSchemaType::Null => ValueSchemaKind::Null,
+        ValueSchemaType::Object => {
+            let raw_fields = object
+                .get("fields")
+                .and_then(Value::as_object)
+                .ok_or_else(|| format!("{location}: object schema requires fields mapping"))?;
+            let mut fields = std::collections::BTreeMap::new();
+            for (name, field) in raw_fields {
+                fields.insert(
+                    name.clone(),
+                    parse_value_schema(field, &format!("{location}.fields.{name}"))?,
+                );
+            }
+            let mut required = Vec::new();
+            if let Some(raw_required) = object.get("required") {
+                let entries = raw_required
+                    .as_array()
+                    .ok_or_else(|| format!("{location}.required: expected a list"))?;
+                for entry in entries {
+                    let name = entry
+                        .as_str()
+                        .ok_or_else(|| format!("{location}.required: entries must be strings"))?;
+                    if !fields.contains_key(name) {
+                        return Err(format!(
+                            "{location}.required: {name:?} is not declared in fields"
+                        ));
+                    }
+                    required.push(name.to_owned());
+                }
+            }
+            let additional = object
+                .get("additional")
+                .map(|value| {
+                    value
+                        .as_bool()
+                        .ok_or_else(|| format!("{location}.additional: expected a boolean"))
+                })
+                .transpose()?
+                .unwrap_or(true);
+            ValueSchemaKind::Object {
+                fields,
+                required,
+                additional,
+            }
+        }
+        ValueSchemaType::Array => {
+            let raw_items = object
+                .get("items")
+                .ok_or_else(|| format!("{location}: array schema requires items"))?;
+            let items = Box::new(parse_value_schema(raw_items, &format!("{location}.items"))?);
+            let min = parse_u64_bound(object.get("min_items"), "min_items", location)?;
+            let max = parse_u64_bound(object.get("max_items"), "max_items", location)?;
+            check_bounds(min, max, "array length", location)?;
+            ValueSchemaKind::Array { items, min, max }
+        }
+    };
+    Ok(ValueSchema { kind, allowed })
+}
+
+fn parse_simple_schema(type_name: &str, location: &str) -> Result<ValueSchema, String> {
+    let kind = match type_name {
+        "string" => ValueSchemaKind::String {
+            min: None,
+            max: None,
+        },
+        "integer" => ValueSchemaKind::Integer {
+            min: None,
+            max: None,
+        },
+        "number" => ValueSchemaKind::Number {
+            min: None,
+            max: None,
+        },
+        "boolean" => ValueSchemaKind::Boolean,
+        "null" => ValueSchemaKind::Null,
+        "object" => ValueSchemaKind::Object {
+            fields: Default::default(),
+            required: Vec::new(),
+            additional: true,
+        },
+        "array" => return Err(format!("{location}: array type requires an items schema")),
+        _ => return Err(format!("{location}: unsupported type {type_name:?}")),
+    };
+    Ok(ValueSchema {
+        kind,
+        allowed: None,
+    })
+}
+
+fn parse_enum(value: Option<&Value>, location: &str) -> Result<Option<Vec<Value>>, String> {
+    value
+        .map(|value| {
+            let values = value
+                .as_array()
+                .filter(|values| !values.is_empty())
+                .ok_or_else(|| format!("{location}.enum: expected a non-empty list"))?;
+            Ok(values.clone())
+        })
+        .transpose()
+}
+
+fn parse_u64_bound(
+    value: Option<&Value>,
+    key: &str,
+    location: &str,
+) -> Result<Option<u64>, String> {
+    value
+        .map(|value| {
+            value
+                .as_u64()
+                .ok_or_else(|| format!("{location}.{key}: expected a non-negative integer"))
+        })
+        .transpose()
+}
+
+fn parse_number_bound(
+    value: Option<&Value>,
+    key: &str,
+    location: &str,
+) -> Result<Option<f64>, String> {
+    value
+        .map(|value| {
+            value
+                .as_f64()
+                .filter(|number| number.is_finite())
+                .ok_or_else(|| format!("{location}.{key}: expected a finite number"))
+        })
+        .transpose()
+}
+
+fn check_bounds(
+    min: Option<u64>,
+    max: Option<u64>,
+    label: &str,
+    location: &str,
+) -> Result<(), String> {
+    if min.zip(max).is_some_and(|(min, max)| min > max) {
+        return Err(format!("{location}: minimum {label} exceeds maximum"));
+    }
+    Ok(())
+}
+
+fn check_numeric_bounds(min: Option<f64>, max: Option<f64>, location: &str) -> Result<(), String> {
+    if min.zip(max).is_some_and(|(min, max)| min > max) {
+        return Err(format!("{location}: minimum exceeds maximum"));
+    }
+    Ok(())
+}
+
+fn validate_dataset_values(
+    dataset: &Dataset,
+    schema: Option<&DatasetValueSchemas>,
+) -> Result<(), String> {
+    for case in &dataset.cases {
+        match case {
+            CaseSpec::Call(call) => {
+                validate_call_values(&call.id, &call.input, call.expected.as_ref(), schema)?
+            }
+            CaseSpec::Sequence(sequence) => {
+                for step in &sequence.steps {
+                    validate_call_values(
+                        &format!("{} step {}", sequence.id, step.id),
+                        &step.input,
+                        step.expected.as_ref(),
+                        schema,
+                    )?;
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
+fn validate_call_values(
+    identity: &str,
+    input: &Value,
+    expected: Option<&Value>,
+    schema: Option<&DatasetValueSchemas>,
+) -> Result<(), String> {
+    if let Some(input_schema) = schema.and_then(|schema| schema.input.as_ref()) {
+        validate_schema_value(input, input_schema, "$")
+            .map_err(|error| format!("case/step {identity:?} input {error}"))?;
+    }
+    if let (Some(value), Some(expected_schema)) =
+        (expected, schema.and_then(|schema| schema.expected.as_ref()))
+    {
+        validate_schema_value(value, expected_schema, "$")
+            .map_err(|error| format!("case/step {identity:?} expected {error}"))?;
+    }
+    Ok(())
+}
+
+fn validate_schema_value(
+    value: &Value,
+    schema: &ValueSchema,
+    location: &str,
+) -> Result<(), String> {
+    if schema
+        .allowed
+        .as_ref()
+        .is_some_and(|values| !values.contains(value))
+    {
+        return Err(format!("at {location}: value is not in enum"));
+    }
+    match &schema.kind {
+        ValueSchemaKind::String { min, max } => {
+            let text = value
+                .as_str()
+                .ok_or_else(|| format!("at {location}: expected string"))?;
+            validate_length(text.chars().count(), *min, *max, location)?;
+        }
+        ValueSchemaKind::Integer { min, max } => {
+            if value.as_i64().is_none() && value.as_u64().is_none() {
+                return Err(format!("at {location}: expected integer"));
+            }
+            validate_number(value, *min, *max, location)?;
+        }
+        ValueSchemaKind::Number { min, max } => validate_number(value, *min, *max, location)?,
+        ValueSchemaKind::Boolean => {
+            if !value.is_boolean() {
+                return Err(format!("at {location}: expected boolean"));
+            }
+        }
+        ValueSchemaKind::Null => {
+            if !value.is_null() {
+                return Err(format!("at {location}: expected null"));
+            }
+        }
+        ValueSchemaKind::Object {
+            fields,
+            required,
+            additional,
+        } => {
+            let object = value
+                .as_object()
+                .ok_or_else(|| format!("at {location}: expected object"))?;
+            for name in required {
+                if !object.contains_key(name) {
+                    return Err(format!("at {location}.{name}: required field is missing"));
+                }
+            }
+            for (name, field_value) in object {
+                if let Some(field_schema) = fields.get(name) {
+                    validate_schema_value(
+                        field_value,
+                        field_schema,
+                        &format!("{location}.{name}"),
+                    )?;
+                } else if !additional {
+                    return Err(format!("at {location}.{name}: unknown field"));
+                }
+            }
+        }
+        ValueSchemaKind::Array { items, min, max } => {
+            let entries = value
+                .as_array()
+                .ok_or_else(|| format!("at {location}: expected array"))?;
+            for (index, entry) in entries.iter().enumerate() {
+                validate_schema_value(entry, items, &format!("{location}[{index}]"))?;
+            }
+            validate_length(entries.len(), *min, *max, location)?;
+        }
+    }
+    Ok(())
+}
+
+fn validate_number(
+    value: &Value,
+    min: Option<f64>,
+    max: Option<f64>,
+    location: &str,
+) -> Result<(), String> {
+    let number = value
+        .as_f64()
+        .ok_or_else(|| format!("at {location}: expected number"))?;
+    if min.is_some_and(|bound| number < bound) {
+        return Err(format!("at {location}: value is below minimum"));
+    }
+    if max.is_some_and(|bound| number > bound) {
+        return Err(format!("at {location}: value is above maximum"));
+    }
+    Ok(())
+}
+
+fn validate_length(
+    length: usize,
+    min: Option<u64>,
+    max: Option<u64>,
+    location: &str,
+) -> Result<(), String> {
+    if min.is_some_and(|bound| (length as u64) < bound) {
+        return Err(format!("at {location}: length is below minimum"));
+    }
+    if max.is_some_and(|bound| (length as u64) > bound) {
+        return Err(format!("at {location}: length is above maximum"));
+    }
+    Ok(())
 }
 
 fn validate_dataset_schema(value: &Value) -> Result<(), String> {
