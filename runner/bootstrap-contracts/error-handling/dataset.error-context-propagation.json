@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "one-layer-context",
+      "input": {
+        "exit_code": 2,
+        "message": "manifest is invalid",
+        "contexts": [
+          "manifest"
+        ]
+      },
+      "expected": {
+        "exit_code": 2,
+        "message": "manifest is invalid",
+        "rendered": "manifest: manifest is invalid",
+        "display": "manifest: manifest is invalid"
+      },
+      "coverage_fingerprint": "f2a415e6e139104aa65a432b4f4602ff"
+    },
+    {
+      "id": "propagate-through-runner-layers",
+      "input": {
+        "exit_code": 2,
+        "message": "undeclared path",
+        "contexts": [
+          "isolation",
+          "contract execution",
+          "runner"
+        ]
+      },
+      "expected": {
+        "exit_code": 2,
+        "message": "undeclared path",
+        "rendered": "runner: contract execution: isolation: undeclared path",
+        "display": "runner: contract execution: isolation: undeclared path"
+      },
+      "coverage_fingerprint": "f2a415e6e139104aa65a432b4f4602ff"
+    }
+  ]
+}

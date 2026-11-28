@@ -1,0 +1,199 @@
+version: 1
+cases:
+- id: run-manifest-defaults-to-auto-isolation
+  setup: run-manifest-defaults-to-auto-isolation
+  input:
+    args:
+    - run-manifest
+    - open-contract.yaml
+    environment: {}
+    files:
+      bin/bwrap: '#!/bin/sh
+
+        exit 0
+
+        '
+  expected:
+    exit_code: 2
+    stderr: 'contract-runner: contract execution: No such file or directory (os error
+      2)
+
+      '
+  predicate: 'contains(.stdout, ''Isolation auto selected: bwrap'')'
+  coverage_fingerprint: 573787cb42145b9ca18db44e5c35f44e
+- id: run-manifest-explicitly-selects-landlock
+  input:
+    args:
+    - run-manifest
+    - open-contract.yaml
+    - --isolation
+    - landlock
+  expected:
+    exit_code: 2
+    stdout: 'Isolation mode: landlock
+
+      '
+    stderr: 'contract-runner: contract execution: No such file or directory (os error
+      2)
+
+      '
+  coverage_fingerprint: 6f6a88f6027f2721a3cf994b14bafe78
+- id: run-manifest-auto-prefers-bwrap
+  setup: run-manifest-auto-prefers-bwrap
+  input:
+    args:
+    - run-manifest
+    - open-contract.yaml
+    - --isolation
+    - auto
+    environment: {}
+    files:
+      bin/bwrap: '#!/bin/sh
+
+        exit 0
+
+        '
+  expected:
+    exit_code: 2
+    stderr: 'contract-runner: contract execution: No such file or directory (os error
+      2)
+
+      '
+  predicate: 'contains(.stdout, ''Isolation auto selected: bwrap'')'
+  coverage_fingerprint: 07d1e72509bb138c8c56412c6a365462
+- id: run-manifest-auto-falls-back-to-tempdir
+  input:
+    args:
+    - run-manifest
+    - open-contract.yaml
+    - --isolation
+    - auto
+    - --isolation-runtime
+    - missing-runtime.yaml
+  expected:
+    exit_code: 2
+    stderr: 'contract-runner: contract execution: No such file or directory (os error
+      2)
+
+      '
+  predicate: 'contains(.stdout, ''Isolation auto selected: tempdir'')'
+  coverage_fingerprint: d8428d33e662a65cac2c341c76d95e08
+- id: run-manifest-auto-falls-back-to-none
+  setup: run-manifest-auto-falls-back-to-none
+  input:
+    args:
+    - run-manifest
+    - open-contract.yaml
+    - --isolation
+    - auto
+    - --isolation-runtime
+    - missing-runtime.yaml
+    environment: {}
+    files:
+      tmp-blocker: block
+  expected:
+    exit_code: 2
+    stderr: 'contract-runner: contract execution: No such file or directory (os error
+      2)
+
+      '
+  predicate: 'contains(.stdout, ''Isolation auto selected: none'')'
+  coverage_fingerprint: e2e737bb056f30463ddebab261db4502
+- id: run-manifest-uses-isolation-environment
+  setup: run-manifest-uses-isolation-environment
+  input:
+    args:
+    - run-manifest
+    - open-contract.yaml
+    environment:
+      OPEN_CONTRACT_ISOLATION: none
+  expected:
+    exit_code: 2
+    stdout: 'Isolation mode: none
+
+      '
+    stderr: 'contract-runner: contract execution: No such file or directory (os error
+      2)
+
+      '
+  coverage_fingerprint: 8f1aedc8c9e501f4167a143f1a0b4f39
+- id: run-manifest-rejects-invalid-isolation-environment
+  setup: run-manifest-rejects-invalid-isolation-environment
+  input:
+    args:
+    - run-manifest
+    - open-contract.yaml
+    environment:
+      OPEN_CONTRACT_ISOLATION: invalid
+  expected:
+    exit_code: 2
+    stdout: ''
+    stderr: 'contract-runner: invalid isolation backend "invalid"; expected auto,
+      tempdir, none, bwrap, or landlock
+
+      '
+  coverage_fingerprint: d22032ba77473c69013291b94f80ba7a
+- id: run-manifest-skips-nested-contracts
+  setup: run-manifest-skips-nested-contracts
+  input:
+    args:
+    - run-manifest
+    - open-contract.yaml
+    - --isolation
+    - none
+    - --coverage-report
+    - coverage.json
+    - --disable-fingerprints
+    - --no-nested-contracts
+    environment:
+      OPEN_CONTRACT_DISABLE_FINGERPRINTS: '1'
+    files:
+      open-contract.yaml: "version: '1'\nname: cli-root-only\nminimum_coverage_percent:\
+        \ 0\nfilesystem:\n  read: [dataset.json, validator.py, adapter.py, child/open-contract.yaml]\n\
+        \  write: []\nexecution: {command: [python3, adapter.py]}\ndatasets: [dataset.json]\n\
+        coverage_sources: [validator.py]\nnested_contracts: [child/open-contract.yaml]\n"
+      dataset.json: '{"version":1,"cases":[{"id":"root","input":{"value":1},"expected":{"value":1},"coverage_fingerprint":"867714e81b27e269f9a7f3b13bdc37ae"}]}'
+      validator.py: "def validate(value):\n    return value\n"
+      adapter.py: "import json, sys\nrequest = json.load(sys.stdin)\nresults = []\n\
+        scopes = []\nfor item in request[\"requests\"]:\n    results.append({\"key\"\
+        : item[\"key\"], \"output\": item[\"input\"]})\n    scopes.append({\"key\"\
+        : item[\"key\"], \"files\": [{\"path\": \"validator.py\", \"lines\": [1]}]})\n\
+        print(json.dumps({\"results\": results, \"coverage\": {\"sources\": [\"validator.py\"\
+        ]}, \"coverage_scopes\": scopes, \"coverage_lines\": [{\"path\": \"validator.py\"\
+        , \"executable_lines\": [1], \"covered_lines\": [1]}]}))\n"
+      child/open-contract.yaml: 'version: ''1''
+
+        name: cli-child
+
+        minimum_coverage_percent: 0
+
+        filesystem: {read: [dataset.json, validator.py, adapter.py], write: []}
+
+        execution: {command: [python3, adapter.py]}
+
+        datasets: [dataset.json]
+
+        coverage_sources: [validator.py]
+
+        '
+      child/dataset.json: '{"version":1,"cases":[{"id":"child","input":{"value":2},"expected":{"value":2},"coverage_fingerprint":"867714e81b27e269f9a7f3b13bdc37ae"}]}'
+      child/validator.py: "def validate(value):\n    return value\n"
+      child/adapter.py: "import json, sys\nrequest = json.load(sys.stdin)\nresults\
+        \ = []\nscopes = []\nfor item in request[\"requests\"]:\n    results.append({\"\
+        key\": item[\"key\"], \"output\": item[\"input\"]})\n    scopes.append({\"\
+        key\": item[\"key\"], \"files\": [{\"path\": \"validator.py\", \"lines\":\
+        \ [1]}]})\nprint(json.dumps({\"results\": results, \"coverage\": {\"sources\"\
+        : [\"validator.py\"]}, \"coverage_scopes\": scopes, \"coverage_lines\": [{\"\
+        path\": \"validator.py\", \"executable_lines\": [1], \"covered_lines\": [1]}]}))\n"
+  expected:
+    exit_code: 0
+    stdout: "Isolation mode: none\nCoverage fingerprints: disabled\nContracts executed:\n\
+      \  cli-root-only: 1/1 cases passed\nDataset cases: 1/1 passed across 1 contract(s)\n\
+      Coverage report: coverage.json\n"
+    stderr: ''
+    coverage_report:
+      version: 1
+      contracts:
+      - contract: cli-root-only
+        status: passed
+  coverage_fingerprint: 40944d398f198d422f64a345ee091c6a

@@ -1,0 +1,181 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "query-graph-row-metadata-key",
+      "input": {
+        "json": {
+          "item": {
+            "id": "keep",
+            "@key": "keep"
+          }
+        },
+        "predicate": ".item.@key == \"keep\""
+      },
+      "expected": true
+    },
+    {
+      "id": "query-graph-row-metadata-value-fallback",
+      "input": {
+        "json": {
+          "item": {
+            "@key": "fallback"
+          }
+        },
+        "predicate": ".item.@key == \"fallback\""
+      },
+      "expected": true
+    },
+    {
+      "id": "query-graph-row-direct-alias-value",
+      "input": {
+        "json": {
+          "item": {
+            "id": "keep"
+          }
+        },
+        "predicate": ".item.id == \"keep\""
+      },
+      "expected": true
+    },
+    {
+      "id": "query-graph-row-expression-merges-metadata",
+      "input": {
+        "json": {
+          "item": {
+            "id": "keep",
+            "@key": "keep",
+            "@path": "/items/keep"
+          }
+        },
+        "predicate": ".item.@key == 'keep'"
+      },
+      "expected": true
+    },
+    {
+      "id": "query-graph-row-expression-without-metadata",
+      "input": {
+        "json": {
+          "item": {
+            "id": "keep"
+          }
+        },
+        "predicate": ".item.id == 'keep'"
+      },
+      "expected": true
+    },
+    {
+      "id": "query-graph-native-ast",
+      "input": {
+        "json": {
+          "count": 3,
+          "state": "ready"
+        },
+        "predicate": ".count >= 3 AND (.state == \"ready\" OR .state == \"failed\")"
+      },
+      "expected": true
+    },
+    {
+      "id": "query-graph-alias-nested-path-and-key-keep",
+      "input": {
+        "json": {
+          "item": {
+            "id": "keep",
+            "facts": {
+              "score": 4
+            },
+            "@key": "keep"
+          }
+        },
+        "predicate": ".item.facts.score >= 4 AND .item.@key == 'keep' AND exists(.item)"
+      },
+      "expected": true
+    },
+    {
+      "id": "query-graph-alias-nested-path-and-key-skip",
+      "input": {
+        "json": {
+          "item": {
+            "id": "skip",
+            "facts": {
+              "score": 2
+            },
+            "@key": "skip"
+          }
+        },
+        "predicate": ".item.facts.score >= 4 AND .item.@key == 'keep' AND exists(.item)"
+      },
+      "expected": false
+    },
+    {
+      "id": "query-graph-legacy-object-where-keep",
+      "input": {
+        "json": {
+          "item": {
+            "id": "keep",
+            "score": 5,
+            "@key": "keep"
+          }
+        },
+        "predicate": ".item.score >= 3"
+      },
+      "expected": true
+    },
+    {
+      "id": "query-graph-legacy-object-where-skip",
+      "input": {
+        "json": {
+          "item": {
+            "id": "skip",
+            "score": 1,
+            "@key": "skip"
+          }
+        },
+        "predicate": ".item.score >= 3"
+      },
+      "expected": false
+    },
+    {
+      "id": "query-graph-view-f64-comparison-fraction",
+      "input": {
+        "json": {
+          "item": {
+            "id": "fraction",
+            "score": 1.25,
+            "@key": "fraction"
+          }
+        },
+        "predicate": ".item.score > 1.2"
+      },
+      "expected": true
+    },
+    {
+      "id": "query-graph-json-text-predicate-keep",
+      "input": {
+        "json": {
+          "item": {
+            "id": "keep",
+            "score": 4,
+            "@key": "keep"
+          }
+        },
+        "predicate": ".item.score >= 4"
+      },
+      "expected": true
+    },
+    {
+      "id": "query-graph-json-text-predicate-skip",
+      "input": {
+        "json": {
+          "item": {
+            "id": "skip",
+            "score": 2,
+            "@key": "skip"
+          }
+        },
+        "predicate": ".item.score >= 4"
+      },
+      "expected": false
+    }
+  ]
+}

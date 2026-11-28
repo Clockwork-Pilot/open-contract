@@ -148,7 +148,9 @@ fn isolation_filesystem_and_command_edges_are_unit_fixtures() {
     }
 })).expect("valid unit fixture"),
     ];
-    let package_dataset: Value = serde_json::from_str(include_str!("../../dataset.json"))
+    let package_dataset: Value = serde_json::from_str(include_str!(
+        "../../dataset.filesystem-staging.json"
+    ))
         .expect("package dataset should parse");
     let mut previous_root = None;
     for case in fixtures {

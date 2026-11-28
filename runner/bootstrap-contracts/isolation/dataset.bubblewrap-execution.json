@@ -1,0 +1,138 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "bubblewrap-unavailable",
+      "setup": "bubblewrap-unavailable",
+      "input": {
+        "operation": "command",
+        "backend": "bwrap",
+        "command": [
+          "/bin/echo",
+          "isolation probe"
+        ]
+      },
+      "expected": {
+        "error_contains": "bwrap is not installed or not on PATH"
+      },
+      "coverage_fingerprint": "470682ca95b74d12ce62e66c19a1b191"
+    },
+    {
+      "id": "bubblewrap-command-stdin-and-stdout",
+      "setup": "bubblewrap-command-stdin-and-stdout",
+      "input": {
+        "operation": "command",
+        "backend": "bwrap",
+        "command": [
+          "/bin/echo",
+          "bubblewrap isolated command"
+        ]
+      },
+      "expected": {
+        "stdout": "bubblewrap isolated command\n",
+        "success": true
+      },
+      "coverage_fingerprint": "28b9e65e7c9f864e3737d3f5d02c1d6c"
+    },
+    {
+      "id": "bubblewrap-command-returns-nonzero-status",
+      "setup": "bubblewrap-command-returns-nonzero-status",
+      "input": {
+        "operation": "command",
+        "backend": "bwrap",
+        "command": [
+          "/bin/false"
+        ]
+      },
+      "expected": {
+        "success": false
+      },
+      "coverage_fingerprint": "28b9e65e7c9f864e3737d3f5d02c1d6c"
+    },
+    {
+      "id": "bubblewrap-command-maps-package-root",
+      "setup": "bubblewrap-command-maps-package-root",
+      "input": {
+        "operation": "command",
+        "backend": "bwrap",
+        "command": [
+          "/bin/echo",
+          "${OPEN_CONTRACT_TEST_PACKAGE_ROOT}",
+          "${OPEN_CONTRACT_TEST_PACKAGE_ROOT}/support"
+        ]
+      },
+      "expected": {
+        "stdout_contains": "/contract/",
+        "stdout_contains_staged_subpath": true,
+        "success": true
+      },
+      "coverage_fingerprint": "e0c6153cf36957fcf53521da0abb25eb"
+    },
+    {
+      "id": "bubblewrap-missing-from-path",
+      "setup": "bubblewrap-missing-from-path",
+      "input": {
+        "operation": "missing-bubblewrap"
+      },
+      "expected": {
+        "rejected": true
+      },
+      "coverage_fingerprint": "bba43bbf8aa495dba692874c7679f110"
+    },
+    {
+      "id": "bubblewrap-rejects-invalid-working-root",
+      "input": {
+        "operation": "bubblewrap-invalid-root"
+      },
+      "expected": {
+        "rejected": true
+      },
+      "coverage_fingerprint": "bc800ba5415578f148d45ae8ef3c0844"
+    },
+    {
+      "id": "command-bwrap-reports-missing-root",
+      "setup": "command-bwrap-reports-missing-root",
+      "input": {
+        "operation": "command",
+        "backend": "bwrap",
+        "command": [
+          "/bin/true"
+        ]
+      },
+      "expected": {
+        "error_contains": "No such file"
+      },
+      "coverage_fingerprint": "373250cfe8ec24e406e7a2f501d6dacf"
+    },
+    {
+      "id": "command-bwrap-reports-missing-staged-support",
+      "setup": "command-bwrap-reports-missing-staged-support",
+      "input": {
+        "operation": "command",
+        "backend": "bwrap",
+        "command": [
+          "/bin/true"
+        ]
+      },
+      "expected": {
+        "error_contains": "No such file"
+      },
+      "coverage_fingerprint": "f137ffdc580767027cde8308079fde36"
+    },
+    {
+      "id": "command-bwrap-reports-missing-staged-write-file",
+      "setup": "command-bwrap-reports-missing-staged-write-file",
+      "input": {
+        "operation": "command",
+        "backend": "bwrap",
+        "command": [
+          "/bin/true"
+        ]
+      },
+      "expected": {
+        "error_contains": "reports/result.json"
+      },
+      "coverage_fingerprint": "5b7bb21b30a49dde9f2f3042c96908bf"
+    }
+  ]
+}

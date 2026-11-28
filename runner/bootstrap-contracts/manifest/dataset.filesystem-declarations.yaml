@@ -1,0 +1,229 @@
+version: 1
+cases:
+- id: missing-readable-path
+  coverage_fingerprint: 2aa1668a8d9006d287010c5b82afe214
+  input:
+    operation: manifest
+    yaml: "version: '1'\nname: sample\nfilesystem:\n  read:\n  - dataset.json\n  -\
+      \ validator.py\n  - missing.json\n  write: []\ndatasets:\n- dataset.json\ncoverage_sources:\n\
+      - validator.py\n"
+  expected:
+    valid: false
+- id: accepts-absolute-write-path
+  coverage_fingerprint: 401ae187e40f4bee6f3dff5667836685
+  input:
+    operation: manifest
+    yaml: "version: '1'\nname: sample\nfilesystem:\n  read:\n  - dataset.json\n  -\
+      \ validator.py\n  write:\n  - /tmp/open-contract-write-report.json\ndatasets:\n\
+      - dataset.json\ncoverage_sources:\n- validator.py\n"
+  expected:
+    valid: true
+- id: accepts-absolute-read-path
+  coverage_fingerprint: 7359c24fe7af09946df36402e249fde6
+  input:
+    operation: manifest
+    yaml: "version: '1'\nname: sample\nfilesystem:\n  read:\n  - /\n  - dataset.json\n\
+      \  - validator.py\n  write: []\ndatasets:\n- dataset.json\ncoverage_sources:\n\
+      - validator.py\n"
+  expected:
+    valid: true
+- id: rejects-empty-filesystem-path
+  coverage_fingerprint: 1d8062452331e83d9a016efb486f0185
+  input:
+    operation: manifest
+    yaml: "version: '1'\nname: sample\nfilesystem:\n  read:\n  - ''\n  - dataset.json\n\
+      \  - validator.py\n  write: []\ndatasets:\n- dataset.json\ncoverage_sources:\n\
+      - validator.py\n"
+  expected:
+    valid: false
+- id: rejects-nul-filesystem-path
+  coverage_fingerprint: 2aa1668a8d9006d287010c5b82afe214
+  input:
+    operation: manifest
+    yaml: "version: '1'\nname: sample\nfilesystem:\n  read:\n  - \\0\n  - dataset.json\n\
+      \  - validator.py\n  write: []\ndatasets:\n- dataset.json\ncoverage_sources:\n\
+      - validator.py\n"
+  expected:
+    valid: false
+- id: accepts-relative-read-path-outside-package
+  coverage_fingerprint: 57586f7a6b50ddfff2dc90319d8f269e
+  setup: accepts-relative-read-path-outside-package
+  input:
+    operation: manifest
+    yaml: "version: '1'\nname: sample\nfilesystem:\n  read:\n  - ../outside.json\n\
+      \  - dataset.json\n  - validator.py\n  write: []\ndatasets:\n- dataset.json\n\
+      coverage_sources:\n- validator.py\n"
+  expected:
+    valid: true
+- id: accepts-relative-write-path-outside-package
+  coverage_fingerprint: e7b66bb73746921edd1d10da29e216b4
+  input:
+    operation: manifest
+    yaml: "version: '1'\nname: sample\nfilesystem:\n  read:\n  - dataset.json\n  -\
+      \ validator.py\n  write:\n  - ../outside/report.json\ndatasets:\n- dataset.json\n\
+      coverage_sources:\n- validator.py\n"
+  expected:
+    valid: true
+- id: accepts-normalized-relative-write-path
+  coverage_fingerprint: 7d2f043da59b4dc2e440653824f687d3
+  input:
+    operation: manifest
+    yaml: "version: '1'\nname: sample\nfilesystem:\n  read:\n  - dataset.json\n  -\
+      \ validator.py\n  write:\n  - nested/../reports/report.json\ndatasets:\n- dataset.json\n\
+      coverage_sources:\n- validator.py\n"
+  expected:
+    valid: true
+- id: accepts-current-directory-write-path
+  coverage_fingerprint: 0d5b7502790a1216ac65f1acbe188262
+  input:
+    operation: manifest
+    yaml: "version: '1'\nname: sample\nfilesystem:\n  read:\n  - dataset.json\n  -\
+      \ validator.py\n  write:\n  - .\ndatasets:\n- dataset.json\ncoverage_sources:\n\
+      - validator.py\n"
+  expected:
+    valid: true
+- id: undeclared-validator-read
+  coverage_fingerprint: 105e35bba74d42f879f251dc1db37d70
+  input:
+    operation: manifest
+    yaml: "version: '1'\nname: sample\nfilesystem:\n  read:\n  - dataset.json\n  write:\
+      \ []\ndatasets:\n- dataset.json\ncoverage_sources:\n- validator.py\n"
+  expected:
+    valid: false
+- id: directory-is-not-a-manifest-file
+  coverage_fingerprint: 3ffef46402c97e49f9096b55c3432eb6
+  input:
+    operation: manifest
+    yaml: "version: '1'\nname: sample\nfilesystem:\n  read:\n  - directory\n  - validator.py\n\
+      \  write: []\ndatasets:\n- directory\ncoverage_sources:\n- validator.py\n"
+  expected:
+    valid: false
+- id: read-path-symlink-escape
+  coverage_fingerprint: 0db23722274dfa012e20fbd053e5d167
+  setup: read-path-symlink-escape
+  input:
+    operation: manifest
+    yaml: "version: '1'\nname: sample\nfilesystem:\n  read:\n  - escape\n  - validator.py\n\
+      \  write: []\ndatasets:\n- escape\ncoverage_sources:\n- validator.py\n"
+  expected:
+    valid: false
+- id: declared-file-symlink-escape
+  coverage_fingerprint: 50e55d29a17605381b75cbc32c3ff1f7
+  setup: declared-file-symlink-escape
+  input:
+    operation: manifest
+    yaml: "version: '1'\nname: sample\nfilesystem:\n  read:\n  - /\n  - validator.py\n\
+      \  write: []\ndatasets:\n- escape\ncoverage_sources:\n- validator.py\n"
+  expected:
+    valid: false
+- id: write-path-symlink-escape
+  coverage_fingerprint: c1ceffb7d88e13a33d39dd85a58a43f0
+  setup: write-path-symlink-escape
+  input:
+    operation: manifest
+    yaml: "version: '1'\nname: sample\nfilesystem:\n  read:\n  - dataset.json\n  -\
+      \ validator.py\n  write:\n  - escape/outside.txt\ndatasets:\n- dataset.json\n\
+      coverage_sources:\n- validator.py\n"
+  expected:
+    valid: false
+- id: missing-manifest-path
+  coverage_fingerprint: 776c1aeb37ee3833ecf8c28725265bb5
+  input:
+    operation: missing-manifest
+    path: missing-contract.yaml
+  expected:
+    valid: false
+- id: directory-is-not-a-manifest
+  coverage_fingerprint: deeaa45d0d943fb20b1bb89998e28698
+  input:
+    operation: directory-manifest
+    path: .
+  expected:
+    valid: false
+- id: filesystem-root-is-not-a-manifest-package
+  coverage_fingerprint: deeaa45d0d943fb20b1bb89998e28698
+  input:
+    operation: root-manifest
+    path: /
+  expected:
+    valid: false
+- id: filesystem-root-string-is-not-a-manifest-package
+  coverage_fingerprint: deeaa45d0d943fb20b1bb89998e28698
+  input:
+    operation: string-manifest
+    path: /
+  expected:
+    valid: false
+- id: invalid-readable-package-path
+  coverage_fingerprint: 2e82f08630e4dbf0df1e95e79c0c6f41
+  input:
+    operation: manifest
+    yaml: "version: '1'\nname: sample\nfilesystem:\n  read:\n  - ../secret\n  - dataset.json\n\
+      \  - validator.py\n  write: []\ndatasets:\n- dataset.json\ncoverage_sources:\n\
+      - validator.py\n"
+  expected:
+    valid: false
+- id: invalid-declared-file-path
+  coverage_fingerprint: 05c93ae4c97f725129e2bbbb7e133edf
+  input:
+    operation: manifest
+    yaml: "version: '1'\nname: sample\nfilesystem:\n  read:\n  - dataset.json\n  -\
+      \ validator.py\n  write: []\ndatasets:\n- ../secret\ncoverage_sources:\n- validator.py\n"
+  expected:
+    valid: false
+- id: rejects-package-name-with-separator
+  coverage_fingerprint: 2ee163302105a19bd0a55ff426fd9ea5
+  input:
+    operation: manifest
+    yaml: "version: '1'\nname: sample\nlanguage_package: node/package\nfilesystem:\n\
+      \  read:\n  - dataset.json\n  - validator.py\n  write: []\ndatasets:\n- dataset.json\n\
+      coverage_sources:\n- validator.py\n"
+  expected:
+    valid: false
+- id: declared-file-missing-outside-read-list
+  coverage_fingerprint: f2a4717a8fb3e32973bac7199f8e0f8b
+  input:
+    operation: manifest
+    yaml: "version: '1'\nname: sample\nfilesystem:\n  read:\n  - dataset.json\n  -\
+      \ validator.py\n  write: []\ndatasets:\n- missing.json\ncoverage_sources:\n\
+      - validator.py\n"
+  expected:
+    valid: false
+- id: write-path-dangling-symlink
+  coverage_fingerprint: 049725805dac3460e182598f01939d33
+  setup: write-path-dangling-symlink
+  input:
+    operation: manifest
+    yaml: "version: '1'\nname: sample\nfilesystem:\n  read:\n  - dataset.json\n  -\
+      \ validator.py\n  write:\n  - dangling/new-file\ndatasets:\n- dataset.json\n\
+      coverage_sources:\n- validator.py\n"
+  expected:
+    valid: false
+- id: write-path-existing-directory
+  coverage_fingerprint: 3530a2cbd7b4b396f981bced51b7420c
+  input:
+    operation: manifest
+    yaml: "version: '1'\nname: sample\nfilesystem:\n  read:\n  - dataset.json\n  -\
+      \ validator.py\n  write:\n  - directory\ndatasets:\n- dataset.json\ncoverage_sources:\n\
+      - validator.py\n"
+  expected:
+    valid: true
+- id: write-path-inaccessible-ancestor
+  coverage_fingerprint: acf23e4a85275cdcc775d06c50c8f9f9
+  setup: write-path-inaccessible-ancestor
+  input:
+    operation: manifest
+    yaml: "version: '1'\nname: sample\nfilesystem:\n  read:\n  - dataset.json\n  -\
+      \ validator.py\n  write:\n  - blocked/new-file\ndatasets:\n- dataset.json\n\
+      coverage_sources:\n- validator.py\n"
+  expected:
+    valid: false
+- id: write-path-parent-is-file
+  coverage_fingerprint: acf23e4a85275cdcc775d06c50c8f9f9
+  input:
+    operation: manifest
+    yaml: "version: '1'\nname: sample\nfilesystem:\n  read:\n  - dataset.json\n  -\
+      \ validator.py\n  write:\n  - dataset.json/child\ndatasets:\n- dataset.json\n\
+      coverage_sources:\n- validator.py\n"
+  expected:
+    valid: false

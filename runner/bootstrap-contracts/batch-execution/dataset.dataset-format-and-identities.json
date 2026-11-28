@@ -1,0 +1,632 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "exact-output",
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "one",
+              "input": {
+                "value": 1
+              },
+              "expected": {
+                "value": 1
+              },
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "results": [
+          {
+            "passed": true
+          }
+        ]
+      },
+      "coverage_fingerprint": "c84db2ed91388c654961724d31074c4d"
+    },
+    {
+      "id": "predicate-only",
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "one",
+              "input": {
+                "value": 1
+              },
+              "predicate": ".value == 1",
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "results": [
+          {
+            "passed": true
+          }
+        ]
+      },
+      "coverage_fingerprint": "5912915d5bb9c17d54fe6aecda37b383"
+    },
+    {
+      "id": "expected-and-predicate",
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "one",
+              "input": {
+                "value": 1
+              },
+              "expected": {
+                "value": 1
+              },
+              "predicate": ".value == 1",
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "results": [
+          {
+            "passed": true
+          }
+        ]
+      },
+      "coverage_fingerprint": "3e544025164f40c3b83f2121530f78d7"
+    },
+    {
+      "id": "yaml-dataset",
+      "input": {
+        "extension": "yaml",
+        "dataset_yaml": "version: 1\ncases:\n  - id: one\n    input: {value: 1}\n    expected: {value: 1}\n    coverage_fingerprint: 880ae786fa1c0630fe9158b7962fd8a2\n"
+      },
+      "expected": {
+        "results": [
+          {
+            "passed": true
+          }
+        ]
+      },
+      "coverage_fingerprint": "ce3e425896f002b196993cf66eb66891"
+    },
+    {
+      "id": "yml-dataset",
+      "input": {
+        "extension": "yml",
+        "dataset_yaml": "version: 1\ncases:\n  - id: one\n    input: {value: 1}\n    expected: {value: 1}\n    coverage_fingerprint: 880ae786fa1c0630fe9158b7962fd8a2\n"
+      },
+      "expected": {
+        "results": [
+          {
+            "passed": true
+          }
+        ]
+      },
+      "coverage_fingerprint": "ce3e425896f002b196993cf66eb66891"
+    },
+    {
+      "id": "expected-subset-and-predicate",
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "one",
+              "input": {
+                "value": 1,
+                "extra": "yes"
+              },
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2",
+              "expected": {
+                "value": 1
+              },
+              "predicate": ".extra == 'yes'"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "results": [
+          {
+            "passed": true
+          }
+        ]
+      },
+      "coverage_fingerprint": "3e544025164f40c3b83f2121530f78d7"
+    },
+    {
+      "id": "wrong-exact-output",
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "one",
+              "input": {
+                "value": 1
+              },
+              "expected": {
+                "value": 2
+              },
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "results": [
+          {
+            "passed": false
+          }
+        ]
+      },
+      "coverage_fingerprint": "298ff42212d6d3d5b7835cde77e8b4d6",
+      "predicate": "contains(.results.0.error, 'output did not match expected subset')"
+    },
+    {
+      "id": "false-predicate",
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "one",
+              "input": {
+                "value": 1
+              },
+              "predicate": ".value == 2",
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2",
+              "expected": {}
+            }
+          ]
+        }
+      },
+      "expected": {
+        "results": [
+          {
+            "passed": false
+          }
+        ]
+      },
+      "coverage_fingerprint": "298ff42212d6d3d5b7835cde77e8b4d6",
+      "predicate": "contains(.results.0.error, 'output did not satisfy predicate')"
+    },
+    {
+      "id": "invalid-extension",
+      "input": {
+        "extension": "toml",
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "one",
+              "input": {},
+              "expected": {},
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
+            }
+          ]
+        }
+      },
+      "expected": {},
+      "coverage_fingerprint": "33149fe8ca3c92944abfcf8fd54ea6e4",
+      "predicate": "contains(.error, 'must use .json, .yaml, or .yml')"
+    },
+    {
+      "id": "invalid-json",
+      "input": {
+        "dataset_yaml": "{invalid json"
+      },
+      "expected": {},
+      "coverage_fingerprint": "bf94fc82884183f2d3978176213620ee",
+      "predicate": "contains(.error, 'invalid dataset')"
+    },
+    {
+      "id": "invalid-yaml",
+      "input": {
+        "extension": "yaml",
+        "dataset_yaml": "version: [unterminated"
+      },
+      "expected": {},
+      "coverage_fingerprint": "9c7dbadc2439a690850eac318074dd47",
+      "predicate": "contains(.error, 'invalid dataset')"
+    },
+    {
+      "id": "wrong-version",
+      "input": {
+        "dataset": {
+          "version": 2,
+          "cases": [
+            {
+              "id": "one",
+              "input": {},
+              "expected": {},
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
+            }
+          ]
+        }
+      },
+      "expected": {},
+      "coverage_fingerprint": "e3b3cc35009504bc02405f29d28f8a71",
+      "predicate": "exists(.error)"
+    },
+    {
+      "id": "no-cases-or-targets",
+      "input": {
+        "dataset": {
+          "version": 1
+        }
+      },
+      "expected": {},
+      "coverage_fingerprint": "7e442861dba98b233a24443f23d6b750",
+      "predicate": "exists(.error)"
+    },
+    {
+      "id": "both-cases-and-targets",
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [],
+          "targets": []
+        }
+      },
+      "expected": {},
+      "coverage_fingerprint": "7e442861dba98b233a24443f23d6b750",
+      "predicate": "exists(.error)"
+    },
+    {
+      "id": "empty-cases",
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": []
+        }
+      },
+      "expected": {},
+      "coverage_fingerprint": "bb6698ba2cd303a4957f50e44c545e22",
+      "predicate": "contains(.error, 'at least one case or step')"
+    },
+    {
+      "id": "duplicate-target-id",
+      "input": {
+        "dataset": {
+          "version": 1,
+          "targets": [
+            {
+              "id": "same",
+              "cases": [
+                {
+                  "id": "one",
+                  "input": {},
+                  "expected": {},
+                  "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
+                }
+              ]
+            },
+            {
+              "id": "same",
+              "cases": [
+                {
+                  "id": "two",
+                  "input": {},
+                  "expected": {},
+                  "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
+                }
+              ]
+            }
+          ],
+          "cases": []
+        }
+      },
+      "expected": {},
+      "coverage_fingerprint": "7e442861dba98b233a24443f23d6b750",
+      "predicate": "exists(.error)"
+    },
+    {
+      "id": "empty-target-id",
+      "input": {
+        "dataset": {
+          "version": 1,
+          "targets": [
+            {
+              "id": " ",
+              "cases": [
+                {
+                  "id": "one",
+                  "input": {},
+                  "expected": {},
+                  "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
+                }
+              ]
+            }
+          ],
+          "cases": []
+        }
+      },
+      "expected": {},
+      "coverage_fingerprint": "7e442861dba98b233a24443f23d6b750",
+      "predicate": "exists(.error)"
+    },
+    {
+      "id": "duplicate-case-id",
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "same",
+              "input": {},
+              "expected": {},
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
+            },
+            {
+              "id": "same",
+              "input": {},
+              "expected": {},
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
+            }
+          ]
+        }
+      },
+      "expected": {},
+      "coverage_fingerprint": "81f1118788ac894b282cbbb3b0fded4d",
+      "predicate": "contains(.error, 'case ID must be non-empty and unique')"
+    },
+    {
+      "id": "empty-case-id",
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": " ",
+              "input": {},
+              "expected": {},
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
+            }
+          ]
+        }
+      },
+      "expected": {},
+      "coverage_fingerprint": "f79b48caf3b655b57ac40bc86f82a47c",
+      "predicate": "contains(.error, 'case ID must be non-empty and unique')"
+    },
+    {
+      "id": "case-without-assertion",
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "one",
+              "input": {},
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
+            }
+          ]
+        }
+      },
+      "expected": {},
+      "coverage_fingerprint": "7e442861dba98b233a24443f23d6b750",
+      "predicate": "exists(.error)"
+    },
+    {
+      "id": "removed-expected-error-case-field",
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "one",
+              "input": {},
+              "expected": {},
+              "expected_error": "error",
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
+            }
+          ]
+        }
+      },
+      "expected": {},
+      "coverage_fingerprint": "7e442861dba98b233a24443f23d6b750",
+      "predicate": "exists(.error)"
+    },
+    {
+      "id": "duplicate-step-id",
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "one",
+              "steps": [
+                {
+                  "id": "same",
+                  "input": {},
+                  "expected": {},
+                  "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
+                },
+                {
+                  "id": "same",
+                  "input": {},
+                  "expected": {},
+                  "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "expected": {},
+      "coverage_fingerprint": "f3bd78bd60254bd6aafeb61b16013e43",
+      "predicate": "contains(.error, 'step ID must be non-empty and unique')"
+    },
+    {
+      "id": "empty-step-id",
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "one",
+              "steps": [
+                {
+                  "id": " ",
+                  "input": {},
+                  "expected": {},
+                  "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "expected": {},
+      "coverage_fingerprint": "f8e23b8b8c8d2ab77ca21dc196381c7b",
+      "predicate": "contains(.error, 'step ID must be non-empty and unique')"
+    },
+    {
+      "id": "mismatched-fingerprint",
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "one",
+              "input": {
+                "value": 1
+              },
+              "expected": {
+                "value": 1
+              },
+              "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da9"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "results": [
+          {
+            "passed": false
+          }
+        ]
+      },
+      "coverage_fingerprint": "92076ab433cb38de2e501e6925e1ac27",
+      "predicate": "contains(.results.0.error, 'coverage fingerprint mismatch')"
+    },
+    {
+      "id": "zero-coverage-fingerprint-is-invalid",
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "one",
+              "input": {
+                "value": 1
+              },
+              "expected": {
+                "value": 1
+              },
+              "coverage_fingerprint": "00000000000000000000000000000000"
+            }
+          ]
+        }
+      },
+      "expected": {},
+      "coverage_fingerprint": "54c3019b973f0d650703a495d873d437",
+      "predicate": "contains(.error, 'cannot represent zero coverage')"
+    },
+    {
+      "id": "invalid-case-fingerprint",
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "one",
+              "input": {},
+              "expected": {},
+              "coverage_fingerprint": "xyz"
+            }
+          ]
+        }
+      },
+      "expected": {},
+      "coverage_fingerprint": "52552ed69cde086f45316cc92a027cd2",
+      "predicate": "exists(.error)"
+    },
+    {
+      "id": "invalid-step-fingerprint",
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "one",
+              "steps": [
+                {
+                  "id": "step",
+                  "input": {},
+                  "coverage_fingerprint": "XYZ",
+                  "expected": {}
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "expected": {},
+      "coverage_fingerprint": "2c799ef526e6724bceb02554d961b16f",
+      "predicate": "exists(.error)"
+    },
+    {
+      "id": "missing-case-fingerprint",
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "one",
+              "input": {},
+              "expected": {}
+            }
+          ]
+        }
+      },
+      "expected": {},
+      "coverage_fingerprint": "6a9c2b436437052a92ba05b701b9cde7",
+      "predicate": "contains(.error, 'coverage_fingerprint on case is required')"
+    },
+    {
+      "id": "missing-step-fingerprint",
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "sequence",
+              "steps": [
+                {
+                  "id": "step",
+                  "input": {},
+                  "expected": {}
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "expected": {},
+      "coverage_fingerprint": "b0ed363cd1b0f26676766e73b41b9592",
+      "predicate": "contains(.error, 'coverage_fingerprint on step is required')"
+    }
+  ]
+}

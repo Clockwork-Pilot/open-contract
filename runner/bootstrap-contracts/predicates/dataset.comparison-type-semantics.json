@@ -1,0 +1,108 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "signed-integer-comparison",
+      "input": {
+        "json": {
+          "left": -1,
+          "right": 2
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": true
+    },
+    {
+      "id": "unsigned-integer-comparison",
+      "input": {
+        "json": {
+          "left": 18446744073709551614,
+          "right": 18446744073709551613
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": true
+    },
+    {
+      "id": "floating-point-comparison",
+      "input": {
+        "json": {
+          "left": 1.25,
+          "right": 1.2
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": true
+    },
+    {
+      "id": "boolean-number-type-mismatch",
+      "input": {
+        "json": {
+          "value": true
+        },
+        "predicate": ".value == 1"
+      },
+      "expected": false
+    },
+    {
+      "id": "digest-equality-case-insensitive",
+      "input": {
+        "json": {
+          "hash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "predicate": ".hash == \"sha256:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\""
+      },
+      "expected": true
+    },
+    {
+      "id": "boolean-ordering",
+      "input": {
+        "json": {
+          "enabled": true
+        },
+        "predicate": ".enabled > false"
+      },
+      "expected": true
+    },
+    {
+      "id": "string-ordering",
+      "input": {
+        "json": {
+          "value": "beta"
+        },
+        "predicate": ".value > \"alpha\""
+      },
+      "expected": true
+    },
+    {
+      "id": "digest-ordering",
+      "input": {
+        "json": {
+          "hash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "predicate": ".hash < \"sha256:BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB\""
+      },
+      "expected": true
+    },
+    {
+      "id": "object-ordering-rejected",
+      "input": {
+        "json": {
+          "value": {}
+        },
+        "predicate": ".value > 1"
+      },
+      "expected": false
+    },
+    {
+      "id": "different-type-ordering-rejected",
+      "input": {
+        "json": {
+          "value": "1"
+        },
+        "predicate": ".value > 1"
+      },
+      "expected": false
+    }
+  ]
+}

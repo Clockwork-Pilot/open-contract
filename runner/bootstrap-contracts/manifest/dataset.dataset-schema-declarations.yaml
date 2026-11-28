@@ -1,0 +1,85 @@
+version: 1
+cases:
+- id: manifest-dataset-entry-has-value-schema-paths
+  coverage_fingerprint: a491e96f7978132037e5b1a3097645a6
+  input:
+    operation: manifest
+    yaml: "version: '1'\nname: schema-manifest\ndatasets:\n  - path: dataset.json\n\
+      \    schema: schemas/values.yaml\ncoverage_sources: [validator.py]\nfilesystem:\n\
+      \  read: [dataset.json, validator.py, schemas/values.yaml]\n  write: []\n"
+  expected:
+    valid: true
+- id: accepts-parent-relative-dataset-schema
+  setup: accepts-parent-relative-dataset-schema
+  input:
+    operation: manifest
+    yaml: "version: '1'\nname: parent-schema-manifest\ndatasets:\n  - path: dataset.json\n\
+      \    schema: ../schema.json\ncoverage_sources: [validator.py]\nfilesystem:\n\
+      \  read: [dataset.json, validator.py, ../schema.json]\n  write: []\n"
+  expected:
+    valid: true
+  coverage_fingerprint: 3816cd437838deb524accc5dafb87b32
+- id: dataset-schema-missing-parent-file
+  input:
+    operation: manifest
+    yaml: "version: '1'\nname: missing-parent-schema\ndatasets:\n  - path: dataset.json\n\
+      \    schema: ../missing-schema.json\ncoverage_sources: [validator.py]\nfilesystem:\n\
+      \  read: [dataset.json, validator.py, ../missing-schema.json]\n  write: []\n"
+  expected:
+    valid: false
+  coverage_fingerprint: 8ed4881e2a562f03a6cdedef0d7240d6
+- id: dataset-schema-symlink-escape
+  setup: dataset-schema-symlink-escape
+  input:
+    operation: manifest
+    yaml: "version: '1'\nname: escaped-schema\ndatasets:\n  - path: dataset.json\n\
+      \    schema: escape\ncoverage_sources: [validator.py]\nfilesystem:\n  read:\
+      \ [dataset.json, validator.py, escape]\n  write: []\n"
+  expected:
+    valid: false
+  coverage_fingerprint: b9bbe9275a909c4208a2a21cc3faed2b
+- id: manifest-dataset-schema-must-be-readable
+  coverage_fingerprint: 7e5a1b6e7f262d4484a981346374db35
+  input:
+    operation: manifest
+    yaml: "version: '1'\nname: unreadable-schema-manifest\ndatasets:\n  - path: dataset.json\n\
+      \    schema: schemas/values.yaml\ncoverage_sources: [validator.py]\nfilesystem:\n\
+      \  read: [dataset.json, validator.py]\n  write: []\n"
+  expected:
+    valid: false
+- id: manifest-dataset-entry-may-omit-schema
+  coverage_fingerprint: 626dd77914a7a28de4947fcb2c8d3e1f
+  input:
+    operation: manifest
+    yaml: "version: '1'\nname: schema-free-entry\ndatasets:\n  - path: dataset.json\n\
+      coverage_sources: [validator.py]\nfilesystem:\n  read: [dataset.json, validator.py]\n\
+      \  write: []\n"
+  expected:
+    valid: true
+- id: manifest-dataset-object-rejects-unknown-path-alias
+  coverage_fingerprint: 9ee1973c48f3f0f5438ce60210e0aefc
+  input:
+    operation: manifest
+    yaml: "version: '1'\nname: unknown-dataset-alias\ndatasets:\n  - path: '@missing/dataset.json'\n\
+      coverage_sources: [validator.py]\nfilesystem:\n  read: [dataset.json, validator.py]\n\
+      \  write: []\n"
+  expected:
+    valid: false
+- id: manifest-dataset-object-rejects-unknown-schema-alias
+  coverage_fingerprint: f046590fb5fa9390dcc73476a53ca80d
+  input:
+    operation: manifest
+    yaml: "version: '1'\nname: unknown-schema-alias\ndatasets:\n  - path: dataset.json\n\
+      \    schema: '@missing/values.yaml'\ncoverage_sources: [validator.py]\nfilesystem:\n\
+      \  read: [dataset.json, validator.py]\n  write: []\n"
+  expected:
+    valid: false
+- id: missing-dataset-file
+  coverage_fingerprint: 2aa1668a8d9006d287010c5b82afe214
+  input:
+    operation: manifest
+    yaml: "version: '1'\nname: sample\nfilesystem:\n  read:\n  - missing.json\n  -\
+      \ validator.py\n  write: []\ndatasets:\n- missing.json\ncoverage_sources:\n\
+      - validator.py\n"
+  expected:
+    valid: false

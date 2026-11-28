@@ -6,9 +6,64 @@
       "package": "batch-execution",
       "datasets": [
         {
-          "id": "main",
-          "path": "dataset.json",
-          "schema": null
+          "id": "coverage-validation",
+          "path": "dataset.coverage-validation.json",
+          "schema": null,
+          "case_ids_sha256": "8bebd987e1abc309aa8a4312b6f6305f62f3ee8c4823011056341b9bbe9ea2bf"
+        },
+        {
+          "id": "dataset-adapter-results",
+          "path": "dataset.dataset-adapter-results.json",
+          "schema": null,
+          "case_ids_sha256": "bf4f0d580f3c6452425e5d50032da6bcab751c0365884cf073333fc3670c4406"
+        },
+        {
+          "id": "dataset-file-validation",
+          "path": "dataset.dataset-file-validation.json",
+          "schema": null,
+          "case_ids_sha256": "1beee1541ea14a688a192d3f6926ac592afd3b4f9cb9bc4db94b1fbacb838bb4"
+        },
+        {
+          "id": "dataset-format-and-identities",
+          "path": "dataset.dataset-format-and-identities.json",
+          "schema": null,
+          "case_ids_sha256": "30a222a67d23b80ad117de659f6571d5045461223c7254da1a337a748709cf4a"
+        },
+        {
+          "id": "isolation-planning",
+          "path": "dataset.isolation-planning.json",
+          "schema": null,
+          "case_ids_sha256": "96c9e9c6aa3dfd875dca9ecd7fc01d7d8b0c558fd738bd3c59c0c60ad5f422ae"
+        },
+        {
+          "id": "manifest-adapter-results",
+          "path": "dataset.manifest-adapter-results.json",
+          "schema": null,
+          "case_ids_sha256": "938d7d0b0858acc58638ec0389ea03c5dd3ce86d8d65ca3db63409f180d8b7fc"
+        },
+        {
+          "id": "manifest-boundaries",
+          "path": "dataset.manifest-boundaries.json",
+          "schema": null,
+          "case_ids_sha256": "670be94b4ed8a29f96a2e27a194ff71d8dc6ed2b037f892e4027adf43ab66165"
+        },
+        {
+          "id": "nested-contract-execution",
+          "path": "dataset.nested-contract-execution.json",
+          "schema": null,
+          "case_ids_sha256": "de56a9227cac2793ae50d85fed46400066563c7ac281c43fd09c29b97d399892"
+        },
+        {
+          "id": "sequence-execution",
+          "path": "dataset.sequence-execution.json",
+          "schema": null,
+          "case_ids_sha256": "a172b267517fb1107ad2fbdb13d251bd25f09a99da5ff8b9967612d251e0fbf8"
+        },
+        {
+          "id": "value-schema-validation",
+          "path": "dataset.value-schema-validation.json",
+          "schema": null,
+          "case_ids_sha256": "0eb71c5357229729aa1b4d34829cf0cdd3d95c3457efd61dabc3d8f7495eda49"
         }
       ]
     },
@@ -17,9 +72,46 @@
       "package": "cli",
       "datasets": [
         {
-          "id": "main",
-          "path": "dataset.yaml",
-          "schema": null
+          "id": "cli-options-and-errors",
+          "path": "dataset.cli-options-and-errors.yaml",
+          "schema": null,
+          "case_ids_sha256": "e3e1e81feb24bbe336e7db8f69945253ffdf01f9b3c1219190ab8bcb28bdb391"
+        },
+        {
+          "id": "contract-execution",
+          "path": "dataset.contract-execution.yaml",
+          "schema": null,
+          "case_ids_sha256": "8d41a0a56c4f9d45669b87bcca60b04d434f8a6665ff40bb7b1be59e8012013d"
+        },
+        {
+          "id": "coverage-artifact-validation",
+          "path": "dataset.coverage-artifact-validation.yaml",
+          "schema": null,
+          "case_ids_sha256": "26473932f5597da0b8289880423a0c8250d0d05594b10acf7d943cfba3f7dc5b"
+        },
+        {
+          "id": "coverage-reporting",
+          "path": "dataset.coverage-reporting.yaml",
+          "schema": null,
+          "case_ids_sha256": "46d7871bd8c7f28af160448f35516351ca7474a08789db15835f7a154d68955f"
+        },
+        {
+          "id": "fingerprint-management",
+          "path": "dataset.fingerprint-management.yaml",
+          "schema": null,
+          "case_ids_sha256": "e7bb75dcd320e36ab3b0d21da9602ff110ead0e798d20ba6135257b6a7181f9e"
+        },
+        {
+          "id": "run-isolation-selection",
+          "path": "dataset.run-isolation-selection.yaml",
+          "schema": null,
+          "case_ids_sha256": "cf1827d594ac5e7f59432eef31249ad8bab6927dd2458497094f76eafc68cae9"
+        },
+        {
+          "id": "show-plan",
+          "path": "dataset.show-plan.yaml",
+          "schema": null,
+          "case_ids_sha256": "d108681f17415455393f5b27e71daa65889b7088351dcd58a82aaa8648f4089c"
         }
       ]
     },
@@ -28,9 +120,34 @@
       "package": "dataset-generation",
       "datasets": [
         {
-          "id": "main",
-          "path": "dataset.yaml",
-          "schema": null
+          "id": "generation-limits",
+          "path": "dataset.generation-limits.yaml",
+          "schema": null,
+          "case_ids_sha256": "13ede3fc437901044f0249627f5a2b641eefeb1abf7cbf19464a9020b52e8e8c"
+        },
+        {
+          "id": "schema-definition-validation",
+          "path": "dataset.schema-definition-validation.yaml",
+          "schema": null,
+          "case_ids_sha256": "5acabd1c94d0cfc3496fa60b95308530eeeb1fb14aedc5278bc1466b52a643e8"
+        },
+        {
+          "id": "user-example-validation",
+          "path": "dataset.user-example-validation.yaml",
+          "schema": null,
+          "case_ids_sha256": "07cc8db5e9f71edf04b364f38aeeb8bc4bc9cfa97f31811972daa92a036f3dbd"
+        },
+        {
+          "id": "valid-value-generation",
+          "path": "dataset.valid-value-generation.yaml",
+          "schema": null,
+          "case_ids_sha256": "fd277b6f8d34bd04d777a2f62200f124ba86e545b85efce9fd7b1f5cb75c6d2b"
+        },
+        {
+          "id": "value-constraints",
+          "path": "dataset.value-constraints.yaml",
+          "schema": null,
+          "case_ids_sha256": "d22121e5da065a34dfc63575ea8a180e2e39c9b02b3958fe5032cf6158153e5b"
         }
       ]
     },
@@ -39,9 +156,22 @@
       "package": "dataset-harness",
       "datasets": [
         {
-          "id": "main",
-          "path": "dataset.json",
-          "schema": "dataset.schema.json"
+          "id": "dataset-execution",
+          "path": "dataset.dataset-execution.json",
+          "schema": "dataset.schema.json",
+          "case_ids_sha256": "942fc3bb738ba025887f33fb435030f9d80f43d9a3703f499cf340038d878380"
+        },
+        {
+          "id": "dataset-file-loading",
+          "path": "dataset.dataset-file-loading.json",
+          "schema": "dataset.schema.json",
+          "case_ids_sha256": "d7aeecf1c56124e4b2e7d321fa27170d6fde12bcda7d16024f04f1281998772e"
+        },
+        {
+          "id": "dataset-schema-validation",
+          "path": "dataset.dataset-schema-validation.json",
+          "schema": "dataset.schema.json",
+          "case_ids_sha256": "20ffc0a6556899aed15be93bc3e37be595f397c3576e80ce250ba9e509521af6"
         }
       ]
     },
@@ -50,9 +180,22 @@
       "package": "error-handling",
       "datasets": [
         {
-          "id": "main",
-          "path": "dataset.json",
-          "schema": null
+          "id": "error-context-propagation",
+          "path": "dataset.error-context-propagation.json",
+          "schema": null,
+          "case_ids_sha256": "43898d64f3deb667816b39558ef9bb21c66ef86c35d7d3500f5f2a43e3ee9fd5"
+        },
+        {
+          "id": "runtime-error-contract",
+          "path": "dataset.runtime-error-contract.json",
+          "schema": null,
+          "case_ids_sha256": "632475a18b29e9aa53cc6a67ef21f8f20fd0bf98d66aeaefd4a4d971f4ae09c9"
+        },
+        {
+          "id": "shared-error-conversion",
+          "path": "dataset.shared-error-conversion.json",
+          "schema": null,
+          "case_ids_sha256": "7c9dfd91014528364a23c7e6817a1e056d49d6150fa62a22d9c7b3202dc3e51a"
         }
       ]
     },
@@ -61,9 +204,46 @@
       "package": "isolation",
       "datasets": [
         {
-          "id": "main",
-          "path": "dataset.json",
-          "schema": null
+          "id": "backend-selection",
+          "path": "dataset.backend-selection.json",
+          "schema": null,
+          "case_ids_sha256": "b0a3e6af8f2196057fab0e167e6a3b8769a2533f6ab0c3b29b379335510a870d"
+        },
+        {
+          "id": "bubblewrap-execution",
+          "path": "dataset.bubblewrap-execution.json",
+          "schema": null,
+          "case_ids_sha256": "be2193bee00d689ae9e7d9c6834d6e12f896a7bcf9b746e07f4f4b5aa4ff2115"
+        },
+        {
+          "id": "command-execution",
+          "path": "dataset.command-execution.json",
+          "schema": null,
+          "case_ids_sha256": "b3adfb88ec7e935f4b71e3d199c83f431c1293a72fc98ec923cc55d72bd14e46"
+        },
+        {
+          "id": "direct-execution",
+          "path": "dataset.direct-execution.json",
+          "schema": null,
+          "case_ids_sha256": "aca977741331c538c8f155f4539cc1f7e1cb6401625f363f883035fdad3e3267"
+        },
+        {
+          "id": "filesystem-staging",
+          "path": "dataset.filesystem-staging.json",
+          "schema": null,
+          "case_ids_sha256": "c52fdffdf8e1fd9aa6419ebd1b54333f14e6e1d264f8f36027a1a5e21ead44a5"
+        },
+        {
+          "id": "landlock-execution",
+          "path": "dataset.landlock-execution.json",
+          "schema": null,
+          "case_ids_sha256": "6c803f7202158ec747282f322413974be2419c6611f3e4f9473c3ea226a73b00"
+        },
+        {
+          "id": "nested-contract-staging",
+          "path": "dataset.nested-contract-staging.json",
+          "schema": null,
+          "case_ids_sha256": "f587b28efb1e39f0bdf76ad558e004eccb4031c7a64c559bb1eccabf8a6fd96c"
         }
       ]
     },
@@ -72,9 +252,154 @@
       "package": "manifest",
       "datasets": [
         {
-          "id": "main",
-          "path": "dataset.yaml",
-          "schema": null
+          "id": "dataset-schema-declarations",
+          "path": "dataset.dataset-schema-declarations.yaml",
+          "schema": null,
+          "case_ids_sha256": "61cbefed55e54cbde4aa3b19a3ee92044f494aea35a4679a0830e69e960b6bd0"
+        },
+        {
+          "id": "directory-and-coverage-sources",
+          "path": "dataset.directory-and-coverage-sources.yaml",
+          "schema": null,
+          "case_ids_sha256": "e88e784976fa8140da47001219bebcb04c8444231e2f4bd0795e26a51243e17f"
+        },
+        {
+          "id": "filesystem-declarations",
+          "path": "dataset.filesystem-declarations.yaml",
+          "schema": null,
+          "case_ids_sha256": "4a9b556ba0c56542bc4da48db23b59770c885773f2ab3fe12fd3708fdaa4862f"
+        },
+        {
+          "id": "language-and-coverage-policy",
+          "path": "dataset.language-and-coverage-policy.yaml",
+          "schema": null,
+          "case_ids_sha256": "0a0819c9b187b6951f8b81da5d8f5939631c0acbda237e3b350201c3a80314c4"
+        },
+        {
+          "id": "manifest-alias-resolution",
+          "path": "dataset.manifest-alias-resolution.yaml",
+          "schema": null,
+          "case_ids_sha256": "0426723ccaad20bed95ffb52bc19ac41c5ee71a15aa4bf39489e64012e8ac9e9"
+        },
+        {
+          "id": "manifest-structure-and-validation",
+          "path": "dataset.manifest-structure-and-validation.yaml",
+          "schema": null,
+          "case_ids_sha256": "a9fc0722deaf7a339acc068cf7f0be84233fab69953bf2a29a8e4d52b4961b56"
+        },
+        {
+          "id": "nested-contract-declarations",
+          "path": "dataset.nested-contract-declarations.yaml",
+          "schema": null,
+          "case_ids_sha256": "bc8bad6062a3edaeadffeea31ee6ce1b470533a17c0a163ad1d20119a9a072e9"
+        },
+        {
+          "id": "package-path-validation",
+          "path": "dataset.package-path-validation.yaml",
+          "schema": null,
+          "case_ids_sha256": "df4115d088ddbd5737f8b50d77486a1fb499326aa4fa7ad771c3dc2c09238049"
+        }
+      ]
+    },
+    {
+      "id": "predicates",
+      "package": "predicates",
+      "datasets": [
+        {
+          "id": "comparison-type-semantics",
+          "path": "dataset.comparison-type-semantics.json",
+          "schema": "dataset.schema.json",
+          "case_ids_sha256": "78797c140b697197f77d9d5b00c8d6852f98c1295f1884b3d61ca3b2300e37bc"
+        },
+        {
+          "id": "expression-operators-and-errors",
+          "path": "dataset.expression-operators-and-errors.json",
+          "schema": "dataset.schema.json",
+          "case_ids_sha256": "feb0020d72e59691b4b0af8d44ae3f8d1766ea5b1c27bb1d102839bce3d2517a"
+        },
+        {
+          "id": "field-path-resolution",
+          "path": "dataset.field-path-resolution.json",
+          "schema": "dataset.schema.json",
+          "case_ids_sha256": "f700ddfc155851cb27f2783a5c7a4af39b82400e8fc7cc9a1a8ab55a55886280"
+        },
+        {
+          "id": "missing-and-existence-semantics",
+          "path": "dataset.missing-and-existence-semantics.json",
+          "schema": "dataset.schema.json",
+          "case_ids_sha256": "9ecfa452201379af790f8c2f3afb3202abce69787a74abcbc99e0677c1353253"
+        },
+        {
+          "id": "parser-coverage-errors",
+          "path": "dataset.parser-coverage-errors.json",
+          "schema": "dataset.schema.json",
+          "case_ids_sha256": "02818b26de69ae475db668fa8ccfcb7b5464593bc0fa59584246ef3050501d89"
+        },
+        {
+          "id": "query-graph-expressions",
+          "path": "dataset.query-graph-expressions.json",
+          "schema": "dataset.schema.json",
+          "case_ids_sha256": "c7a4427825ae5464d6ae34ee7d56d7011ed2a939bebc8919e35dc59a0b6ef3bc"
+        },
+        {
+          "id": "string-contains-operator",
+          "path": "dataset.string-contains-operator.json",
+          "schema": "dataset.schema.json",
+          "case_ids_sha256": "53c604cfb9d653b5f90af2c12c6e1cfc882d6697abffdfd7baed5b46ab256d5c"
+        },
+        {
+          "id": "type-and-existence",
+          "path": "dataset.type-and-existence.json",
+          "schema": "dataset.schema.json",
+          "case_ids_sha256": "2a2d3a9ee7e81a28f76eef66f892b149cbbb1d2d959921ea70235ef4c312f3c7"
+        },
+        {
+          "id": "type-matrix-array",
+          "path": "dataset.type-matrix-array.json",
+          "schema": "dataset.schema.json",
+          "case_ids_sha256": "03ab66d694879a14d69ebeda6ae148ca673e1151ea94a4d64a44f4ae29723c16"
+        },
+        {
+          "id": "type-matrix-boolean",
+          "path": "dataset.type-matrix-boolean.json",
+          "schema": "dataset.schema.json",
+          "case_ids_sha256": "ada5bc5516360ab74b69fbb7f44fccd1dab83fd3dd9f808824682e2ff5197a0a"
+        },
+        {
+          "id": "type-matrix-decimal",
+          "path": "dataset.type-matrix-decimal.json",
+          "schema": "dataset.schema.json",
+          "case_ids_sha256": "d5e8c97503676645c82580d76fcc971e88e6663d2ed48d781bf90ca0b079b7da"
+        },
+        {
+          "id": "type-matrix-integer",
+          "path": "dataset.type-matrix-integer.json",
+          "schema": "dataset.schema.json",
+          "case_ids_sha256": "9be75bfcc05518b8fb5889be5e175f66d885e393d0e479a3c665957cc3f4c57a"
+        },
+        {
+          "id": "type-matrix-missing",
+          "path": "dataset.type-matrix-missing.json",
+          "schema": "dataset.schema.json",
+          "case_ids_sha256": "ee2accbedcabaf7378c90277d188481113a77d4561144bec66852c7a402c5d92"
+        },
+        {
+          "id": "type-matrix-null",
+          "path": "dataset.type-matrix-null.json",
+          "schema": "dataset.schema.json",
+          "case_ids_sha256": "0721bf777cf20014b7d99e17b547c698537a936c29c83912ab8b62dfc23aef67"
+        },
+        {
+          "id": "type-matrix-object",
+          "path": "dataset.type-matrix-object.json",
+          "schema": "dataset.schema.json",
+          "case_ids_sha256": "4843f4cc81f31476b273e7a4b982cc860afa77ebdcf6fc3afa2dd3ad7332f6ec"
+        },
+        {
+          "id": "type-matrix-string",
+          "path": "dataset.type-matrix-string.json",
+          "schema": "dataset.schema.json",
+          "case_ids_sha256": "79c329783d8efb2aeef7998965bd0df0974a48ee189ad5bc97c6b46aae9700fa"
         }
       ]
     },
@@ -83,9 +408,16 @@
       "package": "verification",
       "datasets": [
         {
-          "id": "main",
-          "path": "dataset.json",
-          "schema": null
+          "id": "expected-value-matching",
+          "path": "dataset.expected-value-matching.json",
+          "schema": null,
+          "case_ids_sha256": "a024d3806faac1e86fa0fe520f6aeca63a98a289fbc1eaad1d8c86c9b4868a26"
+        },
+        {
+          "id": "predicate-evaluation",
+          "path": "dataset.predicate-evaluation.json",
+          "schema": null,
+          "case_ids_sha256": "708cadd0127bb8b5edfd7f6c3076ebb7afd9a7675d1b9883b1ec3034c96cf888"
         }
       ]
     }

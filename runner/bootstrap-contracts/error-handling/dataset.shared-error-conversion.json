@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "convert-layer-error-to-shared-error",
+      "input": {
+        "exit_code": 1,
+        "message": "coverage incomplete",
+        "from_tuple": true,
+        "contexts": [
+          "verification"
+        ]
+      },
+      "expected": {
+        "exit_code": 1,
+        "message": "coverage incomplete",
+        "rendered": "verification: coverage incomplete",
+        "display": "verification: coverage incomplete"
+      },
+      "coverage_fingerprint": "757778aa8bc395142d8604d9c1b0b2ab"
+    }
+  ]
+}

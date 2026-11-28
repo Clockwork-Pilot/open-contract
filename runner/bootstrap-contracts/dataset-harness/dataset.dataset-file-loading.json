@@ -1,0 +1,138 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "load-json",
+      "setup": "load-json",
+      "input": {
+        "operation": "load",
+        "extension": "json",
+        "document": "{\"version\":1,\"cases\":[{\"id\":\"sample\",\"input\":{\"value\":7},\"expected\":{\"value\":7}}]}"
+      },
+      "coverage_fingerprint": "128a1256f872f23216e9936c5fd00c72",
+      "expected": {
+        "ok": true
+      }
+    },
+    {
+      "id": "load-yaml",
+      "setup": "load-yaml",
+      "input": {
+        "operation": "load",
+        "extension": "yaml",
+        "document": "version: 1\ncases:\n  - id: sample\n    input: {value: 9}\n    predicate: .value == 9\n"
+      },
+      "coverage_fingerprint": "4f63857ed2dc627fb95f4423267f0ea7",
+      "expected": {
+        "ok": true
+      }
+    },
+    {
+      "id": "load-yml",
+      "setup": "load-yml",
+      "input": {
+        "operation": "load",
+        "extension": "yml",
+        "document": "version: 1\ncases:\n  - id: sample\n    input: value\n    expected: value\n"
+      },
+      "coverage_fingerprint": "81d1131a5226825e71cef71e4dc3c09a",
+      "expected": {
+        "ok": true
+      }
+    },
+    {
+      "id": "invalid-json",
+      "setup": "invalid-json",
+      "input": {
+        "operation": "load-error",
+        "extension": "json",
+        "document": "{",
+        "error": "invalid dataset JSON"
+      },
+      "coverage_fingerprint": "f0ad05214354668b52c1205eac8f6fe1",
+      "expected": {
+        "ok": true
+      }
+    },
+    {
+      "id": "invalid-yaml",
+      "setup": "invalid-yaml",
+      "input": {
+        "operation": "load-error",
+        "extension": "yaml",
+        "document": "version: [",
+        "error": "invalid dataset YAML"
+      },
+      "coverage_fingerprint": "90c32d77ae8ed9bec7a0ddf379cde2a4",
+      "expected": {
+        "ok": true
+      }
+    },
+    {
+      "id": "unsupported-extension",
+      "setup": "unsupported-extension",
+      "input": {
+        "operation": "load-error",
+        "extension": "txt",
+        "document": "anything",
+        "error": "unsupported dataset extension: txt"
+      },
+      "coverage_fingerprint": "4ffecb810da40f23169b5696e29f3e5e",
+      "expected": {
+        "ok": true
+      }
+    },
+    {
+      "id": "extension-required",
+      "setup": "extension-required",
+      "input": {
+        "operation": "load-error",
+        "extension": "",
+        "document": "anything",
+        "error": "dataset path must have a .json, .yaml, or .yml extension"
+      },
+      "coverage_fingerprint": "72bc4b8a170f7d89a8db0b7a7cfe5a00",
+      "expected": {
+        "ok": true
+      }
+    },
+    {
+      "id": "missing-file",
+      "setup": "missing-file",
+      "input": {
+        "operation": "missing-file",
+        "error": "cannot read dataset"
+      },
+      "coverage_fingerprint": "422639e5388b7bde7f29b50203b277a2",
+      "expected": {
+        "ok": true
+      }
+    },
+    {
+      "id": "round-trip-default-fields",
+      "setup": "round-trip-default-fields",
+      "input": {
+        "operation": "round-trip",
+        "extension": "json",
+        "document": "{\"version\":1,\"cases\":[{\"id\":\"plain\",\"input\":null,\"expected\":null}]}"
+      },
+      "coverage_fingerprint": "128a1256f872f23216e9936c5fd00c72",
+      "expected": {
+        "ok": true
+      }
+    },
+    {
+      "id": "missing-case-result-assertion",
+      "setup": "missing-case-result-assertion",
+      "input": {
+        "operation": "missing-expected",
+        "extension": "json",
+        "document": "{\"version\":1,\"cases\":[{\"id\":\"without-expected\",\"input\":{}}]}"
+      },
+      "coverage_fingerprint": "d436520fc25207cccf1df37abceaf70e",
+      "expected": {
+        "ok": true
+      }
+    }
+  ]
+}

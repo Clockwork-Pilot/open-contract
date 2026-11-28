@@ -1,0 +1,204 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "show-isolation-plan-none",
+      "input": {
+        "operation": "show-isolation-plan",
+        "backend": "none",
+        "manifest_yaml": "version: '1'\nname: show-isolation-plan-none\nfilesystem:\n  read:\n  - dataset.json\n  - validator.py\n  write:\n  - reports/result.json\nexecution:\n  command:\n  - /bin/true\ndatasets:\n- dataset.json\ncoverage_sources:\n- validator.py\n"
+      },
+      "expected": {},
+      "coverage_fingerprint": "3413eb37ea61c1ee7e0c727ca734e494",
+      "predicate": "contains(.plan, 'Isolation: none') AND contains(.plan, 'Filesystem enforcement: none (host access is unrestricted)') AND contains(.plan, 'dataset.json (file)') AND contains(.plan, 'reports/result.json (file)')"
+    },
+    {
+      "id": "show-isolation-plan-tempdir",
+      "input": {
+        "operation": "show-isolation-plan",
+        "backend": "tempdir",
+        "manifest_yaml": "version: '1'\nname: show-isolation-plan-tempdir\nfilesystem:\n  read:\n  - dataset.json\n  - validator.py\n  write:\n  - reports\nexecution:\n  command:\n  - /bin/true\ndatasets:\n- dataset.json\ncoverage_sources:\n- validator.py\n"
+      },
+      "expected": {},
+      "coverage_fingerprint": "79e0a3796c333613279a51bc7800df28",
+      "predicate": "contains(.plan, 'Isolation: tempdir') AND contains(.plan, 'contract files are copied to a temporary tree') AND contains(.plan, 'reports (recursive)')"
+    },
+    {
+      "id": "show-isolation-plan-bubblewrap",
+      "input": {
+        "operation": "show-isolation-plan",
+        "backend": "bubblewrap",
+        "manifest_yaml": "version: '1'\nname: show-isolation-plan-bubblewrap\nfilesystem:\n  read:\n  - dataset.json\n  - validator.py\n  write:\n  - reports\nexecution:\n  command:\n  - /bin/true\ndatasets:\n- dataset.json\ncoverage_sources:\n- validator.py\n"
+      },
+      "expected": {},
+      "coverage_fingerprint": "8c1ed81243ed6aca06ec5bb1ed80c9bf",
+      "predicate": "contains(.plan, 'Isolation: bubblewrap') AND contains(.plan, 'Bubblewrap fixed mounts: /proc, /dev, /tmp, /contract') AND contains(.plan, 'Bubblewrap contract root: /contract/<randomized-root>')"
+    },
+    {
+      "id": "show-isolation-plan-landlock",
+      "input": {
+        "operation": "show-isolation-plan",
+        "backend": "landlock",
+        "manifest_yaml": "version: '1'\nname: show-isolation-plan-landlock\nfilesystem:\n  read:\n  - dataset.json\n  - validator.py\n  write:\n  - reports\nexecution:\n  command:\n  - /bin/true\ndatasets:\n- dataset.json\ncoverage_sources:\n- validator.py\n"
+      },
+      "expected": {},
+      "coverage_fingerprint": "5d810c27252b2c1b21df41dd62a771f4",
+      "predicate": "contains(.plan, 'Isolation: landlock') AND contains(.plan, 'Contract read-only paths:') AND contains(.plan, 'Contract writable paths:')"
+    },
+    {
+      "id": "show-isolation-plan-tempdir-external-path-diagnostic-after-partial-plan",
+      "input": {
+        "operation": "show-isolation-plan",
+        "backend": "tempdir",
+        "external_read_path": "/etc/ssl/certs/ca-certificates.crt",
+        "duplicate_read_path": "dataset.json",
+        "command": [
+          "/bin/true"
+        ]
+      },
+      "expected": {},
+      "coverage_fingerprint": "54e631ba52b6486ea4cb0827e4b1a5ae",
+      "predicate": "contains(.plan, 'Isolation: tempdir') AND contains(.plan, 'Contract read-only paths:') AND contains(.plan, '/etc/ssl/certs/ca-certificates.crt') AND contains(.plan, 'Command argv: [\"/bin/true\"]') AND contains(.plan, 'Plan diagnostics') AND contains(.plan, 'outside the staged source root')"
+    },
+    {
+      "id": "show-isolation-plan-runtime-error-after-partial-plan",
+      "input": {
+        "operation": "show-isolation-plan",
+        "backend": "landlock",
+        "isolation_runtime": "missing-runtime.yaml",
+        "command": [
+          "/bin/true"
+        ]
+      },
+      "expected": {},
+      "coverage_fingerprint": "70530ff58f3a9ee1428a4e7ead8d74f1",
+      "predicate": "contains(.plan, 'Isolation: landlock') AND contains(.plan, 'Command argv: [\"/bin/true\"]') AND contains(.plan, 'Runtime plan: unavailable') AND contains(.plan, 'Plan diagnostics')"
+    },
+    {
+      "id": "show-isolation-plan-includes-nested-contract",
+      "input": {
+        "operation": "show-isolation-plan",
+        "backend": "none",
+        "nested_contract": true,
+        "command": [
+          "/bin/true"
+        ]
+      },
+      "expected": {},
+      "coverage_fingerprint": "6904d7629c4e98b699fac6ec9f145d5b",
+      "predicate": "contains(.plan, 'Contract batch-case-show-isolation-plan-includes-nested-contract:') AND contains(.plan, 'Contract nested-child:')"
+    },
+    {
+      "id": "show-isolation-plan-deduplicates-shared-nested-contract",
+      "input": {
+        "operation": "show-isolation-plan",
+        "backend": "none",
+        "shared_nested_contract": true,
+        "command": [
+          "/bin/true"
+        ]
+      },
+      "expected": {},
+      "coverage_fingerprint": "fbe867a9ea15786ea6e180189a932a2d",
+      "predicate": "contains(.plan, 'Contract left:') AND contains(.plan, 'Contract right:') AND contains(.plan, 'Contract shared:')"
+    },
+    {
+      "id": "show-isolation-plan-reports-invalid-nested-manifest-after-plan",
+      "input": {
+        "operation": "show-isolation-plan",
+        "backend": "none",
+        "nested_contract": true,
+        "bad_nested_manifest": true,
+        "command": [
+          "/bin/true"
+        ]
+      },
+      "expected": {},
+      "coverage_fingerprint": "8dfaa964c676801f401e315a4bbd2612",
+      "predicate": "contains(.plan, 'Contract read-only paths:') AND contains(.plan, 'nested contract') AND contains(.plan, 'could not be loaded') AND contains(.plan, 'Plan diagnostics')"
+    },
+    {
+      "id": "show-isolation-plan-rejects-invalid-manifest",
+      "input": {
+        "operation": "show-isolation-plan",
+        "backend": "none",
+        "manifest_yaml": "version: [\n"
+      },
+      "expected": {},
+      "coverage_fingerprint": "c6ac392dd32aaf9fda32ef6b31621cf9",
+      "predicate": "contains(.error, 'invalid')"
+    },
+    {
+      "id": "show-isolation-plan-rejects-missing-read-file",
+      "input": {
+        "operation": "show-isolation-plan",
+        "backend": "none",
+        "manifest_yaml": "version: '1'\nname: missing-read-file\nfilesystem:\n  read:\n  - missing.txt\n  write: []\nexecution:\n  command:\n  - /bin/true\ndatasets:\n- dataset.json\ncoverage_sources:\n- validator.py\n"
+      },
+      "expected": {},
+      "coverage_fingerprint": "c6ac392dd32aaf9fda32ef6b31621cf9",
+      "predicate": "contains(.error, 'No such file')"
+    },
+    {
+      "id": "show-isolation-plan-requires-command",
+      "input": {
+        "operation": "show-isolation-plan",
+        "backend": "none",
+        "manifest_yaml": "version: '1'\nname: command-required\nfilesystem:\n  read:\n  - dataset.json\n  - validator.py\n  write: []\ndatasets:\n- dataset.json\ncoverage_sources:\n- validator.py\n"
+      },
+      "expected": {},
+      "coverage_fingerprint": "7e411f3c531a1d2bf7119f39fedd888f",
+      "predicate": "contains(.plan, 'Contract command-required:') AND contains(.plan, 'missing execution.command') AND contains(.plan, 'Plan diagnostics')"
+    },
+    {
+      "id": "show-isolation-plan-reads-support-directory",
+      "input": {
+        "operation": "show-isolation-plan",
+        "backend": "landlock",
+        "support": true,
+        "support_path": "support/helper.py",
+        "manifest_yaml": "version: '1'\nname: show-support-directory\nfilesystem:\n  read:\n  - dataset.json\n  - validator.py\n  - support\n  write: []\nexecution:\n  command:\n  - /bin/true\ndatasets:\n- dataset.json\ncoverage_sources:\n- validator.py\n"
+      },
+      "expected": {},
+      "coverage_fingerprint": "f14b07076628264d6006296e7441611f",
+      "predicate": "contains(.plan, 'support (recursive)')"
+    },
+    {
+      "id": "show-isolation-plan-rejects-invalid-command-reference",
+      "input": {
+        "operation": "show-isolation-plan",
+        "backend": "landlock",
+        "manifest_yaml": "version: '1'\nname: invalid-command-reference\nfilesystem:\n  read:\n  - dataset.json\n  - validator.py\n  write: []\nexecution:\n  command:\n  - ${1INVALID}\ndatasets:\n- dataset.json\ncoverage_sources:\n- validator.py\n"
+      },
+      "expected": {},
+      "coverage_fingerprint": "70530ff58f3a9ee1428a4e7ead8d74f1",
+      "predicate": "contains(.plan, 'Command argv:') AND contains(.plan, 'Runtime plan: unavailable') AND contains(.plan, 'invalid environment variable name')"
+    },
+    {
+      "id": "show-isolation-plan-staging-rejects-symlink-escape",
+      "setup": "show-isolation-plan-staging-rejects-symlink-escape",
+      "input": {
+        "operation": "show-isolation-plan",
+        "backend": "tempdir",
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "input",
+              "input": {
+                "value": "actual"
+              },
+              "expected": {
+                "value": "actual"
+              },
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
+            }
+          ]
+        }
+      },
+      "expected": {},
+      "coverage_fingerprint": "f5a21c852d153e8e8d8797f51cb07acc",
+      "predicate": "contains(.plan, 'Contract read-only paths:') AND contains(.plan, 'staging source escapes package') AND contains(.plan, 'Plan diagnostics')"
+    }
+  ]
+}

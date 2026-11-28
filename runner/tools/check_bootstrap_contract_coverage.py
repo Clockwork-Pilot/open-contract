@@ -40,6 +40,7 @@ def main() -> int:
             dataset_path = package / declaration["path"]
             try:
                 dataset = load_dataset(dataset_path)
+                validate_dataset_identity(contract_id, declaration, dataset)
             except (ValueError, OSError) as error:
                 schema = declaration["schema"] or "<none>"
                 raise ValueError(
@@ -47,6 +48,8 @@ def main() -> int:
                     f"schema {schema}: {error}"
                 ) from error
             datasets.append((declaration, dataset_path, dataset))
+        validate_declared_dataset_files(package, declarations)
+        validate_unique_case_ids(contract_id, datasets)
     except (ValueError, OSError) as error:
         print(f"invalid bootstrap dataset manifest for {package}: {error}", file=sys.stderr)
         return 2
@@ -355,13 +358,20 @@ def load_dataset_declarations(package: Path) -> tuple[str, list[dict]]:
         dataset_ids = set()
         dataset_paths = set()
         for declaration in datasets:
-            if not isinstance(declaration, dict) or set(declaration) != {"id", "path", "schema"}:
-                raise ValueError(f"contract {contract_id}: each dataset must contain exactly id, path, and schema")
-            dataset_id, dataset_name, schema_name = (
-                declaration["id"], declaration["path"], declaration["schema"]
+            if not isinstance(declaration, dict) or set(declaration) != {
+                "id", "path", "schema", "case_ids_sha256"
+            }:
+                raise ValueError(
+                    f"contract {contract_id}: each dataset must contain exactly id, path, schema, and case_ids_sha256"
+                )
+            dataset_id, dataset_name, schema_name, case_ids_sha256 = (
+                declaration["id"], declaration["path"], declaration["schema"],
+                declaration["case_ids_sha256"],
             )
             if not valid_manifest_id(dataset_id):
                 raise ValueError(f"contract {contract_id}: invalid dataset ID {dataset_id!r}")
+            if not isinstance(case_ids_sha256, str) or re.fullmatch(r"[0-9a-f]{64}", case_ids_sha256) is None:
+                raise ValueError(f"contract {contract_id} dataset {dataset_id}: case_ids_sha256 must be a SHA-256 hex digest")
             if dataset_id in dataset_ids:
                 raise ValueError(f"contract {contract_id}: duplicate dataset ID {dataset_id!r}")
             dataset_ids.add(dataset_id)
@@ -406,6 +416,49 @@ def load_dataset_declarations(package: Path) -> tuple[str, list[dict]]:
     if len(matches) != 1:
         raise ValueError(f"multiple contract declarations for package {package.relative_to(root)}")
     return matches[0]
+
+
+def validate_dataset_identity(contract_id: str, declaration: dict, dataset: dict) -> None:
+    ids = [case["id"] for case in dataset["cases"]]
+    if len(ids) != len(set(ids)):
+        raise ValueError(f"duplicate case IDs in dataset {declaration['id']}")
+    actual = hash_case_ids(ids)
+    if actual != declaration["case_ids_sha256"]:
+        raise ValueError(
+            f"{contract_id} dataset {declaration['id']}: case ID inventory changed "
+            f"(expected {declaration['case_ids_sha256']}, observed {actual})"
+        )
+
+
+def hash_case_ids(ids: list[str]) -> str:
+    return hashlib.sha256("\0".join(ids).encode("utf-8")).hexdigest()
+
+
+def validate_declared_dataset_files(package: Path, declarations: list[dict]) -> None:
+    declared = {(package / declaration["path"]).resolve() for declaration in declarations}
+    discovered = {
+        path.resolve()
+        for path in package.glob("dataset.*")
+        if path.is_file()
+        and path.name != "dataset.schema.json"
+        and path.suffix in {".json", ".yaml", ".yml"}
+    }
+    undeclared = sorted(path.relative_to(package).as_posix() for path in discovered - declared)
+    if undeclared:
+        raise ValueError(f"undeclared dataset files for {package.name}: {', '.join(undeclared)}")
+
+
+def validate_unique_case_ids(contract_id: str, datasets: list[tuple[dict, Path, dict]]) -> None:
+    owners = {}
+    for declaration, _, dataset in datasets:
+        for case in dataset["cases"]:
+            previous = owners.get(case["id"])
+            if previous is not None:
+                raise ValueError(
+                    f"{contract_id}: case ID {case['id']!r} is declared in both "
+                    f"datasets {previous!r} and {declaration['id']!r}"
+                )
+            owners[case["id"]] = declaration["id"]
 
 
 def valid_manifest_id(value: object) -> bool:

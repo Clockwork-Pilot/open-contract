@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "load-dataset-reports-missing-file",
+      "setup": "load-dataset-reports-missing-file",
+      "input": {
+        "path": "missing-dataset.json"
+      },
+      "expected": {},
+      "coverage_fingerprint": "ba8bde3540f7e37a15a301bd8da4904f",
+      "predicate": "contains(.error, 'No such file or directory')"
+    },
+    {
+      "id": "dataset-version-out-of-range",
+      "input": {
+        "dataset": {
+          "version": 4294967296,
+          "cases": []
+        }
+      },
+      "expected": {},
+      "predicate": "exists(.error)",
+      "coverage_fingerprint": "4213e21bc2cad210409b990e00b070df"
+    }
+  ]
+}

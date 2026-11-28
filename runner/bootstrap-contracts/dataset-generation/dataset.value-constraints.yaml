@@ -1,0 +1,155 @@
+version: 1
+cases:
+- id: no-representable-number-between-exclusive-bounds
+  input:
+    schema:
+      type: number
+      exclusiveMinimum: 1.0e308
+      exclusiveMaximum: 1.0000000000000002e308
+  expected:
+    error_contains: no generated values within its range
+  coverage_fingerprint: 7e55a346d3f7a0f43057e47236f8ec99
+- id: minimum-must-be-numeric
+  input:
+    schema:
+      type: number
+      minimum: low
+  expected:
+    error_contains: minimum must be a finite number
+  coverage_fingerprint: 94a8992fd964df4e4aef725548a2baa4
+- id: minimum-length-must-be-nonnegative-integer
+  input:
+    schema:
+      type: string
+      minLength: -1
+  expected:
+    error_contains: minLength must be a nonnegative integer
+  coverage_fingerprint: ac1504c2a2dbbee40e31e4665b9fb22c
+- id: contradictory-number-range
+  input:
+    schema:
+      type: number
+      minimum: 4
+      maximum: 2
+  expected:
+    error_contains: empty numeric range
+  coverage_fingerprint: e5867285b45994ecdf5ee8af5d651d19
+- id: equal-exclusive-number-bounds
+  input:
+    schema:
+      type: number
+      exclusiveMinimum: 4
+      exclusiveMaximum: 4
+  expected:
+    error_contains: empty numeric range
+  coverage_fingerprint: 8e424d4cf8255fb051ce58c123b7294f
+- id: range-with-no-integer-values
+  input:
+    schema:
+      type: integer
+      minimum: 1.2
+      maximum: 1.8
+  expected:
+    error_contains: no integer values in its range
+  coverage_fingerprint: e9591f75a935cc634a07ba318dbc66bd
+- id: reversed-string-length-range
+  input:
+    schema:
+      type: string
+      minLength: 5
+      maxLength: 2
+  expected:
+    error_contains: minLength must not exceed maxLength
+  coverage_fingerprint: dc49eed9bbe9c0e2e3321fdb02dc540b
+- id: maximum-length-must-be-numeric
+  input:
+    schema:
+      type: string
+      maxLength: long
+  expected:
+    error_contains: maxLength must be a nonnegative integer
+  coverage_fingerprint: 4f29a966bb81e77dd91e3689db7b2e47
+- id: exclusive-minimum-must-be-finite
+  input:
+    schema:
+      type: number
+      exclusiveMinimum: low
+  expected:
+    error_contains: exclusiveMinimum must be a finite number
+  coverage_fingerprint: 4d372935c275c21bc2c291f3d4c4447c
+- id: exclusive-maximum-must-be-finite
+  input:
+    schema:
+      type: number
+      exclusiveMaximum: high
+  expected:
+    error_contains: exclusiveMaximum must be a finite number
+  coverage_fingerprint: 0cc2de686a21c4bdb08142c551cd1d9e
+- id: maximum-must-be-finite
+  input:
+    schema:
+      type: number
+      maximum: high
+  expected:
+    error_contains: maximum must be a finite number
+  coverage_fingerprint: 8f2d9db0537be438de81d36f91614aa6
+- id: exclusive-integer-lower-bound
+  input:
+    schema:
+      type: integer
+      exclusiveMinimum: 2
+  expected:
+    version: 1
+    cases:
+    - id: generated-0001
+      input: 3
+    - id: generated-0002
+      input: 4
+  coverage_fingerprint: 21431834a687f48fbbc9141f47307fc4
+- id: exclusive-integer-upper-bound
+  input:
+    schema:
+      type: integer
+      exclusiveMaximum: 2
+  expected:
+    version: 1
+    cases:
+    - id: generated-0001
+      input: 0
+    - id: generated-0002
+      input: 1
+  coverage_fingerprint: 2c5bda69dd3a294a66f10802fce8e89a
+- id: exclusive-number-lower-bound
+  input:
+    schema:
+      type: number
+      exclusiveMinimum: 2
+  expected:
+    version: 1
+    cases:
+    - id: generated-0001
+      input: 3.0
+  coverage_fingerprint: 4949cf57a54ca230ccf2f9a7bde08189
+- id: exclusive-number-upper-bound
+  input:
+    schema:
+      type: number
+      exclusiveMaximum: 2
+  expected:
+    version: 1
+    cases:
+    - id: generated-0001
+      input: 1.0
+  coverage_fingerprint: 99e203e057c960b8a9f4710160c03cd6
+- id: equal-inclusive-number-bounds
+  input:
+    schema:
+      type: number
+      minimum: 2
+      maximum: 2
+  expected:
+    version: 1
+    cases:
+    - id: generated-0001
+      input: 2.0
+  coverage_fingerprint: cbcc7bb1132573e23f591e07de4e500a

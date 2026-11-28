@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import os
 import shutil
 import subprocess
@@ -45,6 +46,11 @@ def main() -> int:
     )
     if components.returncode or not any(line.startswith("llvm-tools-") for line in components.stdout.splitlines()):
         print("LLVM coverage tools are required (install with: rustup component add llvm-tools-preview)", file=sys.stderr)
+        return 2
+    try:
+        validate_predicate_datasets()
+    except (OSError, ValueError) as error:
+        print(f"invalid predicate dataset manifest: {error}", file=sys.stderr)
         return 2
 
     artifacts = Path.home() / ".cache" / "open-contract-coverage"
@@ -114,6 +120,68 @@ def main() -> int:
         print(f"Uncovered evaluator lines: {uncovered_lines}", file=sys.stderr)
         print(f"Uncovered evaluator regions (line, column): {uncovered_regions}", file=sys.stderr)
     return 0 if passed else 1
+
+
+def validate_predicate_datasets() -> None:
+    manifest_path = CRATE.parent / "datasets.manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    contracts = manifest.get("contracts")
+    if not isinstance(contracts, list):
+        raise ValueError("contracts must be an array")
+    contract = next(
+        (item for item in contracts if isinstance(item, dict) and item.get("package") == "predicates"),
+        None,
+    )
+    if contract is None or not isinstance(contract.get("datasets"), list) or not contract["datasets"]:
+        raise ValueError("predicates must declare at least one suite")
+    ids = set()
+    case_ids_seen = set()
+    paths = set()
+    declared_files = set()
+    for suite in contract["datasets"]:
+        if not isinstance(suite, dict) or set(suite) != {
+            "id", "path", "schema", "case_ids_sha256"
+        }:
+            raise ValueError("each predicate suite must declare id, path, schema, and case_ids_sha256")
+        suite_id, path, schema = suite["id"], suite["path"], suite["schema"]
+        if not isinstance(suite_id, str) or not suite_id or suite_id in ids:
+            raise ValueError(f"invalid or duplicate suite ID {suite_id!r}")
+        ids.add(suite_id)
+        if not isinstance(path, str) or not path or Path(path).is_absolute():
+            raise ValueError(f"suite {suite_id}: path must be relative")
+        dataset_path = (CRATE / path).resolve()
+        if not dataset_path.is_relative_to(CRATE.resolve()):
+            raise ValueError(f"suite {suite_id}: path escapes predicates package")
+        if dataset_path in paths or not dataset_path.is_file():
+            raise ValueError(f"suite {suite_id}: dataset path is missing or duplicated")
+        paths.add(dataset_path)
+        declared_files.add(dataset_path)
+        if schema is not None:
+            if not isinstance(schema, str) or Path(schema).is_absolute():
+                raise ValueError(f"suite {suite_id}: schema path must be relative or null")
+            schema_path = (CRATE / schema).resolve()
+            if not schema_path.is_relative_to(CRATE.resolve()) or not schema_path.is_file():
+                raise ValueError(f"suite {suite_id}: schema file is missing or escapes package")
+        dataset = json.loads(dataset_path.read_text(encoding="utf-8"))
+        cases = dataset.get("cases") if isinstance(dataset, dict) else None
+        if not isinstance(cases, list) or not cases:
+            raise ValueError(f"suite {suite_id}: cases must be a nonempty array")
+        case_ids = []
+        for case in cases:
+            case_id = case.get("id") if isinstance(case, dict) else None
+            if not isinstance(case_id, str) or not case_id or case_id in case_ids_seen:
+                raise ValueError(f"suite {suite_id}: case ID is invalid or assigned more than once")
+            case_ids.append(case_id)
+            case_ids_seen.add(case_id)
+        actual = hashlib.sha256("\0".join(case_ids).encode("utf-8")).hexdigest()
+        if suite.get("case_ids_sha256") != actual:
+            raise ValueError(f"suite {suite_id}: case ID inventory checksum changed")
+    discovered = {
+        path.resolve() for path in CRATE.glob("dataset.*")
+        if path.is_file() and path.name != "dataset.schema.json" and path.suffix == ".json"
+    }
+    if discovered != declared_files:
+        raise ValueError("declared suite files do not match dataset files in predicates package")
 
 
 def resolve_source_path(filename: str) -> Path:

@@ -1,0 +1,266 @@
+version: 1
+cases:
+- id: directory-aliases-and-coverage-globs-resolve
+  coverage_fingerprint: 0058a6190bb6ea8606de4dbbfd516288
+  input:
+    operation: manifest
+    yaml: "version: '1'\nname: aliased\ndirectories:\n  source: support\n  tests:\
+      \ tests\n  child: child\n  output: output\ndatasets: ['@tests/data.json']\n\
+      coverage_sources: ['@source/*.py', support/helper.py]\nnested_contracts: ['@child/contract.yaml']\n\
+      supplemental_tests: ['@tests/extra.rs']\nfilesystem:\n  read: ['@tests', '@source',\
+      \ '@child']\n  write: ['@output']\n"
+  expected:
+    valid: true
+- id: directory-alias-rejects-invalid-name
+  coverage_fingerprint: ec78f83bf3af065250b4b76cd567c911
+  input:
+    operation: manifest
+    yaml: 'version: ''1''
+
+      name: aliased
+
+      directories: {''bad.name'': support}
+
+      datasets: [dataset.json]
+
+      coverage_sources: [validator.py]
+
+      filesystem: {read: [dataset.json, validator.py], write: []}
+
+      '
+  expected:
+    valid: false
+- id: directory-alias-rejects-path-escape
+  coverage_fingerprint: 9b2cd45b6a361cbc8e29ef3f9edff0ad
+  input:
+    operation: manifest
+    yaml: 'version: ''1''
+
+      name: aliased
+
+      directories: {source: ../outside}
+
+      datasets: [dataset.json]
+
+      coverage_sources: [validator.py]
+
+      filesystem: {read: [dataset.json, validator.py], write: []}
+
+      '
+  expected:
+    valid: false
+- id: directory-alias-must-name-directory
+  coverage_fingerprint: b9b2770a9e624dfeddbfb3c8dabb064b
+  input:
+    operation: manifest
+    yaml: 'version: ''1''
+
+      name: aliased
+
+      directories: {source: validator.py}
+
+      datasets: [dataset.json]
+
+      coverage_sources: [validator.py]
+
+      filesystem: {read: [dataset.json, validator.py], write: []}
+
+      '
+  expected:
+    valid: false
+- id: directory-alias-without-suffix-does-not-name-a-file
+  coverage_fingerprint: 516b1c65bca07839720f8244fb12312e
+  input:
+    operation: manifest
+    yaml: 'version: ''1''
+
+      name: aliased
+
+      directories: {tests: tests}
+
+      datasets: [''@tests'']
+
+      coverage_sources: [validator.py]
+
+      filesystem: {read: [''@tests'', validator.py], write: []}
+
+      '
+  expected:
+    valid: false
+- id: coverage-glob-must-match-a-file
+  coverage_fingerprint: 41ba6b3d58ad095a9c048c0c3296cfdd
+  input:
+    operation: manifest
+    yaml: 'version: ''1''
+
+      name: glob
+
+      datasets: [dataset.json]
+
+      coverage_sources: [''support/*.rs'']
+
+      filesystem: {read: [dataset.json, support], write: []}
+
+      '
+  expected:
+    valid: false
+- id: coverage-glob-cannot-include-a-directory
+  coverage_fingerprint: b32830fd81a6a8ff182751ff23601159
+  input:
+    operation: manifest
+    yaml: 'version: ''1''
+
+      name: glob
+
+      datasets: [dataset.json]
+
+      coverage_sources: [''support/nested'']
+
+      filesystem: {read: [dataset.json, support], write: []}
+
+      '
+  expected:
+    valid: false
+- id: coverage-source-symlink-escape
+  coverage_fingerprint: c8da876942531efb2a5e3f8b41b68a23
+  setup: coverage-source-symlink-escape
+  input:
+    operation: manifest
+    yaml: 'version: ''1''
+
+      name: glob
+
+      datasets: [dataset.json]
+
+      coverage_sources: [''support/*.py'']
+
+      filesystem: {read: [dataset.json, support], write: []}
+
+      '
+  expected:
+    valid: false
+- id: coverage-glob-enumeration-error-is-rejected
+  coverage_fingerprint: 41ba6b3d58ad095a9c048c0c3296cfdd
+  input:
+    operation: manifest
+    yaml: 'version: ''1''
+
+      name: glob
+
+      datasets: [dataset.json]
+
+      coverage_sources: [''support/helper.py/*.py'']
+
+      filesystem: {read: [dataset.json, support], write: []}
+
+      '
+  expected:
+    valid: false
+- id: coverage-glob-dangling-match-is-rejected
+  coverage_fingerprint: 6b5257c0f9d48ff68f9b45916c6c616e
+  setup: coverage-glob-dangling-match-is-rejected
+  input:
+    operation: manifest
+    yaml: 'version: ''1''
+
+      name: glob
+
+      datasets: [dataset.json]
+
+      coverage_sources: [''support/*.py'']
+
+      filesystem: {read: [dataset.json, support], write: []}
+
+      '
+  expected:
+    valid: false
+- id: directory-alias-symlink-escape
+  coverage_fingerprint: f4ea64a1adf6f89cebf7a32686469967
+  setup: directory-alias-symlink-escape
+  input:
+    operation: manifest
+    yaml: 'version: ''1''
+
+      name: alias
+
+      directories: {source: escape}
+
+      datasets: [dataset.json]
+
+      coverage_sources: [validator.py]
+
+      filesystem: {read: [dataset.json, validator.py], write: []}
+
+      '
+  expected:
+    valid: false
+- id: coverage-source-unknown-alias-is-rejected
+  coverage_fingerprint: b2f6ac216fe46bf590b9a4c9fc9fb00a
+  input:
+    operation: manifest
+    yaml: 'version: ''1''
+
+      name: alias
+
+      datasets: [dataset.json]
+
+      coverage_sources: [''@missing/source.py'']
+
+      filesystem: {read: [dataset.json, validator.py], write: []}
+
+      '
+  expected:
+    valid: false
+- id: accepts-parent-relative-coverage-source
+  coverage_fingerprint: 85ad876beb69b308638128d6365dc5c2
+  setup: accepts-parent-relative-coverage-source
+  input:
+    operation: manifest
+    yaml: 'version: ''1''
+
+      name: parent-coverage-source
+
+      datasets: [dataset.json]
+
+      coverage_sources: [''../outside.py'']
+
+      filesystem: {read: [dataset.json, validator.py, ../outside.py], write: []}
+
+      '
+  expected:
+    valid: true
+- id: absolute-coverage-source-is-rejected
+  input:
+    operation: manifest
+    yaml: 'version: ''1''
+
+      name: absolute-coverage
+
+      datasets: [dataset.json]
+
+      coverage_sources: [''/tmp/validator.py'']
+
+      filesystem: {read: [dataset.json, validator.py], write: []}
+
+      '
+  expected:
+    valid: false
+  coverage_fingerprint: df7c77efc0deae4e282cf8bc5e3b3e19
+- id: coverage-glob-inaccessible-directory
+  coverage_fingerprint: d4ec58767d8b66b746604b0920dcabd7
+  setup: coverage-glob-inaccessible-directory
+  input:
+    operation: manifest
+    yaml: 'version: ''1''
+
+      name: glob
+
+      datasets: [dataset.json]
+
+      coverage_sources: [''support/blocked/*.py'']
+
+      filesystem: {read: [dataset.json, support], write: []}
+
+      '
+  expected:
+    valid: false

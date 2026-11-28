@@ -1,0 +1,150 @@
+version: 1
+cases:
+- id: nested-contract-sibling-manifest
+  coverage_fingerprint: 38842ede780dffd33a401b03b16128b0
+  setup: nested-contract-sibling-manifest
+  input:
+    operation: manifest
+    yaml: "version: '1'\nname: parent\ndatasets: [dataset.json]\ncoverage_sources:\
+      \ [validator.py]\nnested_contracts: [../sibling/contract.yaml]\nfilesystem:\n\
+      \  read: [dataset.json, validator.py, ../sibling/contract.yaml]\n  write: []\n"
+  expected:
+    valid: true
+- id: nested-contract-multiple-parent-traversals
+  coverage_fingerprint: 38842ede780dffd33a401b03b16128b0
+  setup: nested-contract-multiple-parent-traversals
+  input:
+    operation: manifest
+    yaml: "version: '1'\nname: parent\ndatasets: [dataset.json]\ncoverage_sources:\
+      \ [validator.py]\nnested_contracts: [../../contracts/child/contract.yaml]\n\
+      filesystem:\n  read: [dataset.json, validator.py, ../../contracts/child/contract.yaml]\n\
+      \  write: []\n"
+  expected:
+    valid: true
+- id: nested-contract-absolute-path-rejected
+  coverage_fingerprint: 3e16276d467ce31e0469a5f4f67bf244
+  setup: nested-contract-absolute-path-rejected
+  input:
+    operation: manifest
+    yaml: "version: '1'\nname: parent\ndatasets: [dataset.json]\ncoverage_sources:\
+      \ [validator.py]\nnested_contracts: ['@CHILD_MANIFEST@']\nfilesystem:\n  read:\
+      \ [dataset.json, validator.py, '@CHILD_MANIFEST@']\n  write: []\n"
+  expected:
+    valid: false
+- id: nested-contract-missing-manifest-rejected
+  coverage_fingerprint: fcbc9f671a9ac1f113660f500ea3c71a
+  setup: nested-contract-missing-manifest-rejected
+  input:
+    operation: manifest
+    yaml: "version: '1'\nname: parent\ndatasets: [dataset.json]\ncoverage_sources:\
+      \ [validator.py]\nnested_contracts: [../sibling/missing.yaml]\nfilesystem:\n\
+      \  read: [dataset.json, validator.py, ../sibling]\n  write: []\n"
+  expected:
+    valid: false
+- id: nested-contract-manifest-not-readable
+  coverage_fingerprint: 802b29768339d455969c1f72417283e9
+  setup: nested-contract-manifest-not-readable
+  input:
+    operation: manifest
+    yaml: "version: '1'\nname: parent\ndatasets: [dataset.json]\ncoverage_sources:\
+      \ [validator.py]\nnested_contracts: [../sibling/contract.yaml]\nfilesystem:\n\
+      \  read: [dataset.json, validator.py]\n  write: []\n"
+  expected:
+    valid: false
+- id: nested-contract-symlink-rejected
+  coverage_fingerprint: 08a18bb9a26648ddf7eb58bd4dbfb1e5
+  setup: nested-contract-symlink-rejected
+  input:
+    operation: manifest
+    yaml: "version: '1'\nname: parent\ndatasets: [dataset.json]\ncoverage_sources:\
+      \ [validator.py]\nnested_contracts: [../sibling/linked.yaml]\nfilesystem:\n\
+      \  read: [dataset.json, validator.py, ../sibling/linked.yaml]\n  write: []\n"
+  expected:
+    valid: false
+- id: nested-contract-empty-component-rejected
+  coverage_fingerprint: 479be648b42a54f3d88f89bceda6e8c1
+  setup: nested-contract-empty-component-rejected
+  input:
+    operation: manifest
+    yaml: "version: '1'\nname: parent\ndatasets: [dataset.json]\ncoverage_sources:\
+      \ [validator.py]\nnested_contracts: [../sibling//contract.yaml]\nfilesystem:\n\
+      \  read: [dataset.json, validator.py, ../sibling]\n  write: []\n"
+  expected:
+    valid: false
+- id: nested-contract-directory-rejected
+  coverage_fingerprint: c985a4fbe72d98816ddd45d33fb6ad5c
+  setup: nested-contract-directory-rejected
+  input:
+    operation: manifest
+    yaml: "version: '1'\nname: parent\ndatasets: [dataset.json]\ncoverage_sources:\
+      \ [validator.py]\nnested_contracts: [../sibling]\nfilesystem:\n  read: [dataset.json,\
+      \ validator.py, ../sibling]\n  write: []\n"
+  expected:
+    valid: false
+- id: nested-contract-file-parent-rejected
+  coverage_fingerprint: a52fd0985ef6672ee6572eeac7580c2a
+  setup: nested-contract-file-parent-rejected
+  input:
+    operation: manifest
+    yaml: "version: '1'\nname: parent\ndatasets: [dataset.json]\ncoverage_sources:\
+      \ [validator.py]\nnested_contracts: [../sibling/contract.yaml/child.yaml]\n\
+      filesystem:\n  read: [dataset.json, validator.py, ../sibling/contract.yaml]\n\
+      \  write: []\n"
+  expected:
+    valid: false
+- id: nested-contract-current-directory-component
+  coverage_fingerprint: 860d1e8cdec9ff0aad73095ad3d0c22d
+  setup: nested-contract-current-directory-component
+  input:
+    operation: manifest
+    yaml: "version: '1'\nname: parent\ndatasets: [dataset.json]\ncoverage_sources:\
+      \ [validator.py]\nnested_contracts: [./../sibling/contract.yaml]\nfilesystem:\n\
+      \  read: [dataset.json, validator.py, ../sibling/contract.yaml]\n  write: []\n"
+  expected:
+    valid: true
+- id: nested-contract-empty-reference-rejected
+  coverage_fingerprint: f5091445f21b0f3206107b78db995630
+  input:
+    operation: manifest
+    yaml: "version: '1'\nname: parent\ndatasets: [dataset.json]\ncoverage_sources:\
+      \ [validator.py]\nnested_contracts: ['']\nfilesystem:\n  read: [dataset.json,\
+      \ validator.py]\n  write: []\n"
+  expected:
+    valid: false
+- id: nested-contract-backslash-rejected
+  coverage_fingerprint: 5876f2b1686e66cda2565d344618d1c4
+  input:
+    operation: manifest
+    yaml: "version: '1'\nname: parent\ndatasets: [dataset.json]\ncoverage_sources:\
+      \ [validator.py]\nnested_contracts: ['sibling\\contract.yaml']\nfilesystem:\n\
+      \  read: [dataset.json, validator.py]\n  write: []\n"
+  expected:
+    valid: false
+- id: nested-contract-drive-prefix-rejected
+  coverage_fingerprint: 1736169b3eee7116953f19c4bf46bf97
+  input:
+    operation: manifest
+    yaml: "version: '1'\nname: parent\ndatasets: [dataset.json]\ncoverage_sources:\
+      \ [validator.py]\nnested_contracts: [C:/contract.yaml]\nfilesystem:\n  read:\
+      \ [dataset.json, validator.py]\n  write: []\n"
+  expected:
+    valid: false
+- id: nested-contract-alias-must-exist
+  coverage_fingerprint: b08fd70620c0faf2ee5a091ffedf2c3a
+  input:
+    operation: manifest
+    yaml: 'version: ''1''
+
+      name: alias
+
+      datasets: [dataset.json]
+
+      coverage_sources: [validator.py]
+
+      nested_contracts: [''@missing/contract.yaml'']
+
+      filesystem: {read: [dataset.json, validator.py], write: []}
+
+      '
+  expected:
+    valid: false

@@ -60,14 +60,35 @@ fn missing_fingerprint_becomes_zero_sentinel_without_skipping_case() {
 }
 
 #[test]
-fn package_dataset_and_case_values_match_its_schema() {
-    let dataset = load_dataset_with_schema(
-        &package_file("dataset.json"),
-        &package_file("dataset.schema.json"),
+fn declared_package_datasets_and_case_values_match_their_schemas() {
+    let package = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let manifest_path = package.parent().unwrap().join("datasets.manifest.json");
+    let manifest: serde_json::Value = serde_json::from_slice(
+        &std::fs::read(&manifest_path).expect("read bootstrap dataset manifest"),
     )
-    .expect("package dataset should match its schema");
-    assert_eq!(dataset.version, 1);
-    assert_eq!(dataset.cases.len(), 34);
+    .expect("parse bootstrap dataset manifest");
+    let contract = manifest["contracts"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|contract| contract["package"] == "dataset-harness")
+        .expect("dataset harness should be declared");
+    let suites = contract["datasets"].as_array().unwrap();
+    let mut total = 0;
+    let mut case_ids = std::collections::HashSet::new();
+    for suite in suites {
+        let id = suite["id"].as_str().expect("suite ID");
+        let path = package.join(suite["path"].as_str().expect("suite path"));
+        let schema = package.join(suite["schema"].as_str().expect("suite schema"));
+        let dataset = load_dataset_with_schema(&path, &schema)
+            .unwrap_or_else(|error| panic!("suite {id} should match its schema: {error}"));
+        assert_eq!(dataset.version, 1);
+        for case in &dataset.cases {
+            assert!(case_ids.insert(case.id.clone()), "duplicate case {}", case.id);
+        }
+        total += dataset.cases.len();
+    }
+    assert_eq!(total, 34);
 }
 
 #[test]

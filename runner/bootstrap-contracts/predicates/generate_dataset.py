@@ -4,12 +4,13 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import sys
 from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parent
-DATASET = ROOT / "dataset.json"
+DATASET_MANIFEST = ROOT.parent / "datasets.manifest.json"
 LANGUAGE_SCHEMA = ROOT / "predicate-language.schema.json"
 DATASET_CASES = ROOT / "dataset-cases.json"
 
@@ -201,9 +202,58 @@ def render() -> str:
 
 
 if __name__ == "__main__":
-    rendered = render()
+    generated = json.loads(render())
+    manifest = json.loads(DATASET_MANIFEST.read_text(encoding="utf-8"))
+    contract = next(
+        entry for entry in manifest["contracts"] if entry["package"] == "predicates"
+    )
+    by_id: dict[str, dict] = {}
+    suites: dict[str, list[dict]] = {}
+    for declaration in contract["datasets"]:
+        path = ROOT / declaration["path"]
+        dataset = json.loads(path.read_text(encoding="utf-8"))
+        suite_cases = dataset["cases"]
+        suites[declaration["id"]] = suite_cases
+        for case in suite_cases:
+            if case["id"] in by_id:
+                raise SystemExit(f"case {case['id']!r} appears in multiple predicate suites")
+            by_id[case["id"]] = case
+
+    generated_by_id = {case["id"]: case for case in generated["cases"]}
+    missing = sorted(set(generated_by_id) - set(by_id))
+    stale = sorted(set(by_id) - set(generated_by_id))
+    mismatched = sorted(
+        case_id for case_id in set(generated_by_id) & set(by_id)
+        if generated_by_id[case_id] != by_id[case_id]
+    )
     if "--check" in sys.argv:
-        if DATASET.read_text(encoding="utf-8") != rendered:
-            raise SystemExit("dataset.json is stale; run make generate-dataset")
+        if missing or stale or mismatched:
+            raise SystemExit(
+                "predicate suite files are stale; run make generate-dataset "
+                f"(unassigned={len(missing)}, stale={len(stale)}, changed={len(mismatched)})"
+            )
     else:
-        DATASET.write_text(rendered, encoding="utf-8")
+        if missing:
+            raise SystemExit(
+                "generated predicate cases need explicit suite assignments before "
+                "they can be written: " + ", ".join(missing[:20])
+            )
+        for declaration in contract["datasets"]:
+            suite_cases = [
+                generated_by_id[case["id"]]
+                for case in suites[declaration["id"]]
+                if case["id"] in generated_by_id
+            ]
+            suite = {"version": generated["version"], "cases": suite_cases}
+            path = ROOT / declaration["path"]
+            path.write_text(
+                json.dumps(suite, indent=2, ensure_ascii=False) + "\n",
+                encoding="utf-8",
+            )
+            declaration["case_ids_sha256"] = hashlib.sha256(
+                "\0".join(case["id"] for case in suite_cases).encode("utf-8")
+            ).hexdigest()
+        DATASET_MANIFEST.write_text(
+            json.dumps(manifest, indent=2, ensure_ascii=False) + "\n",
+            encoding="utf-8",
+        )

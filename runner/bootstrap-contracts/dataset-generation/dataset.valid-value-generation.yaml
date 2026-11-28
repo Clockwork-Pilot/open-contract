@@ -1,0 +1,623 @@
+version: 1
+cases:
+- id: boolean-values
+  input:
+    schema:
+      type: boolean
+  expected:
+    version: 1
+    cases:
+    - id: generated-0001
+      input: false
+    - id: generated-0002
+      input: true
+  coverage_fingerprint: 6936b1019399e9aa60dd3ba334995f31
+- id: nested-object-and-required-fields
+  input:
+    schema:
+      type: object
+      required:
+      - enabled
+      - label
+      properties:
+        enabled:
+          type: boolean
+        label:
+          type: string
+  expected:
+    version: 1
+    cases:
+    - id: generated-0001
+      input:
+        enabled: false
+        label: ''
+    - id: generated-0002
+      input:
+        enabled: false
+        label: sample
+    - id: generated-0003
+      input:
+        enabled: true
+        label: ''
+    - id: generated-0004
+      input:
+        enabled: true
+        label: sample
+  coverage_fingerprint: adf1208cb3fc51e72f305b920a6d616a
+- id: optional-property-enum-and-examples
+  input:
+    schema:
+      type: object
+      properties:
+        mode:
+          enum:
+          - fast
+          - safe
+        retries:
+          type: integer
+          examples:
+          - 4
+          - 7
+  expected:
+    version: 1
+    cases:
+    - id: generated-0001
+      input: {}
+    - id: generated-0002
+      input:
+        retries: 0
+    - id: generated-0003
+      input:
+        retries: 1
+    - id: generated-0004
+      input:
+        retries: -1
+    - id: generated-0005
+      input:
+        retries: 4
+    - id: generated-0006
+      input:
+        retries: 7
+    - id: generated-0007
+      input:
+        mode: fast
+    - id: generated-0008
+      input:
+        mode: fast
+        retries: 0
+    - id: generated-0009
+      input:
+        mode: fast
+        retries: 1
+    - id: generated-0010
+      input:
+        mode: fast
+        retries: -1
+    - id: generated-0011
+      input:
+        mode: fast
+        retries: 4
+    - id: generated-0012
+      input:
+        mode: fast
+        retries: 7
+    - id: generated-0013
+      input:
+        mode: safe
+    - id: generated-0014
+      input:
+        mode: safe
+        retries: 0
+    - id: generated-0015
+      input:
+        mode: safe
+        retries: 1
+    - id: generated-0016
+      input:
+        mode: safe
+        retries: -1
+    - id: generated-0017
+      input:
+        mode: safe
+        retries: 4
+    - id: generated-0018
+      input:
+        mode: safe
+        retries: 7
+  coverage_fingerprint: 89ba4e0ba8a156cdafee650f9df689ee
+- id: number-null-and-homogeneous-array
+  input:
+    schema:
+      type: object
+      required:
+      - amount
+      - list
+      - nothing
+      properties:
+        amount:
+          type: number
+        list:
+          type: array
+          items:
+            type: integer
+        nothing:
+          type: 'null'
+  expected:
+    version: 1
+    cases:
+    - id: generated-0001
+      input:
+        amount: 0.0
+        list: []
+        nothing: null
+    - id: generated-0002
+      input:
+        amount: 0.0
+        list:
+        - 0
+        nothing: null
+    - id: generated-0003
+      input:
+        amount: 0.0
+        list:
+        - 1
+        nothing: null
+    - id: generated-0004
+      input:
+        amount: 0.0
+        list:
+        - -1
+        nothing: null
+    - id: generated-0005
+      input:
+        amount: 1.0
+        list: []
+        nothing: null
+    - id: generated-0006
+      input:
+        amount: 1.0
+        list:
+        - 0
+        nothing: null
+    - id: generated-0007
+      input:
+        amount: 1.0
+        list:
+        - 1
+        nothing: null
+    - id: generated-0008
+      input:
+        amount: 1.0
+        list:
+        - -1
+        nothing: null
+    - id: generated-0009
+      input:
+        amount: -1.0
+        list: []
+        nothing: null
+    - id: generated-0010
+      input:
+        amount: -1.0
+        list:
+        - 0
+        nothing: null
+    - id: generated-0011
+      input:
+        amount: -1.0
+        list:
+        - 1
+        nothing: null
+    - id: generated-0012
+      input:
+        amount: -1.0
+        list:
+        - -1
+        nothing: null
+  coverage_fingerprint: 7842df2ab7bbb366f18b9b4bdc742449
+- id: integer-range-inclusive
+  input:
+    schema:
+      type: integer
+      minimum: 2
+      maximum: 6
+  expected:
+    version: 1
+    cases:
+    - id: generated-0001
+      input: 2
+    - id: generated-0002
+      input: 4
+    - id: generated-0003
+      input: 6
+  coverage_fingerprint: c75fb2b3b5dccb22058a6a2a45f5d929
+- id: integer-range-lower-bound
+  input:
+    schema:
+      type: integer
+      minimum: 2
+  expected:
+    version: 1
+    cases:
+    - id: generated-0001
+      input: 2
+    - id: generated-0002
+      input: 3
+  coverage_fingerprint: d0b9aa0272628cabc87eb33efb04b6e4
+- id: integer-range-upper-bound
+  input:
+    schema:
+      type: integer
+      maximum: 2
+  expected:
+    version: 1
+    cases:
+    - id: generated-0001
+      input: 1
+    - id: generated-0002
+      input: 2
+  coverage_fingerprint: a99b7b1e659af04e09038de1920c0b61
+- id: integer-range-exclusive
+  input:
+    schema:
+      type: integer
+      exclusiveMinimum: 1.5
+      exclusiveMaximum: 5.5
+  expected:
+    version: 1
+    cases:
+    - id: generated-0001
+      input: 2
+    - id: generated-0002
+      input: 3
+    - id: generated-0003
+      input: 5
+  coverage_fingerprint: 35212fe63ab84b6952dd4f201a213e00
+- id: integer-range-with-both-bound-keywords
+  input:
+    schema:
+      type: integer
+      minimum: 2
+      exclusiveMinimum: 1
+      maximum: 8
+      exclusiveMaximum: 9
+  expected:
+    version: 1
+    cases:
+    - id: generated-0001
+      input: 2
+    - id: generated-0002
+      input: 5
+    - id: generated-0003
+      input: 8
+  coverage_fingerprint: b0846601d4e9593c36f2ea449a39c293
+- id: number-range
+  input:
+    schema:
+      type: number
+      minimum: 0.5
+      maximum: 2.5
+  expected:
+    version: 1
+    cases:
+    - id: generated-0001
+      input: 0.5
+    - id: generated-0002
+      input: 1.5
+    - id: generated-0003
+      input: 2.5
+  coverage_fingerprint: 576ec9fb1059a5c2f74e8d22884484d7
+- id: number-range-lower-bound
+  input:
+    schema:
+      type: number
+      minimum: 1.5
+  expected:
+    version: 1
+    cases:
+    - id: generated-0001
+      input: 1.5
+    - id: generated-0002
+      input: 2.5
+  coverage_fingerprint: 24b9daadcfd99c051fc7f348c754d5bc
+- id: number-range-upper-bound
+  input:
+    schema:
+      type: number
+      maximum: 1.5
+  expected:
+    version: 1
+    cases:
+    - id: generated-0001
+      input: 0.5
+    - id: generated-0002
+      input: 1.5
+  coverage_fingerprint: b4162fff855b9753fbbeb539fa68f4c0
+- id: number-range-with-exclusive-ends
+  input:
+    schema:
+      type: number
+      exclusiveMinimum: 0
+      exclusiveMaximum: 5
+  expected:
+    version: 1
+    cases:
+    - id: generated-0001
+      input: 2.5
+  coverage_fingerprint: 58a1d5b365d63c619fed68f3d51da9fa
+- id: number-range-with-both-bound-keywords
+  input:
+    schema:
+      type: number
+      minimum: 2
+      exclusiveMinimum: 1
+      maximum: 8
+      exclusiveMaximum: 9
+  expected:
+    version: 1
+    cases:
+    - id: generated-0001
+      input: 2.0
+    - id: generated-0002
+      input: 5.0
+    - id: generated-0003
+      input: 8.0
+  coverage_fingerprint: 08a1d86a02fdc4820e86eba379d1422e
+- id: string-length-range
+  input:
+    schema:
+      type: string
+      minLength: 2
+      maxLength: 4
+  expected:
+    version: 1
+    cases:
+    - id: generated-0001
+      input: aa
+    - id: generated-0002
+      input: aaa
+    - id: generated-0003
+      input: aaaa
+  coverage_fingerprint: 02744e227d8c68ca87813142645bedf0
+- id: string-minimum-length
+  input:
+    schema:
+      type: string
+      minLength: 3
+  expected:
+    version: 1
+    cases:
+    - id: generated-0001
+      input: aaa
+    - id: generated-0002
+      input: aaaa
+  coverage_fingerprint: 84e87916353c5cbcb1cc00f281d495c3
+- id: string-maximum-length
+  input:
+    schema:
+      type: string
+      maxLength: 3
+  expected:
+    version: 1
+    cases:
+    - id: generated-0001
+      input: ''
+    - id: generated-0002
+      input: a
+    - id: generated-0003
+      input: aaa
+  coverage_fingerprint: 26847e06bb578e71ec2e473bf2928e64
+- id: string-length-counts-unicode-characters
+  input:
+    schema:
+      type: string
+      minLength: 1
+      maxLength: 1
+      examples:
+      - é
+  expected:
+    version: 1
+    cases:
+    - id: generated-0001
+      input: a
+    - id: generated-0002
+      input: é
+  coverage_fingerprint: 331573eab8531d9fdf0f3d411eca60f3
+- id: user-strings-within-length-range
+  input:
+    schema:
+      type: string
+      minLength: 3
+      maxLength: 8
+      examples:
+      - custom
+      - contract
+  expected:
+    version: 1
+    cases:
+    - id: generated-0001
+      input: aaa
+    - id: generated-0002
+      input: aaaa
+    - id: generated-0003
+      input: aaaaa
+    - id: generated-0004
+      input: aaaaaaaa
+    - id: generated-0005
+      input: custom
+    - id: generated-0006
+      input: contract
+  coverage_fingerprint: bc81ab19f8e7b501a3403ded800f2ac8
+- id: type-union
+  input:
+    schema:
+      type:
+      - 'null'
+      - string
+  expected:
+    version: 1
+    cases:
+    - id: generated-0001
+      input: null
+    - id: generated-0002
+      input: ''
+    - id: generated-0003
+      input: sample
+  coverage_fingerprint: 03e8099fdb1eb69ebfcfd76a699ef43f
+- id: tuple-array
+  input:
+    schema:
+      type: array
+      prefixItems:
+      - type: string
+      - type: boolean
+  expected:
+    version: 1
+    cases:
+    - id: generated-0001
+      input: []
+    - id: generated-0002
+      input:
+      - ''
+    - id: generated-0003
+      input:
+      - sample
+    - id: generated-0004
+      input:
+      - ''
+      - false
+    - id: generated-0005
+      input:
+      - ''
+      - true
+    - id: generated-0006
+      input:
+      - sample
+      - false
+    - id: generated-0007
+      input:
+      - sample
+      - true
+  coverage_fingerprint: 31f477c1fb313af770d5a49b7b7cfe91
+- id: tuple-followed-by-homogeneous-items
+  input:
+    schema:
+      type: array
+      prefixItems:
+      - type: string
+      items:
+        type: integer
+        enum:
+        - 4
+  expected:
+    version: 1
+    cases:
+    - id: generated-0001
+      input: []
+    - id: generated-0002
+      input:
+      - ''
+    - id: generated-0003
+      input:
+      - sample
+    - id: generated-0004
+      input:
+      - ''
+      - 4
+    - id: generated-0005
+      input:
+      - sample
+      - 4
+  coverage_fingerprint: 8032fd8e5fc0fdc581b92c637f8ef289
+- id: const-value
+  input:
+    schema:
+      type: string
+      const: fixed
+  expected:
+    version: 1
+    cases:
+    - id: generated-0001
+      input: fixed
+  coverage_fingerprint: 6073e15703f49ccbe3b54ad27ab20345
+- id: duplicate-examples-are-deduplicated
+  input:
+    schema:
+      type: string
+      examples:
+      - sample
+      - sample
+  expected:
+    version: 1
+    cases:
+    - id: generated-0001
+      input: ''
+    - id: generated-0002
+      input: sample
+  coverage_fingerprint: e0e1b8880f526a19b61ec02f507283a7
+- id: explicitly-authored-call-scenario
+  input:
+    schema:
+      type: object
+      properties:
+        customer:
+          type: string
+        trial:
+          type: boolean
+      examples:
+      - customer: premium-user
+        trial: true
+  expected:
+    version: 1
+    cases:
+    - id: generated-0001
+      input: {}
+    - id: generated-0002
+      input:
+        trial: false
+    - id: generated-0003
+      input:
+        trial: true
+    - id: generated-0004
+      input:
+        customer: ''
+    - id: generated-0005
+      input:
+        customer: ''
+        trial: false
+    - id: generated-0006
+      input:
+        customer: ''
+        trial: true
+    - id: generated-0007
+      input:
+        customer: sample
+    - id: generated-0008
+      input:
+        customer: sample
+        trial: false
+    - id: generated-0009
+      input:
+        customer: sample
+        trial: true
+    - id: generated-0010
+      input:
+        customer: premium-user
+        trial: true
+  coverage_fingerprint: 2d93f2df3cbbfc9a1c8bac6a3e3124ee
+- id: schema-annotations
+  input:
+    schema:
+      $schema: https://json-schema.org/draft/2020-12/schema
+      $id: https://example.test/function-input
+      title: Function input
+      description: Signature-derived input shape
+      type: string
+  expected:
+    version: 1
+    cases:
+    - id: generated-0001
+      input: ''
+    - id: generated-0002
+      input: sample
+  coverage_fingerprint: a7b15a221e2f2ac58b4a821545ca43be

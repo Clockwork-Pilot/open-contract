@@ -1,0 +1,219 @@
+version: 1
+cases:
+- id: show-plan-requires-manifest
+  input:
+    args:
+    - show-isolation-plan
+  expected:
+    exit_code: 2
+    stdout: ''
+    stderr: 'contract-runner: missing manifest path
+
+      '
+  coverage_fingerprint: eb80333b87119951c8c0ccad67fd28f2
+- id: show-plan-defaults-to-auto-isolation
+  setup: show-plan-defaults-to-auto-isolation
+  input:
+    args:
+    - show-isolation-plan
+    - open-contract.yaml
+    environment: {}
+  expected:
+    exit_code: 2
+    stdout: ''
+    stderr: 'contract-runner: isolation plan: No such file or directory (os error
+      2)
+
+      '
+  coverage_fingerprint: 522bfaf9c35fc16d46432f5a9cd43bc5
+- id: show-plan-uses-isolation-environment
+  setup: show-plan-uses-isolation-environment
+  input:
+    args:
+    - show-isolation-plan
+    - open-contract.yaml
+    environment:
+      OPEN_CONTRACT_ISOLATION: none
+  expected:
+    exit_code: 2
+    stdout: ''
+    stderr: 'contract-runner: isolation plan: No such file or directory (os error
+      2)
+
+      '
+  coverage_fingerprint: 5c1de940b13509d03b46b94a1e262df2
+- id: show-plan-rejects-invalid-isolation-environment
+  setup: show-plan-rejects-invalid-isolation-environment
+  input:
+    args:
+    - show-isolation-plan
+    - open-contract.yaml
+    environment:
+      OPEN_CONTRACT_ISOLATION: invalid
+  expected:
+    exit_code: 2
+    stdout: ''
+    stderr: 'contract-runner: invalid isolation backend "invalid"; expected auto,
+      tempdir, none, bwrap, or landlock
+
+      '
+  coverage_fingerprint: 863204d2578ccf04560dcb1daf6e3ffc
+- id: show-plan-requires-isolation-value
+  input:
+    args:
+    - show-isolation-plan
+    - open-contract.yaml
+    - --isolation
+  expected:
+    exit_code: 2
+    stdout: ''
+    stderr: 'contract-runner: missing isolation backend
+
+      '
+  coverage_fingerprint: 37a1fbfe08e84c2e35421e703406abc5
+- id: show-plan-rejects-invalid-backend
+  input:
+    args:
+    - show-isolation-plan
+    - open-contract.yaml
+    - --isolation
+    - invalid
+  expected:
+    exit_code: 2
+    stdout: ''
+    stderr: 'contract-runner: invalid isolation backend "invalid"; expected auto,
+      tempdir, none, bwrap, or landlock
+
+      '
+  coverage_fingerprint: e0fc8e7763a54633a7a9a129158e5561
+- id: show-plan-rejects-unknown-option
+  input:
+    args:
+    - show-isolation-plan
+    - missing.yaml
+    - --isolation
+    - none
+    - --unexpected
+  expected:
+    exit_code: 2
+    stdout: ''
+    stderr: 'contract-runner: unknown argument: --unexpected
+
+      '
+  coverage_fingerprint: 07a7ea7ed7d58a8f741e0e7dd827ec84
+- id: show-plan-requires-runtime-value
+  input:
+    args:
+    - show-isolation-plan
+    - missing.yaml
+    - --isolation
+    - landlock
+    - --isolation-runtime
+  expected:
+    exit_code: 2
+    stdout: ''
+    stderr: 'contract-runner: missing isolation runtime path
+
+      '
+  coverage_fingerprint: 54849b4a3bef2b848b47abc77d2a525a
+- id: show-plan-rejects-runtime-with-no-isolation
+  input:
+    args:
+    - show-isolation-plan
+    - missing.yaml
+    - --isolation
+    - none
+    - --isolation-runtime
+    - runtime.yaml
+  expected:
+    exit_code: 2
+    stdout: ''
+    stderr: 'contract-runner: --isolation-runtime cannot be used with --isolation
+      none
+
+      '
+  coverage_fingerprint: c3c190f77d38f54a0e9c6b7b78305647
+- id: show-plan-rejects-runtime-with-tempdir
+  input:
+    args:
+    - show-isolation-plan
+    - missing.yaml
+    - --isolation
+    - tempdir
+    - --isolation-runtime
+    - runtime.yaml
+  expected:
+    exit_code: 2
+    stdout: ''
+    stderr: 'contract-runner: --isolation-runtime cannot be used with --isolation
+      tempdir
+
+      '
+  coverage_fingerprint: 66cc2bc337be76e73dd944573dbf105b
+- id: show-plan-runtime-path-with-landlock
+  input:
+    args:
+    - show-isolation-plan
+    - missing.yaml
+    - --isolation
+    - landlock
+    - --isolation-runtime
+    - runtime.yaml
+  expected:
+    exit_code: 2
+    stdout: ''
+    stderr: 'contract-runner: isolation plan: No such file or directory (os error
+      2)
+
+      '
+  coverage_fingerprint: 774f1841b4fa8d835aca515e9a45200b
+- id: show-plan-prints-a-valid-plan
+  setup: show-plan-prints-a-valid-plan
+  input:
+    args:
+    - show-isolation-plan
+    - contract.yaml
+    - --isolation
+    - none
+    files:
+      contract.yaml: "version: '1'\nname: cli-show-plan-fixture\nminimum_coverage_percent:\
+        \ 0\nfilesystem:\n  read:\n  - dataset.json\n  - validator.py\n  - adapter.py\n\
+        \  write: []\nexecution:\n  command:\n  - python3\n  - adapter.py\ndatasets:\n\
+        - dataset.json\ncoverage_sources:\n- validator.py\n"
+      dataset.json: '{"version":1,"cases":[{"id":"one","input":{"value":1},"expected":{"value":1},"coverage_fingerprint":"11111111111111111111111111111111"}]}'
+      validator.py: "def validate(value):\n    return value\n"
+      adapter.py: 'import json
+
+        import sys
+
+        request = json.load(sys.stdin)
+
+        print(json.dumps({"results": []}))
+
+        '
+  predicate: .exit_code == 0 AND .stderr == "" AND .stdout != ""
+  expected: {}
+  coverage_fingerprint: cb5d5bfedd386fb737f054f71f0719b5
+- id: show-plan-prints-partial-plan-before-staging-warning
+  setup: show-plan-prints-partial-plan-before-staging-warning
+  input:
+    args:
+    - show-isolation-plan
+    - contract.yaml
+    - --isolation
+    - tempdir
+    files:
+      contract.yaml: "version: '1'\nname: cli-partial-plan-fixture\nfilesystem:\n\
+        \  read:\n  - dataset.json\n  - validator.py\n  - /etc/ssl/certs/ca-certificates.crt\n\
+        \  write: []\nexecution:\n  command:\n  - /bin/true\ndatasets:\n- dataset.json\n\
+        coverage_sources:\n- validator.py\n"
+      dataset.json: '{"version":1,"cases":[]}'
+      validator.py: 'def validate(value): return value
+
+        '
+  predicate: .exit_code == 0 AND .stderr == "" AND contains(.stdout, "Contract read-only
+    paths:") AND contains(.stdout, "/etc/ssl/certs/ca-certificates.crt") AND contains(.stdout,
+    "Command argv:") AND contains(.stdout, "Plan diagnostics") AND contains(.stdout,
+    "outside the staged source root")
+  expected: {}
+  coverage_fingerprint: 053a49536e267cccb47b8ef5401ae0f7

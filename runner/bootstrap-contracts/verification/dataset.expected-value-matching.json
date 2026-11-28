@@ -30,78 +30,6 @@
       }
     },
     {
-      "id": "exact-additional-2",
-      "coverage_fingerprint": "ab1d1d6d3a18eda2417179a89d1b64f3",
-      "input": {
-        "actual": {
-          "value": 4
-        },
-        "expected": {
-          "value": 4
-        },
-        "predicate": ".value == 4"
-      },
-      "expected": "expected_and_predicate"
-    },
-    {
-      "id": "exact-additional-3",
-      "coverage_fingerprint": "87b064ccba52c9bd8f1f5ebe302703b9",
-      "input": {
-        "actual": {
-          "value": 4
-        },
-        "expected": {
-          "value": 4
-        },
-        "predicate": ".value == 3"
-      },
-      "expected": {
-        "error": "output did not satisfy predicate"
-      }
-    },
-    {
-      "id": "exact-additional-4",
-      "coverage_fingerprint": "f1b1d552f471a907319511dae059068f",
-      "input": {
-        "actual": {
-          "value": 4
-        }
-      },
-      "expected": {
-        "error": "expected output or predicate is required"
-      }
-    },
-    {
-      "id": "predicate",
-      "coverage_fingerprint": "ab1d1d6d3a18eda2417179a89d1b64f3",
-      "input": {
-        "actual": {
-          "value": 6
-        },
-        "predicate": ".value >= 6",
-        "expected": {
-          "value": 6
-        }
-      },
-      "expected": "expected_and_predicate"
-    },
-    {
-      "id": "predicate-additional-1",
-      "coverage_fingerprint": "87b064ccba52c9bd8f1f5ebe302703b9",
-      "input": {
-        "actual": {
-          "value": 3
-        },
-        "predicate": ".value >= 6",
-        "expected": {
-          "value": 3
-        }
-      },
-      "expected": {
-        "error": "output did not satisfy predicate"
-      }
-    },
-    {
       "id": "expected-object-is-recursive-subset",
       "input": {
         "actual": {
@@ -219,17 +147,6 @@
         "error": "output did not match expected subset"
       },
       "coverage_fingerprint": "1981a272ebcfe162b5d51b9ccbdd11e7"
-    },
-    {
-      "id": "predicate-only",
-      "input": {
-        "actual": {
-          "value": 5
-        },
-        "predicate": ".value == 5"
-      },
-      "expected": "predicate",
-      "coverage_fingerprint": "b89434f0bca6edf913f4a57531659af7"
     }
   ]
 }

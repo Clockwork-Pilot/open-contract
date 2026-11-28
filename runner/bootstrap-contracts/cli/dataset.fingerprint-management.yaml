@@ -1,0 +1,699 @@
+version: 1
+cases:
+- id: run-manifest-accepts-false-fingerprint-environment
+  setup: run-manifest-accepts-false-fingerprint-environment
+  input:
+    args:
+    - run-manifest
+    - open-contract.yaml
+    environment:
+      OPEN_CONTRACT_ISOLATION: none
+      OPEN_CONTRACT_DISABLE_FINGERPRINTS: 'false'
+  expected:
+    exit_code: 2
+    stdout: 'Isolation mode: none
+
+      '
+    stderr: 'contract-runner: contract execution: No such file or directory (os error
+      2)
+
+      '
+  coverage_fingerprint: ba51fa9a9fa49381b83fcf1ddee04043
+- id: rejects-invalid-fingerprint-environment
+  setup: rejects-invalid-fingerprint-environment
+  input:
+    args:
+    - run-manifest
+    - open-contract.yaml
+    environment:
+      OPEN_CONTRACT_ISOLATION: none
+      OPEN_CONTRACT_DISABLE_FINGERPRINTS: invalid
+  expected:
+    exit_code: 2
+    stdout: 'Isolation mode: none
+
+      '
+    stderr: 'contract-runner: OPEN_CONTRACT_DISABLE_FINGERPRINTS must be 0/1, true/false,
+      yes/no, or on/off
+
+      '
+  coverage_fingerprint: 49635a96d8945914b3e76efd8e5fc927
+- coverage_fingerprint: 43077868a7e3a862c5706181900b0747
+  expected:
+    coverage_report:
+      version: 1
+      contracts:
+      - contract: cli-current-pins-fixture
+        status: passed
+        sources:
+          status: complete
+          declared:
+          - validator.py
+          covered:
+          - validator.py
+          missing: []
+    exit_code: 0
+    stderr: ''
+    stdout: "Isolation mode: none\nFingerprints already match; no dataset changes\
+      \ made\nContracts executed:\n  cli-current-pins-fixture: 3/3 cases passed\n\
+      \    Coverage metrics: branch unavailable; function unavailable; instantiation\
+      \ unavailable; line 100.0% (1/1, minimum 0.0%, pass); region unavailable; statement\
+      \ unavailable\nDataset cases: 3/3 passed across 1 contract(s)\nCoverage report:\
+      \ coverage.json\n"
+    updated_dataset:
+      version: 1
+      cases:
+      - id: echo
+        input:
+          value: 7
+        expected:
+          value: 7
+        coverage_fingerprint: 867714e81b27e269f9a7f3b13bdc37ae
+      - id: echo-text
+        input:
+          value: text
+        expected:
+          value: text
+        coverage_fingerprint: 867714e81b27e269f9a7f3b13bdc37ae
+      - id: sequence
+        steps:
+        - id: first
+          input:
+            value: 1
+          expected:
+            value: 1
+          coverage_fingerprint: 867714e81b27e269f9a7f3b13bdc37ae
+        - id: second
+          input:
+            value: 2
+          expected:
+            value: 2
+          coverage_fingerprint: 867714e81b27e269f9a7f3b13bdc37ae
+  id: update-fingerprints-already-current
+  input:
+    args:
+    - run-manifest
+    - open-contract.yaml
+    - --isolation
+    - none
+    - --coverage-report
+    - coverage.json
+    - --update-fingerprints
+    dataset_path: dataset.yaml
+    files:
+      adapter.py: "import json\nimport sys\nrequest = json.load(sys.stdin)\nresults\
+        \ = []\nscopes = []\nfor item in request[\"requests\"]:\n    results.append({\"\
+        key\": item[\"key\"], \"output\": item[\"input\"]})\n    scopes.append({\"\
+        key\": item[\"key\"], \"files\": [{\"path\": \"validator.py\", \"lines\":\
+        \ [1]}]})\nprint(json.dumps({\n    \"results\": results,\n    \"coverage\"\
+        : {\"sources\": [\"validator.py\"]},\n    \"coverage_scopes\": scopes,\n \
+        \   \"coverage_lines\": [{\"path\": \"validator.py\", \"executable_lines\"\
+        : [1], \"covered_lines\": [1]}],\n    \"additional_test_coverage\": {\"executed\"\
+        : True, \"passed\": True, \"native_report\": {\"format\": \"fixture\"}},\n\
+        \    \"additional_coverage_lines\": [{\"path\": \"validator.py\", \"executable_lines\"\
+        : [1], \"covered_lines\": [1]}]\n}))\n"
+      open-contract.yaml: "version: '1'\nname: cli-current-pins-fixture\nminimum_coverage_percent:\
+        \ 0\nfilesystem:\n  read:\n  - dataset.yaml\n  - validator.py\n  - adapter.py\n\
+        \  - tests/check.py\n  write: []\nexecution:\n  command:\n  - python3\n  -\
+        \ adapter.py\ndatasets:\n- dataset.yaml\ncoverage_sources:\n- validator.py\n\
+        supplemental_tests:\n- tests/check.py\n"
+      dataset.yaml: "version: 1\ncases:\n- id: echo\n  input:\n    value: 7\n  expected:\n\
+        \    value: 7\n  coverage_fingerprint: 867714e81b27e269f9a7f3b13bdc37ae\n\
+        - id: echo-text\n  input:\n    value: text\n  expected:\n    value: text\n\
+        \  coverage_fingerprint: 867714e81b27e269f9a7f3b13bdc37ae\n- id: sequence\n\
+        \  steps:\n  - id: first\n    input:\n      value: 1\n    expected:\n    \
+        \  value: 1\n    coverage_fingerprint: 867714e81b27e269f9a7f3b13bdc37ae\n\
+        \  - id: second\n    input:\n      value: 2\n    expected:\n      value: 2\n\
+        \    coverage_fingerprint: 867714e81b27e269f9a7f3b13bdc37ae\n"
+      tests/check.py: "def run():\n    return True\n"
+      validator.py: "def validate(value):\n    return value\n"
+  setup: update-fingerprints-already-current
+- coverage_fingerprint: 42c946c6b5661e17295222db1d9cc23a
+  expected: {}
+  id: update-fingerprints-skips-failed-case
+  input:
+    args:
+    - run-manifest
+    - open-contract.yaml
+    - --isolation
+    - none
+    - --coverage-report
+    - coverage.json
+    - --update-fingerprints
+    dataset_path: dataset.yaml
+    files:
+      adapter.py: "import json\nimport sys\nrequest = json.load(sys.stdin)\nresults\
+        \ = []\nscopes = []\nfor item in request[\"requests\"]:\n    results.append({\"\
+        key\": item[\"key\"], \"output\": item[\"input\"]})\n    scopes.append({\"\
+        key\": item[\"key\"], \"files\": [{\"path\": \"validator.py\", \"lines\":\
+        \ [1]}]})\nprint(json.dumps({\n    \"results\": results,\n    \"coverage\"\
+        : {\"sources\": [\"validator.py\"]},\n    \"coverage_scopes\": scopes,\n \
+        \   \"coverage_lines\": [{\"path\": \"validator.py\", \"executable_lines\"\
+        : [1], \"covered_lines\": [1]}],\n    \"additional_test_coverage\": {\"executed\"\
+        : True, \"passed\": True, \"native_report\": {\"format\": \"fixture\"}},\n\
+        \    \"additional_coverage_lines\": [{\"path\": \"validator.py\", \"executable_lines\"\
+        : [1], \"covered_lines\": [1]}]\n}))\n"
+      open-contract.yaml: "version: '1'\nname: cli-failed-update-fixture\nminimum_coverage_percent:\
+        \ 0\nfilesystem:\n  read:\n  - dataset.yaml\n  - validator.py\n  - adapter.py\n\
+        \  - tests/check.py\n  write: []\nexecution:\n  command:\n  - python3\n  -\
+        \ adapter.py\ndatasets:\n- dataset.yaml\ncoverage_sources:\n- validator.py\n\
+        supplemental_tests:\n- tests/check.py\n"
+      dataset.yaml: "version: 1\ncases:\n- id: echo\n  input:\n    value: 7\n  expected:\n\
+        \    value: 99\n  coverage_fingerprint: '11111111111111111111111111111111'\n\
+        - id: echo-text\n  input:\n    value: text\n  expected:\n    value: text\n\
+        \  coverage_fingerprint: 867714e81b27e269f9a7f3b13bdc37ae\n- id: sequence\n\
+        \  steps:\n  - id: first\n    input:\n      value: 1\n    expected:\n    \
+        \  value: 1\n    coverage_fingerprint: '22222222222222222222222222222222'\n\
+        \  - id: second\n    input:\n      value: 2\n    expected:\n      value: 2\n\
+        \    coverage_fingerprint: 867714e81b27e269f9a7f3b13bdc37ae\n"
+      tests/check.py: "def run():\n    return True\n"
+      validator.py: "def validate(value):\n    return value\n"
+  setup: update-fingerprints-skips-failed-case
+  predicate: '.exit_code == 1 AND contains(.stdout, ''Fingerprints were not updated
+    because dataset cases or coverage requirements failed'') AND contains(.stdout,
+    ''Dataset cases: 2/3 passed'')'
+- id: rejects-conflicting-fingerprint-options
+  input:
+    args:
+    - run-manifest
+    - open-contract.yaml
+    - --disable-fingerprints
+    - --update-fingerprints
+  expected:
+    exit_code: 2
+    stdout: ''
+    stderr: 'contract-runner: --update-fingerprints cannot be combined with --disable-fingerprints
+
+      '
+  coverage_fingerprint: 74416cfa104134b60429001dbd409d48
+- id: rejects-fingerprint-update-disabled-by-environment
+  setup: rejects-fingerprint-update-disabled-by-environment
+  input:
+    args:
+    - run-manifest
+    - open-contract.yaml
+    - --update-fingerprints
+    - --isolation
+    - none
+    environment:
+      OPEN_CONTRACT_DISABLE_FINGERPRINTS: '1'
+  expected:
+    exit_code: 2
+    stdout: 'Isolation mode: none
+
+      '
+    stderr: 'contract-runner: --update-fingerprints cannot be used when OPEN_CONTRACT_DISABLE_FINGERPRINTS=1
+
+      '
+  coverage_fingerprint: 9a5091c9048e4f854bdc6d719f1fcdd5
+- id: update-fingerprints-requires-readable-dataset
+  setup: update-fingerprints-requires-readable-dataset
+  input:
+    args:
+    - run-manifest
+    - open-contract.yaml
+    - --isolation
+    - none
+    - --coverage-report
+    - coverage.json
+    - --update-fingerprints
+    files:
+      open-contract.yaml: "version: '1'\nname: update-fingerprints-requires-readable-dataset\n\
+        minimum_coverage_percent: 0\nfilesystem:\n  read:\n  - dataset.yaml\n  - validator.py\n\
+        \  - adapter.py\n  write: []\nexecution:\n  command:\n  - python3\n  - adapter.py\n\
+        datasets:\n- dataset.yaml\ncoverage_sources:\n- validator.py\n"
+      dataset.yaml: "version: 1\ncases:\n- id: one\n  input:\n    value: 7\n  expected:\n\
+        \    value: 7\n  coverage_fingerprint: '11111111111111111111111111111111'\n"
+      validator.py: 'def validate(value): return value
+
+        '
+      adapter.py: "import json, os, pathlib, sys\nrequest=json.load(sys.stdin)\nresults=[];\
+        \ scopes=[]\nfor item in request[\"requests\"]:\n results.append({\"key\"\
+        :item[\"key\"],\"output\":item[\"input\"]})\n scopes.append({\"key\":item[\"\
+        key\"],\"files\":[{\"path\":\"validator.py\",\"lines\":[1]}]})\npath=pathlib.Path(\"\
+        dataset.yaml\")\nmutation=\"delete\"\nif mutation == \"delete\": path.unlink()\n\
+        elif mutation == \"malformed\": path.write_text(\"version: [\\n\")\nelif mutation\
+        \ == \"no-cases\": path.write_text(\"version: 1\\nother: []\\n\")\nelif mutation\
+        \ == \"case-missing\": path.write_text(\"version: 1\\ncases: []\\n\")\nelif\
+        \ mutation == \"step-missing\": path.write_text(\"version: 1\\ncases:\\n-\
+        \ id: one\\n  steps: []\\n\")\nelif mutation == \"readonly\": path.chmod(0o444)\n\
+        elif mutation == \"tagged-json\": path.write_text(\"version: 1\\ncases:\\\
+        n- id: one\\n  input: {value: 7}\\n  expected: {value: 7}\\n  coverage_fingerprint:\
+        \ 11111111111111111111111111111111\\n  extra: !fixture thing\\n\")\nprint(json.dumps({\"\
+        results\":results,\"coverage\":{\"sources\":[\"validator.py\"]},\"coverage_scopes\"\
+        :scopes,\"coverage_lines\":[{\"path\":\"validator.py\",\"executable_lines\"\
+        :[1],\"covered_lines\":[1]}]}))\n"
+  expected: {}
+  predicate: .exit_code == 2 AND contains(.stderr, 'cannot read dataset')
+  coverage_fingerprint: 508563fa32932bac574c3dbb41d5c4de
+- id: update-fingerprints-requires-valid-dataset
+  setup: update-fingerprints-requires-valid-dataset
+  input:
+    args:
+    - run-manifest
+    - open-contract.yaml
+    - --isolation
+    - none
+    - --coverage-report
+    - coverage.json
+    - --update-fingerprints
+    files:
+      open-contract.yaml: "version: '1'\nname: update-fingerprints-requires-valid-dataset\n\
+        minimum_coverage_percent: 0\nfilesystem:\n  read:\n  - dataset.yaml\n  - validator.py\n\
+        \  - adapter.py\n  write: []\nexecution:\n  command:\n  - python3\n  - adapter.py\n\
+        datasets:\n- dataset.yaml\ncoverage_sources:\n- validator.py\n"
+      dataset.yaml: "version: 1\ncases:\n- id: one\n  input:\n    value: 7\n  expected:\n\
+        \    value: 7\n  coverage_fingerprint: '11111111111111111111111111111111'\n"
+      validator.py: 'def validate(value): return value
+
+        '
+      adapter.py: "import json, os, pathlib, sys\nrequest=json.load(sys.stdin)\nresults=[];\
+        \ scopes=[]\nfor item in request[\"requests\"]:\n results.append({\"key\"\
+        :item[\"key\"],\"output\":item[\"input\"]})\n scopes.append({\"key\":item[\"\
+        key\"],\"files\":[{\"path\":\"validator.py\",\"lines\":[1]}]})\npath=pathlib.Path(\"\
+        dataset.yaml\")\nmutation=\"malformed\"\nif mutation == \"delete\": path.unlink()\n\
+        elif mutation == \"malformed\": path.write_text(\"version: [\\n\")\nelif mutation\
+        \ == \"no-cases\": path.write_text(\"version: 1\\nother: []\\n\")\nelif mutation\
+        \ == \"case-missing\": path.write_text(\"version: 1\\ncases: []\\n\")\nelif\
+        \ mutation == \"step-missing\": path.write_text(\"version: 1\\ncases:\\n-\
+        \ id: one\\n  steps: []\\n\")\nelif mutation == \"readonly\": path.chmod(0o444)\n\
+        elif mutation == \"tagged-json\": path.write_text(\"version: 1\\ncases:\\\
+        n- id: one\\n  input: {value: 7}\\n  expected: {value: 7}\\n  coverage_fingerprint:\
+        \ 11111111111111111111111111111111\\n  extra: !fixture thing\\n\")\nprint(json.dumps({\"\
+        results\":results,\"coverage\":{\"sources\":[\"validator.py\"]},\"coverage_scopes\"\
+        :scopes,\"coverage_lines\":[{\"path\":\"validator.py\",\"executable_lines\"\
+        :[1],\"covered_lines\":[1]}]}))\n"
+  expected: {}
+  predicate: .exit_code == 2 AND contains(.stderr, 'YAML dataset error')
+  coverage_fingerprint: 5ab38eb24ae8af6c58ffd1633c658b49
+- id: update-fingerprints-requires-cases-list
+  setup: update-fingerprints-requires-cases-list
+  input:
+    args:
+    - run-manifest
+    - open-contract.yaml
+    - --isolation
+    - none
+    - --coverage-report
+    - coverage.json
+    - --update-fingerprints
+    files:
+      open-contract.yaml: "version: '1'\nname: update-fingerprints-requires-cases-list\n\
+        minimum_coverage_percent: 0\nfilesystem:\n  read:\n  - dataset.yaml\n  - validator.py\n\
+        \  - adapter.py\n  write: []\nexecution:\n  command:\n  - python3\n  - adapter.py\n\
+        datasets:\n- dataset.yaml\ncoverage_sources:\n- validator.py\n"
+      dataset.yaml: "version: 1\ncases:\n- id: one\n  input:\n    value: 7\n  expected:\n\
+        \    value: 7\n  coverage_fingerprint: '11111111111111111111111111111111'\n"
+      validator.py: 'def validate(value): return value
+
+        '
+      adapter.py: "import json, os, pathlib, sys\nrequest=json.load(sys.stdin)\nresults=[];\
+        \ scopes=[]\nfor item in request[\"requests\"]:\n results.append({\"key\"\
+        :item[\"key\"],\"output\":item[\"input\"]})\n scopes.append({\"key\":item[\"\
+        key\"],\"files\":[{\"path\":\"validator.py\",\"lines\":[1]}]})\npath=pathlib.Path(\"\
+        dataset.yaml\")\nmutation=\"no-cases\"\nif mutation == \"delete\": path.unlink()\n\
+        elif mutation == \"malformed\": path.write_text(\"version: [\\n\")\nelif mutation\
+        \ == \"no-cases\": path.write_text(\"version: 1\\nother: []\\n\")\nelif mutation\
+        \ == \"case-missing\": path.write_text(\"version: 1\\ncases: []\\n\")\nelif\
+        \ mutation == \"step-missing\": path.write_text(\"version: 1\\ncases:\\n-\
+        \ id: one\\n  steps: []\\n\")\nelif mutation == \"readonly\": path.chmod(0o444)\n\
+        elif mutation == \"tagged-json\": path.write_text(\"version: 1\\ncases:\\\
+        n- id: one\\n  input: {value: 7}\\n  expected: {value: 7}\\n  coverage_fingerprint:\
+        \ 11111111111111111111111111111111\\n  extra: !fixture thing\\n\")\nprint(json.dumps({\"\
+        results\":results,\"coverage\":{\"sources\":[\"validator.py\"]},\"coverage_scopes\"\
+        :scopes,\"coverage_lines\":[{\"path\":\"validator.py\",\"executable_lines\"\
+        :[1],\"covered_lines\":[1]}]}))\n"
+  expected: {}
+  predicate: .exit_code == 2 AND contains(.stderr, 'dataset has no cases array')
+  coverage_fingerprint: 35462a9ff06431f629287791f3e5fe5b
+- id: update-fingerprints-requires-case-id
+  setup: update-fingerprints-requires-case-id
+  input:
+    args:
+    - run-manifest
+    - open-contract.yaml
+    - --isolation
+    - none
+    - --coverage-report
+    - coverage.json
+    - --update-fingerprints
+    files:
+      open-contract.yaml: "version: '1'\nname: update-fingerprints-requires-case-id\n\
+        minimum_coverage_percent: 0\nfilesystem:\n  read:\n  - dataset.yaml\n  - validator.py\n\
+        \  - adapter.py\n  write: []\nexecution:\n  command:\n  - python3\n  - adapter.py\n\
+        datasets:\n- dataset.yaml\ncoverage_sources:\n- validator.py\n"
+      dataset.yaml: "version: 1\ncases:\n- id: one\n  input:\n    value: 7\n  expected:\n\
+        \    value: 7\n  coverage_fingerprint: '11111111111111111111111111111111'\n"
+      validator.py: 'def validate(value): return value
+
+        '
+      adapter.py: "import json, os, pathlib, sys\nrequest=json.load(sys.stdin)\nresults=[];\
+        \ scopes=[]\nfor item in request[\"requests\"]:\n results.append({\"key\"\
+        :item[\"key\"],\"output\":item[\"input\"]})\n scopes.append({\"key\":item[\"\
+        key\"],\"files\":[{\"path\":\"validator.py\",\"lines\":[1]}]})\npath=pathlib.Path(\"\
+        dataset.yaml\")\nmutation=\"case-missing\"\nif mutation == \"delete\": path.unlink()\n\
+        elif mutation == \"malformed\": path.write_text(\"version: [\\n\")\nelif mutation\
+        \ == \"no-cases\": path.write_text(\"version: 1\\nother: []\\n\")\nelif mutation\
+        \ == \"case-missing\": path.write_text(\"version: 1\\ncases: []\\n\")\nelif\
+        \ mutation == \"step-missing\": path.write_text(\"version: 1\\ncases:\\n-\
+        \ id: one\\n  steps: []\\n\")\nelif mutation == \"readonly\": path.chmod(0o444)\n\
+        elif mutation == \"tagged-json\": path.write_text(\"version: 1\\ncases:\\\
+        n- id: one\\n  input: {value: 7}\\n  expected: {value: 7}\\n  coverage_fingerprint:\
+        \ 11111111111111111111111111111111\\n  extra: !fixture thing\\n\")\nprint(json.dumps({\"\
+        results\":results,\"coverage\":{\"sources\":[\"validator.py\"]},\"coverage_scopes\"\
+        :scopes,\"coverage_lines\":[{\"path\":\"validator.py\",\"executable_lines\"\
+        :[1],\"covered_lines\":[1]}]}))\n"
+  expected: {}
+  predicate: .exit_code == 2 AND contains(.stderr, 'case one not found')
+  coverage_fingerprint: e95100f68b90c456dcda41ccd9469114
+- id: update-fingerprints-requires-step-id
+  setup: update-fingerprints-requires-step-id
+  input:
+    args:
+    - run-manifest
+    - open-contract.yaml
+    - --isolation
+    - none
+    - --coverage-report
+    - coverage.json
+    - --update-fingerprints
+    files:
+      open-contract.yaml: "version: '1'\nname: update-fingerprints-requires-step-id\n\
+        minimum_coverage_percent: 0\nfilesystem:\n  read:\n  - dataset.yaml\n  - validator.py\n\
+        \  - adapter.py\n  write: []\nexecution:\n  command:\n  - python3\n  - adapter.py\n\
+        datasets:\n- dataset.yaml\ncoverage_sources:\n- validator.py\n"
+      dataset.yaml: "version: 1\ncases:\n- id: one\n  steps:\n  - id: step\n    input:\n\
+        \      value: 7\n    expected:\n      value: 7\n    coverage_fingerprint:\
+        \ '11111111111111111111111111111111'\n"
+      validator.py: 'def validate(value): return value
+
+        '
+      adapter.py: "import json, os, pathlib, sys\nrequest=json.load(sys.stdin)\nresults=[];\
+        \ scopes=[]\nfor item in request[\"requests\"]:\n results.append({\"key\"\
+        :item[\"key\"],\"output\":item[\"input\"]})\n scopes.append({\"key\":item[\"\
+        key\"],\"files\":[{\"path\":\"validator.py\",\"lines\":[1]}]})\npath=pathlib.Path(\"\
+        dataset.yaml\")\nmutation=\"step-missing\"\nif mutation == \"delete\": path.unlink()\n\
+        elif mutation == \"malformed\": path.write_text(\"version: [\\n\")\nelif mutation\
+        \ == \"no-cases\": path.write_text(\"version: 1\\nother: []\\n\")\nelif mutation\
+        \ == \"case-missing\": path.write_text(\"version: 1\\ncases: []\\n\")\nelif\
+        \ mutation == \"step-missing\": path.write_text(\"version: 1\\ncases:\\n-\
+        \ id: one\\n  steps: []\\n\")\nelif mutation == \"readonly\": path.chmod(0o444)\n\
+        elif mutation == \"tagged-json\": path.write_text(\"version: 1\\ncases:\\\
+        n- id: one\\n  input: {value: 7}\\n  expected: {value: 7}\\n  coverage_fingerprint:\
+        \ 11111111111111111111111111111111\\n  extra: !fixture thing\\n\")\nprint(json.dumps({\"\
+        results\":results,\"coverage\":{\"sources\":[\"validator.py\"]},\"coverage_scopes\"\
+        :scopes,\"coverage_lines\":[{\"path\":\"validator.py\",\"executable_lines\"\
+        :[1],\"covered_lines\":[1]}]}))\n"
+  expected: {}
+  predicate: .exit_code == 2 AND contains(.stderr, 'step one/step not found')
+  coverage_fingerprint: fc5304e2cff415837d908af53a66dbee
+- id: update-fingerprints-requires-writable-dataset
+  setup: update-fingerprints-requires-writable-dataset
+  input:
+    args:
+    - run-manifest
+    - open-contract.yaml
+    - --isolation
+    - none
+    - --coverage-report
+    - coverage.json
+    - --update-fingerprints
+    files:
+      open-contract.yaml: "version: '1'\nname: update-fingerprints-requires-writable-dataset\n\
+        minimum_coverage_percent: 0\nfilesystem:\n  read:\n  - dataset.yaml\n  - validator.py\n\
+        \  - adapter.py\n  write: []\nexecution:\n  command:\n  - python3\n  - adapter.py\n\
+        datasets:\n- dataset.yaml\ncoverage_sources:\n- validator.py\n"
+      dataset.yaml: "version: 1\ncases:\n- id: one\n  input:\n    value: 7\n  expected:\n\
+        \    value: 7\n  coverage_fingerprint: '11111111111111111111111111111111'\n"
+      validator.py: 'def validate(value): return value
+
+        '
+      adapter.py: "import json, os, pathlib, sys\nrequest=json.load(sys.stdin)\nresults=[];\
+        \ scopes=[]\nfor item in request[\"requests\"]:\n results.append({\"key\"\
+        :item[\"key\"],\"output\":item[\"input\"]})\n scopes.append({\"key\":item[\"\
+        key\"],\"files\":[{\"path\":\"validator.py\",\"lines\":[1]}]})\npath=pathlib.Path(\"\
+        dataset.yaml\")\nmutation=\"readonly\"\nif mutation == \"delete\": path.unlink()\n\
+        elif mutation == \"malformed\": path.write_text(\"version: [\\n\")\nelif mutation\
+        \ == \"no-cases\": path.write_text(\"version: 1\\nother: []\\n\")\nelif mutation\
+        \ == \"case-missing\": path.write_text(\"version: 1\\ncases: []\\n\")\nelif\
+        \ mutation == \"step-missing\": path.write_text(\"version: 1\\ncases:\\n-\
+        \ id: one\\n  steps: []\\n\")\nelif mutation == \"readonly\": path.chmod(0o444)\n\
+        elif mutation == \"tagged-json\": path.write_text(\"version: 1\\ncases:\\\
+        n- id: one\\n  input: {value: 7}\\n  expected: {value: 7}\\n  coverage_fingerprint:\
+        \ 11111111111111111111111111111111\\n  extra: !fixture thing\\n\")\nprint(json.dumps({\"\
+        results\":results,\"coverage\":{\"sources\":[\"validator.py\"]},\"coverage_scopes\"\
+        :scopes,\"coverage_lines\":[{\"path\":\"validator.py\",\"executable_lines\"\
+        :[1],\"covered_lines\":[1]}]}))\n"
+  expected: {}
+  predicate: .exit_code == 2 AND contains(.stderr, 'cannot update dataset')
+  coverage_fingerprint: 988ad136d943dcfe4254df2d9c647c0e
+- id: update-fingerprints-requires-json-serializable-dataset
+  setup: update-fingerprints-requires-json-serializable-dataset
+  input:
+    args:
+    - run-manifest
+    - open-contract.yaml
+    - --isolation
+    - none
+    - --coverage-report
+    - coverage.json
+    - --update-fingerprints
+    files:
+      open-contract.yaml: "version: '1'\nname: update-fingerprints-requires-json-serializable-dataset\n\
+        minimum_coverage_percent: 0\nfilesystem:\n  read:\n  - dataset.json\n  - validator.py\n\
+        \  - adapter.py\n  write: []\nexecution:\n  command:\n  - python3\n  - adapter.py\n\
+        datasets:\n- dataset.json\ncoverage_sources:\n- validator.py\n"
+      dataset.json: '{"version":1,"cases":[{"id":"one","input":{"value":7},"expected":{"value":7},"coverage_fingerprint":"11111111111111111111111111111111"}]}'
+      validator.py: 'def validate(value): return value
+
+        '
+      adapter.py: "import json, os, pathlib, sys\nrequest=json.load(sys.stdin)\nresults=[];\
+        \ scopes=[]\nfor item in request[\"requests\"]:\n results.append({\"key\"\
+        :item[\"key\"],\"output\":item[\"input\"]})\n scopes.append({\"key\":item[\"\
+        key\"],\"files\":[{\"path\":\"validator.py\",\"lines\":[1]}]})\npath=pathlib.Path(\"\
+        dataset.json\")\nmutation=\"tagged-json\"\nif mutation == \"delete\": path.unlink()\n\
+        elif mutation == \"malformed\": path.write_text(\"version: [\\n\")\nelif mutation\
+        \ == \"no-cases\": path.write_text(\"version: 1\\nother: []\\n\")\nelif mutation\
+        \ == \"case-missing\": path.write_text(\"version: 1\\ncases: []\\n\")\nelif\
+        \ mutation == \"step-missing\": path.write_text(\"version: 1\\ncases:\\n-\
+        \ id: one\\n  steps: []\\n\")\nelif mutation == \"readonly\": path.chmod(0o444)\n\
+        elif mutation == \"tagged-json\": path.write_text(\"version: 1\\ncases:\\\
+        n- id: one\\n  input: {value: 7}\\n  expected: {value: 7}\\n  coverage_fingerprint:\
+        \ '11111111111111111111111111111111'\\n  ? [extra]\\n  : value\\n\")\nprint(json.dumps({\"\
+        results\":results,\"coverage\":{\"sources\":[\"validator.py\"]},\"coverage_scopes\"\
+        :scopes,\"coverage_lines\":[{\"path\":\"validator.py\",\"executable_lines\"\
+        :[1],\"covered_lines\":[1]}]}))\n"
+  expected: {}
+  predicate: .exit_code == 2 AND contains(.stderr, 'JSON dataset error')
+  coverage_fingerprint: d7a6a7ade3f0c0e9f0717d37fb3b1c8a
+- id: update-fingerprints-refreshes-json-dataset
+  setup: update-fingerprints-refreshes-json-dataset
+  coverage_fingerprint: 193756e6a759d30cc500a5e4bc3fc467
+  expected:
+    coverage_report:
+      version: 1
+      contracts:
+      - contract: cli-current-pins-fixture
+        status: passed
+        sources:
+          status: complete
+          declared:
+          - validator.py
+          covered:
+          - validator.py
+          missing: []
+    exit_code: 0
+    stderr: ''
+    stdout: "Isolation mode: none\nUpdated cli-current-pins-fixture/echo fingerprint:\
+      \ 11111111111111111111111111111111 -> 867714e81b27e269f9a7f3b13bdc37ae\n  covered:\
+      \ validator.py:1\nUpdated 1 fingerprint(s) in dataset.json\nContracts executed:\n\
+      \  cli-current-pins-fixture: 3/3 cases passed\n    Coverage metrics: branch\
+      \ unavailable; function unavailable; instantiation unavailable; line 100.0%\
+      \ (1/1, minimum 0.0%, pass); region unavailable; statement unavailable\nDataset\
+      \ cases: 3/3 passed across 1 contract(s)\nCoverage report: coverage.json\n"
+    updated_dataset:
+      version: 1
+      cases:
+      - id: echo
+        input:
+          value: 7
+        expected:
+          value: 7
+        coverage_fingerprint: 867714e81b27e269f9a7f3b13bdc37ae
+      - id: echo-text
+        input:
+          value: text
+        expected:
+          value: text
+        coverage_fingerprint: 867714e81b27e269f9a7f3b13bdc37ae
+      - id: sequence
+        steps:
+        - id: first
+          input:
+            value: 1
+          expected:
+            value: 1
+          coverage_fingerprint: 867714e81b27e269f9a7f3b13bdc37ae
+        - id: second
+          input:
+            value: 2
+          expected:
+            value: 2
+          coverage_fingerprint: 867714e81b27e269f9a7f3b13bdc37ae
+  input:
+    args:
+    - run-manifest
+    - open-contract.yaml
+    - --isolation
+    - none
+    - --coverage-report
+    - coverage.json
+    - --update-fingerprints
+    dataset_path: dataset.json
+    files:
+      adapter.py: "import json\nimport sys\nrequest = json.load(sys.stdin)\nresults\
+        \ = []\nscopes = []\nfor item in request[\"requests\"]:\n    results.append({\"\
+        key\": item[\"key\"], \"output\": item[\"input\"]})\n    scopes.append({\"\
+        key\": item[\"key\"], \"files\": [{\"path\": \"validator.py\", \"lines\":\
+        \ [1]}]})\nprint(json.dumps({\n    \"results\": results,\n    \"coverage\"\
+        : {\"sources\": [\"validator.py\"]},\n    \"coverage_scopes\": scopes,\n \
+        \   \"coverage_lines\": [{\"path\": \"validator.py\", \"executable_lines\"\
+        : [1], \"covered_lines\": [1]}],\n    \"additional_test_coverage\": {\"executed\"\
+        : True, \"passed\": True, \"native_report\": {\"format\": \"fixture\"}},\n\
+        \    \"additional_coverage_lines\": [{\"path\": \"validator.py\", \"executable_lines\"\
+        : [1], \"covered_lines\": [1]}]\n}))\n"
+      open-contract.yaml: "version: '1'\nname: cli-current-pins-fixture\nminimum_coverage_percent:\
+        \ 0\nfilesystem:\n  read:\n  - dataset.json\n  - validator.py\n  - adapter.py\n\
+        \  - tests/check.py\n  write: []\nexecution:\n  command:\n  - python3\n  -\
+        \ adapter.py\ndatasets:\n- dataset.json\ncoverage_sources:\n- validator.py\n\
+        supplemental_tests:\n- tests/check.py\n"
+      tests/check.py: "def run():\n    return True\n"
+      validator.py: "def validate(value):\n    return value\n"
+      dataset.json: '{"version":1,"cases":[{"id":"echo","input":{"value":7},"expected":{"value":7},"coverage_fingerprint":"11111111111111111111111111111111"},{"id":"echo-text","input":{"value":"text"},"expected":{"value":"text"},"coverage_fingerprint":"867714e81b27e269f9a7f3b13bdc37ae"},{"id":"sequence","steps":[{"id":"first","input":{"value":1},"expected":{"value":1},"coverage_fingerprint":"867714e81b27e269f9a7f3b13bdc37ae"},{"id":"second","input":{"value":2},"expected":{"value":2},"coverage_fingerprint":"867714e81b27e269f9a7f3b13bdc37ae"}]}]}'
+- id: update-fingerprints-requires-case-mapping
+  setup: update-fingerprints-requires-case-mapping
+  input:
+    args:
+    - run-manifest
+    - open-contract.yaml
+    - --isolation
+    - none
+    - --coverage-report
+    - coverage.json
+    - --update-fingerprints
+    files:
+      open-contract.yaml: "version: '1'\nname: update-fingerprints-requires-case-mapping\n\
+        minimum_coverage_percent: 0\nfilesystem:\n  read:\n  - dataset.yaml\n  - validator.py\n\
+        \  - adapter.py\n  write: []\nexecution:\n  command:\n  - python3\n  - adapter.py\n\
+        datasets:\n- dataset.yaml\ncoverage_sources:\n- validator.py\n"
+      dataset.yaml: "version: 1\ncases:\n- id: one\n  input:\n    value: 7\n  expected:\n\
+        \    value: 7\n  coverage_fingerprint: '11111111111111111111111111111111'\n"
+      validator.py: 'def validate(value): return value
+
+        '
+      adapter.py: "import json, os, pathlib, sys\nrequest=json.load(sys.stdin)\nresults=[];\
+        \ scopes=[]\nfor item in request[\"requests\"]:\n results.append({\"key\"\
+        :item[\"key\"],\"output\":item[\"input\"]})\n scopes.append({\"key\":item[\"\
+        key\"],\"files\":[{\"path\":\"validator.py\",\"lines\":[1]}]})\npath=pathlib.Path(\"\
+        dataset.yaml\")\nmutation=\"case-mapping\"\nif mutation == \"delete\": path.unlink()\n\
+        elif mutation == \"malformed\": path.write_text(\"version: [\\n\")\nelif mutation\
+        \ == \"no-cases\": path.write_text(\"version: 1\\nother: []\\n\")\nelif mutation\
+        \ == \"case-missing\": path.write_text(\"version: 1\\ncases: []\\n\")\nelif\
+        \ mutation == \"case-mapping\": path.write_text(\"version: 1\\ncases:\\n-\
+        \ not-a-map\\n\")\nelif mutation == \"case-nonstring\": path.write_text(\"\
+        version: 1\\ncases:\\n- id: 7\\n  input: {value: 7}\\n  expected: {value:\
+        \ 7}\\n\")\nelif mutation == \"step-missing\": path.write_text(\"version:\
+        \ 1\\ncases:\\n- id: one\\n  steps: []\\n\")\nelif mutation == \"readonly\"\
+        : path.chmod(0o444)\nelif mutation == \"tagged-json\": path.write_text(\"\
+        version: 1\\ncases:\\n- id: one\\n  input: {value: 7}\\n  expected: {value:\
+        \ 7}\\n  coverage_fingerprint: 11111111111111111111111111111111\\n  extra:\
+        \ !fixture thing\\n\")\nprint(json.dumps({\"results\":results,\"coverage\"\
+        :{\"sources\":[\"validator.py\"]},\"coverage_scopes\":scopes,\"coverage_lines\"\
+        :[{\"path\":\"validator.py\",\"executable_lines\":[1],\"covered_lines\":[1]}]}))\n"
+  expected: {}
+  predicate: .exit_code == 2 AND contains(.stderr, 'case one not found')
+  coverage_fingerprint: 9fb043fbbccd34412c791f00de0e0c8a
+- id: update-fingerprints-requires-string-case-id
+  setup: update-fingerprints-requires-string-case-id
+  input:
+    args:
+    - run-manifest
+    - open-contract.yaml
+    - --isolation
+    - none
+    - --coverage-report
+    - coverage.json
+    - --update-fingerprints
+    files:
+      open-contract.yaml: "version: '1'\nname: update-fingerprints-requires-string-case-id\n\
+        minimum_coverage_percent: 0\nfilesystem:\n  read:\n  - dataset.yaml\n  - validator.py\n\
+        \  - adapter.py\n  write: []\nexecution:\n  command:\n  - python3\n  - adapter.py\n\
+        datasets:\n- dataset.yaml\ncoverage_sources:\n- validator.py\n"
+      dataset.yaml: "version: 1\ncases:\n- id: one\n  input:\n    value: 7\n  expected:\n\
+        \    value: 7\n  coverage_fingerprint: '11111111111111111111111111111111'\n"
+      validator.py: 'def validate(value): return value
+
+        '
+      adapter.py: "import json, os, pathlib, sys\nrequest=json.load(sys.stdin)\nresults=[];\
+        \ scopes=[]\nfor item in request[\"requests\"]:\n results.append({\"key\"\
+        :item[\"key\"],\"output\":item[\"input\"]})\n scopes.append({\"key\":item[\"\
+        key\"],\"files\":[{\"path\":\"validator.py\",\"lines\":[1]}]})\npath=pathlib.Path(\"\
+        dataset.yaml\")\nmutation=\"case-nonstring\"\nif mutation == \"delete\": path.unlink()\n\
+        elif mutation == \"malformed\": path.write_text(\"version: [\\n\")\nelif mutation\
+        \ == \"no-cases\": path.write_text(\"version: 1\\nother: []\\n\")\nelif mutation\
+        \ == \"case-missing\": path.write_text(\"version: 1\\ncases: []\\n\")\nelif\
+        \ mutation == \"case-mapping\": path.write_text(\"version: 1\\ncases:\\n-\
+        \ not-a-map\\n\")\nelif mutation == \"case-nonstring\": path.write_text(\"\
+        version: 1\\ncases:\\n- id: 7\\n  input: {value: 7}\\n  expected: {value:\
+        \ 7}\\n\")\nelif mutation == \"step-missing\": path.write_text(\"version:\
+        \ 1\\ncases:\\n- id: one\\n  steps: []\\n\")\nelif mutation == \"readonly\"\
+        : path.chmod(0o444)\nelif mutation == \"tagged-json\": path.write_text(\"\
+        version: 1\\ncases:\\n- id: one\\n  input: {value: 7}\\n  expected: {value:\
+        \ 7}\\n  coverage_fingerprint: 11111111111111111111111111111111\\n  extra:\
+        \ !fixture thing\\n\")\nprint(json.dumps({\"results\":results,\"coverage\"\
+        :{\"sources\":[\"validator.py\"]},\"coverage_scopes\":scopes,\"coverage_lines\"\
+        :[{\"path\":\"validator.py\",\"executable_lines\":[1],\"covered_lines\":[1]}]}))\n"
+  expected: {}
+  predicate: .exit_code == 2 AND contains(.stderr, 'case one not found')
+  coverage_fingerprint: 8279f63207c8fcb4fa9700e6ba7729ad
+- id: update-fingerprints-requires-case-id-field
+  coverage_fingerprint: 057161cdf7091be28775e40436e551f3
+  expected: {}
+  setup: update-fingerprints-requires-case-id-field
+  input:
+    args:
+    - run-manifest
+    - open-contract.yaml
+    - --isolation
+    - none
+    - --coverage-report
+    - coverage.json
+    - --update-fingerprints
+    files:
+      adapter.py: "import json, os, pathlib, sys\nrequest=json.load(sys.stdin)\nresults=[];\
+        \ scopes=[]\nfor item in request[\"requests\"]:\n results.append({\"key\"\
+        :item[\"key\"],\"output\":item[\"input\"]})\n scopes.append({\"key\":item[\"\
+        key\"],\"files\":[{\"path\":\"validator.py\",\"lines\":[1]}]})\npath=pathlib.Path(\"\
+        dataset.yaml\")\nmutation=\"case-no-id\"\nif mutation == \"delete\": path.unlink()\n\
+        elif mutation == \"malformed\": path.write_text(\"version: [\\n\")\nelif mutation\
+        \ == \"no-cases\": path.write_text(\"version: 1\\nother: []\\n\")\nelif mutation\
+        \ == \"case-missing\": path.write_text(\"version: 1\\ncases: []\\n\")\nelif\
+        \ mutation == \"case-no-id\": path.write_text(\"version: 1\\ncases:\\n- input:\
+        \ {value: 7}\\n  expected: {value: 7}\\n\")\nelif mutation == \"step-missing\"\
+        : path.write_text(\"version: 1\\ncases:\\n- id: one\\n  steps: []\\n\")\n\
+        elif mutation == \"readonly\": path.chmod(0o444)\nelif mutation == \"tagged-json\"\
+        : path.write_text(\"version: 1\\ncases:\\n- id: one\\n  input: {value: 7}\\\
+        n  expected: {value: 7}\\n  coverage_fingerprint: 11111111111111111111111111111111\\\
+        n  extra: !fixture thing\\n\")\nprint(json.dumps({\"results\":results,\"coverage\"\
+        :{\"sources\":[\"validator.py\"]},\"coverage_scopes\":scopes,\"coverage_lines\"\
+        :[{\"path\":\"validator.py\",\"executable_lines\":[1],\"covered_lines\":[1]}]}))\n"
+      open-contract.yaml: "version: '1'\nname: update-fingerprints-requires-case-id-field\n\
+        minimum_coverage_percent: 0\nfilesystem:\n  read:\n  - dataset.yaml\n  - validator.py\n\
+        \  - adapter.py\n  write: []\nexecution:\n  command:\n  - python3\n  - adapter.py\n\
+        datasets:\n- dataset.yaml\ncoverage_sources:\n- validator.py\n"
+      dataset.yaml: "version: 1\ncases:\n- id: one\n  input:\n    value: 7\n  expected:\n\
+        \    value: 7\n  coverage_fingerprint: '11111111111111111111111111111111'\n"
+      validator.py: 'def validate(value): return value
+
+        '
+  predicate: .exit_code == 2 AND contains(.stderr, 'case one not found')

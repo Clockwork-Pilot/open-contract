@@ -1,0 +1,122 @@
+version: 1
+cases:
+- id: validates-versioned-coverage-report
+  input:
+    validate_coverage_report:
+      version: 1
+      contracts:
+      - contract: schema-fixture
+        status: passed
+        minimum_coverage_percent: 100
+        sources:
+          status: complete
+          declared:
+          - src/validator.py
+          covered:
+          - src/validator.py
+          missing: []
+        datasets:
+        - dataset.json
+        union:
+          covered_lines: 1
+          executable_lines: 1
+          percent: 100
+          metrics:
+            line: &id002
+              status: available
+              covered: 1
+              total: 1
+              percent: 100
+              minimum_percent: 100
+              threshold_met: true
+              files:
+              - path: src/validator.py
+                covered: 1
+                total: 1
+            statement: &id001
+              status: unavailable
+              covered: null
+              total: null
+              percent: null
+              minimum_percent: null
+              threshold_met: null
+              files: []
+            function: *id001
+            branch: *id001
+            region: *id001
+            instantiation: *id001
+          files:
+          - path: src/validator.py
+            executable_lines:
+            - 1
+            covered_lines:
+            - 1
+            uncovered_lines: []
+        aggregate:
+          covered_lines: 1
+          executable_lines: 1
+          percent: 100
+          threshold_met: true
+          metrics:
+            line: *id002
+            statement: *id001
+            function: *id001
+            branch: *id001
+            region: *id001
+            instantiation: *id001
+          files:
+          - path: src/validator.py
+            executable_lines:
+            - 1
+            covered_lines:
+            - 1
+            uncovered_lines: []
+        supplemental_tests:
+          passed: true
+          cases: 1
+        native_report:
+          format: fixture
+          summary:
+            files: 1
+  expected:
+    valid: true
+  coverage_fingerprint: fa258238d91914136571284e7ce43cb6
+- id: rejects-invalid-coverage-report-with-contract-path
+  input:
+    validate_coverage_report:
+      version: 1
+      contracts:
+      - contract: bad-fixture
+  expected:
+    valid: false
+  predicate: contains(.error, '/contracts/0') AND contains(.error, 'status')
+  coverage_fingerprint: 6b18ca019819f370d2968d56cb9e40e1
+- id: runner-rejects-invalid-coverage-artifact-before-writing
+  input:
+    write_invalid_coverage_report:
+      minimum_coverage_percent: 101
+  expected:
+    written: false
+  predicate: contains(.error, 'minimum_coverage_percent')
+  coverage_fingerprint: cd23d9ef7f3c29b412e6431e8ba3837d
+- id: rejects-invalid-nested-coverage-totals
+  input:
+    invalid_coverage_report_field: dataset-object
+  expected:
+    valid: false
+  predicate: contains(.error, '/contracts/0/union')
+  coverage_fingerprint: 6b18ca019819f370d2968d56cb9e40e1
+- id: rejects-duplicate-lines-in-coverage-artifact
+  input:
+    invalid_coverage_report_field: duplicate-lines
+  expected:
+    valid: false
+  predicate: contains(.error, '/contracts/0/union/files/0/executable_lines')
+  coverage_fingerprint: 6b18ca019819f370d2968d56cb9e40e1
+- id: rejects-zero-line-in-coverage-artifact
+  input:
+    invalid_coverage_report_field: zero-line
+  expected:
+    valid: false
+  predicate: contains(.error, '/contracts/0/union/files/0/executable_lines')
+  coverage_fingerprint: 6b18ca019819f370d2968d56cb9e40e1

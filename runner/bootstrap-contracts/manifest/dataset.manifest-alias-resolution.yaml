@@ -1,0 +1,55 @@
+version: 1
+cases:
+- id: supplemental-test-alias-must-exist
+  coverage_fingerprint: 38a503ea57d46c3d361bad35b3c9d42f
+  input:
+    operation: manifest
+    yaml: 'version: ''1''
+
+      name: alias
+
+      datasets: [dataset.json]
+
+      coverage_sources: [validator.py]
+
+      supplemental_tests: [''@missing/test.rs'']
+
+      filesystem: {read: [dataset.json, validator.py], write: []}
+
+      '
+  expected:
+    valid: false
+- id: filesystem-read-alias-must-exist
+  coverage_fingerprint: 7f12ec9a9c37174bfb528e66939298c7
+  input:
+    operation: manifest
+    yaml: 'version: ''1''
+
+      name: alias
+
+      datasets: [dataset.json]
+
+      coverage_sources: [validator.py]
+
+      filesystem: {read: [''@missing''], write: []}
+
+      '
+  expected:
+    valid: false
+- id: filesystem-write-alias-must-exist
+  coverage_fingerprint: be460265c6805cbdf1421873bac7e019
+  input:
+    operation: manifest
+    yaml: 'version: ''1''
+
+      name: alias
+
+      datasets: [dataset.json]
+
+      coverage_sources: [validator.py]
+
+      filesystem: {read: [dataset.json, validator.py], write: [''@missing'']}
+
+      '
+  expected:
+    valid: false

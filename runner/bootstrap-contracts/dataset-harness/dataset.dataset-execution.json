@@ -1,0 +1,87 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "run-valid-dataset",
+      "setup": "run-valid-dataset",
+      "input": {
+        "operation": "run",
+        "extension": "json",
+        "document": "{\"version\":1,\"cases\":[{\"id\":\"one\",\"input\":1,\"expected\":1},{\"id\":\"two\",\"input\":2,\"predicate\":\"true\"}]}"
+      },
+      "coverage_fingerprint": "627f8c31bbc474588494d4d87abc7329",
+      "expected": {
+        "ok": true
+      }
+    },
+    {
+      "id": "run-unsupported-version",
+      "setup": "run-unsupported-version",
+      "input": {
+        "operation": "run-error",
+        "extension": "json",
+        "document": "{\"version\":2,\"cases\":[{\"id\":\"one\",\"input\":1,\"expected\":1}]}",
+        "error": "unsupported bootstrap dataset version 2"
+      },
+      "coverage_fingerprint": "6a62fc7b844bc53e88dc1b4696e2f8ec",
+      "expected": {
+        "ok": true
+      }
+    },
+    {
+      "id": "run-empty-cases",
+      "setup": "run-empty-cases",
+      "input": {
+        "operation": "run-error",
+        "extension": "json",
+        "document": "{\"version\":1,\"cases\":[]}",
+        "error": "dataset must contain at least one case"
+      },
+      "coverage_fingerprint": "01e8b88ae14495163769bcb3e65a22b0",
+      "expected": {
+        "ok": true
+      }
+    },
+    {
+      "id": "run-case-without-result-assertion",
+      "setup": "run-case-without-result-assertion",
+      "input": {
+        "operation": "run-error",
+        "extension": "json",
+        "document": "{\"version\":1,\"cases\":[{\"id\":\"no-result\",\"input\":1}]}",
+        "error": "expected or predicate is required"
+      },
+      "coverage_fingerprint": "bec8fdc41e781be5c3a5b2c755e03034",
+      "expected": {
+        "ok": true
+      }
+    },
+    {
+      "id": "run-validator-error-is-qualified",
+      "setup": "run-validator-error-is-qualified",
+      "input": {
+        "operation": "run-validator-error",
+        "extension": "json",
+        "document": "{\"version\":1,\"cases\":[{\"id\":\"bad\",\"input\":1,\"expected\":1},{\"id\":\"good\",\"input\":2,\"expected\":2}]}"
+      },
+      "coverage_fingerprint": "464385127fc7c3c07d278fc5f6267523",
+      "expected": {
+        "ok": true
+      }
+    },
+    {
+      "id": "run-load-error-is-reported",
+      "setup": "run-load-error-is-reported",
+      "input": {
+        "operation": "run-error",
+        "extension": "json",
+        "document": "{",
+        "error": "invalid dataset JSON"
+      },
+      "coverage_fingerprint": "9be60f830beb9c211403db43448dcfab",
+      "expected": {
+        "ok": true
+      }
+    }
+  ]
+}

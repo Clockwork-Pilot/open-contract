@@ -1,0 +1,359 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "root-only-staging-omits-nested-package",
+      "input": {
+        "operation": "stage-root-without-nested-contracts"
+      },
+      "expected": {
+        "root_only": true
+      },
+      "coverage_fingerprint": "1b2cc83a2dcb26418c36c3abeecb7fa2"
+    },
+    {
+      "id": "command-stdin-and-stdout",
+      "input": {
+        "operation": "command",
+        "command": [
+          "/bin/cat"
+        ],
+        "stdin": "contract data",
+        "backend": "none"
+      },
+      "expected": {
+        "stdout": "contract data",
+        "success": true
+      },
+      "coverage_fingerprint": "172a5180a77b255c2d463e9508540ff6"
+    },
+    {
+      "id": "command-reports-temporary-directory-failure",
+      "setup": "command-reports-temporary-directory-failure",
+      "input": {
+        "operation": "command",
+        "command": [
+          "/bin/cat"
+        ],
+        "backend": "none"
+      },
+      "expected": {
+        "error_contains": "cannot create contract command temporary directory"
+      },
+      "coverage_fingerprint": "9f642ea4153f31cb8f5f85e1890faa58"
+    },
+    {
+      "id": "python-runtime-command",
+      "input": {
+        "operation": "command",
+        "command": [
+          "/bin/cat"
+        ],
+        "stdin": "python runtime",
+        "backend": "none"
+      },
+      "expected": {
+        "stdout": "python runtime",
+        "success": true
+      },
+      "coverage_fingerprint": "172a5180a77b255c2d463e9508540ff6"
+    },
+    {
+      "id": "javascript-runtime-command",
+      "input": {
+        "operation": "command",
+        "command": [
+          "/bin/cat"
+        ],
+        "stdin": "javascript runtime",
+        "backend": "none"
+      },
+      "expected": {
+        "stdout": "javascript runtime",
+        "success": true
+      },
+      "coverage_fingerprint": "172a5180a77b255c2d463e9508540ff6"
+    },
+    {
+      "id": "empty-command-is-rejected",
+      "input": {
+        "operation": "empty-command",
+        "working_directory": "reports/nested"
+      },
+      "expected": {
+        "rejected": true,
+        "package_command_rejected": true
+      },
+      "coverage_fingerprint": "aabd4f364e14973ca84a20dd6fec833d"
+    },
+    {
+      "id": "command-expands-environment-reference",
+      "setup": "command-expands-environment-reference",
+      "input": {
+        "operation": "command",
+        "command": [
+          "/bin/echo",
+          "${OPEN_CONTRACT_TEST_VALUE}"
+        ],
+        "backend": "none"
+      },
+      "expected": {
+        "stdout": "contract supplied value\n",
+        "success": true
+      },
+      "coverage_fingerprint": "2486a30ffa4daac97ac41c8de75fb3e0"
+    },
+    {
+      "id": "command-rejects-unterminated-environment-reference",
+      "input": {
+        "operation": "command",
+        "command": [
+          "/bin/true",
+          "${UNCLOSED"
+        ],
+        "backend": "none"
+      },
+      "expected": {
+        "error_contains": "unterminated environment reference"
+      },
+      "coverage_fingerprint": "6a47578eec66ba63cf275bc1b2334d10"
+    },
+    {
+      "id": "command-rejects-invalid-environment-name",
+      "input": {
+        "operation": "command",
+        "command": [
+          "/bin/true",
+          "${1INVALID}"
+        ],
+        "backend": "landlock"
+      },
+      "expected": {
+        "error_contains": "invalid environment variable name"
+      },
+      "coverage_fingerprint": "971c4c7d1fb480fdf5114a302b272b86"
+    },
+    {
+      "id": "command-rejects-unset-environment-reference",
+      "setup": "command-rejects-unset-environment-reference",
+      "input": {
+        "operation": "command",
+        "command": [
+          "/bin/true",
+          "${OPEN_CONTRACT_TEST_UNSET}"
+        ],
+        "backend": "none"
+      },
+      "expected": {
+        "error_contains": "references unset environment variable"
+      },
+      "coverage_fingerprint": "aa4fead253fd2f552c9ab00b65ae4fd4"
+    },
+    {
+      "id": "runtime-manifest-validation",
+      "input": {
+        "operation": "isolation-runtime-manifest"
+      },
+      "expected": {
+        "override_applied": true,
+        "invalid_manifests_rejected": true,
+        "language_adapter_runtime_applied": true,
+        "invalid_language_adapter_manifests_rejected": true
+      },
+      "coverage_fingerprint": "02a7bc8e34432afd2a11d3da5e826b9d"
+    },
+    {
+      "id": "command-runtime-rejects-unresolved-executable",
+      "input": {
+        "operation": "command-runtime-resolution",
+        "runtime_yaml": "version: 1\nenvironment:\n  PATH: /open-contract-no-such-executable-directory\ncommand_executable: true\n",
+        "command": [
+          "open-contract-command-does-not-exist"
+        ]
+      },
+      "expected": {
+        "error_contains": "it cannot be resolved: open-contract-command-does-not-exist"
+      },
+      "coverage_fingerprint": "852ad3062569dfdbe1b2ce6eede433cf"
+    },
+    {
+      "id": "reject-invalid-staged-paths",
+      "input": {
+        "operation": "reject-invalid-staged-paths"
+      },
+      "expected": {
+        "relative_parent_rejected": true
+      },
+      "coverage_fingerprint": "429e074a446a47606e8c2f273f6db63c"
+    },
+    {
+      "id": "command-from-contract-subdirectory",
+      "input": {
+        "operation": "command-at",
+        "working_directory": "reports/nested"
+      },
+      "expected": {
+        "working_directory": "nested",
+        "outside_rejected": true
+      },
+      "coverage_fingerprint": "236d9e1861450eaeea8ae7eda752b1ba"
+    },
+    {
+      "id": "command-executes-relative-path-from-contract-directory",
+      "setup": "command-executes-relative-path-from-contract-directory",
+      "input": {
+        "operation": "command-at",
+        "backend": "landlock",
+        "working_directory": "support",
+        "command": [
+          "./contract-command"
+        ]
+      },
+      "expected": {
+        "success": true
+      },
+      "coverage_fingerprint": "b419cdc7240d3243ac90341f213b7fad"
+    },
+    {
+      "id": "unresolvable-command-is-rejected",
+      "input": {
+        "operation": "command-not-found"
+      },
+      "expected": {
+        "rejected": true
+      },
+      "coverage_fingerprint": "ced3fae8e1f1970445137f29d35803f9"
+    },
+    {
+      "id": "closed-stdin-pipe-is-reported",
+      "input": {
+        "operation": "broken-stdin-pipe"
+      },
+      "expected": {
+        "rejected": true
+      },
+      "coverage_fingerprint": "fe59ecbee8bbb5905e1d27fcc97190b6"
+    },
+    {
+      "id": "command-rejects-empty-argv",
+      "input": {
+        "operation": "command",
+        "backend": "none",
+        "command": []
+      },
+      "expected": {
+        "error_contains": "executable cannot be empty"
+      },
+      "coverage_fingerprint": "2b255faeea01c24620276fae3357ad02"
+    },
+    {
+      "id": "command-rejects-empty-expanded-executable",
+      "setup": "command-rejects-empty-expanded-executable",
+      "input": {
+        "operation": "command",
+        "backend": "none",
+        "command": [
+          "${OPEN_CONTRACT_TEST_EMPTY}"
+        ]
+      },
+      "expected": {
+        "error_contains": "executable cannot be empty after environment expansion"
+      },
+      "coverage_fingerprint": "acabd65a47348b97f616eb3a22caa1f6"
+    },
+    {
+      "id": "command-reports-spawn-failure",
+      "input": {
+        "operation": "command",
+        "backend": "none",
+        "command": [
+          "/open-contract-command-that-does-not-exist"
+        ]
+      },
+      "expected": {
+        "error_contains": "No such file"
+      },
+      "coverage_fingerprint": "a6e87f825f7d84c7601dbbb3f5886184"
+    },
+    {
+      "id": "command-at-rejects-unavailable-working-directory",
+      "input": {
+        "operation": "command-at",
+        "working_directory": "reports/unavailable"
+      },
+      "expected": {
+        "error_contains": "working directory is unavailable"
+      },
+      "coverage_fingerprint": "79969c916cc22c41d589c0afc2702cd0"
+    },
+    {
+      "id": "command-at-rejects-file-as-working-directory",
+      "input": {
+        "operation": "command-at",
+        "working_directory": "dataset.json"
+      },
+      "expected": {
+        "error_contains": "inside the staged contract tree"
+      },
+      "coverage_fingerprint": "cabc85f983893b5b5e99f5f19977ff65"
+    },
+    {
+      "id": "command-rejects-invalid-utf8-environment-reference",
+      "setup": "command-rejects-invalid-utf8-environment-reference",
+      "input": {
+        "operation": "command",
+        "backend": "none",
+        "command": [
+          "/bin/true",
+          "${OPEN_CONTRACT_TEST_INVALID_UTF8}"
+        ]
+      },
+      "expected": {
+        "error_contains": "is not valid UTF-8"
+      },
+      "coverage_fingerprint": "ac875c94bf86d19f1aaf6435ea1ba48c"
+    },
+    {
+      "id": "command-backend-error-paths",
+      "setup": "command-backend-error-paths",
+      "input": {
+        "operation": "command",
+        "backend": "none",
+        "command": [
+          "/bin/true"
+        ]
+      },
+      "expected": {
+        "success": true
+      },
+      "coverage_fingerprint": "45928581055779f5fc17ad8ea0aeea09"
+    },
+    {
+      "id": "command-none-reports-missing-root",
+      "setup": "command-none-reports-missing-root",
+      "input": {
+        "operation": "command",
+        "backend": "none",
+        "command": [
+          "/bin/true"
+        ]
+      },
+      "expected": {
+        "error_contains": "No such file"
+      },
+      "coverage_fingerprint": "b54c4b95a986bdb9d99ebc5797fda4a3"
+    },
+    {
+      "id": "command-at-reports-missing-root",
+      "setup": "command-at-reports-missing-root",
+      "input": {
+        "operation": "command-at",
+        "working_directory": "reports/nested"
+      },
+      "expected": {
+        "error_contains": "No such file"
+      },
+      "coverage_fingerprint": "f5b9d534fbec07acf72034bc3ca52869"
+    }
+  ]
+}

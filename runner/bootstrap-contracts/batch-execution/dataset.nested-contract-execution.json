@@ -1,0 +1,304 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "dataset-adapter-nested-contract-tree",
+      "setup": "dataset-adapter-nested-contract-tree",
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "public-case",
+              "input": {
+                "value": "actual"
+              },
+              "expected": {
+                "value": "actual"
+              },
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
+            }
+          ]
+        },
+        "manifest_yaml": "version: '1'\nname: parent\nfilesystem:\n  read:\n  - dataset.json\n  - validator.py\n  - child/open-contract.yaml\n  write: []\ndatasets:\n- dataset.json\ncoverage_sources:\n- validator.py\nnested_contracts:\n- child/open-contract.yaml\n",
+        "child_manifest_yaml": "version: '1'\nname: child\nfilesystem:\n  read:\n  - dataset.json\n  - validator.py\n  write: []\ndatasets:\n- dataset.json\ncoverage_sources:\n- validator.py\n",
+        "child_dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "child-case",
+              "input": {
+                "value": "child"
+              },
+              "expected": {
+                "value": "child"
+              },
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "results": [
+          {
+            "passed": true
+          },
+          {
+            "passed": true
+          }
+        ]
+      },
+      "coverage_fingerprint": "6d6d2ab5c9080e0538a8421539ec912b"
+    },
+    {
+      "id": "dataset-adapter-accepts-yml-nested-manifest",
+      "input": {
+        "nested_contract": true,
+        "nested_manifest_path": "child/open-contract.yml",
+        "coverage_fingerprints": false
+      },
+      "expected": {
+        "results": [
+          {
+            "passed": true
+          },
+          {
+            "passed": true
+          }
+        ]
+      },
+      "coverage_fingerprint": "57319d2ba1d9952f34019d0d61252a3b"
+    },
+    {
+      "id": "dataset-adapter-rejects-unmarked-nested-manifest",
+      "input": {
+        "nested_contract": true,
+        "nested_manifest_path": "child/contract.yaml",
+        "coverage_fingerprints": false
+      },
+      "expected": {},
+      "predicate": "contains(.error, 'nested manifest filename must contain a dot-delimited open-contract segment before .yaml or .yml')",
+      "coverage_fingerprint": "b6cd502009c0d0cf1db9d27ff6d84094"
+    },
+    {
+      "id": "dataset-adapter-shared-nested-contract-runs-once",
+      "setup": "dataset-adapter-shared-nested-contract-runs-once",
+      "input": {
+        "shared_nested_contract": true,
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "public-case",
+              "input": {
+                "value": "actual"
+              },
+              "expected": {
+                "value": "actual"
+              },
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "results": [
+          {
+            "contract": "batch-case-dataset-adapter-shared-nested-contract-runs-once",
+            "passed": true
+          },
+          {
+            "contract": "left",
+            "passed": true
+          },
+          {
+            "contract": "shared",
+            "passed": true
+          },
+          {
+            "contract": "right",
+            "passed": true
+          }
+        ],
+        "coverage": [
+          {
+            "contract": "batch-case-dataset-adapter-shared-nested-contract-runs-once"
+          },
+          {
+            "contract": "left"
+          },
+          {
+            "contract": "shared"
+          },
+          {
+            "contract": "right"
+          }
+        ]
+      },
+      "coverage_fingerprint": "5095bca439b99a7b6c2d7194020e5fcc"
+    },
+    {
+      "id": "dataset-adapter-duplicate-nested-name",
+      "setup": "dataset-adapter-duplicate-nested-name",
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "public-case",
+              "input": {
+                "value": "actual"
+              },
+              "expected": {
+                "value": "actual"
+              },
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
+            }
+          ]
+        },
+        "manifest_yaml": "version: '1'\nname: parent\nfilesystem:\n  read:\n  - dataset.json\n  - validator.py\n  - child/open-contract.yaml\n  write: []\ndatasets:\n- dataset.json\ncoverage_sources:\n- validator.py\nnested_contracts:\n- child/open-contract.yaml\n",
+        "child_manifest_yaml": "version: '1'\nname: parent\nfilesystem:\n  read:\n  - dataset.json\n  - validator.py\n  write: []\ndatasets:\n- dataset.json\ncoverage_sources:\n- validator.py\n",
+        "child_dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "child-case",
+              "input": {
+                "value": "child"
+              },
+              "expected": {
+                "value": "child"
+              },
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
+            }
+          ]
+        }
+      },
+      "expected": {},
+      "coverage_fingerprint": "c14935586ea6907eae9a790d6bc77f4d",
+      "predicate": "contains(.error, 'duplicate contract name')"
+    },
+    {
+      "id": "run-contract-tree-rejects-invalid-manifest",
+      "input": {
+        "manifest_yaml": "version: [\n",
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "case",
+              "input": {
+                "value": "real input"
+              },
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2",
+              "expected": {
+                "value": "real input"
+              }
+            }
+          ]
+        }
+      },
+      "expected": {},
+      "coverage_fingerprint": "733465105b31e09eb9da7c43e3838963",
+      "predicate": "contains(.error, 'invalid manifest')"
+    },
+    {
+      "id": "run-contract-tree-rejects-missing-staged-file",
+      "input": {
+        "manifest_yaml": "version: '1'\nname: missing-source\nfilesystem:\n  read:\n  - dataset.json\n  - absent.py\n  write: []\ndatasets:\n- dataset.json\ncoverage_sources:\n- validator.py\n",
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "case",
+              "input": {
+                "value": "real input"
+              },
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2",
+              "expected": {
+                "value": "real input"
+              }
+            }
+          ]
+        }
+      },
+      "expected": {},
+      "coverage_fingerprint": "733465105b31e09eb9da7c43e3838963",
+      "predicate": "contains(.error, 'absent.py') AND contains(.error, 'No such file')"
+    },
+    {
+      "id": "run-contract-tree-updates-coverage-fingerprints",
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "call",
+              "input": {
+                "value": "call input"
+              },
+              "expected": {
+                "value": "call input"
+              },
+              "coverage_fingerprint": "11111111111111111111111111111111"
+            },
+            {
+              "id": "sequence",
+              "steps": [
+                {
+                  "id": "step",
+                  "input": {
+                    "value": "step input"
+                  },
+                  "expected": {
+                    "value": "step input"
+                  },
+                  "coverage_fingerprint": "11111111111111111111111111111111"
+                }
+              ]
+            }
+          ]
+        },
+        "fingerprint_mode": "update"
+      },
+      "expected": {
+        "results": [
+          {
+            "case_id": "call",
+            "passed": true
+          },
+          {
+            "case_id": "sequence",
+            "passed": true
+          }
+        ]
+      },
+      "coverage_fingerprint": "8b7c265765c3090333311973343c6816"
+    },
+    {
+      "id": "run-contract-tree-staging-rejects-symlink-escape",
+      "setup": "run-contract-tree-staging-rejects-symlink-escape",
+      "input": {
+        "backend": "tempdir",
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "case",
+              "input": {
+                "value": "real input"
+              },
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2",
+              "expected": {
+                "value": "real input"
+              }
+            }
+          ]
+        }
+      },
+      "expected": {},
+      "coverage_fingerprint": "f8e74e3ec4adc0455ba32987aaa7b51b",
+      "predicate": "contains(.error, 'staging source escapes package')"
+    }
+  ]
+}

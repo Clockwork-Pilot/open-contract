@@ -261,6 +261,49 @@ fn validate_case(_: &Dataset, case: &DatasetCase) -> Result<(), String> {
 }
 
 fn execute_dataset() -> Result<usize, String> {
+    if std::env::var_os("OPEN_CONTRACT_BOOTSTRAP_DATASET_PATH").is_some() {
+        return execute_selected_dataset();
+    }
+    let package = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let manifest_path = package
+        .parent()
+        .ok_or_else(|| "dataset harness has no bootstrap-contracts parent".to_string())?
+        .join("datasets.manifest.json");
+    let manifest: serde_json::Value = serde_json::from_slice(
+        &std::fs::read(&manifest_path)
+            .map_err(|error| format!("cannot read {}: {error}", manifest_path.display()))?,
+    )
+    .map_err(|error| format!("invalid {}: {error}", manifest_path.display()))?;
+    let contract = manifest["contracts"]
+        .as_array()
+        .and_then(|contracts| contracts.iter().find(|contract| contract["package"] == "dataset-harness"))
+        .ok_or_else(|| "dataset harness is not declared in datasets.manifest.json".to_string())?;
+    let datasets = contract["datasets"]
+        .as_array()
+        .ok_or_else(|| "dataset harness entries must be an array".to_string())?;
+    let mut total = 0;
+    for dataset in datasets {
+        let id = dataset["id"]
+            .as_str()
+            .ok_or_else(|| "dataset harness suite ID must be a string".to_string())?;
+        let path = dataset["path"]
+            .as_str()
+            .ok_or_else(|| format!("dataset harness suite {id} path must be a string"))?;
+        std::env::set_var("OPEN_CONTRACT_BOOTSTRAP_DATASET_PATH", package.join(path));
+        if let Some(schema) = dataset["schema"].as_str() {
+            std::env::set_var(
+                "OPEN_CONTRACT_BOOTSTRAP_DATASET_SCHEMA",
+                package.join(schema),
+            );
+        } else {
+            std::env::remove_var("OPEN_CONTRACT_BOOTSTRAP_DATASET_SCHEMA");
+        }
+        total += execute_selected_dataset()?;
+    }
+    Ok(total)
+}
+
+fn execute_selected_dataset() -> Result<usize, String> {
     let dataset_path = std::env::var_os("OPEN_CONTRACT_BOOTSTRAP_DATASET_PATH")
         .map(PathBuf::from)
         .unwrap_or_else(dataset_path);

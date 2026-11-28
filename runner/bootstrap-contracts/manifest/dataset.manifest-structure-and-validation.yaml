@@ -1,0 +1,182 @@
+version: 1
+cases:
+- id: valid-manifest-with-support-and-nested-contract
+  coverage_fingerprint: b083feff75d240618e9d95f3f89d0a2c
+  input:
+    operation: manifest
+    yaml: "version: '1'\nname: sample\nfilesystem:\n  read:\n  - dataset.json\n  -\
+      \ validator.py\n  - support\n  - child/contract.yaml\n  write:\n  - reports/deep/result.json\n\
+      datasets:\n- dataset.json\ncoverage_sources:\n- validator.py\nnested_contracts:\n\
+      - child/contract.yaml\n"
+  expected:
+    valid: true
+- id: valid-manifest-with-explicit-supplemental-tests
+  coverage_fingerprint: 4b286ea8b280e8bc1c289b0b650e46ee
+  input:
+    operation: manifest
+    yaml: "version: '1'\nname: sample\nfilesystem:\n  read:\n  - dataset.json\n  -\
+      \ validator.py\n  - tests/extra.rs\n  write: []\ndatasets:\n- dataset.json\n\
+      coverage_sources:\n- validator.py\nsupplemental_tests:\n- tests/extra.rs\n"
+  expected:
+    valid: true
+- id: valid-manifest-with-execution-command
+  coverage_fingerprint: afea99575b712d8c55af36c47392d61a
+  input:
+    operation: manifest
+    yaml: "version: '1'\nname: sample\nexecution:\n  command:\n  - python3\n  - contract_entry.py\n\
+      filesystem:\n  read:\n  - dataset.json\n  - validator.py\n  write: []\ndatasets:\n\
+      - dataset.json\ncoverage_sources:\n- validator.py\n"
+  expected:
+    valid: true
+- id: rejects-empty-language-adapter-reference
+  coverage_fingerprint: 27f8b5628094695a53aae7da13d9089f
+  input:
+    operation: manifest
+    yaml: "version: '1'\nname: sample\nlanguage_adapter: '  '\nfilesystem:\n  read:\n\
+      \  - dataset.json\n  - validator.py\n  write: []\ndatasets:\n- dataset.json\n\
+      coverage_sources:\n- validator.py\n"
+  expected:
+    valid: false
+- id: rejects-path-as-language-adapter-reference
+  coverage_fingerprint: ebb9e631815d8073437a6cc28283335f
+  input:
+    operation: manifest
+    yaml: "version: '1'\nname: sample\nlanguage_adapter: /opt/open-contract/languages/python\n\
+      filesystem:\n  read:\n  - dataset.json\n  - validator.py\n  write: []\ndatasets:\n\
+      - dataset.json\ncoverage_sources:\n- validator.py\n"
+  expected:
+    valid: false
+- id: empty-execution-command
+  coverage_fingerprint: 2f8c0fca5d3d27cb3faba27ce25f3182
+  input:
+    operation: manifest
+    yaml: "version: '1'\nname: sample\nexecution:\n  command: []\nfilesystem:\n  read:\n\
+      \  - dataset.json\n  - validator.py\n  write: []\ndatasets:\n- dataset.json\n\
+      coverage_sources:\n- validator.py\n"
+  expected:
+    valid: false
+- id: blank-execution-command
+  coverage_fingerprint: 2f8c0fca5d3d27cb3faba27ce25f3182
+  input:
+    operation: manifest
+    yaml: "version: '1'\nname: sample\nexecution:\n  command:\n  - '  '\nfilesystem:\n\
+      \  read:\n  - dataset.json\n  - validator.py\n  write: []\ndatasets:\n- dataset.json\n\
+      coverage_sources:\n- validator.py\n"
+  expected:
+    valid: false
+- id: unsupported-manifest-version
+  coverage_fingerprint: f59d1c3cf8a185d3a1c8f5907d1d667f
+  input:
+    operation: manifest
+    yaml: "version: '2'\nname: sample\nfilesystem:\n  read:\n  - dataset.json\n  -\
+      \ validator.py\n  write: []\ndatasets:\n- dataset.json\ncoverage_sources:\n\
+      - validator.py\n"
+  expected:
+    valid: false
+- id: blank-manifest-name
+  coverage_fingerprint: a9ac0342398394f3cf231b0c6a0af634
+  input:
+    operation: manifest
+    yaml: "version: '1'\nname: '  '\nfilesystem:\n  read:\n  - dataset.json\n  - validator.py\n\
+      \  write: []\ndatasets:\n- dataset.json\ncoverage_sources:\n- validator.py\n"
+  expected:
+    valid: false
+- id: malformed-manifest-yaml
+  coverage_fingerprint: 2ee163302105a19bd0a55ff426fd9ea5
+  input:
+    operation: manifest
+    yaml: 'not: [valid: yaml
+
+      '
+  expected:
+    valid: false
+- id: unknown-directory-alias-is-rejected
+  coverage_fingerprint: 55f563df2cbc28319078127946eb3925
+  input:
+    operation: manifest
+    yaml: 'version: ''1''
+
+      name: aliased
+
+      datasets: [''@missing/data.json'']
+
+      coverage_sources: [validator.py]
+
+      filesystem: {read: [dataset.json, validator.py], write: []}
+
+      '
+  expected:
+    valid: false
+- id: invalid-coverage-glob-is-rejected
+  coverage_fingerprint: b620836a5d2199d2ba1d6f7ea87dfe5c
+  input:
+    operation: manifest
+    yaml: 'version: ''1''
+
+      name: glob
+
+      datasets: [dataset.json]
+
+      coverage_sources: [''support/['']
+
+      filesystem: {read: [dataset.json, support], write: []}
+
+      '
+  expected:
+    valid: false
+- id: manifest-requires-at-least-one-dataset
+  coverage_fingerprint: 1e6cb5c7da9a0f50ba0a7cbd58287cff
+  input:
+    operation: manifest
+    yaml: 'version: ''1''
+
+      name: no-datasets
+
+      datasets: []
+
+      coverage_sources: [validator.py]
+
+      filesystem: {read: [validator.py], write: []}
+
+      '
+  expected:
+    valid: false
+- id: manifest-accepts-consumer-metadata
+  coverage_fingerprint: 7359c24fe7af09946df36402e249fde6
+  input:
+    operation: manifest
+    yaml: 'version: ''1''
+
+      name: sample
+
+      metadata: {schema_sources: [contracts/a/schema], owner: {team: platform, enabled:
+      true, limits: [1, 2]}}
+
+      filesystem: {read: [dataset.json, validator.py], write: []}
+
+      datasets: [dataset.json]
+
+      coverage_sources: [validator.py]
+
+      '
+  expected:
+    valid: true
+- id: manifest-still-rejects-unknown-top-level-fields
+  coverage_fingerprint: 2ee163302105a19bd0a55ff426fd9ea5
+  input:
+    operation: manifest
+    yaml: 'version: ''1''
+
+      name: sample
+
+      not_metadata: {owner: platform}
+
+      filesystem: {read: [dataset.json, validator.py], write: []}
+
+      datasets: [dataset.json]
+
+      coverage_sources: [validator.py]
+
+      '
+  expected:
+    valid: false

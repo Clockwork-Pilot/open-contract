@@ -1,0 +1,196 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "landlock-command-stdin-and-stdout",
+      "input": {
+        "operation": "command",
+        "backend": "landlock",
+        "command": [
+          "/bin/cat"
+        ],
+        "stdin": "restricted command"
+      },
+      "expected": {
+        "stdout": "restricted command",
+        "success": true
+      },
+      "coverage_fingerprint": "dcee51e536fd2f31ccc2544313f8eae5"
+    },
+    {
+      "id": "landlock-open-rule-path-failure",
+      "setup": "landlock-open-rule-path-failure",
+      "input": {
+        "operation": "command",
+        "backend": "landlock",
+        "command": [
+          "/bin/true"
+        ]
+      },
+      "expected": {
+        "error_contains": "cannot open Landlock rule path"
+      },
+      "coverage_fingerprint": "79335794a0b74ce3f8d99279876032f9"
+    },
+    {
+      "id": "landlock-abi-query-failure",
+      "setup": "landlock-abi-query-failure",
+      "input": {
+        "operation": "command",
+        "backend": "landlock",
+        "command": [
+          "/bin/true"
+        ]
+      },
+      "expected": {
+        "error_contains": "Operation not permitted"
+      },
+      "coverage_fingerprint": "47ab0db6321eca19119e7a58ff945582"
+    },
+    {
+      "id": "landlock-ruleset-create-failure",
+      "setup": "landlock-ruleset-create-failure",
+      "input": {
+        "operation": "command",
+        "backend": "landlock",
+        "command": [
+          "/bin/true"
+        ]
+      },
+      "expected": {
+        "error_contains": "Operation not permitted"
+      },
+      "coverage_fingerprint": "7ac668afe6f295b58c1463bf3dd39c2b"
+    },
+    {
+      "id": "landlock-add-path-rule-failure",
+      "setup": "landlock-add-path-rule-failure",
+      "input": {
+        "operation": "command",
+        "backend": "landlock",
+        "command": [
+          "/bin/true"
+        ]
+      },
+      "expected": {
+        "error_contains": "Operation not permitted"
+      },
+      "coverage_fingerprint": "d216e0a953fe9537636f41a1475c9b3d"
+    },
+    {
+      "id": "landlock-set-no-new-privileges-failure",
+      "setup": "landlock-set-no-new-privileges-failure",
+      "input": {
+        "operation": "command",
+        "backend": "landlock",
+        "command": [
+          "/bin/true"
+        ]
+      },
+      "expected": {
+        "error_contains": "Operation not permitted"
+      },
+      "coverage_fingerprint": "d41e3047dba7f7cb49b54667abc75667"
+    },
+    {
+      "id": "landlock-restrict-self-failure",
+      "setup": "landlock-restrict-self-failure",
+      "input": {
+        "operation": "command",
+        "backend": "landlock",
+        "command": [
+          "/bin/true"
+        ]
+      },
+      "expected": {
+        "error_contains": "Operation not permitted"
+      },
+      "coverage_fingerprint": "d41e3047dba7f7cb49b54667abc75667"
+    },
+    {
+      "id": "landlock-denies-private-file-read",
+      "input": {
+        "operation": "deny-private-read"
+      },
+      "expected": {
+        "denied": true
+      },
+      "coverage_fingerprint": "dcee51e536fd2f31ccc2544313f8eae5"
+    },
+    {
+      "id": "landlock-uses-default-language-environment",
+      "setup": "landlock-uses-default-language-environment",
+      "input": {
+        "operation": "command",
+        "backend": "landlock",
+        "command": [
+          "/bin/true"
+        ]
+      },
+      "expected": {
+        "success": true
+      },
+      "coverage_fingerprint": "dcee51e536fd2f31ccc2544313f8eae5"
+    },
+    {
+      "id": "landlock-installation-failure-scenarios",
+      "setup": "landlock-installation-failure-scenarios",
+      "input": {
+        "operation": "command",
+        "backend": "landlock",
+        "command": [
+          "/bin/true"
+        ]
+      },
+      "expected": {
+        "success": true
+      },
+      "coverage_fingerprint": "e368ec79e40aded5b9bcf9c93ad50350"
+    },
+    {
+      "id": "command-landlock-reports-missing-root",
+      "setup": "command-landlock-reports-missing-root",
+      "input": {
+        "operation": "command",
+        "backend": "landlock",
+        "command": [
+          "/bin/true"
+        ]
+      },
+      "expected": {
+        "error_contains": "No such file"
+      },
+      "coverage_fingerprint": "62621e3d64db5b94855accba770183fb"
+    },
+    {
+      "id": "command-landlock-reports-missing-staged-support",
+      "setup": "command-landlock-reports-missing-staged-support",
+      "input": {
+        "operation": "command",
+        "backend": "landlock",
+        "command": [
+          "/bin/true"
+        ]
+      },
+      "expected": {
+        "error_contains": "No such file"
+      },
+      "coverage_fingerprint": "7a785b498d14c20f5d7d8c53e85d6393"
+    },
+    {
+      "id": "command-landlock-reports-missing-staged-write-file",
+      "setup": "command-landlock-reports-missing-staged-write-file",
+      "input": {
+        "operation": "command",
+        "backend": "landlock",
+        "command": [
+          "/bin/true"
+        ]
+      },
+      "expected": {
+        "error_contains": "reports/result.json"
+      },
+      "coverage_fingerprint": "a8d10610b4521085165823dcfa9ff82f"
+    }
+  ]
+}

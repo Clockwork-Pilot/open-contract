@@ -1,0 +1,303 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "manifest-adapter-executes-batch",
+      "setup": "manifest-adapter-executes-batch",
+      "input": {
+        "coverage_fingerprints": false,
+        "command": [
+          "python3",
+          "adapter.runner"
+        ],
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "echo-real-input",
+              "input": {
+                "value": 7
+              },
+              "expected": {
+                "value": 7
+              }
+            },
+            {
+              "id": "echo-sequence",
+              "steps": [
+                {
+                  "id": "step",
+                  "input": {
+                    "value": 8
+                  },
+                  "expected": {
+                    "value": 8
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "expected": {
+        "results": [
+          {
+            "passed": true
+          },
+          {
+            "case_id": "echo-sequence",
+            "passed": true
+          }
+        ]
+      },
+      "coverage_fingerprint": "55b961e5d34e144d7197ee53f5bb29c7"
+    },
+    {
+      "id": "manifest-adapter-missing-execution",
+      "setup": "manifest-adapter-missing-execution",
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "adapter-input",
+              "input": {
+                "value": "example"
+              },
+              "expected": {
+                "value": "example"
+              },
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
+            }
+          ]
+        }
+      },
+      "expected": {},
+      "coverage_fingerprint": "e0f93028ec65f7b87e7e10b89e62c5d7",
+      "predicate": "contains(.error, 'missing execution.command')"
+    },
+    {
+      "id": "manifest-adapter-command-fails",
+      "setup": "manifest-adapter-command-fails",
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "adapter-input",
+              "input": {
+                "value": "example"
+              },
+              "expected": {
+                "value": "example"
+              },
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
+            }
+          ]
+        },
+        "command": [
+          "python3",
+          "adapter.runner"
+        ]
+      },
+      "expected": {},
+      "coverage_fingerprint": "c258fedab48e86934440c98091ad18f9",
+      "predicate": "contains(.error, 'execution.command failed')"
+    },
+    {
+      "id": "manifest-adapter-returns-invalid-json",
+      "setup": "manifest-adapter-returns-invalid-json",
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "adapter-input",
+              "input": {
+                "value": "example"
+              },
+              "expected": {
+                "value": "example"
+              },
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
+            }
+          ]
+        },
+        "command": [
+          "python3",
+          "adapter.runner"
+        ]
+      },
+      "expected": {},
+      "coverage_fingerprint": "21e4385202939f5368b12f05a21f6a47",
+      "predicate": "contains(.error, 'invalid batch JSON')"
+    },
+    {
+      "id": "manifest-adapter-command-fails-with-stdout",
+      "setup": "manifest-adapter-command-fails-with-stdout",
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "adapter-input",
+              "input": {
+                "value": "example"
+              },
+              "expected": {
+                "value": "example"
+              },
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
+            }
+          ]
+        },
+        "command": [
+          "python3",
+          "adapter.runner"
+        ]
+      },
+      "expected": {},
+      "coverage_fingerprint": "91383476c7744f48604205e4ae78b7ff",
+      "predicate": "contains(.error, 'stdout diagnostic')"
+    },
+    {
+      "id": "manifest-adapter-command-fails-with-stderr",
+      "setup": "manifest-adapter-command-fails-with-stderr",
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "adapter-input",
+              "input": {
+                "value": "example"
+              },
+              "expected": {
+                "value": "example"
+              },
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
+            }
+          ]
+        },
+        "command": [
+          "python3",
+          "adapter.runner"
+        ]
+      },
+      "expected": {},
+      "coverage_fingerprint": "c5d9b52c910d808c8b66994c50d17b04",
+      "predicate": "contains(.error, 'stderr diagnostic')"
+    },
+    {
+      "id": "manifest-adapter-returns-invalid-batch-data",
+      "setup": "manifest-adapter-returns-invalid-batch-data",
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "adapter-input",
+              "input": {
+                "value": "example"
+              },
+              "expected": {
+                "value": "example"
+              },
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
+            }
+          ]
+        },
+        "command": [
+          "python3",
+          "adapter.runner"
+        ]
+      },
+      "expected": {},
+      "predicate": "contains(.error, 'invalid batch data')",
+      "coverage_fingerprint": "30772d78d0749c0b32e6dc3b14de4ce4"
+    },
+    {
+      "id": "manifest-adapter-returns-invalid-coverage-data",
+      "setup": "manifest-adapter-returns-invalid-coverage-data",
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "adapter-input",
+              "input": {
+                "value": "example"
+              },
+              "expected": {
+                "value": "example"
+              },
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
+            }
+          ]
+        },
+        "command": [
+          "python3",
+          "adapter.runner"
+        ]
+      },
+      "expected": {},
+      "predicate": "contains(.error, 'every covered line must be executable')",
+      "coverage_fingerprint": "29d4f96255cb05a467a8fdcdb228604d"
+    },
+    {
+      "id": "manifest-adapter-returns-no-results",
+      "setup": "manifest-adapter-returns-no-results",
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "adapter-input",
+              "input": {
+                "value": "example"
+              },
+              "expected": {
+                "value": "example"
+              },
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
+            }
+          ]
+        },
+        "command": [
+          "python3",
+          "adapter.runner"
+        ]
+      },
+      "expected": {},
+      "coverage_fingerprint": "a610ffc76c10fc58bf4a7189adc6a9cc",
+      "predicate": "contains(.error, 'returned no batch results')"
+    },
+    {
+      "id": "manifest-adapter-command-cannot-start",
+      "setup": "manifest-adapter-command-cannot-start",
+      "input": {
+        "command": [
+          "/definitely/missing/open-contract-adapter"
+        ],
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "case",
+              "input": {
+                "value": "real input"
+              },
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2",
+              "expected": {
+                "value": "real input"
+              }
+            }
+          ]
+        }
+      },
+      "expected": {},
+      "coverage_fingerprint": "83ecdd7edace20a91f59b4dc47d3ef3e",
+      "predicate": "contains(.error, 'No such file or directory')"
+    }
+  ]
+}

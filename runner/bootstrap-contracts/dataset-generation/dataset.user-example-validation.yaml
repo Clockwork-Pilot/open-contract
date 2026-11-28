@@ -1,0 +1,168 @@
+version: 1
+cases:
+- id: invalid-user-example
+  input:
+    schema:
+      type: integer
+      examples:
+      - not-a-number
+  expected:
+    error_contains: examples contains a value outside the schema
+  coverage_fingerprint: ba1152bf402a109348dff4771cdb4cd7
+- id: invalid-number-example
+  input:
+    schema:
+      type: number
+      minimum: 2
+      examples:
+      - 1
+  expected:
+    error_contains: examples contains a value outside the schema
+  coverage_fingerprint: e3d11855c7b50e604140738d45688ac1
+- id: generated-value-conflicts-with-enum
+  input:
+    schema:
+      const: fixed
+      enum:
+      - other
+  expected:
+    error_contains: generated a value outside the schema
+  coverage_fingerprint: 8f2d09ceb3d5e10f1812d6d4983d567b
+- id: enum-conflicts-with-const
+  input:
+    schema:
+      const: 2
+      enum:
+      - 3
+  expected:
+    error_contains: generated a value outside the schema
+  coverage_fingerprint: 8f2d09ceb3d5e10f1812d6d4983d567b
+- id: const-example-conflict
+  input:
+    schema:
+      const: fixed
+      examples:
+      - different
+  expected:
+    error_contains: examples contains a value outside the schema
+  coverage_fingerprint: 1e8a4c71629cb8881bc0a9da6b86d72f
+- id: generated-value-conflicts-with-type
+  input:
+    schema:
+      const: 1
+      type: string
+  expected:
+    error_contains: generated a value outside the schema
+  coverage_fingerprint: 297ecc1a0aa0ac4729e60eee54259d97
+- id: malformed-type-checked-against-example
+  input:
+    schema:
+      const: 1
+      type: []
+      examples:
+      - 1
+  expected:
+    error_contains: examples contains a value outside the schema
+  coverage_fingerprint: cb71ca1e3d1955ccdfae2c3dba5b8faf
+- id: example-value-is-not-a-string
+  input:
+    schema:
+      type: string
+      examples:
+      - 3
+  expected:
+    error_contains: examples contains a value outside the schema
+  coverage_fingerprint: 32f794e3b042f4440169f5304c9936a3
+- id: required-field-missing-from-user-example
+  input:
+    schema:
+      type: object
+      required:
+      - name
+      properties:
+        name:
+          type: string
+      examples:
+      - {}
+  expected:
+    error_contains: examples contains a value outside the schema
+  coverage_fingerprint: 13f9b7bf5611de00220fc5e8f29eed43
+- id: nested-property-example-outside-bounds
+  input:
+    schema:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 3
+      examples:
+      - name: x
+  expected:
+    error_contains: examples contains a value outside the schema
+  coverage_fingerprint: fa0570b6659c53e7f53ebb7fd4718508
+- id: object-example-has-wrong-shape
+  input:
+    schema:
+      type: object
+      examples:
+      - 1
+  expected:
+    error_contains: examples contains a value outside the schema
+  coverage_fingerprint: 739b3353357806ff841c69ce51f9b096
+- id: properties-reject-nonobject-const-example
+  input:
+    schema:
+      const: 1
+      properties:
+        name:
+          type: string
+      examples:
+      - 1
+  expected:
+    error_contains: examples contains a value outside the schema
+  coverage_fingerprint: 98c6575f71c203eb804836c72fe942e1
+- id: object-example-has-invalid-property
+  input:
+    schema:
+      type: object
+      properties:
+        name:
+          type: string
+      examples:
+      - name: 3
+  expected:
+    error_contains: examples contains a value outside the schema
+  coverage_fingerprint: 669163d9416837b56f16d846d0067115
+- id: tuple-example-has-wrong-item-type
+  input:
+    schema:
+      type: array
+      prefixItems:
+      - type: string
+      examples:
+      - - 1
+  expected:
+    error_contains: examples contains a value outside the schema
+  coverage_fingerprint: 01ad290f157270fe0dbbad92956c8b6a
+- id: homogeneous-array-example-has-wrong-item-type
+  input:
+    schema:
+      type: array
+      items:
+        type: string
+      examples:
+      - - 1
+  expected:
+    error_contains: examples contains a value outside the schema
+  coverage_fingerprint: 05ba17b13b95e1c42fa26e8da1054f49
+- id: example-outside-length-range
+  input:
+    schema:
+      type: string
+      minLength: 4
+      maxLength: 8
+      examples:
+      - abc
+  expected:
+    error_contains: examples contains a value outside the schema
+  coverage_fingerprint: dfc3477fdd27e49371e1af2411a679e7

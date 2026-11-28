@@ -1,0 +1,304 @@
+version: 1
+cases:
+- id: run-manifest-requires-manifest
+  input:
+    args:
+    - run-manifest
+  expected:
+    exit_code: 2
+    stdout: ''
+    stderr: 'contract-runner: missing manifest path
+
+      '
+  coverage_fingerprint: d0aa6557d82b95e61b9422b28739b6ee
+- id: run-manifest-accepts-open-contract-yaml
+  input:
+    args:
+    - run-manifest
+    - open-contract.yaml
+    - --isolation
+    - none
+  expected:
+    exit_code: 2
+    stdout: 'Isolation mode: none
+
+      '
+    stderr: 'contract-runner: contract execution: No such file or directory (os error
+      2)
+
+      '
+  coverage_fingerprint: d13839645f947be03fe57cbde4a58845
+- id: run-manifest-accepts-qualified-open-contract-yaml
+  input:
+    args:
+    - run-manifest
+    - open-contract.debug.yaml
+    - --isolation
+    - none
+  expected:
+    exit_code: 2
+    stdout: 'Isolation mode: none
+
+      '
+    stderr: 'contract-runner: contract execution: No such file or directory (os error
+      2)
+
+      '
+  coverage_fingerprint: d13839645f947be03fe57cbde4a58845
+- id: run-manifest-accepts-prefixed-open-contract-yml
+  input:
+    args:
+    - run-manifest
+    - debug.open-contract.yml
+    - --isolation
+    - none
+  expected:
+    exit_code: 2
+    stdout: 'Isolation mode: none
+
+      '
+    stderr: 'contract-runner: contract execution: No such file or directory (os error
+      2)
+
+      '
+  coverage_fingerprint: d13839645f947be03fe57cbde4a58845
+- id: run-manifest-rejects-unmarked-root-filename
+  input:
+    args:
+    - run-manifest
+    - contract.yaml
+  expected:
+    exit_code: 2
+    stdout: ''
+    stderr: 'contract-runner: run-manifest manifest filename must contain a dot-delimited
+      open-contract segment before .yaml or .yml
+
+      '
+  coverage_fingerprint: 09ca52d8acfbe83945f0bc64cbb2ddb0
+- id: run-manifest-rejects-marker-substring
+  input:
+    args:
+    - run-manifest
+    - debug.open-contracting.yaml
+  expected:
+    exit_code: 2
+    stdout: ''
+    stderr: 'contract-runner: run-manifest manifest filename must contain a dot-delimited
+      open-contract segment before .yaml or .yml
+
+      '
+  coverage_fingerprint: 09ca52d8acfbe83945f0bc64cbb2ddb0
+- id: run-manifest-rejects-unsupported-extension
+  input:
+    args:
+    - run-manifest
+    - open-contract.json
+  expected:
+    exit_code: 2
+    stdout: ''
+    stderr: 'contract-runner: run-manifest manifest filename must contain a dot-delimited
+      open-contract segment before .yaml or .yml
+
+      '
+  coverage_fingerprint: 09ca52d8acfbe83945f0bc64cbb2ddb0
+- id: run-manifest-rejects-path-without-basename
+  input:
+    args:
+    - run-manifest
+    - .
+  expected:
+    exit_code: 2
+    stdout: ''
+    stderr: 'contract-runner: run-manifest manifest filename must contain a dot-delimited
+      open-contract segment before .yaml or .yml
+
+      '
+  coverage_fingerprint: 09ca52d8acfbe83945f0bc64cbb2ddb0
+- id: runs-the-complete-contract-input
+  setup: runs-the-complete-contract-input
+  input:
+    args:
+    - run-manifest
+    - open-contract.yaml
+    - --isolation
+    - none
+    - --coverage-report
+    - coverage.json
+    - --update-fingerprints
+    files:
+      open-contract.yaml: "version: '1'\nname: cli-smoke-fixture\nminimum_coverage_percent:\
+        \ 0\nfilesystem:\n  read:\n  - dataset.yaml\n  - validator.py\n  - adapter.py\n\
+        \  - tests/check.py\n  write: []\nexecution:\n  command:\n  - python3\n  -\
+        \ adapter.py\ndatasets:\n- dataset.yaml\ncoverage_sources:\n- validator.py\n\
+        supplemental_tests:\n- tests/check.py\n"
+      validator.py: "def validate(value):\n    return value\n"
+      adapter.py: "import json\nimport sys\nrequest = json.load(sys.stdin)\nresults\
+        \ = []\nscopes = []\nfor item in request[\"requests\"]:\n    results.append({\"\
+        key\": item[\"key\"], \"output\": item[\"input\"]})\n    scopes.append({\"\
+        key\": item[\"key\"], \"files\": [{\"path\": \"validator.py\", \"lines\":\
+        \ [1]}]})\nprint(json.dumps({\n    \"results\": results,\n    \"coverage\"\
+        : {\"sources\": [\"validator.py\"]},\n    \"coverage_scopes\": scopes,\n \
+        \   \"coverage_lines\": [{\"path\": \"validator.py\", \"executable_lines\"\
+        : [1], \"covered_lines\": [1]}],\n    \"additional_test_coverage\": {\"executed\"\
+        : True, \"passed\": True, \"native_report\": {\"format\": \"fixture\"}},\n\
+        \    \"additional_coverage_lines\": [{\"path\": \"validator.py\", \"executable_lines\"\
+        : [1], \"covered_lines\": [1]}]\n}))\n"
+      tests/check.py: "def run():\n    return True\n"
+      dataset.yaml: "version: 1\ncases:\n- id: echo\n  input:\n    value: 7\n  expected:\n\
+        \    value: 7\n  coverage_fingerprint: '11111111111111111111111111111111'\n\
+        - id: echo-text\n  input:\n    value: text\n  expected:\n    value: text\n\
+        \  coverage_fingerprint: 867714e81b27e269f9a7f3b13bdc37ae\n- id: sequence\n\
+        \  steps:\n  - id: first\n    input:\n      value: 1\n    expected:\n    \
+        \  value: 1\n    coverage_fingerprint: '22222222222222222222222222222222'\n\
+        \  - id: second\n    input:\n      value: 2\n    expected:\n      value: 2\n\
+        \    coverage_fingerprint: 867714e81b27e269f9a7f3b13bdc37ae\n"
+    dataset_path: dataset.yaml
+  expected:
+    exit_code: 0
+    coverage_metrics_summary: '    Coverage metrics: branch unavailable; function
+      unavailable; instantiation unavailable; line 100.0% (1/1, minimum 0.0%, pass);
+      region unavailable; statement unavailable'
+    stdout: "Isolation mode: none\nUpdated cli-smoke-fixture/echo fingerprint: 11111111111111111111111111111111\
+      \ -> 867714e81b27e269f9a7f3b13bdc37ae\n  covered: validator.py:1\nUpdated cli-smoke-fixture/sequence/first\
+      \ fingerprint: 22222222222222222222222222222222 -> 867714e81b27e269f9a7f3b13bdc37ae\n\
+      \  covered: validator.py:1\nUpdated 2 fingerprint(s) in dataset.yaml\nContracts\
+      \ executed:\n  cli-smoke-fixture: 3/3 cases passed\n    Coverage metrics: branch\
+      \ unavailable; function unavailable; instantiation unavailable; line 100.0%\
+      \ (1/1, minimum 0.0%, pass); region unavailable; statement unavailable\nDataset\
+      \ cases: 3/3 passed across 1 contract(s)\nCoverage report: coverage.json\n"
+    coverage_report:
+      version: 1
+      contracts:
+      - contract: cli-smoke-fixture
+        status: passed
+        sources:
+          status: complete
+          declared:
+          - validator.py
+          covered:
+          - validator.py
+          missing: []
+    stderr: ''
+    updated_dataset:
+      version: 1
+      cases:
+      - id: echo
+        input:
+          value: 7
+        expected:
+          value: 7
+        coverage_fingerprint: 867714e81b27e269f9a7f3b13bdc37ae
+      - id: echo-text
+        input:
+          value: text
+        expected:
+          value: text
+        coverage_fingerprint: 867714e81b27e269f9a7f3b13bdc37ae
+      - id: sequence
+        steps:
+        - id: first
+          input:
+            value: 1
+          expected:
+            value: 1
+          coverage_fingerprint: 867714e81b27e269f9a7f3b13bdc37ae
+        - id: second
+          input:
+            value: 2
+          expected:
+            value: 2
+          coverage_fingerprint: 867714e81b27e269f9a7f3b13bdc37ae
+  coverage_fingerprint: 193756e6a759d30cc500a5e4bc3fc467
+- id: lists-contracts-executed-through-recursive-nesting
+  setup: lists-contracts-executed-through-recursive-nesting
+  input:
+    args:
+    - run-manifest
+    - open-contract.yaml
+    - --isolation
+    - none
+    - --coverage-report
+    - coverage.json
+    - --disable-fingerprints
+    files:
+      open-contract.yaml: "version: '1'\nname: nested-root\ndatasets: [dataset.yaml]\n\
+        minimum_coverage_percent: 0\ncoverage_sources: [validator.py]\nnested_contracts:\
+        \ [child/open-contract.yaml]\nfilesystem:\n  read: [dataset.yaml, validator.py,\
+        \ adapter.py, child/open-contract.yaml]\n  write: []\nexecution: {command:\
+        \ [python3, adapter.py]}\n"
+      child/open-contract.yaml: "version: '1'\nname: nested-child\ndatasets: [dataset.yaml]\n\
+        minimum_coverage_percent: 0\ncoverage_sources: [validator.py]\nnested_contracts:\
+        \ [grandchild/open-contract.yaml]\nfilesystem:\n  read: [dataset.yaml, validator.py,\
+        \ adapter.py, grandchild/open-contract.yaml]\n  write: []\nexecution: {command:\
+        \ [python3, adapter.py]}\n"
+      child/grandchild/open-contract.yaml: "version: '1'\nname: nested-grandchild\n\
+        datasets: [dataset.yaml]\nminimum_coverage_percent: 0\ncoverage_sources: [validator.py]\n\
+        filesystem:\n  read: [dataset.yaml, validator.py, adapter.py]\n  write: []\n\
+        execution: {command: [python3, adapter.py]}\n"
+      dataset.yaml: "version: 1\ncases:\n- id: echo\n  input: {value: 1}\n  expected:\
+        \ {value: 1}\n  coverage_fingerprint: 60c6194cbdc58033999a1fb07d147da8\n"
+      child/dataset.yaml: "version: 1\ncases:\n- id: echo\n  input: {value: 2}\n \
+        \ expected: {value: 2}\n  coverage_fingerprint: 60c6194cbdc58033999a1fb07d147da8\n"
+      child/grandchild/dataset.yaml: "version: 1\ncases:\n- id: echo\n  input: {value:\
+        \ 3}\n  expected: {value: 3}\n  coverage_fingerprint: 60c6194cbdc58033999a1fb07d147da8\n"
+      validator.py: "def validate(value):\n    return value\n"
+      child/validator.py: "def validate(value):\n    return value\n"
+      child/grandchild/validator.py: "def validate(value):\n    return value\n"
+      adapter.py: "import json, sys\nrequest = json.load(sys.stdin)\nresults = []\n\
+        scopes = []\nfor item in request[\"requests\"]:\n    results.append({\"key\"\
+        : item[\"key\"], \"output\": item[\"input\"]})\n    scopes.append({\"key\"\
+        : item[\"key\"], \"files\": [{\"path\": \"validator.py\", \"lines\": [1]}]})\n\
+        print(json.dumps({\n    \"results\": results,\n    \"coverage\": {\"sources\"\
+        : [\"validator.py\"]},\n    \"coverage_scopes\": scopes,\n    \"coverage_lines\"\
+        : [{\"path\": \"validator.py\", \"executable_lines\": [1], \"covered_lines\"\
+        : [1]}]\n}))\n"
+      child/adapter.py: "import json, sys\nrequest = json.load(sys.stdin)\nresults\
+        \ = []\nscopes = []\nfor item in request[\"requests\"]:\n    results.append({\"\
+        key\": item[\"key\"], \"output\": item[\"input\"]})\n    scopes.append({\"\
+        key\": item[\"key\"], \"files\": [{\"path\": \"validator.py\", \"lines\":\
+        \ [1]}]})\nprint(json.dumps({\n    \"results\": results,\n    \"coverage\"\
+        : {\"sources\": [\"validator.py\"]},\n    \"coverage_scopes\": scopes,\n \
+        \   \"coverage_lines\": [{\"path\": \"validator.py\", \"executable_lines\"\
+        : [1], \"covered_lines\": [1]}]\n}))\n"
+      child/grandchild/adapter.py: "import json, sys\nrequest = json.load(sys.stdin)\n\
+        results = []\nscopes = []\nfor item in request[\"requests\"]:\n    results.append({\"\
+        key\": item[\"key\"], \"output\": item[\"input\"]})\n    scopes.append({\"\
+        key\": item[\"key\"], \"files\": [{\"path\": \"validator.py\", \"lines\":\
+        \ [1]}]})\nprint(json.dumps({\n    \"results\": results,\n    \"coverage\"\
+        : {\"sources\": [\"validator.py\"]},\n    \"coverage_scopes\": scopes,\n \
+        \   \"coverage_lines\": [{\"path\": \"validator.py\", \"executable_lines\"\
+        : [1], \"covered_lines\": [1]}]\n}))\n"
+  expected:
+    exit_code: 0
+    stdout: "Isolation mode: none\nCoverage fingerprints: disabled\nContracts executed:\n\
+      \  nested-root: 1/1 cases passed\n  nested-child: 1/1 cases passed\n  nested-grandchild:\
+      \ 1/1 cases passed\nDataset cases: 3/3 passed across 3 contract(s)\nCoverage\
+      \ report: coverage.json\n"
+    stderr: ''
+    coverage_report:
+      version: 1
+      contracts:
+      - contract: nested-root
+        status: passed
+      - contract: nested-child
+        status: passed
+      - contract: nested-grandchild
+        status: passed
+  coverage_fingerprint: 1577e5d98e543cf6d595ff75ed29f91c
+- id: run-manifest-rejects-missing-manifest-with-bwrap
+  input:
+    args:
+    - run-manifest
+    - open-contract.yaml
+    - --isolation
+    - bwrap
+  expected:
+    exit_code: 2
+    stdout: 'Isolation mode: bwrap
+
+      '
+    stderr: 'contract-runner: contract execution: No such file or directory (os error
+      2)
+
+      '
+  coverage_fingerprint: 6badc0551f0936b78f84459d0e25f675

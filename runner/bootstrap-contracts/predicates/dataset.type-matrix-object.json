@@ -1,0 +1,647 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "type-object-equal-missing",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-object-not-equal-missing",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": true
+    },
+    {
+      "id": "type-object-greater-missing",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-object-greater-equal-missing",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-object-less-missing",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-object-less-equal-missing",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-object-equal-null",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": null
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-object-not-equal-null",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": null
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": true
+    },
+    {
+      "id": "type-object-greater-null",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": null
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-object-greater-equal-null",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": null
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-object-less-null",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": null
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-object-less-equal-null",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": null
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-object-equal-boolean",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": true
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-object-not-equal-boolean",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": true
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": true
+    },
+    {
+      "id": "type-object-greater-boolean",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": true
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-object-greater-equal-boolean",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": true
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-object-less-boolean",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": true
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-object-less-equal-boolean",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": true
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-object-equal-integer",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": 2
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-object-not-equal-integer",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": 2
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": true
+    },
+    {
+      "id": "type-object-greater-integer",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": 2
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-object-greater-equal-integer",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": 2
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-object-less-integer",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": 2
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-object-less-equal-integer",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": 2
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-object-equal-decimal",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": 2.0
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-object-not-equal-decimal",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": 2.0
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": true
+    },
+    {
+      "id": "type-object-greater-decimal",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": 2.0
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-object-greater-equal-decimal",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": 2.0
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-object-less-decimal",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": 2.0
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-object-less-equal-decimal",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": 2.0
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-object-equal-string",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": "alpha"
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-object-not-equal-string",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": "alpha"
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": true
+    },
+    {
+      "id": "type-object-greater-string",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": "alpha"
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-object-greater-equal-string",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": "alpha"
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-object-less-string",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": "alpha"
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-object-less-equal-string",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": "alpha"
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-object-equal-array",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": [
+            1
+          ]
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-object-not-equal-array",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": [
+            1
+          ]
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": true
+    },
+    {
+      "id": "type-object-greater-array",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": [
+            1
+          ]
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-object-greater-equal-array",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": [
+            1
+          ]
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-object-less-array",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": [
+            1
+          ]
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-object-less-equal-array",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": [
+            1
+          ]
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-object-equal-object",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": true
+    },
+    {
+      "id": "type-object-not-equal-object",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-object-greater-object",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-object-greater-equal-object",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-object-less-object",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-object-less-equal-object",
+      "input": {
+        "json": {
+          "left": {
+            "key": "value"
+          },
+          "right": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false
+    }
+  ]
+}

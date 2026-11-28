@@ -1,0 +1,102 @@
+version: 1
+cases:
+- id: allowlist-matches-exact-path
+  coverage_fingerprint: 106777dfd55569f90f3252e5f14b9ffd
+  input:
+    operation: allowlist
+    path: data
+    allowed:
+    - data
+  expected:
+    valid: true
+- id: allowlist-matches-child-path
+  coverage_fingerprint: c23a24305779bb53c5960c7bd131dbb8
+  input:
+    operation: allowlist
+    path: data/input.json
+    allowed:
+    - data
+  expected:
+    valid: true
+- id: allowlist-rejects-sibling-prefix
+  coverage_fingerprint: c23a24305779bb53c5960c7bd131dbb8
+  input:
+    operation: allowlist
+    path: database/input.json
+    allowed:
+    - data
+  expected:
+    valid: false
+- id: allowlist-rejects-unlisted-path
+  coverage_fingerprint: c23a24305779bb53c5960c7bd131dbb8
+  input:
+    operation: allowlist
+    path: elsewhere
+    allowed:
+    - data
+  expected:
+    valid: false
+- id: package-relative-path
+  coverage_fingerprint: e561ded91a4fc200f7e1894519785b68
+  input:
+    operation: path
+    path: validator.py
+  predicate: .valid == true
+  expected:
+    valid: true
+- id: empty-path
+  coverage_fingerprint: 6250e908748f574bc14bb599a429f8e0
+  input:
+    operation: path
+    path: ''
+  expected:
+    valid: false
+- id: rejects-absolute-package-path
+  coverage_fingerprint: 2b549f1ba48d87cbac1d325080663cd7
+  input:
+    operation: path
+    path: /outside/private.txt
+  expected:
+    valid: false
+- id: backslash-path
+  coverage_fingerprint: 2b549f1ba48d87cbac1d325080663cd7
+  input:
+    operation: path
+    path: folder\\file
+  expected:
+    valid: false
+- id: parent-path
+  coverage_fingerprint: 7ccf59e1092f1d86369b4c94e52a3198
+  input:
+    operation: path
+    path: ../escape
+  expected:
+    valid: false
+- id: empty-component
+  coverage_fingerprint: f42526c6f7f53843afa19c5b5f9b445f
+  input:
+    operation: path
+    path: folder//file
+  expected:
+    valid: false
+- id: dot-component
+  coverage_fingerprint: f42526c6f7f53843afa19c5b5f9b445f
+  input:
+    operation: path
+    path: folder/./file
+  expected:
+    valid: false
+- id: dot-path
+  coverage_fingerprint: 7ccf59e1092f1d86369b4c94e52a3198
+  input:
+    operation: path
+    path: .
+  expected:
+    valid: false
+- id: drive-prefix
+  coverage_fingerprint: 83225b4a0e082086fcdfaad36a35474e
+  input:
+    operation: path
+    path: C:/secret
+  expected:
+    valid: false

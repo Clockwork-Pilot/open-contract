@@ -1,0 +1,414 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "staged-tree-creates-declared-write-file",
+      "input": {
+        "operation": "stage-contract-tree",
+        "manifest": {
+          "filesystem": {
+            "write": [
+              "reports/generated/created.json"
+            ]
+          }
+        }
+      },
+      "expected": {
+        "created": true
+      },
+      "coverage_fingerprint": "4e8ec6e86ed641a851b8ea01df4c9319"
+    },
+    {
+      "id": "stage-backend-tempdir-allows-relative-read-path",
+      "input": {
+        "operation": "stage-backend",
+        "backend": "tempdir",
+        "manifest": {
+          "filesystem": {
+            "read": [
+              "../isolation/private-source.txt"
+            ]
+          }
+        }
+      },
+      "expected": {
+        "read_paths_absolute": false
+      },
+      "coverage_fingerprint": "2f4b454bc88330666703d00c741f777f"
+    },
+    {
+      "id": "stage-backend-tempdir-allows-relative-write-path",
+      "input": {
+        "operation": "stage-backend",
+        "backend": "tempdir",
+        "manifest": {
+          "filesystem": {
+            "write": [
+              "../isolation/private-source.txt"
+            ]
+          }
+        }
+      },
+      "expected": {
+        "write_paths_absolute": false
+      },
+      "coverage_fingerprint": "d2708d0907ddf9074675a2b8ac53f0e2"
+    },
+    {
+      "id": "stage-backend-tempdir-write-file-under-existing-file",
+      "input": {
+        "operation": "stage-backend",
+        "backend": "tempdir",
+        "manifest": {
+          "filesystem": {
+            "read": [
+              "support/helper.py"
+            ],
+            "write": [
+              "support/helper.py/child.txt"
+            ]
+          }
+        }
+      },
+      "expected": {},
+      "predicate": "exists(.error)",
+      "coverage_fingerprint": "98e045e53ba99a90cb98958e7ac720fe"
+    },
+    {
+      "id": "stage-backend-tempdir-write-directory-under-existing-file",
+      "input": {
+        "operation": "stage-backend",
+        "backend": "tempdir",
+        "manifest": {
+          "filesystem": {
+            "read": [
+              "support/helper.py"
+            ],
+            "write": [
+              "support/helper.py/child-dir"
+            ]
+          }
+        }
+      },
+      "expected": {},
+      "predicate": "exists(.error)",
+      "coverage_fingerprint": "98e045e53ba99a90cb98958e7ac720fe"
+    },
+    {
+      "id": "tempdir-read-rejects-recursive-symlink-escape",
+      "setup": "tempdir-read-rejects-recursive-symlink-escape",
+      "input": {
+        "operation": "stage-backend",
+        "backend": "tempdir",
+        "manifest": {
+          "filesystem": {
+            "read": [
+              "source"
+            ]
+          }
+        }
+      },
+      "expected": {},
+      "predicate": "contains(.error, 'staging source escapes package')",
+      "coverage_fingerprint": "59e0d56f936697913cf285211d6ca305"
+    },
+    {
+      "id": "stage-backend-none-uses-source-tree",
+      "input": {
+        "operation": "stage-backend",
+        "backend": "none",
+        "manifest": {
+          "nested_contracts": [
+            "nested/contract.yaml"
+          ]
+        }
+      },
+      "expected": {
+        "source_root_used": true,
+        "read_paths_absolute": true,
+        "write_paths_absolute": true,
+        "nested_manifest_count": 2,
+        "nested_manifest_exists": true,
+        "runtime_manifest_name": null
+      },
+      "coverage_fingerprint": "565c7ba16b6778cbe05a0fe9b93cb5b3"
+    },
+    {
+      "id": "stage-backend-none-rejects-write-path-under-file",
+      "input": {
+        "operation": "stage-backend",
+        "backend": "none",
+        "manifest": {
+          "filesystem": {
+            "write": [
+              "support/helper.py/child.txt"
+            ]
+          }
+        }
+      },
+      "expected": {},
+      "predicate": "exists(.error)",
+      "coverage_fingerprint": "5d45ae4c52769dff2d8eeb12a2f3f63b"
+    },
+    {
+      "id": "stage-backend-bwrap-uses-source-root",
+      "setup": "stage-backend-bwrap-uses-source-root",
+      "input": {
+        "operation": "stage-backend",
+        "backend": "bwrap",
+        "command": [
+          "true"
+        ],
+        "manifest": {
+          "nested_contracts": [
+            "nested/contract.yaml"
+          ]
+        }
+      },
+      "expected": {
+        "success": true
+      },
+      "predicate": "contains(.stdout, 'runner/bootstrap-contracts/isolation')",
+      "coverage_fingerprint": "740b0f0b21e37058d8c23d198d74cd6c"
+    },
+    {
+      "id": "stage-backend-bwrap-reports-missing-root",
+      "setup": "stage-backend-bwrap-reports-missing-root",
+      "input": {
+        "operation": "stage-backend",
+        "backend": "bwrap",
+        "command": [
+          "true"
+        ],
+        "manifest": {
+          "filesystem": {
+            "read": [
+              "dataset.json"
+            ]
+          }
+        }
+      },
+      "expected": {},
+      "predicate": "exists(.error)",
+      "coverage_fingerprint": "9461a4657a58e61ba9a00e98f5981a9b"
+    },
+    {
+      "id": "stage-backend-rejects-malformed-runtime",
+      "input": {
+        "operation": "stage-backend",
+        "backend": "bwrap",
+        "isolation_runtime": "dataset.json",
+        "command": [
+          "true"
+        ],
+        "manifest": {
+          "nested_contracts": [
+            "nested/contract.yaml"
+          ]
+        }
+      },
+      "expected": {},
+      "predicate": "exists(.error)",
+      "coverage_fingerprint": "83fa5a3086805f274e34a47edafdd3c8"
+    },
+    {
+      "id": "stage-backend-bwrap-uses-embedded-runtime",
+      "input": {
+        "operation": "stage-backend",
+        "backend": "bwrap",
+        "manifest": {
+          "nested_contracts": [
+            "nested/contract.yaml"
+          ]
+        }
+      },
+      "expected": {
+        "source_root_used": true,
+        "read_paths_absolute": true,
+        "write_paths_absolute": true,
+        "nested_manifest_count": 2,
+        "nested_manifest_exists": true,
+        "runtime_manifest_name": "bwrap"
+      },
+      "coverage_fingerprint": "412f6cff17506eb9b1178d37384abefc"
+    },
+    {
+      "id": "stage-backend-landlock-uses-source-tree",
+      "input": {
+        "operation": "stage-backend",
+        "backend": "landlock",
+        "manifest": {
+          "nested_contracts": [
+            "nested/contract.yaml"
+          ]
+        }
+      },
+      "expected": {
+        "source_root_used": true,
+        "read_paths_absolute": true,
+        "write_paths_absolute": true,
+        "nested_manifest_count": 2,
+        "nested_manifest_exists": true,
+        "runtime_manifest_name": "landlock"
+      },
+      "coverage_fingerprint": "c30bfc981415769031b94748eb70df32"
+    },
+    {
+      "id": "stage-backend-rejects-runtime-manifest-for-none",
+      "input": {
+        "operation": "stage-backend",
+        "backend": "none",
+        "isolation_runtime": "unused.yaml",
+        "manifest": {
+          "filesystem": {
+            "read": [
+              "dataset.json"
+            ]
+          }
+        }
+      },
+      "expected": {
+        "error": "--isolation-runtime cannot be used with --isolation none"
+      },
+      "coverage_fingerprint": "5b0535ccb56e3c00ca1cba71590323c1"
+    },
+    {
+      "id": "stage-backend-rejects-runtime-manifest-for-tempdir",
+      "input": {
+        "operation": "stage-backend",
+        "backend": "tempdir",
+        "isolation_runtime": "unused.yaml",
+        "manifest": {
+          "filesystem": {
+            "read": [
+              "dataset.json"
+            ]
+          }
+        }
+      },
+      "expected": {
+        "error": "--isolation-runtime cannot be used with --isolation tempdir"
+      },
+      "coverage_fingerprint": "787281465968f256b5d47eb5030714df"
+    },
+    {
+      "id": "staged-tree-rejects-unusable-temporary-directory",
+      "setup": "staged-tree-rejects-unusable-temporary-directory",
+      "input": {
+        "operation": "stage-contract-tree",
+        "manifest": {
+          "filesystem": {
+            "read": [
+              "support/helper.py"
+            ],
+            "write": [
+              "reports/result.json"
+            ]
+          }
+        }
+      },
+      "expected": {
+        "error_contains": "Not a directory"
+      },
+      "coverage_fingerprint": "be7ef3983340b6037c6a165831f80799"
+    },
+    {
+      "id": "staged-tree-rejects-missing-read-source",
+      "input": {
+        "operation": "stage-contract-tree",
+        "manifest": {
+          "filesystem": {
+            "read": [
+              "missing-source"
+            ]
+          }
+        }
+      },
+      "expected": {
+        "error": "cannot resolve filesystem path \"missing-source\": No such file or directory (os error 2)"
+      },
+      "predicate": "contains(.error, 'No such file')",
+      "coverage_fingerprint": "7a13d4a2f7c8584624da9ed412c46392"
+    },
+    {
+      "id": "staged-tree-rejects-write-file-under-file",
+      "input": {
+        "operation": "stage-contract-tree",
+        "manifest": {
+          "filesystem": {
+            "write": [
+              "support/helper.py/child.txt"
+            ]
+          }
+        }
+      },
+      "expected": {
+        "error_contains": "Not a directory"
+      },
+      "coverage_fingerprint": "61c63d824784a85f249dee858e49032f"
+    },
+    {
+      "id": "staged-tree-rejects-write-directory-under-file",
+      "input": {
+        "operation": "stage-contract-tree",
+        "manifest": {
+          "filesystem": {
+            "write": [
+              "support/helper.py/child-directory"
+            ]
+          }
+        }
+      },
+      "expected": {
+        "error_contains": "Not a directory"
+      },
+      "coverage_fingerprint": "61c63d824784a85f249dee858e49032f"
+    },
+    {
+      "id": "staged-tree-rejects-invalid-nested-manifest",
+      "input": {
+        "operation": "stage-contract-tree",
+        "manifest": {
+          "nested_contracts": [
+            "support"
+          ]
+        }
+      },
+      "expected": {
+        "error_contains": "not a regular file"
+      },
+      "coverage_fingerprint": "e5d37cf953d5aa79ad7fe6aff10baf66"
+    },
+    {
+      "id": "stage-contract-package-tree",
+      "input": {
+        "operation": "command",
+        "backend": "landlock",
+        "command": [
+          "/bin/cat",
+          "support/helper.py"
+        ]
+      },
+      "expected": {
+        "stdout": "def identity(value):\n    return value\n",
+        "success": true
+      },
+      "coverage_fingerprint": "dcee51e536fd2f31ccc2544313f8eae5"
+    },
+    {
+      "id": "staging-copy-error-paths",
+      "setup": "staging-copy-error-paths",
+      "input": {
+        "operation": "command",
+        "backend": "none",
+        "command": [
+          "/bin/true"
+        ]
+      },
+      "expected": {
+        "success": true
+      },
+      "coverage_fingerprint": "15d8ad3e3537bb92a3bc820141799dde"
+    }
+  ]
+}

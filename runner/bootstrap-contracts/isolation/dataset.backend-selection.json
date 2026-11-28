@@ -1,0 +1,102 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "auto-backend-prefers-bubblewrap",
+      "setup": "auto-backend-prefers-bubblewrap",
+      "input": {
+        "operation": "auto-backend"
+      },
+      "expected": {
+        "backend": "bwrap",
+        "failed_probes": 0
+      },
+      "coverage_fingerprint": "58f692564d9ea7657dccd3b9685a7fcf"
+    },
+    {
+      "id": "auto-backend-falls-back-to-landlock",
+      "setup": "auto-backend-falls-back-to-landlock",
+      "input": {
+        "operation": "auto-backend"
+      },
+      "expected": {
+        "backend": "landlock",
+        "failed_probes": 1
+      },
+      "coverage_fingerprint": "1f9d2c964e829a6afff912d93f5da99f"
+    },
+    {
+      "id": "auto-backend-reports-missing-bubblewrap",
+      "setup": "auto-backend-reports-missing-bubblewrap",
+      "input": {
+        "operation": "auto-backend"
+      },
+      "expected": {
+        "backend": "landlock",
+        "failed_probes": 1
+      },
+      "coverage_fingerprint": "2d8d8ee4615b4a63d505250eeb10c5d4"
+    },
+    {
+      "id": "auto-backend-falls-back-after-bubblewrap-error-output",
+      "setup": "auto-backend-falls-back-after-bubblewrap-error-output",
+      "input": {
+        "operation": "auto-backend"
+      },
+      "expected": {
+        "backend": "landlock",
+        "failed_probes": 1
+      },
+      "coverage_fingerprint": "5358b68f504fa03a0a5f51b64e750b62"
+    },
+    {
+      "id": "auto-backend-falls-back-when-true-is-missing",
+      "setup": "auto-backend-falls-back-when-true-is-missing",
+      "input": {
+        "operation": "auto-backend"
+      },
+      "expected": {
+        "backend": "tempdir",
+        "failed_probes": 2
+      },
+      "coverage_fingerprint": "f842127d4aa4e901a5d721372e9a55b7"
+    },
+    {
+      "id": "auto-backend-falls-back-when-landlock-fails",
+      "setup": "auto-backend-falls-back-when-landlock-fails",
+      "input": {
+        "operation": "auto-backend"
+      },
+      "expected": {
+        "backend": "tempdir",
+        "failed_probes": 2
+      },
+      "coverage_fingerprint": "033f91caed28ee86e78954b9923f7472"
+    },
+    {
+      "id": "auto-backend-falls-back-to-tempdir",
+      "setup": "auto-backend-falls-back-to-tempdir",
+      "input": {
+        "operation": "auto-backend",
+        "isolation_runtime": "missing-runtime.yaml"
+      },
+      "expected": {
+        "backend": "tempdir",
+        "failed_probes": 2
+      },
+      "coverage_fingerprint": "9263fe811c44e758ce28c01492202b90"
+    },
+    {
+      "id": "auto-backend-falls-back-to-none",
+      "setup": "auto-backend-falls-back-to-none",
+      "input": {
+        "operation": "auto-backend"
+      },
+      "expected": {
+        "backend": "none",
+        "failed_probes": 3
+      },
+      "coverage_fingerprint": "236f37eee4288b36d78f93422b3e063a"
+    }
+  ]
+}

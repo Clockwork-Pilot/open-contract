@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "simple-runtime-error",
+      "input": {
+        "exit_code": 1,
+        "message": "case output did not match"
+      },
+      "expected": {
+        "exit_code": 1,
+        "message": "case output did not match",
+        "rendered": "case output did not match",
+        "display": "case output did not match"
+      },
+      "coverage_fingerprint": "82586260833ad6d8db550905457b2586"
+    },
+    {
+      "id": "error-cannot-use-success-exit-code",
+      "input": {
+        "exit_code": 0,
+        "message": "unexpected success status"
+      },
+      "expected": {
+        "exit_code": 1,
+        "message": "unexpected success status",
+        "rendered": "unexpected success status",
+        "display": "unexpected success status"
+      },
+      "coverage_fingerprint": "82586260833ad6d8db550905457b2586"
+    }
+  ]
+}

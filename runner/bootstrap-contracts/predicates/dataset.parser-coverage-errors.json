@@ -1,0 +1,130 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "coverage-invalid-token",
+      "input": {
+        "json": {
+          "value": 1
+        },
+        "predicate": ".value == 1 @"
+      },
+      "expected": false
+    },
+    {
+      "id": "coverage-invalid-string-escape",
+      "input": {
+        "json": {
+          "value": "x"
+        },
+        "predicate": ".value == '\\xZZ'"
+      },
+      "expected": false
+    },
+    {
+      "id": "coverage-unexpected-expression-end",
+      "input": {
+        "json": {
+          "value": 1
+        },
+        "predicate": ".value =="
+      },
+      "expected": false
+    },
+    {
+      "id": "coverage-unclosed-expression-parenthesis",
+      "input": {
+        "json": {
+          "value": 1
+        },
+        "predicate": "(.value == 1 true)"
+      },
+      "expected": false
+    },
+    {
+      "id": "coverage-exists-missing-parentheses",
+      "input": {
+        "json": {
+          "value": 1
+        },
+        "predicate": "exists .value"
+      },
+      "expected": false
+    },
+    {
+      "id": "coverage-exists-non-field-argument",
+      "input": {
+        "json": {
+          "value": 1
+        },
+        "predicate": "exists(1)"
+      },
+      "expected": false
+    },
+    {
+      "id": "coverage-exists-extra-argument",
+      "input": {
+        "json": {
+          "value": 1,
+          "other": 2
+        },
+        "predicate": "exists(.value .other)"
+      },
+      "expected": false
+    },
+    {
+      "id": "coverage-null-literal",
+      "input": {
+        "json": {
+          "value": null
+        },
+        "predicate": ".value == null"
+      },
+      "expected": true
+    },
+    {
+      "id": "coverage-right-missing-field",
+      "input": {
+        "json": {
+          "value": 1
+        },
+        "predicate": ".value == .missing"
+      },
+      "expected": false
+    },
+    {
+      "id": "coverage-path-missing-parentheses",
+      "input": {
+        "json": {},
+        "predicate": "path == true"
+      },
+      "expected": false
+    },
+    {
+      "id": "coverage-path-non-string-argument",
+      "input": {
+        "json": {},
+        "predicate": ".items[true] == 3"
+      },
+      "expected": false
+    },
+    {
+      "id": "coverage-path-extra-argument",
+      "input": {
+        "json": {},
+        "predicate": "exists(.a .b)"
+      },
+      "expected": false
+    },
+    {
+      "id": "coverage-scalar-primary-row",
+      "input": {
+        "json": {
+          "item": 4
+        },
+        "predicate": ".item == 4"
+      },
+      "expected": true
+    }
+  ]
+}

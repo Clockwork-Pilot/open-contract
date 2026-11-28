@@ -1,18 +1,38 @@
 use std::fs;
 
 pub(crate) fn exercise_copy_error_paths() -> Result<(), String> {
+    exercise_copy_error_paths_inner().map_err(|error| format!("copy-error helper: {error}"))
+}
+
+fn exercise_copy_error_paths_inner() -> Result<(), String> {
     let package = tempfile::tempdir().map_err(|error| error.to_string())?;
-    let staging_plan = runner_manifest::ManifestPlan::load(
-        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("isolation-package.fixture.yaml"),
+    let source = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+    for relative in ["Cargo.toml", "src/lib.rs", "src/backend.rs", "support/helper.py"] {
+        let destination = package.path().join(relative);
+        fs::create_dir_all(destination.parent().unwrap()).map_err(|error| error.to_string())?;
+        fs::copy(source.join(relative), destination).map_err(|error| error.to_string())?;
+    }
+    fs::write(
+        package.path().join("dataset.json"),
+        r#"{"version":1,"cases":[]}"#,
     )
     .map_err(|error| error.to_string())?;
+    let manifest = package.path().join("isolation-package.fixture.yaml");
+    fs::write(
+        &manifest,
+        "version: '1'\nname: isolation-bootstrap\nminimum_coverage_percent: 100\ndatasets: [dataset.json]\ncoverage_sources: [src/lib.rs, src/backend.rs]\nfilesystem:\n  read: [dataset.json, src/lib.rs, src/backend.rs, Cargo.toml, support]\n  write: [reports, reports/result.json, reports/nested/result.json]\n",
+    )
+    .map_err(|error| error.to_string())?;
+    let staging_plan = runner_manifest::ManifestPlan::load(manifest)
+        .map_err(|error| error.to_string())?;
     let mut existing_write_plan = staging_plan.clone();
     existing_write_plan
         .manifest
         .filesystem
         .write
         .push("dataset.json".into());
-    let existing_tree = super::StagedTree::create(&existing_write_plan)?;
+    let existing_tree = super::StagedTree::create(&existing_write_plan)
+        .map_err(|error| format!("existing-write staging fixture: {error}"))?;
     let staged_dataset =
         fs::read(existing_tree.root.join("dataset.json")).map_err(|error| error.to_string())?;
     let source_dataset = fs::read(staging_plan.package_root.join("dataset.json"))
@@ -75,8 +95,10 @@ pub(crate) fn exercise_copy_error_paths() -> Result<(), String> {
         return Err(format!("unexpected writable parent error: {parent_error}"));
     }
 
-    let mut mismatched_source_root = super::StagedTree::create(&staging_plan)?;
-    mismatched_source_root.source_root = package.path().to_path_buf();
+    let outside_package = tempfile::tempdir().map_err(|error| error.to_string())?;
+    let mut mismatched_source_root = super::StagedTree::create(&staging_plan)
+        .map_err(|error| format!("mismatched-root staging fixture: {error}"))?;
+    mismatched_source_root.source_root = outside_package.path().to_path_buf();
     let prefix_error = mismatched_source_root
         .stage_plan(
             &staging_plan,
@@ -231,10 +253,7 @@ pub(crate) fn exercise_copy_error_paths() -> Result<(), String> {
         )
         .map_err(|error| error.to_string())?;
 
-        let mut plan = runner_manifest::ManifestPlan::load(
-            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("isolation-package.fixture.yaml"),
-        )
-        .map_err(|error| error.to_string())?;
+        let mut plan = staging_plan.clone();
         plan.package_root = package_copy.path().to_path_buf();
         plan.manifest.filesystem.read.clear();
         plan.manifest.filesystem.write.clear();

@@ -1,0 +1,224 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "literal-true",
+      "input": {
+        "json": {},
+        "predicate": "true"
+      },
+      "expected": true
+    },
+    {
+      "id": "literal-false",
+      "input": {
+        "json": {},
+        "predicate": "false"
+      },
+      "expected": false
+    },
+    {
+      "id": "empty-expression",
+      "input": {
+        "json": {},
+        "predicate": ""
+      },
+      "expected": false
+    },
+    {
+      "id": "equal-number",
+      "input": {
+        "json": {
+          "n": 5
+        },
+        "predicate": ".n == 5"
+      },
+      "expected": true
+    },
+    {
+      "id": "not-equal",
+      "input": {
+        "json": {
+          "n": 5
+        },
+        "predicate": ".n != 4"
+      },
+      "expected": true
+    },
+    {
+      "id": "greater",
+      "input": {
+        "json": {
+          "n": 5
+        },
+        "predicate": ".n > 4"
+      },
+      "expected": true
+    },
+    {
+      "id": "greater-equal",
+      "input": {
+        "json": {
+          "n": 5
+        },
+        "predicate": ".n >= 5"
+      },
+      "expected": true
+    },
+    {
+      "id": "less",
+      "input": {
+        "json": {
+          "n": 5
+        },
+        "predicate": ".n < 6"
+      },
+      "expected": true
+    },
+    {
+      "id": "less-equal",
+      "input": {
+        "json": {
+          "n": 5
+        },
+        "predicate": ".n <= 5"
+      },
+      "expected": true
+    },
+    {
+      "id": "field-comparison",
+      "input": {
+        "json": {
+          "n": 5,
+          "same": 5
+        },
+        "predicate": ".n == .same"
+      },
+      "expected": true
+    },
+    {
+      "id": "not-and-parentheses",
+      "input": {
+        "json": {
+          "n": 5,
+          "active": true
+        },
+        "predicate": "NOT (.n < 3 OR .active == false)"
+      },
+      "expected": true
+    },
+    {
+      "id": "or-and-precedence",
+      "input": {
+        "json": {
+          "n": 1,
+          "active": true
+        },
+        "predicate": ".n == 1 OR .active == false AND .n == 9"
+      },
+      "expected": true
+    },
+    {
+      "id": "invalid-left-field",
+      "input": {
+        "json": {
+          "n": 1
+        },
+        "predicate": "name == 1"
+      },
+      "expected": false
+    },
+    {
+      "id": "unparseable-right",
+      "input": {
+        "json": {
+          "n": 1
+        },
+        "predicate": ".n == nope"
+      },
+      "expected": false
+    },
+    {
+      "id": "unsupported-expression",
+      "input": {
+        "json": {
+          "n": 1
+        },
+        "predicate": "unknown"
+      },
+      "expected": false
+    },
+    {
+      "id": "unsupported-playbook-only-function",
+      "input": {
+        "json": {
+          "tests": []
+        },
+        "predicate": "all_tests_passed(.tests)"
+      },
+      "expected": false
+    },
+    {
+      "id": "fully-wrapped-expression",
+      "input": {
+        "json": {
+          "n": 1
+        },
+        "predicate": "(.n == 1)"
+      },
+      "expected": true
+    },
+    {
+      "id": "partially-wrapped-expression",
+      "input": {
+        "json": {
+          "n": 1
+        },
+        "predicate": "(.n == 1) AND (.n == 1)"
+      },
+      "expected": true
+    },
+    {
+      "id": "parentheses-inside-string",
+      "input": {
+        "json": {
+          "text": "a(b"
+        },
+        "predicate": "(.text == 'a(b')"
+      },
+      "expected": true
+    },
+    {
+      "id": "exists-dotted-path-quoted-key",
+      "input": {
+        "json": {
+          "payload": {
+            "a/b": 1
+          }
+        },
+        "predicate": "exists(.payload[\"a/b\"])"
+      },
+      "expected": true
+    },
+    {
+      "id": "exists-dotted-path-missing-key",
+      "input": {
+        "json": {
+          "payload": {}
+        },
+        "predicate": "exists(.payload.missing)"
+      },
+      "expected": false
+    },
+    {
+      "id": "root-field-path",
+      "input": {
+        "json": {
+          "root": true
+        },
+        "predicate": ".root == true"
+      },
+      "expected": true
+    }
+  ]
+}

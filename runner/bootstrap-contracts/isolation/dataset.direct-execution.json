@@ -1,0 +1,157 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "direct-backend-prepares-write-paths",
+      "setup": "direct-backend-prepares-write-paths",
+      "input": {
+        "operation": "stage-backend",
+        "backend": "none",
+        "command": [
+          "sh",
+          "-c",
+          "test -f generated/report.json && test -d logs"
+        ],
+        "manifest": {
+          "filesystem": {
+            "write": [
+              "generated/report.json",
+              "logs"
+            ]
+          }
+        }
+      },
+      "expected": {
+        "success": true,
+        "stdout": ""
+      },
+      "coverage_fingerprint": "1ab9d0b187a92bb5b9d96d4640a63e3f"
+    },
+    {
+      "id": "direct-backend-reports-write-file-creation-error",
+      "input": {
+        "operation": "stage-backend",
+        "backend": "none",
+        "command": [
+          "true"
+        ],
+        "manifest": {
+          "filesystem": {
+            "write": [
+              "/proc/self/open-contract-write.json"
+            ]
+          }
+        }
+      },
+      "expected": {},
+      "predicate": "exists(.error)",
+      "coverage_fingerprint": "2ce5da12054ed76b211e2cc5a4f1985d"
+    },
+    {
+      "id": "direct-backend-reports-write-parent-error",
+      "setup": "direct-backend-reports-write-parent-error",
+      "input": {
+        "operation": "stage-backend",
+        "backend": "none",
+        "command": [
+          "true"
+        ],
+        "manifest": {
+          "filesystem": {
+            "write": [
+              "setup/write-parent/report.json"
+            ]
+          }
+        }
+      },
+      "expected": {},
+      "predicate": "contains(.error, 'File exists')",
+      "coverage_fingerprint": "d6d170ed88bae6a4ef10ab8f91a1ca14"
+    },
+    {
+      "id": "direct-backend-reports-write-directory-error",
+      "setup": "direct-backend-reports-write-directory-error",
+      "input": {
+        "operation": "stage-backend",
+        "backend": "none",
+        "command": [
+          "true"
+        ],
+        "manifest": {
+          "filesystem": {
+            "write": [
+              "setup/write-directory"
+            ]
+          }
+        }
+      },
+      "expected": {},
+      "predicate": "exists(.error)",
+      "coverage_fingerprint": "cd992326cb7e6bb6501bc4d112fe62bf"
+    },
+    {
+      "id": "direct-backend-at-reports-write-error",
+      "input": {
+        "operation": "stage-backend",
+        "backend": "none",
+        "working_directory": ".",
+        "command": [
+          "true"
+        ],
+        "manifest": {
+          "filesystem": {
+            "write": [
+              "/proc/self/open-contract-write.json"
+            ]
+          }
+        }
+      },
+      "expected": {},
+      "predicate": "exists(.error)",
+      "coverage_fingerprint": "3e497a55b53563a41afb16338815ec68"
+    },
+    {
+      "id": "direct-backend-reports-missing-source-root",
+      "setup": "direct-backend-reports-missing-source-root",
+      "input": {
+        "operation": "stage-backend",
+        "backend": "none",
+        "command": [
+          "true"
+        ],
+        "manifest": {
+          "filesystem": {
+            "read": [
+              "dataset.json"
+            ]
+          }
+        }
+      },
+      "expected": {},
+      "predicate": "exists(.error)",
+      "coverage_fingerprint": "69f68dd0bad61d9f7d3bff0167d85eb9"
+    },
+    {
+      "id": "direct-backend-at-reports-missing-source-root",
+      "setup": "direct-backend-at-reports-missing-source-root",
+      "input": {
+        "operation": "stage-backend",
+        "backend": "none",
+        "working_directory": ".",
+        "command": [
+          "true"
+        ],
+        "manifest": {
+          "filesystem": {
+            "read": [
+              "dataset.json"
+            ]
+          }
+        }
+      },
+      "expected": {},
+      "predicate": "exists(.error)",
+      "coverage_fingerprint": "9e236b1d4dba9053f4e926dabcc23bc9"
+    }
+  ]
+}

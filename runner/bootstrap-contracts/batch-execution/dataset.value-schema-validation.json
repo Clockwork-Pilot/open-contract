@@ -1,0 +1,743 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "per-dataset-yaml-schema-validates-calls-and-steps",
+      "input": {
+        "value_schema": true,
+        "coverage_fingerprints": false,
+        "dataset_yaml": "version: 1\ncases:\n  - id: object-call\n    input: {value: 1}\n    expected: {value: 1}\n  - id: object-sequence\n    steps:\n      - id: first\n        input: {value: 2}\n        expected: {value: 2}\n      - id: second\n        input: {value: 3}\n        expected: {value: 3}\n",
+        "second_dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "integer-call",
+              "input": 9,
+              "expected": 9,
+              "coverage_fingerprint": "00000000000000000000000000000000"
+            }
+          ]
+        },
+        "extension": "yaml"
+      },
+      "expected": {},
+      "predicate": "exists(.results)",
+      "coverage_fingerprint": "7fcfcf36cf2d33fa719cf350ffeaa440"
+    },
+    {
+      "id": "per-dataset-yaml-schema-rejects-invalid-input-before-adapter",
+      "input": {
+        "value_schema": true,
+        "invalid_value_schema": true,
+        "coverage_fingerprints": false,
+        "dataset_yaml": "version: 1\ncases:\n  - id: invalid-case\n    input: {value: 1}\n    expected: {value: 1}\n",
+        "second_dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "integer-call",
+              "input": 9,
+              "expected": 9,
+              "coverage_fingerprint": "00000000000000000000000000000000"
+            }
+          ]
+        },
+        "extension": "yaml"
+      },
+      "expected": {},
+      "predicate": "contains(.error, 'input at $: expected string')",
+      "coverage_fingerprint": "4c6df6ae4f6064b5fe4b01effb739941"
+    },
+    {
+      "id": "value-schema-valid-recursive-types-and-bounds",
+      "input": {
+        "schema": "input:\n  type: object\n  required: [text, integer, number, boolean, nothing, values, child, status]\n  fields:\n    text: {type: string, min_length: 2, max_length: 8}\n    integer: {type: integer, minimum: 1, maximum: 9}\n    number: {type: number, minimum: 0, maximum: 10}\n    boolean: boolean\n    nothing: 'null'\n    values: {type: array, items: string, min_items: 1, max_items: 2}\n    child: {type: object, fields: {enabled: boolean}}\n    status: {type: string, enum: [ready, done]}\n  additional: false\nexpected:\n  type: object\n  fields: {count: integer}\n",
+        "dataset": "version: 1\ncases:\n  - id: direct\n    input: {text: hello, integer: 4, number: 2.5, boolean: true, nothing: null, values: [a], child: {enabled: false}, status: ready}\n    expected: {count: 1}\n  - id: sequence\n    steps:\n      - id: first\n        input: {text: world, integer: 2, number: 8, boolean: false, nothing: null, values: [x, y], child: {enabled: true}, status: done}\n        expected: {count: 2}\n"
+      },
+      "expected": {
+        "valid": true
+      },
+      "coverage_fingerprint": "af8fe6c35da860085096831632acc66d"
+    },
+    {
+      "id": "value-schema-valid-primitive-and-expected-only",
+      "input": {
+        "schema": "expected: integer\n",
+        "dataset": "version: 1\ncases:\n  - id: predicate-only\n    input: anything\n    predicate: \". == 1\"\n"
+      },
+      "expected": {
+        "valid": true
+      },
+      "coverage_fingerprint": "a435c28e214ab313538bceb8f557bf78"
+    },
+    {
+      "id": "value-schema-missing-schema-file",
+      "input": {
+        "schema": "input: string\n",
+        "dataset": "version: 1\ncases:\n  - id: case\n    input: hello\n    expected: hello\n",
+        "schema_missing": true
+      },
+      "expected": {
+        "valid": false
+      },
+      "coverage_fingerprint": "c73ab0d1a85aa4685539f34645b61938",
+      "predicate": "contains(.error, 'cannot read')"
+    },
+    {
+      "id": "value-schema-malformed-schema-yaml",
+      "input": {
+        "schema": "input: [\n",
+        "dataset": "version: 1\ncases:\n  - id: case\n    input: hello\n    expected: hello\n"
+      },
+      "expected": {
+        "valid": false
+      },
+      "coverage_fingerprint": "662c205e59229193a540f827a8d56eac",
+      "predicate": "contains(.error, 'cannot parse')"
+    },
+    {
+      "id": "value-schema-schema-root-must-be-mapping",
+      "input": {
+        "schema": "[]\n",
+        "dataset": "version: 1\ncases:\n  - id: case\n    input: hello\n    expected: hello\n"
+      },
+      "expected": {
+        "valid": false
+      },
+      "coverage_fingerprint": "fb3aa4e66a30bd6e9e0016ccbf8e7559",
+      "predicate": "contains(.error, 'schema document must be a mapping')"
+    },
+    {
+      "id": "value-schema-schema-rejects-empty-or-unknown-definitions",
+      "input": {
+        "schema": "{}\n",
+        "dataset": "version: 1\ncases:\n  - id: case\n    input: hello\n    expected: hello\n"
+      },
+      "expected": {
+        "valid": false
+      },
+      "coverage_fingerprint": "499fa17edea7da91f26264ba2110ea6f",
+      "predicate": "contains(.error, 'only input and expected')"
+    },
+    {
+      "id": "value-schema-schema-rejects-unknown-section",
+      "input": {
+        "schema": "output: string\n",
+        "dataset": "version: 1\ncases:\n  - id: case\n    input: hello\n    expected: hello\n"
+      },
+      "expected": {
+        "valid": false
+      },
+      "coverage_fingerprint": "bea9c7e118798cc49e493b5c3eac4a2f",
+      "predicate": "contains(.error, 'only input and expected')"
+    },
+    {
+      "id": "value-schema-schema-rejects-unsupported-type",
+      "input": {
+        "schema": "input: symbol\n",
+        "dataset": "version: 1\ncases:\n  - id: case\n    input: hello\n    expected: hello\n"
+      },
+      "expected": {
+        "valid": false
+      },
+      "coverage_fingerprint": "2dcf7221a4214a92b563335ab7390540",
+      "predicate": "contains(.error, 'unsupported type')"
+    },
+    {
+      "id": "value-schema-schema-rejects-nonmapping-definition",
+      "input": {
+        "schema": "input: []\n",
+        "dataset": "version: 1\ncases:\n  - id: case\n    input: hello\n    expected: hello\n"
+      },
+      "expected": {
+        "valid": false
+      },
+      "coverage_fingerprint": "f322cdd5d376ac099407726076e51708",
+      "predicate": "contains(.error, 'type name or mapping')"
+    },
+    {
+      "id": "value-schema-schema-rejects-unknown-keyword",
+      "input": {
+        "schema": "input: {type: string, pattern: 'x'}\n",
+        "dataset": "version: 1\ncases:\n  - id: case\n    input: hello\n    expected: hello\n"
+      },
+      "expected": {
+        "valid": false
+      },
+      "coverage_fingerprint": "554f5012260eaaf644a02d267c6c0ee5",
+      "predicate": "contains(.error, 'unsupported schema keyword')"
+    },
+    {
+      "id": "value-schema-schema-requires-type",
+      "input": {
+        "schema": "input: {fields: {name: string}}\n",
+        "dataset": "version: 1\ncases:\n  - id: case\n    input: {}\n    expected: {}\n"
+      },
+      "expected": {
+        "valid": false
+      },
+      "coverage_fingerprint": "4ba8291bab2472ef941028c13e5767c3",
+      "predicate": "contains(.error, 'requires a string type')"
+    },
+    {
+      "id": "value-schema-schema-requires-object-fields",
+      "input": {
+        "schema": "input: {type: object}\n",
+        "dataset": "version: 1\ncases:\n  - id: case\n    input: {}\n    expected: {}\n"
+      },
+      "expected": {
+        "valid": false
+      },
+      "coverage_fingerprint": "629fc8037eb01cfa0e79524bf2a1e435",
+      "predicate": "contains(.error, 'object schema requires fields')"
+    },
+    {
+      "id": "value-schema-schema-required-must-be-list",
+      "input": {
+        "schema": "input: {type: object, fields: {}, required: false}\n",
+        "dataset": "version: 1\ncases:\n  - id: case\n    input: {}\n    expected: {}\n"
+      },
+      "expected": {
+        "valid": false
+      },
+      "coverage_fingerprint": "b33d92259e7d30ede84042985ef0ef9d",
+      "predicate": "contains(.error, 'required: expected a list')"
+    },
+    {
+      "id": "value-schema-schema-required-fields-must-be-declared",
+      "input": {
+        "schema": "input: {type: object, fields: {}, required: [missing]}\n",
+        "dataset": "version: 1\ncases:\n  - id: case\n    input: {}\n    expected: {}\n"
+      },
+      "expected": {
+        "valid": false
+      },
+      "coverage_fingerprint": "e3603c4d860ffda4bc47828a93ac536e",
+      "predicate": "contains(.error, 'not declared in fields')"
+    },
+    {
+      "id": "value-schema-schema-additional-must-be-boolean",
+      "input": {
+        "schema": "input: {type: object, fields: {}, additional: yes}\n",
+        "dataset": "version: 1\ncases:\n  - id: case\n    input: {}\n    expected: {}\n"
+      },
+      "expected": {
+        "valid": false
+      },
+      "coverage_fingerprint": "8fa917dfa56c7079182c2b0d6d6bb691",
+      "predicate": "contains(.error, 'additional: expected a boolean')"
+    },
+    {
+      "id": "value-schema-schema-array-requires-items",
+      "input": {
+        "schema": "input: {type: array}\n",
+        "dataset": "version: 1\ncases:\n  - id: case\n    input: []\n    expected: []\n"
+      },
+      "expected": {
+        "valid": false
+      },
+      "coverage_fingerprint": "88b80552275a00e0dd6c280fc72cb142",
+      "predicate": "contains(.error, 'array schema requires items')"
+    },
+    {
+      "id": "value-schema-schema-enum-must-be-nonempty",
+      "input": {
+        "schema": "input: {type: string, enum: []}\n",
+        "dataset": "version: 1\ncases:\n  - id: case\n    input: x\n    expected: x\n"
+      },
+      "expected": {
+        "valid": false
+      },
+      "coverage_fingerprint": "e2c205a21aaf4f15a5c5fac95474ef52",
+      "predicate": "contains(.error, 'enum: expected a non-empty list')"
+    },
+    {
+      "id": "value-schema-schema-numeric-bounds-must-be-numbers",
+      "input": {
+        "schema": "input: {type: number, minimum: bad}\n",
+        "dataset": "version: 1\ncases:\n  - id: case\n    input: 1\n    expected: 1\n"
+      },
+      "expected": {
+        "valid": false
+      },
+      "coverage_fingerprint": "b046f667043859a38c7e540cf7b3c521",
+      "predicate": "contains(.error, 'minimum: expected a finite number')"
+    },
+    {
+      "id": "value-schema-schema-length-bounds-must-be-integers",
+      "input": {
+        "schema": "input: {type: string, min_length: bad}\n",
+        "dataset": "version: 1\ncases:\n  - id: case\n    input: x\n    expected: x\n"
+      },
+      "expected": {
+        "valid": false
+      },
+      "coverage_fingerprint": "9b42c193a11bcdc9c3329bd0b2d41463",
+      "predicate": "contains(.error, 'min_length: expected a non-negative integer')"
+    },
+    {
+      "id": "value-schema-rejects-input-type",
+      "input": {
+        "schema": "input: string\n",
+        "dataset": "version: 1\ncases:\n  - id: bad-input\n    input: 4\n    expected: 4\n"
+      },
+      "expected": {
+        "valid": false
+      },
+      "coverage_fingerprint": "16d45150c8ee76cffd07e090a06fbac3",
+      "predicate": "contains(.error, 'input at $: expected string')"
+    },
+    {
+      "id": "value-schema-rejects-expected-type",
+      "input": {
+        "schema": "expected: integer\n",
+        "dataset": "version: 1\ncases:\n  - id: bad-expected\n    input: ok\n    expected: bad\n"
+      },
+      "expected": {
+        "valid": false
+      },
+      "coverage_fingerprint": "67dada986a486601f72bf098145dc273",
+      "predicate": "contains(.error, 'expected at $: expected integer')"
+    },
+    {
+      "id": "value-schema-rejects-missing-required-field",
+      "input": {
+        "schema": "input: {type: object, fields: {name: string}, required: [name]}\n",
+        "dataset": "version: 1\ncases:\n  - id: bad\n    input: {}\n    expected: {}\n"
+      },
+      "expected": {
+        "valid": false
+      },
+      "coverage_fingerprint": "199f3cb098972b1caeb1d1cec3beeb2e",
+      "predicate": "contains(.error, 'required field is missing')"
+    },
+    {
+      "id": "value-schema-rejects-unknown-object-field",
+      "input": {
+        "schema": "input: {type: object, fields: {}, additional: false}\n",
+        "dataset": "version: 1\ncases:\n  - id: bad\n    input: {unknown: true}\n    expected: {unknown: true}\n"
+      },
+      "expected": {
+        "valid": false
+      },
+      "coverage_fingerprint": "3964d1f2e1917514501f1a50a245289e",
+      "predicate": "contains(.error, 'unknown field')"
+    },
+    {
+      "id": "value-schema-rejects-enum-value",
+      "input": {
+        "schema": "input: {type: string, enum: [ready, done]}\n",
+        "dataset": "version: 1\ncases:\n  - id: bad\n    input: other\n    expected: other\n"
+      },
+      "expected": {
+        "valid": false
+      },
+      "coverage_fingerprint": "f3ac5788499a2d2bb8ef385cdb6548dc",
+      "predicate": "contains(.error, 'value is not in enum')"
+    },
+    {
+      "id": "value-schema-rejects-array-item-type",
+      "input": {
+        "schema": "input: {type: array, items: string}\n",
+        "dataset": "version: 1\ncases:\n  - id: bad\n    input: [1]\n    expected: [1]\n"
+      },
+      "expected": {
+        "valid": false
+      },
+      "coverage_fingerprint": "63a863dad8333885f15114268ae990cd",
+      "predicate": "contains(.error, 'at $[0]: expected string')"
+    },
+    {
+      "id": "value-schema-rejects-array-too-short",
+      "input": {
+        "schema": "input: {type: array, items: string, min_items: 2}\n",
+        "dataset": "version: 1\ncases:\n  - id: bad\n    input: [x]\n    expected: [x]\n"
+      },
+      "expected": {
+        "valid": false
+      },
+      "coverage_fingerprint": "c12cdd1deeb9d7d66ec4945b62925e9c",
+      "predicate": "contains(.error, 'length is below minimum')"
+    },
+    {
+      "id": "value-schema-rejects-array-too-long",
+      "input": {
+        "schema": "input: {type: array, items: string, max_items: 1}\n",
+        "dataset": "version: 1\ncases:\n  - id: bad\n    input: [x, y]\n    expected: [x, y]\n"
+      },
+      "expected": {
+        "valid": false
+      },
+      "coverage_fingerprint": "b4b7c5334a46589517f2efcbeaa40b6f",
+      "predicate": "contains(.error, 'length is above maximum')"
+    },
+    {
+      "id": "value-schema-rejects-string-too-short",
+      "input": {
+        "schema": "input: {type: string, min_length: 2}\n",
+        "dataset": "version: 1\ncases:\n  - id: bad\n    input: x\n    expected: x\n"
+      },
+      "expected": {
+        "valid": false
+      },
+      "coverage_fingerprint": "cf86471fb78925bf8646400e15b803b0",
+      "predicate": "contains(.error, 'length is below minimum')"
+    },
+    {
+      "id": "value-schema-rejects-string-too-long",
+      "input": {
+        "schema": "input: {type: string, max_length: 1}\n",
+        "dataset": "version: 1\ncases:\n  - id: bad\n    input: xy\n    expected: xy\n"
+      },
+      "expected": {
+        "valid": false
+      },
+      "coverage_fingerprint": "20500ce6a31adc6d6d2402f10f0efa4e",
+      "predicate": "contains(.error, 'length is above maximum')"
+    },
+    {
+      "id": "value-schema-rejects-number-below-minimum",
+      "input": {
+        "schema": "input: {type: number, minimum: 2}\n",
+        "dataset": "version: 1\ncases:\n  - id: bad\n    input: 1\n    expected: 1\n"
+      },
+      "expected": {
+        "valid": false
+      },
+      "coverage_fingerprint": "f357d8ff9d0217feddf44e9fd6649a5c",
+      "predicate": "contains(.error, 'below minimum')"
+    },
+    {
+      "id": "value-schema-rejects-number-above-maximum",
+      "input": {
+        "schema": "input: {type: number, maximum: 2}\n",
+        "dataset": "version: 1\ncases:\n  - id: bad\n    input: 3\n    expected: 3\n"
+      },
+      "expected": {
+        "valid": false
+      },
+      "coverage_fingerprint": "88588bd3c293db5c474a9f75d3dfdf00",
+      "predicate": "contains(.error, 'above maximum')"
+    },
+    {
+      "id": "value-schema-rejects-fraction-as-integer",
+      "input": {
+        "schema": "input: integer\n",
+        "dataset": "version: 1\ncases:\n  - id: bad\n    input: 1.5\n    expected: 1.5\n"
+      },
+      "expected": {
+        "valid": false
+      },
+      "coverage_fingerprint": "5066ace97aff6c39b8bbd4eac5d576c1",
+      "predicate": "contains(.error, 'expected integer')"
+    },
+    {
+      "id": "value-schema-allows-additional-object-fields-by-default",
+      "input": {
+        "schema": "input: {type: object, fields: {known: string}}\n",
+        "dataset": "version: 1\ncases:\n  - id: okay\n    input: {known: yes, extra: 1}\n    expected: {known: yes, extra: 1}\n"
+      },
+      "expected": {
+        "valid": true
+      },
+      "coverage_fingerprint": "ab423403992eaa59ce4adcece9495730"
+    },
+    {
+      "id": "value-schema-normalization-rejects-custom-tag",
+      "input": {
+        "schema": "? [key]\n: value\n",
+        "dataset": "version: 1\ncases:\n  - id: case\n    input: 1\n    expected: 1\n"
+      },
+      "expected": {
+        "valid": false
+      },
+      "coverage_fingerprint": "edd4be547c1a987c8fc08f407790edc9",
+      "predicate": "contains(.error, 'cannot normalize')"
+    },
+    {
+      "id": "value-schema-required-entry-must-be-string",
+      "input": {
+        "schema": "input: {type: object, fields: {name: string}, required: [1]}\n",
+        "dataset": "version: 1\ncases:\n  - id: case\n    input: {name: ok}\n    expected: 1\n"
+      },
+      "expected": {
+        "valid": false
+      },
+      "coverage_fingerprint": "e8f5dd940d7b29483114ab7f0dd7db16",
+      "predicate": "contains(.error, 'entries must be strings')"
+    },
+    {
+      "id": "value-schema-rejects-nonobject-for-object",
+      "input": {
+        "schema": "input: {type: object, fields: {name: string}}\n",
+        "dataset": "version: 1\ncases:\n  - id: case\n    input: scalar\n    expected: 1\n"
+      },
+      "expected": {
+        "valid": false
+      },
+      "coverage_fingerprint": "2ce4c294bef6b3ebe2bba01f31c9b494",
+      "predicate": "contains(.error, 'expected object')"
+    },
+    {
+      "id": "value-schema-rejects-nonarray-for-array",
+      "input": {
+        "schema": "input: {type: array, items: string}\n",
+        "dataset": "version: 1\ncases:\n  - id: case\n    input: scalar\n    expected: 1\n"
+      },
+      "expected": {
+        "valid": false
+      },
+      "coverage_fingerprint": "fdf3d9c869dece69c98776aa3d100aab",
+      "predicate": "contains(.error, 'expected array')"
+    },
+    {
+      "id": "value-schema-rejects-nonnumeric-for-number",
+      "input": {
+        "schema": "input: number\n",
+        "dataset": "version: 1\ncases:\n  - id: case\n    input: text\n    expected: 1\n"
+      },
+      "expected": {
+        "valid": false
+      },
+      "coverage_fingerprint": "b5bef8b882291289396c99c79f627296",
+      "predicate": "contains(.error, 'expected number')"
+    },
+    {
+      "id": "value-schema-expected-definition-invalid",
+      "input": {
+        "schema": "expected: {type: integer, minimum: bad}\n",
+        "dataset": "version: 1\ncases:\n  - id: case\n    input: {value: 2}\n    expected: {value: 2}\n"
+      },
+      "expected": {
+        "valid": false
+      },
+      "coverage_fingerprint": "01cce52073a54037664fa793d42ab2b7",
+      "predicate": "contains(.error, 'expected.minimum: expected a finite number')"
+    },
+    {
+      "id": "value-schema-mapping-unsupported-type",
+      "input": {
+        "schema": "input: {type: symbol}\n",
+        "dataset": "version: 1\ncases:\n  - id: case\n    input: {value: 2}\n    expected: {value: 2}\n"
+      },
+      "expected": {
+        "valid": false
+      },
+      "coverage_fingerprint": "59322698bf71cc3d5ff309ec36840869",
+      "predicate": "contains(.error, 'unsupported type')"
+    },
+    {
+      "id": "value-schema-string-bounds-inverted",
+      "input": {
+        "schema": "input: {type: string, min_length: 2, max_length: 1}\n",
+        "dataset": "version: 1\ncases:\n  - id: case\n    input: {value: 2}\n    expected: {value: 2}\n"
+      },
+      "expected": {
+        "valid": false
+      },
+      "coverage_fingerprint": "ef03c22bf725fab4d2927be5a1e82338",
+      "predicate": "contains(.error, 'minimum string length exceeds maximum')"
+    },
+    {
+      "id": "value-schema-numeric-bounds-inverted",
+      "input": {
+        "schema": "input: {type: number, minimum: 2, maximum: 1}\n",
+        "dataset": "version: 1\ncases:\n  - id: case\n    input: {value: 2}\n    expected: {value: 2}\n"
+      },
+      "expected": {
+        "valid": false
+      },
+      "coverage_fingerprint": "b4f95f9787f5fb43b4d2bae6d3e28203",
+      "predicate": "contains(.error, 'minimum exceeds maximum')"
+    },
+    {
+      "id": "value-schema-nested-field-schema-invalid",
+      "input": {
+        "schema": "input: {type: object, fields: {value: {type: number, minimum: bad}}}\n",
+        "dataset": "version: 1\ncases:\n  - id: case\n    input: {value: 2}\n    expected: {value: 2}\n"
+      },
+      "expected": {
+        "valid": false
+      },
+      "coverage_fingerprint": "90afb4d40809114c1d2be06dfa114658",
+      "predicate": "contains(.error, 'input.fields.value.minimum: expected a finite number')"
+    },
+    {
+      "id": "value-schema-array-item-schema-invalid",
+      "input": {
+        "schema": "input: {type: array, items: {type: number, minimum: bad}}\n",
+        "dataset": "version: 1\ncases:\n  - id: case\n    input: {value: 2}\n    expected: {value: 2}\n"
+      },
+      "expected": {
+        "valid": false
+      },
+      "coverage_fingerprint": "7bf8bf667a015552947b370fac4a8c21",
+      "predicate": "contains(.error, 'input.items.minimum: expected a finite number')"
+    },
+    {
+      "id": "value-schema-array-min-bound-invalid",
+      "input": {
+        "schema": "input: {type: array, items: string, min_items: bad}\n",
+        "dataset": "version: 1\ncases:\n  - id: case\n    input: {value: 2}\n    expected: {value: 2}\n"
+      },
+      "expected": {
+        "valid": false
+      },
+      "coverage_fingerprint": "4a60a0574b3f4e16f20e897ec94e7a30",
+      "predicate": "contains(.error, 'min_items: expected a non-negative integer')"
+    },
+    {
+      "id": "value-schema-array-max-bound-invalid",
+      "input": {
+        "schema": "input: {type: array, items: string, max_items: bad}\n",
+        "dataset": "version: 1\ncases:\n  - id: case\n    input: {value: 2}\n    expected: {value: 2}\n"
+      },
+      "expected": {
+        "valid": false
+      },
+      "coverage_fingerprint": "6a9f6b17b47cea0eb457fe11b4de6b61",
+      "predicate": "contains(.error, 'max_items: expected a non-negative integer')"
+    },
+    {
+      "id": "value-schema-array-bounds-inverted",
+      "input": {
+        "schema": "input: {type: array, items: string, min_items: 2, max_items: 1}\n",
+        "dataset": "version: 1\ncases:\n  - id: case\n    input: {value: 2}\n    expected: {value: 2}\n"
+      },
+      "expected": {
+        "valid": false
+      },
+      "coverage_fingerprint": "1ded755cd53e990738a51ffa17f6e698",
+      "predicate": "contains(.error, 'minimum array length exceeds maximum')"
+    },
+    {
+      "id": "value-schema-simple-array-requires-items",
+      "input": {
+        "schema": "input: array\n",
+        "dataset": "version: 1\ncases:\n  - id: case\n    input: {value: 2}\n    expected: {value: 2}\n"
+      },
+      "expected": {
+        "valid": false
+      },
+      "coverage_fingerprint": "bc2deafdde0cc6f0d9f6b6b727c3e782",
+      "predicate": "contains(.error, 'array type requires an items schema')"
+    },
+    {
+      "id": "value-schema-mapped-primitives-accept-values",
+      "input": {
+        "schema": "input: {type: boolean}\nexpected: {type: 'null'}\n",
+        "dataset": "version: 1\ncases:\n  - id: case\n    input: true\n    expected: null\n"
+      },
+      "expected": {
+        "valid": true
+      },
+      "coverage_fingerprint": "a2d7bee8bf92152c5e671afafe8a8937"
+    },
+    {
+      "id": "value-schema-integer-bounds-accept-value",
+      "input": {
+        "schema": "input: {type: integer, minimum: 1, maximum: 3}\n",
+        "dataset": "version: 1\ncases:\n  - id: case\n    input: 2\n    expected: 2\n"
+      },
+      "expected": {
+        "valid": true
+      },
+      "coverage_fingerprint": "65e5be685c6c891a21702f8819b0b2a7"
+    },
+    {
+      "id": "value-schema-rejects-invalid-sequence-step",
+      "input": {
+        "schema": "input: string\n",
+        "dataset": "version: 1\ncases:\n  - id: sequence\n    steps:\n      - id: step\n        input: 1\n        expected: 1\n"
+      },
+      "expected": {
+        "valid": false
+      },
+      "coverage_fingerprint": "a5b0bf6a7e87638c25bcbc8afaa69a30",
+      "predicate": "contains(.error, 'input at $: expected string')"
+    },
+    {
+      "id": "value-schema-string-maximum-bound-invalid",
+      "input": {
+        "schema": "input: {type: string, max_length: bad}\n",
+        "dataset": "version: 1\ncases:\n  - id: case\n    input: value\n    expected: value\n"
+      },
+      "expected": {
+        "valid": false
+      },
+      "coverage_fingerprint": "c63228de1a30e7a824a06d6c25e9f120",
+      "predicate": "contains(.error, 'max_length: expected a non-negative integer')"
+    },
+    {
+      "id": "value-schema-number-maximum-bound-invalid",
+      "input": {
+        "schema": "input: {type: number, maximum: bad}\n",
+        "dataset": "version: 1\ncases:\n  - id: case\n    input: 1\n    expected: 1\n"
+      },
+      "expected": {
+        "valid": false
+      },
+      "coverage_fingerprint": "760f6d54bf156d5dc7b91b959d610439",
+      "predicate": "contains(.error, 'maximum: expected a finite number')"
+    },
+    {
+      "id": "value-schema-simple-object-accepts-mapping",
+      "input": {
+        "schema": "input: object\n",
+        "dataset": "version: 1\ncases:\n  - id: case\n    input: {value: 1}\n    expected: {value: 1}\n"
+      },
+      "expected": {
+        "valid": true
+      },
+      "coverage_fingerprint": "ced038732f7e0f4ccbcaf0b9f8fbe51b"
+    },
+    {
+      "id": "value-schema-integer-bounds-reject-value",
+      "input": {
+        "schema": "input: {type: integer, minimum: 3}\n",
+        "dataset": "version: 1\ncases:\n  - id: case\n    input: 2\n    expected: 2\n"
+      },
+      "expected": {
+        "valid": false
+      },
+      "coverage_fingerprint": "b33df47b74d52710b2bdc3106c50f886",
+      "predicate": "contains(.error, 'below minimum')"
+    },
+    {
+      "id": "value-schema-boolean-rejects-other-type",
+      "input": {
+        "schema": "input: boolean\n",
+        "dataset": "version: 1\ncases:\n  - id: case\n    input: text\n    expected: text\n"
+      },
+      "expected": {
+        "valid": false
+      },
+      "coverage_fingerprint": "3536432ac3bcbabff5b4a06edbd174bc",
+      "predicate": "contains(.error, 'expected boolean')"
+    },
+    {
+      "id": "value-schema-null-rejects-other-type",
+      "input": {
+        "schema": "input: 'null'\n",
+        "dataset": "version: 1\ncases:\n  - id: case\n    input: text\n    expected: text\n"
+      },
+      "expected": {
+        "valid": false
+      },
+      "coverage_fingerprint": "11819c9ab37282e42e2aed952291aa84",
+      "predicate": "contains(.error, 'expected null')"
+    },
+    {
+      "id": "value-schema-object-field-rejects-other-type",
+      "input": {
+        "schema": "input: {type: object, fields: {value: string}}\n",
+        "dataset": "version: 1\ncases:\n  - id: case\n    input: {value: 1}\n    expected: {value: 1}\n"
+      },
+      "expected": {
+        "valid": false
+      },
+      "coverage_fingerprint": "dad3de6779a198b5bde424ef64bfc52e",
+      "predicate": "contains(.error, 'expected string')"
+    }
+  ]
+}

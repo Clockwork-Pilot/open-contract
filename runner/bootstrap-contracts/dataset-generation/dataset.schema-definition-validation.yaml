@@ -1,0 +1,207 @@
+version: 1
+cases:
+- id: missing-type-enum-or-const
+  input:
+    schema:
+      title: invalid
+  expected:
+    error_contains: requires type, enum, or const
+  coverage_fingerprint: 5ba49363f9ee8514abd8ff616391fb62
+- id: unsupported-schema-keyword
+  input:
+    schema:
+      type: string
+      pattern: ^[a-z]+$
+  expected:
+    error_contains: pattern is not supported
+  coverage_fingerprint: 76cbd44f797b1fa7e09f48b084d240dc
+- id: empty-enum
+  input:
+    schema:
+      enum: []
+  expected:
+    error_contains: enum must not be empty
+  coverage_fingerprint: 7a86ba5b8dc93277a967bae307f6e0f6
+- id: unsupported-type
+  input:
+    schema:
+      type: function
+  expected:
+    error_contains: is not supported
+  coverage_fingerprint: 370d24424067d1fbfbdbcf66582f2132
+- id: properties-must-be-an-object
+  input:
+    schema:
+      type: object
+      properties: []
+  expected:
+    error_contains: properties must be an object
+  coverage_fingerprint: 238609b73da1dc790b851959200bc936
+- id: required-must-be-an-array
+  input:
+    schema:
+      type: object
+      required: name
+  expected:
+    error_contains: required must be an array
+  coverage_fingerprint: ead9622545cf5bd56582aa3539722ae2
+- id: required-items-must-be-strings
+  input:
+    schema:
+      type: object
+      required:
+      - 1
+      properties:
+        name:
+          type: string
+  expected:
+    error_contains: required entries must be strings
+  coverage_fingerprint: 5e4a8b6aedefc715b2a805ecfed16782
+- id: schema-must-be-an-object
+  input:
+    schema: 3
+  expected:
+    error_contains: schema must be an object
+  coverage_fingerprint: 205c6a4169839cbb0d479d700b819204
+- id: unsupported-json-schema-dialect
+  input:
+    schema:
+      $schema: https://json-schema.org/draft/2019-09/schema
+      type: string
+  expected:
+    error_contains: must identify JSON Schema draft 2020-12
+  coverage_fingerprint: 1a6636ae9ca0fd4fcbe91a8f43008822
+- id: invalid-schema-annotation
+  input:
+    schema:
+      type: string
+      title: 4
+  expected:
+    error_contains: title must be a string
+  coverage_fingerprint: 77123bd71311f94cb2ece0334c1c7ef1
+- id: enum-must-be-an-array
+  input:
+    schema:
+      enum: hello
+  expected:
+    error_contains: enum must be an array
+  coverage_fingerprint: 92a4076b018dfa1ec6ebb40ad90b97d5
+- id: duplicate-enum-values
+  input:
+    schema:
+      enum:
+      - hello
+      - hello
+  expected:
+    error_contains: enum entries must be unique
+  coverage_fingerprint: 7dbaec0583b66888ee6b27334ca426a0
+- id: invalid-type-array-value
+  input:
+    schema:
+      type:
+      - string
+      - 4
+  expected:
+    error_contains: type entries must be strings
+  coverage_fingerprint: 29acead094aa8a651ca7fc814f27a8f3
+- id: empty-type-array
+  input:
+    schema:
+      type: []
+  expected:
+    error_contains: type array must not be empty
+  coverage_fingerprint: fb04b9dd9c3f0bd94e806070f0999b7a
+- id: invalid-type-form
+  input:
+    schema:
+      type: 4
+  expected:
+    error_contains: type must be a string or nonempty array
+  coverage_fingerprint: 0b27f6040c25b879355fb3e4aa7510f8
+- id: examples-must-be-an-array
+  input:
+    schema:
+      type: string
+      examples: custom
+  expected:
+    error_contains: examples must be an array
+  coverage_fingerprint: 7303a08eead5927937cf78d21cd5992d
+- id: duplicate-union-types
+  input:
+    schema:
+      type:
+      - string
+      - string
+  expected:
+    error_contains: type entries must be unique
+  coverage_fingerprint: 22269e0e46f895c171e5432d526d16c3
+- id: duplicate-required-properties
+  input:
+    schema:
+      type: object
+      required:
+      - name
+      - name
+      properties:
+        name:
+          type: string
+  expected:
+    error_contains: required entries must be unique
+  coverage_fingerprint: 3e49af384c3a1f86d996568f78eca596
+- id: required-name-must-exist
+  input:
+    schema:
+      type: object
+      required:
+      - unknown
+      properties:
+        name:
+          type: string
+  expected:
+    error_contains: required names unknown property
+  coverage_fingerprint: 8f16eac6f86da0e577d7075b259c16cc
+- id: required-needs-properties
+  input:
+    schema:
+      type: object
+      required:
+      - name
+  expected:
+    error_contains: required needs properties
+  coverage_fingerprint: 6f0a923fc016f23cd95fa8a23f746503
+- id: prefix-items-must-be-an-array
+  input:
+    schema:
+      type: array
+      prefixItems:
+        type: string
+  expected:
+    error_contains: prefixItems must be an array
+  coverage_fingerprint: 6648cb186810e001a4554a967a23a2df
+- id: invalid-schema-in-prefix-items
+  input:
+    schema:
+      type: array
+      prefixItems:
+      - type: string
+      - {}
+  expected:
+    error_contains: $.prefixItems[1] requires type, enum, or const
+  coverage_fingerprint: c179976f5d3cf4cba56ac3705ae2d1f2
+- id: invalid-schema-in-homogeneous-items
+  input:
+    schema:
+      type: array
+      items: {}
+  expected:
+    error_contains: $.items requires type, enum, or const
+  coverage_fingerprint: 4364b6d33662f4e4624f13e67c924b12
+- id: invalid-schema-in-object-property
+  input:
+    schema:
+      type: object
+      properties:
+        name: {}
+  expected:
+    error_contains: $.properties.name requires type, enum, or const
+  coverage_fingerprint: bdc7275458934a67c77e8edfe2256469

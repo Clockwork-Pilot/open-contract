@@ -1,0 +1,315 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "stage-backend-tempdir-copies-nested-contract",
+      "input": {
+        "operation": "stage-backend",
+        "backend": "tempdir",
+        "manifest": {
+          "filesystem": {
+            "read": [
+              "."
+            ]
+          },
+          "nested_contracts": [
+            "nested/contract.yaml"
+          ]
+        }
+      },
+      "expected": {
+        "source_root_used": false,
+        "read_paths_absolute": false,
+        "write_paths_absolute": false,
+        "nested_manifest_count": 2,
+        "nested_manifest_exists": true,
+        "runtime_manifest_name": null
+      },
+      "coverage_fingerprint": "9a98eb7d81abf25d6f5a148a5b7e83e0"
+    },
+    {
+      "id": "nested-child-reads-parent-directory-tempdir",
+      "setup": "nested-child-reads-parent-directory-tempdir",
+      "input": {
+        "operation": "stage-backend",
+        "backend": "tempdir",
+        "working_directory": "sibling/child",
+        "command": [
+          "cat",
+          "../../shared-data/deep/file.txt"
+        ],
+        "manifest": {
+          "filesystem": {
+            "read": [
+              "../sibling/child/contract.yaml",
+              "../shared-data"
+            ]
+          },
+          "nested_contracts": [
+            "../sibling/child/contract.yaml"
+          ]
+        }
+      },
+      "expected": {
+        "success": true
+      },
+      "predicate": "contains(.stdout, 'parent-directory-grant')",
+      "coverage_fingerprint": "45b66b1c89d064f4243b8992fae20fff"
+    },
+    {
+      "id": "nested-child-reads-parent-directory-landlock",
+      "setup": "nested-child-reads-parent-directory-landlock",
+      "input": {
+        "operation": "stage-backend",
+        "backend": "landlock",
+        "working_directory": "sibling/child",
+        "command": [
+          "cat",
+          "../../shared-data/deep/file.txt"
+        ],
+        "manifest": {
+          "filesystem": {
+            "read": [
+              "../sibling/child/contract.yaml",
+              "../shared-data"
+            ]
+          },
+          "nested_contracts": [
+            "../sibling/child/contract.yaml"
+          ]
+        }
+      },
+      "expected": {
+        "success": true
+      },
+      "predicate": "contains(.stdout, 'parent-directory-grant')",
+      "coverage_fingerprint": "1f37409b8d05e6f568264952bb3a1fcb"
+    },
+    {
+      "id": "nested-child-parent-directory-is-mounted-bwrap",
+      "setup": "nested-child-parent-directory-is-mounted-bwrap",
+      "input": {
+        "operation": "stage-backend",
+        "backend": "bwrap",
+        "working_directory": "sibling/child",
+        "command": [
+          "cat",
+          "../../shared-data/deep/file.txt"
+        ],
+        "manifest": {
+          "filesystem": {
+            "read": [
+              "../sibling/child/contract.yaml",
+              "../shared-data"
+            ]
+          },
+          "nested_contracts": [
+            "../sibling/child/contract.yaml"
+          ]
+        }
+      },
+      "expected": {
+        "success": true
+      },
+      "predicate": "contains(.stdout, '--ro-bind') AND contains(.stdout, 'shared-data')",
+      "coverage_fingerprint": "252c81b814a2e605cbae057fafee7536"
+    },
+    {
+      "id": "nested-child-writes-parent-directory-tempdir",
+      "setup": "nested-child-writes-parent-directory-tempdir",
+      "input": {
+        "operation": "stage-backend",
+        "backend": "tempdir",
+        "working_directory": "sibling/child",
+        "command": [
+          "sh",
+          "-c",
+          "mkdir -p ../../shared-output/deep && printf 'nested-write-grant\\n' > ../../shared-output/deep/file.txt && cat ../../shared-output/deep/file.txt"
+        ],
+        "manifest": {
+          "filesystem": {
+            "read": [
+              "../sibling/child/contract.yaml"
+            ],
+            "write": [
+              "../shared-output"
+            ]
+          },
+          "nested_contracts": [
+            "../sibling/child/contract.yaml"
+          ]
+        }
+      },
+      "expected": {
+        "success": true
+      },
+      "predicate": "contains(.stdout, 'nested-write-grant')",
+      "coverage_fingerprint": "3309ea52e6f69b21f242098dfe227570"
+    },
+    {
+      "id": "nested-child-writes-parent-directory-landlock",
+      "setup": "nested-child-writes-parent-directory-landlock",
+      "input": {
+        "operation": "stage-backend",
+        "backend": "landlock",
+        "working_directory": "sibling/child",
+        "command": [
+          "sh",
+          "-c",
+          "mkdir -p ../../shared-output/deep && printf 'nested-write-grant\\n' > ../../shared-output/deep/file.txt && cat ../../shared-output/deep/file.txt"
+        ],
+        "manifest": {
+          "filesystem": {
+            "read": [
+              "../sibling/child/contract.yaml"
+            ],
+            "write": [
+              "../shared-output"
+            ]
+          },
+          "nested_contracts": [
+            "../sibling/child/contract.yaml"
+          ]
+        }
+      },
+      "expected": {
+        "success": true
+      },
+      "predicate": "contains(.stdout, 'nested-write-grant')",
+      "coverage_fingerprint": "19c4a5b54b70c19bd5a797aa63f420b6"
+    },
+    {
+      "id": "nested-child-parent-write-directory-is-mounted-bwrap",
+      "setup": "nested-child-parent-write-directory-is-mounted-bwrap",
+      "input": {
+        "operation": "stage-backend",
+        "backend": "bwrap",
+        "working_directory": "sibling/child",
+        "command": [
+          "sh",
+          "-c",
+          "mkdir -p ../../shared-output/deep && printf 'nested-write-grant\\n' > ../../shared-output/deep/file.txt && cat ../../shared-output/deep/file.txt"
+        ],
+        "manifest": {
+          "filesystem": {
+            "read": [
+              "../sibling/child/contract.yaml"
+            ],
+            "write": [
+              "../shared-output"
+            ]
+          },
+          "nested_contracts": [
+            "../sibling/child/contract.yaml"
+          ]
+        }
+      },
+      "expected": {
+        "success": true
+      },
+      "predicate": "contains(.stdout, '--bind') AND contains(.stdout, 'shared-output')",
+      "coverage_fingerprint": "28919f9c8a3fad59e5daf07a2e2d9310"
+    },
+    {
+      "id": "nested-child-tempdir-rejects-absolute-read-outside-tree",
+      "setup": "nested-child-tempdir-rejects-absolute-read-outside-tree",
+      "input": {
+        "operation": "stage-backend",
+        "backend": "tempdir",
+        "working_directory": "sibling/child",
+        "command": [
+          "cat",
+          "../../shared-data/deep/file.txt"
+        ],
+        "manifest": {
+          "filesystem": {
+            "read": [
+              "../sibling/child/contract.yaml",
+              "../shared-data"
+            ]
+          },
+          "nested_contracts": [
+            "../sibling/child/contract.yaml"
+          ]
+        }
+      },
+      "expected": {},
+      "predicate": "contains(.error, 'filesystem read path is outside the staged source root')",
+      "coverage_fingerprint": "54fb00b6a7e0282e116f9f61e9a04f96"
+    },
+    {
+      "id": "nested-child-tempdir-rejects-absolute-write-outside-tree",
+      "setup": "nested-child-tempdir-rejects-absolute-write-outside-tree",
+      "input": {
+        "operation": "stage-backend",
+        "backend": "tempdir",
+        "working_directory": "sibling/child",
+        "command": [
+          "cat",
+          "../../shared-data/deep/file.txt"
+        ],
+        "manifest": {
+          "filesystem": {
+            "read": [
+              "../sibling/child/contract.yaml",
+              "../shared-data"
+            ]
+          },
+          "nested_contracts": [
+            "../sibling/child/contract.yaml"
+          ]
+        }
+      },
+      "expected": {},
+      "predicate": "contains(.error, 'filesystem write path is outside the staged source root')",
+      "coverage_fingerprint": "3c59745678ba650529472eeebf454cd1"
+    },
+    {
+      "id": "tempdir-nested-contract-rejects-symlink-escape",
+      "setup": "tempdir-nested-contract-rejects-symlink-escape",
+      "input": {
+        "operation": "stage-backend",
+        "backend": "tempdir",
+        "manifest": {
+          "filesystem": {
+            "read": [
+              "dataset.json"
+            ]
+          },
+          "nested_contracts": [
+            "nested/contract.yaml"
+          ]
+        }
+      },
+      "expected": {},
+      "predicate": "contains(.error, 'nested contract manifest path traverses a symlink')",
+      "coverage_fingerprint": "583c7dbb0752e748ebf8572a989334b4"
+    },
+    {
+      "id": "staged-tree-rejects-invalid-nested-contract-path",
+      "input": {
+        "operation": "stage-contract-tree",
+        "manifest": {
+          "nested_contracts": [
+            "../outside"
+          ]
+        }
+      },
+      "expected": {
+        "error_contains": "cannot resolve nested contract manifest"
+      },
+      "coverage_fingerprint": "e5d37cf953d5aa79ad7fe6aff10baf66"
+    },
+    {
+      "id": "reject-nested-cycles-and-package-escape",
+      "input": {
+        "operation": "reject-cycle-and-package-escape"
+      },
+      "expected": {
+        "cycle_rejected": true,
+        "package_escape_rejected": true
+      },
+      "coverage_fingerprint": "a50860d13d986bdc082b35774b13d918"
+    }
+  ]
+}

@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "missing-field",
+      "input": {
+        "json": {},
+        "predicate": ".missing == 5"
+      },
+      "expected": false
+    },
+    {
+      "id": "missing-not-equal",
+      "input": {
+        "json": {},
+        "predicate": ".missing != 5"
+      },
+      "expected": true
+    },
+    {
+      "id": "null-exists",
+      "input": {
+        "json": {
+          "value": null
+        },
+        "predicate": "exists(.value)"
+      },
+      "expected": false
+    },
+    {
+      "id": "absent-exists",
+      "input": {
+        "json": {},
+        "predicate": "exists(.value)"
+      },
+      "expected": false
+    },
+    {
+      "id": "empty-object-exists",
+      "input": {
+        "json": {
+          "value": {}
+        },
+        "predicate": "exists(.value)"
+      },
+      "expected": false
+    },
+    {
+      "id": "empty-list-exists",
+      "input": {
+        "json": {
+          "value": []
+        },
+        "predicate": "exists(.value)"
+      },
+      "expected": false
+    }
+  ]
+}

@@ -1,0 +1,127 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "type-exists-missing-1",
+      "input": {
+        "json": {},
+        "predicate": "exists(.value)"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-exists-null-1",
+      "input": {
+        "json": {
+          "value": null
+        },
+        "predicate": "exists(.value)"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-exists-boolean-1",
+      "input": {
+        "json": {
+          "value": false
+        },
+        "predicate": "exists(.value)"
+      },
+      "expected": true
+    },
+    {
+      "id": "type-exists-boolean-2",
+      "input": {
+        "json": {
+          "value": true
+        },
+        "predicate": "exists(.value)"
+      },
+      "expected": true
+    },
+    {
+      "id": "type-exists-integer-1",
+      "input": {
+        "json": {
+          "value": 0
+        },
+        "predicate": "exists(.value)"
+      },
+      "expected": true
+    },
+    {
+      "id": "type-exists-decimal-1",
+      "input": {
+        "json": {
+          "value": 1.5
+        },
+        "predicate": "exists(.value)"
+      },
+      "expected": true
+    },
+    {
+      "id": "type-exists-string-1",
+      "input": {
+        "json": {
+          "value": ""
+        },
+        "predicate": "exists(.value)"
+      },
+      "expected": true
+    },
+    {
+      "id": "type-exists-string-2",
+      "input": {
+        "json": {
+          "value": "text"
+        },
+        "predicate": "exists(.value)"
+      },
+      "expected": true
+    },
+    {
+      "id": "type-exists-array-1",
+      "input": {
+        "json": {
+          "value": []
+        },
+        "predicate": "exists(.value)"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-exists-array-2",
+      "input": {
+        "json": {
+          "value": [
+            1
+          ]
+        },
+        "predicate": "exists(.value)"
+      },
+      "expected": true
+    },
+    {
+      "id": "type-exists-object-1",
+      "input": {
+        "json": {
+          "value": {}
+        },
+        "predicate": "exists(.value)"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-exists-object-2",
+      "input": {
+        "json": {
+          "value": {
+            "key": "value"
+          }
+        },
+        "predicate": "exists(.value)"
+      },
+      "expected": true
+    }
+  ]
+}

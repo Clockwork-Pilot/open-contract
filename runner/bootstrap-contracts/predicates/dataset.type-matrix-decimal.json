@@ -1,0 +1,551 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "type-decimal-equal-missing",
+      "input": {
+        "json": {
+          "left": 2.0
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-decimal-not-equal-missing",
+      "input": {
+        "json": {
+          "left": 2.0
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": true
+    },
+    {
+      "id": "type-decimal-greater-missing",
+      "input": {
+        "json": {
+          "left": 2.0
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-decimal-greater-equal-missing",
+      "input": {
+        "json": {
+          "left": 2.0
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-decimal-less-missing",
+      "input": {
+        "json": {
+          "left": 2.0
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-decimal-less-equal-missing",
+      "input": {
+        "json": {
+          "left": 2.0
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-decimal-equal-null",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": null
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-decimal-not-equal-null",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": null
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": true
+    },
+    {
+      "id": "type-decimal-greater-null",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": null
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-decimal-greater-equal-null",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": null
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-decimal-less-null",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": null
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-decimal-less-equal-null",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": null
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-decimal-equal-boolean",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": true
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-decimal-not-equal-boolean",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": true
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": true
+    },
+    {
+      "id": "type-decimal-greater-boolean",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": true
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-decimal-greater-equal-boolean",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": true
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-decimal-less-boolean",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": true
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-decimal-less-equal-boolean",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": true
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-decimal-equal-integer",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": 2
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": true
+    },
+    {
+      "id": "type-decimal-not-equal-integer",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": 2
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-decimal-greater-integer",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": 2
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-decimal-greater-equal-integer",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": 2
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": true
+    },
+    {
+      "id": "type-decimal-less-integer",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": 2
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-decimal-less-equal-integer",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": 2
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": true
+    },
+    {
+      "id": "type-decimal-equal-decimal",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": 2.0
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": true
+    },
+    {
+      "id": "type-decimal-not-equal-decimal",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": 2.0
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-decimal-greater-decimal",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": 2.0
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-decimal-greater-equal-decimal",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": 2.0
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": true
+    },
+    {
+      "id": "type-decimal-less-decimal",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": 2.0
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-decimal-less-equal-decimal",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": 2.0
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": true
+    },
+    {
+      "id": "type-decimal-equal-string",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": "alpha"
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-decimal-not-equal-string",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": "alpha"
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": true
+    },
+    {
+      "id": "type-decimal-greater-string",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": "alpha"
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-decimal-greater-equal-string",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": "alpha"
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-decimal-less-string",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": "alpha"
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-decimal-less-equal-string",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": "alpha"
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-decimal-equal-array",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": [
+            1
+          ]
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-decimal-not-equal-array",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": [
+            1
+          ]
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": true
+    },
+    {
+      "id": "type-decimal-greater-array",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": [
+            1
+          ]
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-decimal-greater-equal-array",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": [
+            1
+          ]
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-decimal-less-array",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": [
+            1
+          ]
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-decimal-less-equal-array",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": [
+            1
+          ]
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-decimal-equal-object",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left == .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-decimal-not-equal-object",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left != .right"
+      },
+      "expected": true
+    },
+    {
+      "id": "type-decimal-greater-object",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left > .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-decimal-greater-equal-object",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left >= .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-decimal-less-object",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left < .right"
+      },
+      "expected": false
+    },
+    {
+      "id": "type-decimal-less-equal-object",
+      "input": {
+        "json": {
+          "left": 2.0,
+          "right": {
+            "key": "value"
+          }
+        },
+        "predicate": ".left <= .right"
+      },
+      "expected": false
+    }
+  ]
+}

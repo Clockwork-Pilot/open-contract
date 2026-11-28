@@ -1,0 +1,153 @@
+version: 1
+cases:
+- id: invalid-line-coverage-threshold
+  coverage_fingerprint: cdbd9ee497fa93cd52c921793c6ea61a
+  input:
+    operation: manifest
+    yaml: "version: '1'\nname: sample\nminimum_coverage_percent: 101\nfilesystem:\n\
+      \  read:\n  - dataset.json\n  - validator.py\n  write: []\ndatasets:\n- dataset.json\n\
+      coverage_sources:\n- validator.py\n"
+  expected:
+    valid: false
+- id: accepts-contract-with-explicit-public-source
+  coverage_fingerprint: afea99575b712d8c55af36c47392d61a
+  input:
+    operation: manifest
+    yaml: "version: '1'\nname: sample\nexecution:\n  command:\n  - python3\n  - contract_entry.py\n\
+      filesystem:\n  read:\n  - dataset.json\n  - validator.py\n  write: []\ndatasets:\n\
+      - dataset.json\ncoverage_sources:\n- validator.py\n"
+  expected:
+    valid: true
+- id: language-adapter-runtime-path-is-accepted
+  coverage_fingerprint: 331114d5115af4354c5cb566f7adf2c8
+  input:
+    operation: manifest
+    yaml: 'version: ''1''
+
+      name: adapter
+
+      datasets: [dataset.json]
+
+      coverage_sources: [validator.py]
+
+      language_adapter: ../adapter-runtime.yaml
+
+      filesystem: {read: [dataset.json, validator.py], write: []}
+
+      '
+  expected:
+    valid: true
+- id: language-adapter-directory-is-rejected
+  coverage_fingerprint: f3b92de7faa27379b6dbd3d691042989
+  input:
+    operation: manifest
+    yaml: 'version: ''1''
+
+      name: adapter
+
+      datasets: [dataset.json]
+
+      coverage_sources: [validator.py]
+
+      language_adapter: ..
+
+      filesystem: {read: [dataset.json, validator.py], write: []}
+
+      '
+  expected:
+    valid: false
+- id: language-adapter-missing-runtime-is-rejected
+  coverage_fingerprint: f53e35e90bb9660c0c9ccd3a5dedd3dd
+  input:
+    operation: manifest
+    yaml: 'version: ''1''
+
+      name: adapter
+
+      datasets: [dataset.json]
+
+      coverage_sources: [validator.py]
+
+      language_adapter: ../missing-runtime.yaml
+
+      filesystem: {read: [dataset.json, validator.py], write: []}
+
+      '
+  expected:
+    valid: false
+- id: coverage-minimum-valid
+  input:
+    operation: manifest
+    yaml: 'version: ''1''
+
+      name: sample
+
+      datasets: [dataset.json]
+
+      coverage_sources: [validator.py]
+
+      minimum_coverage_percent: 95
+
+      filesystem: {read: [dataset.json, validator.py], write: []}
+
+      '
+  expected:
+    valid: true
+  coverage_fingerprint: dfb6ce332802174a4c1196dd3111aeba
+- id: coverage-minimum-over-100
+  input:
+    operation: manifest
+    yaml: 'version: ''1''
+
+      name: sample
+
+      datasets: [dataset.json]
+
+      coverage_sources: [validator.py]
+
+      minimum_coverage_percent: 101
+
+      filesystem: {read: [dataset.json, validator.py], write: []}
+
+      '
+  expected:
+    valid: false
+  coverage_fingerprint: cdbd9ee497fa93cd52c921793c6ea61a
+- id: coverage-minimum-below-0
+  input:
+    operation: manifest
+    yaml: 'version: ''1''
+
+      name: sample
+
+      datasets: [dataset.json]
+
+      coverage_sources: [validator.py]
+
+      minimum_coverage_percent: -1
+
+      filesystem: {read: [dataset.json, validator.py], write: []}
+
+      '
+  expected:
+    valid: false
+  coverage_fingerprint: cdbd9ee497fa93cd52c921793c6ea61a
+- id: coverage-minimum-not-finite
+  input:
+    operation: manifest
+    yaml: 'version: ''1''
+
+      name: sample
+
+      datasets: [dataset.json]
+
+      coverage_sources: [validator.py]
+
+      minimum_coverage_percent: .nan
+
+      filesystem: {read: [dataset.json, validator.py], write: []}
+
+      '
+  expected:
+    valid: false
+  coverage_fingerprint: 8da8a2124f5dee20578f5e0a1f0bb8b9

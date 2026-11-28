@@ -1,0 +1,112 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "runner-manifest-filename-accepts-yaml",
+      "input": {
+        "operation": "validate-runner-manifest-filename",
+        "path": "open-contract.yaml"
+      },
+      "expected": {
+        "valid": true
+      },
+      "coverage_fingerprint": "14b78a45f507bb6008946b92e2d1ea68"
+    },
+    {
+      "id": "runner-manifest-filename-accepts-yml",
+      "input": {
+        "operation": "validate-runner-manifest-filename",
+        "path": "extra.open-contract.yml"
+      },
+      "expected": {
+        "valid": true
+      },
+      "coverage_fingerprint": "14b78a45f507bb6008946b92e2d1ea68"
+    },
+    {
+      "id": "runner-manifest-filename-rejects-missing-basename",
+      "input": {
+        "operation": "validate-runner-manifest-filename",
+        "path": "."
+      },
+      "expected": {
+        "valid": false
+      },
+      "coverage_fingerprint": "3319c54ccf925844cf96cd16d37ea0c9"
+    },
+    {
+      "id": "runner-manifest-filename-rejects-other-extension",
+      "input": {
+        "operation": "validate-runner-manifest-filename",
+        "path": "open-contract.txt"
+      },
+      "expected": {
+        "valid": false
+      },
+      "coverage_fingerprint": "d241e97aaee37b34a76ec3d22693c1de"
+    },
+    {
+      "id": "nested-manifest-filename-validates-recursively",
+      "input": {
+        "operation": "validate-nested-manifest-filenames",
+        "nested_contracts": [
+          "child/open-contract.yaml"
+        ]
+      },
+      "expected": {
+        "valid": true
+      },
+      "coverage_fingerprint": "c36c949b0499c9aff52e392a9e40baf5"
+    },
+    {
+      "id": "nested-manifest-filename-rejects-unmarked-child",
+      "input": {
+        "operation": "validate-nested-manifest-filenames",
+        "nested_contracts": [
+          "child/contract.yaml"
+        ]
+      },
+      "expected": {},
+      "predicate": ".valid == false AND contains(.error, 'nested manifest filename must contain')",
+      "coverage_fingerprint": "1f4329fbd8be4a80801c3be2e78c0762"
+    },
+    {
+      "id": "nested-manifest-filename-reports-resolution-error",
+      "input": {
+        "operation": "validate-nested-manifest-filenames",
+        "nested_contracts": [
+          "../missing/open-contract.yaml"
+        ]
+      },
+      "expected": {},
+      "predicate": ".valid == false AND contains(.error, 'cannot resolve nested contract manifest')",
+      "coverage_fingerprint": "dd085c9147f06f309f458e3aa22b97d6"
+    },
+    {
+      "id": "nested-manifest-filename-reports-invalid-child",
+      "input": {
+        "operation": "validate-nested-manifest-filenames",
+        "nested_contracts": [
+          "child/open-contract.yaml"
+        ],
+        "child_manifest": "not: [valid"
+      },
+      "expected": {},
+      "predicate": ".valid == false AND contains(.error, 'invalid manifest')",
+      "coverage_fingerprint": "c377c5ea713d6c7a797caefb44ddd48d"
+    },
+    {
+      "id": "nested-manifest-filename-detects-cycle",
+      "input": {
+        "operation": "validate-nested-manifest-filenames",
+        "nested_contracts": [
+          "child/open-contract.yaml"
+        ],
+        "child_manifest": "version: '1'\nname: child\ndatasets: [dataset.json]\ncoverage_sources: [validator.py]\nnested_contracts: [open-contract.yaml]\nfilesystem: {read: [dataset.json, validator.py, open-contract.yaml], write: []}\n"
+      },
+      "expected": {},
+      "predicate": ".valid == false AND contains(.error, 'nested contract cycle detected')",
+      "coverage_fingerprint": "1934a3ebde65a4f1d3e0cbe273571b10"
+    }
+  ]
+}

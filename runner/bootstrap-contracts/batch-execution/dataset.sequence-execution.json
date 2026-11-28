@@ -1,0 +1,594 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "sequence-steps",
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "sequence",
+              "steps": [
+                {
+                  "id": "first",
+                  "input": {
+                    "value": 1
+                  },
+                  "expected": {
+                    "value": 1
+                  },
+                  "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
+                },
+                {
+                  "id": "second",
+                  "input": {
+                    "value": 2
+                  },
+                  "predicate": ".value == 2",
+                  "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2",
+                  "expected": {}
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "expected": {
+        "results": [
+          {
+            "passed": true
+          }
+        ]
+      },
+      "coverage_fingerprint": "24ee52ea6d21f8d2fc7af2de01cf9faa"
+    },
+    {
+      "id": "sequence-aggregate-mismatch",
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "sequence",
+              "steps": [
+                {
+                  "id": "first",
+                  "input": {
+                    "value": 1
+                  },
+                  "expected": {
+                    "value": 1
+                  },
+                  "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "expected": {
+        "results": [
+          {
+            "passed": true
+          }
+        ]
+      },
+      "coverage_fingerprint": "ccfaf600e952908f341e66ce5c5809e7",
+      "predicate": ".results.0.passed == true"
+    },
+    {
+      "id": "removed-expected-error-sequence-field",
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "one",
+              "steps": [
+                {
+                  "id": "step",
+                  "input": {},
+                  "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2",
+                  "expected": {}
+                }
+              ],
+              "expected_error": "error"
+            }
+          ]
+        }
+      },
+      "expected": {},
+      "coverage_fingerprint": "7e442861dba98b233a24443f23d6b750",
+      "predicate": "exists(.error)"
+    },
+    {
+      "id": "removed-expected-error-step-field",
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "one",
+              "steps": [
+                {
+                  "id": "step",
+                  "input": {},
+                  "expected": {},
+                  "expected_error": "error",
+                  "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "expected": {},
+      "coverage_fingerprint": "7e442861dba98b233a24443f23d6b750",
+      "predicate": "exists(.error)"
+    },
+    {
+      "id": "sequence-aggregate-exact",
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "sequence",
+              "steps": [
+                {
+                  "id": "step",
+                  "input": {
+                    "value": 1
+                  },
+                  "expected": {
+                    "value": 1
+                  },
+                  "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "expected": {
+        "results": [
+          {
+            "passed": true
+          }
+        ]
+      },
+      "coverage_fingerprint": "ccfaf600e952908f341e66ce5c5809e7"
+    },
+    {
+      "id": "sequence-aggregate-predicate",
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "sequence",
+              "steps": [
+                {
+                  "id": "step",
+                  "input": {
+                    "value": 1
+                  },
+                  "expected": {
+                    "value": 1
+                  },
+                  "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "expected": {
+        "results": [
+          {
+            "passed": true
+          }
+        ]
+      },
+      "coverage_fingerprint": "ccfaf600e952908f341e66ce5c5809e7"
+    },
+    {
+      "id": "sequence-aggregate-expected-and-predicate",
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "sequence",
+              "steps": [
+                {
+                  "id": "step",
+                  "input": {
+                    "value": 1
+                  },
+                  "expected": {
+                    "value": 1
+                  },
+                  "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "expected": {
+        "results": [
+          {
+            "passed": true
+          }
+        ]
+      },
+      "coverage_fingerprint": "ccfaf600e952908f341e66ce5c5809e7"
+    },
+    {
+      "id": "sequence-case-fingerprint-match",
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "sequence",
+              "steps": [
+                {
+                  "id": "step",
+                  "input": {
+                    "value": 1
+                  },
+                  "expected": {
+                    "value": 1
+                  },
+                  "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "expected": {
+        "results": [
+          {
+            "passed": true
+          }
+        ]
+      },
+      "coverage_fingerprint": "ccfaf600e952908f341e66ce5c5809e7"
+    },
+    {
+      "id": "sequence-case-fingerprint-mismatch",
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "sequence",
+              "steps": [
+                {
+                  "id": "step",
+                  "input": {
+                    "value": 1
+                  },
+                  "expected": {
+                    "value": 1
+                  },
+                  "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "expected": {
+        "results": [
+          {
+            "passed": true
+          }
+        ]
+      },
+      "coverage_fingerprint": "ccfaf600e952908f341e66ce5c5809e7",
+      "predicate": ".results.0.passed == true"
+    },
+    {
+      "id": "sequence-step-fingerprint-mismatch",
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "sequence",
+              "steps": [
+                {
+                  "id": "step",
+                  "input": {
+                    "value": 1
+                  },
+                  "expected": {
+                    "value": 1
+                  },
+                  "coverage_fingerprint": "60c6194cbdc58033999a1fb07d147da9"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "expected": {
+        "results": [
+          {
+            "passed": false
+          }
+        ]
+      },
+      "coverage_fingerprint": "b813ec7f5e12001a7f7eaf88a1101471",
+      "predicate": "contains(.results.0.error, 'coverage fingerprint mismatch')"
+    },
+    {
+      "id": "sequence-step-requires-expected",
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "sequence",
+              "steps": [
+                {
+                  "id": "unasserted",
+                  "input": {
+                    "value": "actual step input"
+                  },
+                  "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "expected": {},
+      "coverage_fingerprint": "7e442861dba98b233a24443f23d6b750",
+      "predicate": "exists(.error)"
+    },
+    {
+      "id": "dataset-adapter-step-error-output",
+      "setup": "dataset-adapter-step-error-output",
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "sequence",
+              "steps": [
+                {
+                  "id": "fails",
+                  "input": {
+                    "operation": "validate",
+                    "value": "real input"
+                  },
+                  "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2",
+                  "expected": {},
+                  "predicate": "contains(.error, 'fixture failure')"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "expected": {
+        "results": [
+          {
+            "passed": true
+          }
+        ]
+      },
+      "coverage_fingerprint": "c398f53491b2ea693d82416d3c2179a1"
+    },
+    {
+      "id": "dataset-adapter-step-predicate-mismatch",
+      "setup": "dataset-adapter-step-predicate-mismatch",
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "sequence",
+              "steps": [
+                {
+                  "id": "fails",
+                  "input": {
+                    "operation": "validate",
+                    "value": "real input"
+                  },
+                  "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2",
+                  "expected": {},
+                  "predicate": "contains(.error, 'different failure')"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "expected": {
+        "results": [
+          {
+            "passed": false
+          }
+        ]
+      },
+      "coverage_fingerprint": "66000b14e03316a33b85198d75a0dc1e",
+      "predicate": "contains(.results.0.error, 'output did not satisfy predicate')"
+    },
+    {
+      "id": "removed-expected-error-step-field-with-predicate",
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "sequence",
+              "steps": [
+                {
+                  "id": "invalid",
+                  "input": {
+                    "value": 1
+                  },
+                  "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2",
+                  "predicate": ".value == 1",
+                  "expected_error": "failure",
+                  "expected": {}
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "expected": {},
+      "coverage_fingerprint": "7e442861dba98b233a24443f23d6b750",
+      "predicate": "exists(.error)"
+    },
+    {
+      "id": "dataset-adapter-sequence-empty-coverage",
+      "setup": "dataset-adapter-sequence-empty-coverage",
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "sequence",
+              "steps": [
+                {
+                  "id": "step",
+                  "input": {
+                    "value": "real input"
+                  },
+                  "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2",
+                  "expected": {}
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "expected": {
+        "results": [
+          {
+            "passed": false
+          }
+        ]
+      },
+      "coverage_fingerprint": "d69862c73cd970c9fa51a5f340a9f627",
+      "predicate": "contains(.results.0.error, 'zero covered lines')"
+    },
+    {
+      "id": "dataset-adapter-multiple-step-error-outputs",
+      "setup": "dataset-adapter-multiple-step-error-outputs",
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "sequence",
+              "steps": [
+                {
+                  "id": "first",
+                  "input": {
+                    "value": "first public input"
+                  },
+                  "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2",
+                  "expected": {},
+                  "predicate": "contains(.error, 'not present')"
+                },
+                {
+                  "id": "second",
+                  "input": {
+                    "value": "second public input"
+                  },
+                  "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2",
+                  "expected": {},
+                  "predicate": "contains(.error, 'fixture failure')"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "expected": {
+        "results": [
+          {
+            "passed": false
+          }
+        ]
+      },
+      "coverage_fingerprint": "bdc1bc421e160e6716146bdb3b661234",
+      "predicate": "contains(.results.0.error, 'output did not satisfy predicate')"
+    },
+    {
+      "id": "sequence-rejects-empty-steps",
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "empty-sequence",
+              "steps": []
+            }
+          ]
+        }
+      },
+      "expected": {
+        "error": "sequence empty-sequence must include at least one step"
+      },
+      "coverage_fingerprint": "51271355a8ee58d9eb80824ecb44cf4d"
+    },
+    {
+      "id": "case-rejects-empty-setup-id",
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "empty-setup",
+              "input": {},
+              "expected": {},
+              "setup": "",
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "error": "setup must be a non-empty fixture ID when provided"
+      },
+      "coverage_fingerprint": "6b1c83ab4814a0634bb4328cd2b896e5"
+    },
+    {
+      "id": "sequence-rejects-empty-setup-id",
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "empty-setup-sequence",
+              "steps": [
+                {
+                  "id": "step",
+                  "input": {},
+                  "expected": {},
+                  "setup": "",
+                  "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "expected": {
+        "error": "setup must be a non-empty fixture ID when provided"
+      },
+      "coverage_fingerprint": "c8700a21c365f28a32df13b28209357f"
+    }
+  ]
+}

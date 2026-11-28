@@ -14,6 +14,48 @@ macro_rules! ensure {
 
 pub(crate) fn execute_dataset() -> Result<usize, String> {
     let source = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    if std::env::var_os("OPEN_CONTRACT_BOOTSTRAP_DATASET_PATH").is_some() {
+        return execute_selected_dataset(source);
+    }
+    let manifest_path = source
+        .parent()
+        .ok_or_else(|| "isolation package has no bootstrap-contracts parent".to_string())?
+        .join("datasets.manifest.json");
+    let manifest: serde_json::Value = serde_json::from_slice(
+        &std::fs::read(&manifest_path)
+            .map_err(|error| format!("cannot read {}: {error}", manifest_path.display()))?,
+    )
+    .map_err(|error| format!("invalid {}: {error}", manifest_path.display()))?;
+    let contract = manifest["contracts"]
+        .as_array()
+        .and_then(|contracts| contracts.iter().find(|contract| contract["package"] == "isolation"))
+        .ok_or_else(|| "isolation package is not declared in datasets.manifest.json".to_string())?;
+    let datasets = contract["datasets"]
+        .as_array()
+        .ok_or_else(|| "isolation suites must be an array".to_string())?;
+    let mut total = 0;
+    for dataset in datasets {
+        let id = dataset["id"]
+            .as_str()
+            .ok_or_else(|| "isolation suite ID must be a string".to_string())?;
+        let path = dataset["path"]
+            .as_str()
+            .ok_or_else(|| format!("isolation suite {id} path must be a string"))?;
+        std::env::set_var("OPEN_CONTRACT_BOOTSTRAP_DATASET_PATH", source.join(path));
+        if let Some(schema) = dataset["schema"].as_str() {
+            std::env::set_var("OPEN_CONTRACT_BOOTSTRAP_DATASET_SCHEMA", source.join(schema));
+        } else {
+            std::env::remove_var("OPEN_CONTRACT_BOOTSTRAP_DATASET_SCHEMA");
+        }
+        total += execute_selected_dataset(source.clone())?;
+    }
+    Ok(total)
+}
+
+fn execute_selected_dataset(source: PathBuf) -> Result<usize, String> {
+    let selected_dataset = std::env::var_os("OPEN_CONTRACT_BOOTSTRAP_DATASET_PATH")
+        .map(PathBuf::from)
+        .ok_or_else(|| "isolation suite path was not selected".to_string())?;
     let coverage_root = source.join("../../../.coverage/bootstrap-contracts/isolation-fixtures");
     std::fs::create_dir_all(&coverage_root).map_err(|error| error.to_string())?;
     let workspace = tempfile::Builder::new()
@@ -25,7 +67,6 @@ pub(crate) fn execute_dataset() -> Result<usize, String> {
         .join("runner/bootstrap-contracts/isolation");
     for relative in [
         "isolation-package.fixture.yaml",
-        "dataset.json",
         "Cargo.toml",
         "src/lib.rs",
         "src/backend.rs",
@@ -41,6 +82,8 @@ pub(crate) fn execute_dataset() -> Result<usize, String> {
         }
         std::fs::copy(source.join(relative), target).map_err(|error| error.to_string())?;
     }
+    std::fs::copy(&selected_dataset, package.join("dataset.json"))
+        .map_err(|error| error.to_string())?;
     // Exercise preservation of existing write files without depending on a prior run.
     for relative in [
         "reports/result.json",
