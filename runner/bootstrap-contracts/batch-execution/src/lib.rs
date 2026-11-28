@@ -1149,9 +1149,7 @@ fn prefix_coverage_entity_paths(prefix: &Path, entities: &mut [Value]) {
         return;
     }
     for entity in entities {
-        let path = entity["path"]
-            .as_str()
-            .expect("coverage entities are schema-validated before path prefixing");
+        let path = entity.get("path").and_then(Value::as_str).unwrap_or_default();
         entity["path"] = Value::String(prefix.join(path).to_string_lossy().replace('\\', "/"));
     }
 }

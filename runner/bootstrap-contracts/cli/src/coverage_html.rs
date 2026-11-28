@@ -177,10 +177,9 @@ fn location_text(location: &Value) -> String {
     let Some(start) = start else {
         return "Location unavailable".into();
     };
-    let mut value = if end.is_some_and(|end| end != start) {
-        format!("{start}–{}", end.unwrap())
-    } else {
-        start.to_string()
+    let mut value = match end.filter(|end| *end != start) {
+        Some(end) => format!("{start}–{end}"),
+        None => start.to_string(),
     };
     if let Some(column) = location.get("start_column").and_then(Value::as_u64) {
         value.push_str(&format!(":{}", column + 1));

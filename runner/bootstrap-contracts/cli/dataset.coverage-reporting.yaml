@@ -66,7 +66,7 @@ cases:
       report
 
       '
-  coverage_fingerprint: 9523c2229dd2d412dd848223d0a29631
+  coverage_fingerprint: 5b3bf00f1e55d65d6d4fec7df5189050
 - id: reports-coverage-write-failure
   setup: reports-coverage-write-failure
   input:

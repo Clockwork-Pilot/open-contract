@@ -2,6 +2,7 @@ import importlib.util
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 
 CHECKER = Path(__file__).with_name("check_bootstrap_contract_coverage.py")
@@ -162,6 +163,22 @@ class DatasetManifestTests(unittest.TestCase):
         ]
         with self.assertRaisesRegex(ValueError, "declared in both datasets"):
             bootstrap_coverage.validate_unique_case_ids("example", declarations)
+
+
+class CoverageWorkerTests(unittest.TestCase):
+    def test_default_coverage_workers_are_cpu_bounded(self):
+        with patch.dict(bootstrap_coverage.os.environ, {}, clear=True):
+            with patch.object(bootstrap_coverage.os, "cpu_count", return_value=12):
+                self.assertEqual(bootstrap_coverage.coverage_worker_count(), 4)
+
+    def test_make_can_bound_workers_below_the_direct_checker_default(self):
+        with patch.dict(bootstrap_coverage.os.environ, {"OPEN_CONTRACT_COVERAGE_WORKERS": "1"}):
+            self.assertEqual(bootstrap_coverage.coverage_worker_count(), 1)
+
+    def test_rejects_invalid_worker_count(self):
+        with patch.dict(bootstrap_coverage.os.environ, {"OPEN_CONTRACT_COVERAGE_WORKERS": "0"}):
+            with self.assertRaisesRegex(RuntimeError, "positive integer"):
+                bootstrap_coverage.coverage_worker_count()
 
 
 if __name__ == "__main__":

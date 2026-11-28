@@ -22,11 +22,17 @@ LLVM_PROFDATA ?= $(patsubst %/,%,$(dir $(LLVM_COV)))/llvm-profdata
 .DEFAULT_GOAL := check-contracts
 .PHONY: check-contracts check-bootstrap-contracts check-rust-core-contracts check-cli-contract check-manifest-contract check-isolation-contract check-batch-execution-contract check-verification-contract check-error-handling-contract check-dataset-generation-contract check-cli-contract check-predicate-contract check-bootstrap-dataset-harness check-rust-runtime-safety check-runner-examples check-language-contract-examples check-rust-language-adapter check-rust-nested-contracts check-rust-nested-contracts-html check-python-adapter-examples check-javascript-example bootstrap-contract-coverage-html check-bootstrap-contract-coverage-html check-bootstrap-contracts-html check-bootstrap-dataset-harness-html check-manifest-contract-html check-isolation-contract-html check-batch-execution-contract-html check-verification-contract-html check-error-handling-contract-html check-dataset-generation-contract-html check-cli-contract-html check-predicate-contract-html examples
 
+BOOTSTRAP_CHECK_JOBS ?= 4
+BOOTSTRAP_CASE_COVERAGE_WORKERS ?= 1
+BOOTSTRAP_RUST_CONTRACT_CHECKS := check-manifest-contract check-isolation-contract check-batch-execution-contract check-verification-contract check-error-handling-contract check-dataset-generation-contract check-cli-contract
+
 check-contracts: check-bootstrap-contracts check-language-contract-examples
 
-check-bootstrap-contracts: check-predicate-contract check-bootstrap-dataset-harness check-rust-core-contracts
+check-bootstrap-contracts:
+	OPEN_CONTRACT_COVERAGE_WORKERS=$(BOOTSTRAP_CASE_COVERAGE_WORKERS) $(MAKE) --output-sync=target --jobs=$(BOOTSTRAP_CHECK_JOBS) check-predicate-contract check-bootstrap-dataset-harness check-rust-runtime-safety $(BOOTSTRAP_RUST_CONTRACT_CHECKS)
 
-check-rust-core-contracts: check-rust-runtime-safety check-manifest-contract check-isolation-contract check-batch-execution-contract check-verification-contract check-error-handling-contract check-dataset-generation-contract check-cli-contract
+check-rust-core-contracts:
+	OPEN_CONTRACT_COVERAGE_WORKERS=$(BOOTSTRAP_CASE_COVERAGE_WORKERS) $(MAKE) --output-sync=target --jobs=$(BOOTSTRAP_CHECK_JOBS) check-rust-runtime-safety $(BOOTSTRAP_RUST_CONTRACT_CHECKS)
 
 check-manifest-contract:
 	$(PYTHON) runner/tools/check_bootstrap_contract_coverage.py runner/bootstrap-contracts/manifest
@@ -92,7 +98,7 @@ check-predicate-contract:
 
 check-bootstrap-dataset-harness:
 	$(PYTHON) runner/tools/check_bootstrap_contract_coverage.py runner/bootstrap-contracts/dataset-harness
-	PATH="$(HOME)/.cargo/bin:$(PATH)" $(CARGO) test --manifest-path runner/bootstrap-contracts/dataset-harness/Cargo.toml
+	PATH="$(HOME)/.cargo/bin:$(PATH)" CARGO_BUILD_JOBS=1 MAKEFLAGS= $(CARGO) test --manifest-path runner/bootstrap-contracts/dataset-harness/Cargo.toml
 
 check-rust-runtime-safety:
 	$(PYTHON) runner/tools/check_rust_runtime_safety.py

@@ -12,6 +12,7 @@ import subprocess
 import sys
 import tomllib
 import tempfile
+import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -109,7 +110,10 @@ def main() -> int:
         )
         command.extend(["--bin", dataset_target_name])
     command.extend(["--manifest-path", str(manifest)])
+    build_started = time.perf_counter()
     result = subprocess.run(command, cwd=package, env=environment, check=False, capture_output=True, text=True)
+    build_seconds = time.perf_counter() - build_started
+    print(f"Timing {contract_id}: build_test_binary={build_seconds:.3f}s", flush=True)
     if result.returncode:
         print(result.stderr, file=sys.stderr, end="")
         return result.returncode
@@ -136,6 +140,8 @@ def main() -> int:
     aggregate_profiles = []
     mismatch_messages = []
     fingerprint_updates = []
+    dataset_execution_seconds = 0.0
+    fingerprint_wall_seconds = 0.0
     debug_selection = os.environ.get("OPEN_CONTRACT_DEBUG_FINGERPRINT_CASE", "").strip()
     debug_all_mismatches = debug_selection.lower() in {"1", "true", "yes", "on"}
     debug_case = None if not debug_selection or debug_all_mismatches else debug_selection
@@ -160,9 +166,17 @@ def main() -> int:
             )
         dataset_environment["OPEN_CONTRACT_BOOTSTRAP_COVERAGE_SNAPSHOTS"] = str(snapshots_path)
         dataset_environment["LLVM_PROFILE_FILE"] = str(aggregate_profile)
+        dataset_started = time.perf_counter()
         result = subprocess.run(
             [str(binary), *arguments], cwd=package, env=dataset_environment,
             check=False, capture_output=True, text=True,
+        )
+        dataset_seconds = time.perf_counter() - dataset_started
+        dataset_execution_seconds += dataset_seconds
+        print(
+            f"Timing {contract_id} dataset {declaration['id']}: "
+            f"test_execution={dataset_seconds:.3f}s",
+            flush=True,
         )
         if result.returncode:
             schema = declaration["schema"] or "<none>"
@@ -189,8 +203,20 @@ def main() -> int:
             case_ids = [case["id"] for case in dataset["cases"]]
             if case_ids != [case_id for case_id, _ in snapshots]:
                 raise ValueError("coverage snapshots do not match dataset case order")
+            fingerprint_stages = {}
+            fingerprint_started = time.perf_counter()
             fingerprints = calculate_case_fingerprints(
-                snapshots, binary, package, llvm_cov, llvm_profdata, source_files, artifacts
+                snapshots, binary, package, llvm_cov, llvm_profdata, source_files, artifacts,
+                stage_timings=fingerprint_stages,
+            )
+            fingerprint_seconds = time.perf_counter() - fingerprint_started
+            fingerprint_wall_seconds += fingerprint_seconds
+            print(
+                f"Timing {contract_id} dataset {declaration['id']}: "
+                f"per_case_fingerprint_wall={fingerprint_seconds:.3f}s, "
+                f"profdata_merge_cpu={fingerprint_stages['profile_merge_seconds']:.3f}s, "
+                f"llvm_cov_export_cpu={fingerprint_stages['coverage_export_seconds']:.3f}s",
+                flush=True,
             )
         except (OSError, ValueError, RuntimeError) as error:
             schema = declaration["schema"] or "<none>"
@@ -224,13 +250,16 @@ def main() -> int:
             write_dataset(dataset_path, dataset)
         aggregate_profiles.append(aggregate_profile)
 
+    profile_merge_started = time.perf_counter()
     merged = subprocess.run(
         [llvm_profdata, "merge", "-sparse", *map(str, aggregate_profiles), "-o", str(indexed_profile)],
         check=False, capture_output=True, text=True, cwd=package,
     )
+    profile_merge_seconds = time.perf_counter() - profile_merge_started
     if merged.returncode:
         print(merged.stderr, file=sys.stderr, end="")
         return merged.returncode
+    coverage_export_started = time.perf_counter()
     exported = subprocess.run(
         [
             llvm_cov,
@@ -242,6 +271,7 @@ def main() -> int:
         check=False, capture_output=True, text=True,
         cwd=package,
     )
+    coverage_export_seconds = time.perf_counter() - coverage_export_started
     if exported.returncode:
         print(exported.stderr, file=sys.stderr, end="")
         return exported.returncode
@@ -269,6 +299,19 @@ def main() -> int:
         f"instantiations {dataset_instantiations_covered}/{dataset_instantiations_total} ({percentage(dataset_instantiations_covered, dataset_instantiations_total):.1f}%), "
         f"lines {dataset_covered}/{dataset_total} ({percentage(dataset_covered, dataset_total):.1f}%), "
         f"regions {dataset_regions_covered}/{dataset_regions_total} ({percentage(dataset_regions_covered, dataset_regions_total):.1f}%)"
+    )
+    timing_stages = {
+        "build/test binary": build_seconds,
+        "dataset test execution (sum)": dataset_execution_seconds,
+        "per-case fingerprinting (wall sum)": fingerprint_wall_seconds,
+        "final profile merge": profile_merge_seconds,
+        "final coverage export": coverage_export_seconds,
+    }
+    dominant = sorted(timing_stages.items(), key=lambda item: item[1], reverse=True)[:3]
+    print(
+        f"Timing {contract_id} dominant stages: "
+        + ", ".join(f"{name} {seconds:.3f}s" for name, seconds in dominant),
+        flush=True,
     )
     if update_fingerprints:
         print(f"Updated {len(fingerprint_updates)} coverage fingerprints across {len(datasets)} datasets")
@@ -597,11 +640,13 @@ def calculate_case_fingerprints(
     llvm_profdata: str,
     source_files: list[str],
     artifacts: Path,
+    *,
+    stage_timings: dict[str, float] | None = None,
 ) -> list[tuple[str, str, list[dict]]]:
     workers = coverage_worker_count()
     print(f"Per-case LLVM coverage workers: {workers}")
 
-    def fingerprint(snapshot: tuple[str, bytes]) -> tuple[str, str, list[dict]]:
+    def fingerprint(snapshot: tuple[str, bytes]) -> tuple[str, str, list[dict], float, float]:
         case_id, profile_bytes = snapshot
         with tempfile.TemporaryDirectory(
             prefix="bootstrap-case-coverage-", dir=artifacts
@@ -610,13 +655,16 @@ def calculate_case_fingerprints(
             raw_profile = temporary / "case.profraw"
             indexed_profile = temporary / "case.profdata"
             raw_profile.write_bytes(profile_bytes)
+            merge_started = time.perf_counter()
             merged = subprocess.run(
                 [llvm_profdata, "merge", "-sparse", str(raw_profile), "-o", str(indexed_profile)],
                 check=False, capture_output=True, text=True,
             )
+            merge_seconds = time.perf_counter() - merge_started
             if merged.returncode:
                 detail = merged.stderr.strip() or merged.stdout.strip()
                 raise RuntimeError(f"case {case_id}: llvm-profdata failed: {detail}")
+            export_started = time.perf_counter()
             exported = subprocess.run(
                 [
                     llvm_cov,
@@ -629,6 +677,7 @@ def calculate_case_fingerprints(
                 ],
                 check=False, capture_output=True, text=True, cwd=package,
             )
+            export_seconds = time.perf_counter() - export_started
             if exported.returncode:
                 detail = exported.stderr.strip() or exported.stdout.strip()
                 raise RuntimeError(f"case {case_id}: llvm-cov failed: {detail}")
@@ -640,10 +689,14 @@ def calculate_case_fingerprints(
             inputs = coverage_fingerprint_inputs(sources, package)
             encoded = json.dumps(inputs, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
             value = hashlib.sha256(encoded).hexdigest()[:32] if inputs else "0" * 32
-            return case_id, value, inputs
+            return case_id, value, inputs, merge_seconds, export_seconds
 
     with ThreadPoolExecutor(max_workers=workers) as executor:
-        return list(executor.map(fingerprint, snapshots))
+        results = list(executor.map(fingerprint, snapshots))
+    if stage_timings is not None:
+        stage_timings["profile_merge_seconds"] = sum(item[3] for item in results)
+        stage_timings["coverage_export_seconds"] = sum(item[4] for item in results)
+    return [(case_id, value, inputs) for case_id, value, inputs, _, _ in results]
 
 
 def coverage_worker_count() -> int:
