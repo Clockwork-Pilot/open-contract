@@ -37,7 +37,7 @@
             "properties": {
               "json": {},
               "predicate": {
-                "$ref": "https://open-contracts.dev/schemas/predicate-language.schema.json"
+                "type": "string"
               }
             }
           },

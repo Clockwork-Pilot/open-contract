@@ -177,7 +177,9 @@
                 "schema-run",
                 "schema-run-auto",
                 "schema-run-error",
-                "schema-run-duplicate"
+                "schema-run-duplicate",
+                "schema-run-selected",
+                "schema-run-selected-no-schema"
               ]
             },
             "extension": {

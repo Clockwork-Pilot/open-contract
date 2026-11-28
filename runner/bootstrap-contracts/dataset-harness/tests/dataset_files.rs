@@ -67,7 +67,7 @@ fn package_dataset_and_case_values_match_its_schema() {
     )
     .expect("package dataset should match its schema");
     assert_eq!(dataset.version, 1);
-    assert_eq!(dataset.cases.len(), 32);
+    assert_eq!(dataset.cases.len(), 34);
 }
 
 #[test]

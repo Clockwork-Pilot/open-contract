@@ -1,0 +1,93 @@
+{
+  "version": 1,
+  "contracts": [
+    {
+      "id": "batch-execution",
+      "package": "batch-execution",
+      "datasets": [
+        {
+          "id": "main",
+          "path": "dataset.json",
+          "schema": null
+        }
+      ]
+    },
+    {
+      "id": "cli",
+      "package": "cli",
+      "datasets": [
+        {
+          "id": "main",
+          "path": "dataset.yaml",
+          "schema": null
+        }
+      ]
+    },
+    {
+      "id": "dataset-generation",
+      "package": "dataset-generation",
+      "datasets": [
+        {
+          "id": "main",
+          "path": "dataset.yaml",
+          "schema": null
+        }
+      ]
+    },
+    {
+      "id": "dataset-harness",
+      "package": "dataset-harness",
+      "datasets": [
+        {
+          "id": "main",
+          "path": "dataset.json",
+          "schema": "dataset.schema.json"
+        }
+      ]
+    },
+    {
+      "id": "error-handling",
+      "package": "error-handling",
+      "datasets": [
+        {
+          "id": "main",
+          "path": "dataset.json",
+          "schema": null
+        }
+      ]
+    },
+    {
+      "id": "isolation",
+      "package": "isolation",
+      "datasets": [
+        {
+          "id": "main",
+          "path": "dataset.json",
+          "schema": null
+        }
+      ]
+    },
+    {
+      "id": "manifest",
+      "package": "manifest",
+      "datasets": [
+        {
+          "id": "main",
+          "path": "dataset.yaml",
+          "schema": null
+        }
+      ]
+    },
+    {
+      "id": "verification",
+      "package": "verification",
+      "datasets": [
+        {
+          "id": "main",
+          "path": "dataset.json",
+          "schema": null
+        }
+      ]
+    }
+  ]
+}

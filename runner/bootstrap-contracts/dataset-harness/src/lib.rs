@@ -135,13 +135,8 @@ pub fn run_dataset(
     path: impl AsRef<Path>,
     mut validate: impl FnMut(&Dataset, &DatasetCase) -> Result<(), String>,
 ) -> Result<usize, String> {
-    let path = path.as_ref();
-    let schema_path = path.with_file_name("dataset.schema.json");
-    run_dataset_inner(
-        path,
-        schema_path.is_file().then_some(schema_path.as_path()),
-        &mut validate,
-    )
+    let (path, schema_path) = select_dataset_paths(path.as_ref(), None);
+    run_dataset_inner(&path, schema_path.as_deref(), &mut validate)
 }
 
 /// Run a dataset after validating its envelope, inputs, and expected values
@@ -151,7 +146,37 @@ pub fn run_dataset_with_schema(
     schema_path: impl AsRef<Path>,
     mut validate: impl FnMut(&Dataset, &DatasetCase) -> Result<(), String>,
 ) -> Result<usize, String> {
-    run_dataset_inner(path.as_ref(), Some(schema_path.as_ref()), &mut validate)
+    let (path, schema_path) = select_dataset_paths(path.as_ref(), Some(schema_path.as_ref()));
+    run_dataset_inner(&path, schema_path.as_deref(), &mut validate)
+}
+
+fn select_dataset_paths(
+    default_path: &Path,
+    default_schema: Option<&Path>,
+) -> (std::path::PathBuf, Option<std::path::PathBuf>) {
+    let selected_path = std::env::var_os("OPEN_CONTRACT_BOOTSTRAP_DATASET_PATH");
+    std::env::remove_var("OPEN_CONTRACT_BOOTSTRAP_DATASET_PATH");
+    let path = selected_path
+        .map(std::path::PathBuf::from)
+        .unwrap_or_else(|| default_path.to_path_buf());
+
+    let selected_schema = std::env::var_os("OPEN_CONTRACT_BOOTSTRAP_DATASET_SCHEMA");
+    std::env::remove_var("OPEN_CONTRACT_BOOTSTRAP_DATASET_SCHEMA");
+    let schema_path = match selected_schema {
+        Some(schema) => {
+            if schema.is_empty() {
+                return (path, None);
+            }
+            Some(std::path::PathBuf::from(schema))
+        }
+        None => default_schema
+            .map(std::path::Path::to_path_buf)
+            .or_else(|| {
+                let adjacent = path.with_file_name("dataset.schema.json");
+                adjacent.is_file().then_some(adjacent)
+            }),
+    };
+    (path, schema_path)
 }
 
 fn run_dataset_inner(

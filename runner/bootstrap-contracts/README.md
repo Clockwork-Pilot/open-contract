@@ -69,6 +69,17 @@ An omitted fingerprint is reported as the all-zero sentinel
 Open Contract consumer datasets continue to follow the Open Contract schema,
 including their required coverage fingerprints.
 
+The shared LLVM coverage checker reads `datasets.manifest.json` in this
+directory as the authoritative list of packages handled by that checker. (The
+`predicates` contract retains its separate coverage checker.) Each package
+declares one or more ordered dataset entries with a stable ID, package-relative
+path, and a schema path or `null` for the harness's adjacent-schema behavior.
+Dataset IDs and paths must be
+unique within a contract; missing, duplicate, or out-of-package declarations
+fail before the runner starts. Each existing per-contract Make target runs all
+of its declared datasets, preserves case fingerprints in their own dataset
+files, and aggregates coverage across that contract's datasets only.
+
 Run all bootstrap contract checks from the Open Contract repository root:
 
 ```sh

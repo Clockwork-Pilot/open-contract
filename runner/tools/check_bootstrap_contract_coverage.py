@@ -6,6 +6,7 @@ from __future__ import annotations
 import json
 import hashlib
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -32,18 +33,22 @@ def main() -> int:
     if not manifest.is_file():
         print(f"Rust contract package not found: {manifest}", file=sys.stderr)
         return 2
-    dataset_path = next(
-        (package / name for name in ("dataset.json", "dataset.yaml", "dataset.yml")
-         if (package / name).is_file()),
-        None,
-    )
-    if dataset_path is None:
-        print(f"dataset file not found under {package}", file=sys.stderr)
-        return 2
     try:
-        dataset = load_dataset(dataset_path)
+        contract_id, declarations = load_dataset_declarations(package)
+        datasets = []
+        for declaration in declarations:
+            dataset_path = package / declaration["path"]
+            try:
+                dataset = load_dataset(dataset_path)
+            except (ValueError, OSError) as error:
+                schema = declaration["schema"] or "<none>"
+                raise ValueError(
+                    f"{contract_id} dataset {declaration['id']} path {declaration['path']} "
+                    f"schema {schema}: {error}"
+                ) from error
+            datasets.append((declaration, dataset_path, dataset))
     except (ValueError, OSError) as error:
-        print(f"invalid dataset coverage fingerprint: {error}", file=sys.stderr)
+        print(f"invalid bootstrap dataset manifest for {package}: {error}", file=sys.stderr)
         return 2
 
     environment = dict(os.environ)
@@ -60,20 +65,17 @@ def main() -> int:
     repository_root = Path(__file__).resolve().parents[2]
     artifacts = repository_root / ".coverage" / "bootstrap-contracts"
     artifacts.mkdir(parents=True, exist_ok=True)
-    for stale_profile in artifacts.glob(f"{package.name}-*.profraw"):
+    for stale_profile in artifacts.glob(f"{contract_id}-*.profraw"):
         stale_profile.unlink(missing_ok=True)
-    report = artifacts / f"{package.name}-rust.json"
-    snapshots_path = artifacts / f"{package.name}-case-profiles.bin"
-    binary_record = artifacts / f"{package.name}-dataset-binary.path"
-    aggregate_profile = artifacts / f"{package.name}-dataset.profraw"
-    indexed_profile = artifacts / f"{package.name}-dataset.profdata"
-    for artifact in (report, snapshots_path, binary_record, aggregate_profile, indexed_profile):
+    report = artifacts / f"{contract_id}-rust.json"
+    binary_record = artifacts / f"{contract_id}-dataset-binary.path"
+    indexed_profile = artifacts / f"{contract_id}-dataset.profdata"
+    for artifact in (report, binary_record, indexed_profile):
         artifact.unlink(missing_ok=True)
-    environment["OPEN_CONTRACT_BOOTSTRAP_COVERAGE_SNAPSHOTS"] = str(snapshots_path)
-    environment["CARGO_TARGET_DIR"] = str(artifacts / f"{package.name}-cargo-target")
+    environment["CARGO_TARGET_DIR"] = str(artifacts / f"{contract_id}-cargo-target")
     # Keep any raw profiles emitted by Cargo or test helpers under the ignored
     # Open Contract coverage directory, never beside a bootstrap contract.
-    environment["LLVM_PROFILE_FILE"] = str(artifacts / f"{package.name}-%m-%p.profraw")
+    environment["LLVM_PROFILE_FILE"] = str(artifacts / f"{contract_id}-%m-%p.profraw")
     rustflags = environment.get("RUSTFLAGS", "").strip()
     environment["RUSTFLAGS"] = (
         f"{rustflags} -Cinstrument-coverage --cfg=coverage --check-cfg=cfg(coverage) "
@@ -115,19 +117,11 @@ def main() -> int:
     binary_record.write_text(
         f"{os.path.relpath(binary, package)}\n", encoding="utf-8"
     )
-    environment["LLVM_PROFILE_FILE"] = str(aggregate_profile)
     arguments = []
     if unit_dataset_test.is_file():
         arguments = ["--exact", "dataset_runner_test::dataset_entries_exercise_public_api"]
     elif dataset_test.is_file():
         arguments = ["dataset_entries_exercise_public_api"]
-    result = subprocess.run([str(binary), *arguments], cwd=package, env=environment, check=False)
-    if result.returncode:
-        return result.returncode
-    if not snapshots_path.is_file():
-        print("dataset harness did not emit per-case coverage snapshots", file=sys.stderr)
-        return 2
-
     llvm_cov, llvm_profdata = llvm_tools(environment)
     source_files = sorted(
         path.relative_to(package).as_posix()
@@ -136,10 +130,100 @@ def main() -> int:
     if not source_files:
         print(f"no Rust implementation sources found under {package / 'src'}", file=sys.stderr)
         return 2
+    aggregate_profiles = []
+    mismatch_messages = []
+    fingerprint_updates = []
+    debug_selection = os.environ.get("OPEN_CONTRACT_DEBUG_FINGERPRINT_CASE", "").strip()
+    debug_all_mismatches = debug_selection.lower() in {"1", "true", "yes", "on"}
+    debug_case = None if not debug_selection or debug_all_mismatches else debug_selection
+    for declaration, dataset_path, dataset in datasets:
+        print(
+            f"Running {contract_id} dataset {declaration['id']} ({declaration['path']})",
+            flush=True,
+        )
+        dataset_tag = safe_dataset_tag(declaration["id"])
+        snapshots_path = artifacts / f"{contract_id}-{dataset_tag}-case-profiles.bin"
+        aggregate_profile = artifacts / f"{contract_id}-{dataset_tag}.profraw"
+        snapshots_path.unlink(missing_ok=True)
+        aggregate_profile.unlink(missing_ok=True)
+        dataset_environment = dict(environment)
+        dataset_environment["OPEN_CONTRACT_BOOTSTRAP_DATASET_PATH"] = str(dataset_path.resolve())
+        schema = declaration["schema"]
+        if schema is None:
+            dataset_environment.pop("OPEN_CONTRACT_BOOTSTRAP_DATASET_SCHEMA", None)
+        else:
+            dataset_environment["OPEN_CONTRACT_BOOTSTRAP_DATASET_SCHEMA"] = str(
+                (package / schema).resolve()
+            )
+        dataset_environment["OPEN_CONTRACT_BOOTSTRAP_COVERAGE_SNAPSHOTS"] = str(snapshots_path)
+        dataset_environment["LLVM_PROFILE_FILE"] = str(aggregate_profile)
+        result = subprocess.run(
+            [str(binary), *arguments], cwd=package, env=dataset_environment,
+            check=False, capture_output=True, text=True,
+        )
+        if result.returncode:
+            schema = declaration["schema"] or "<none>"
+            print(
+                f"{contract_id} dataset {declaration['id']} path {declaration['path']} "
+                f"schema {schema}: runner failed",
+                file=sys.stderr,
+            )
+            if result.stdout:
+                print(result.stdout, file=sys.stderr, end="")
+            if result.stderr:
+                print(result.stderr, file=sys.stderr, end="")
+            return result.returncode
+        if not snapshots_path.is_file() or not aggregate_profile.is_file():
+            schema = declaration["schema"] or "<none>"
+            print(
+                f"{contract_id} dataset {declaration['id']} path {declaration['path']} "
+                f"schema {schema}: runner did not emit coverage profiles",
+                file=sys.stderr,
+            )
+            return 2
+        try:
+            snapshots = read_snapshots(snapshots_path)
+            case_ids = [case["id"] for case in dataset["cases"]]
+            if case_ids != [case_id for case_id, _ in snapshots]:
+                raise ValueError("coverage snapshots do not match dataset case order")
+            fingerprints = calculate_case_fingerprints(
+                snapshots, binary, package, llvm_cov, llvm_profdata, source_files, artifacts
+            )
+        except (OSError, ValueError, RuntimeError) as error:
+            schema = declaration["schema"] or "<none>"
+            print(
+                f"{contract_id} dataset {declaration['id']} path {declaration['path']} "
+                f"schema {schema}: {error}",
+                file=sys.stderr,
+            )
+            return 2
+        for case, (case_id, actual, inputs) in zip(dataset["cases"], fingerprints):
+            mismatch = fingerprint_mismatch(case, actual)
+            if case_id == debug_case or (debug_all_mismatches and mismatch):
+                print(
+                    f"Fingerprint inputs for {contract_id} dataset {declaration['id']} "
+                    f"case {case_id} (observed {actual}):"
+                )
+                print(json.dumps(inputs, separators=(",", ":")))
+            if mismatch:
+                schema = declaration["schema"] or "<none>"
+                mismatch_messages.append(
+                    f"{contract_id} dataset {declaration['id']} case {case_id} "
+                    f"schema {schema}: "
+                    f"expected {declared_fingerprint(case)}, observed {actual}"
+                )
+            if update_fingerprints:
+                old = declared_fingerprint(case)
+                if old != actual:
+                    fingerprint_updates.append((declaration["id"], case_id, old, actual))
+                case["coverage_fingerprint"] = actual
+        if update_fingerprints:
+            write_dataset(dataset_path, dataset)
+        aggregate_profiles.append(aggregate_profile)
+
     merged = subprocess.run(
-        [llvm_profdata, "merge", "-sparse", str(aggregate_profile), "-o", str(indexed_profile)],
-        check=False, capture_output=True, text=True,
-        cwd=package,
+        [llvm_profdata, "merge", "-sparse", *map(str, aggregate_profiles), "-o", str(indexed_profile)],
+        check=False, capture_output=True, text=True, cwd=package,
     )
     if merged.returncode:
         print(merged.stderr, file=sys.stderr, end="")
@@ -183,53 +267,14 @@ def main() -> int:
         f"lines {dataset_covered}/{dataset_total} ({percentage(dataset_covered, dataset_total):.1f}%), "
         f"regions {dataset_regions_covered}/{dataset_regions_total} ({percentage(dataset_regions_covered, dataset_regions_total):.1f}%)"
     )
-    try:
-        snapshots = read_snapshots(snapshots_path)
-        if [case["id"] for case in dataset["cases"]] != [case_id for case_id, _ in snapshots]:
-            print("dataset coverage snapshots do not match dataset case order", file=sys.stderr)
-            return 2
-        case_fingerprints = calculate_case_fingerprints(
-            snapshots, binary, package, llvm_cov, llvm_profdata, source_files, artifacts
-        )
-    except (OSError, ValueError, RuntimeError) as error:
-        print(f"cannot calculate per-case coverage fingerprints: {error}", file=sys.stderr)
-        return 2
-    case_mismatches = []
-    debug_selection = os.environ.get("OPEN_CONTRACT_DEBUG_FINGERPRINT_CASE", "").strip()
-    debug_all_mismatches = debug_selection.lower() in {"1", "true", "yes", "on"}
-    debug_case = None if not debug_selection or debug_all_mismatches else debug_selection
-    for case, (case_id, actual, inputs) in zip(dataset["cases"], case_fingerprints):
-        expected = declared_fingerprint(case)
-        mismatch = fingerprint_mismatch(case, actual)
-        if case_id == debug_case or (debug_all_mismatches and mismatch):
-            print(f"Fingerprint inputs for case {case_id} (observed {actual}):")
-            print(json.dumps(inputs, separators=(",", ":")))
-        if mismatch:
-            case_mismatches.append(f"{case_id}: expected {expected}, observed {actual}")
     if update_fingerprints:
-        changed = []
-        for case, (_, actual, _) in zip(dataset["cases"], case_fingerprints):
-            old = declared_fingerprint(case)
-            if old != actual:
-                changed.append((case["id"], old, actual))
-            case["coverage_fingerprint"] = actual
-        if dataset_path.suffix == ".json":
-            serialized = json.dumps(dataset, indent=2, ensure_ascii=False) + "\n"
-        else:
-            try:
-                import yaml
-            except ImportError as error:
-                print(f"PyYAML is required to update YAML datasets: {error}", file=sys.stderr)
-                return 2
-            serialized = yaml.safe_dump(dataset, sort_keys=False, allow_unicode=True)
-        dataset_path.write_text(serialized, encoding="utf-8")
-        print(f"Updated {len(changed)} changed coverage fingerprints in {dataset_path}")
-        for case_id, old, actual in changed:
-            print(f"  {case_id}: {old} -> {actual}")
-        case_mismatches = []
-    if case_mismatches:
+        print(f"Updated {len(fingerprint_updates)} coverage fingerprints across {len(datasets)} datasets")
+        for dataset_id, case_id, old, actual in fingerprint_updates:
+            print(f"  {contract_id} dataset {dataset_id} case {case_id}: {old} -> {actual}")
+        mismatch_messages = []
+    if mismatch_messages:
         print("bootstrap dataset coverage fingerprint mismatches:", file=sys.stderr)
-        for mismatch in case_mismatches:
+        for mismatch in mismatch_messages:
             print(f"  {mismatch}", file=sys.stderr)
         return 1
     print(f"Rust coverage report: {report}")
@@ -268,6 +313,126 @@ def load_dataset(path: Path) -> dict:
         if not isinstance(case, dict) or not isinstance(case.get("id"), str):
             raise ValueError("every dataset case must have a string id")
     return dataset
+
+
+def load_dataset_declarations(package: Path) -> tuple[str, list[dict]]:
+    root = package.parent.resolve()
+    manifest_path = root / "datasets.manifest.json"
+    if not manifest_path.is_file():
+        raise ValueError(f"missing declaration manifest {manifest_path}")
+    document = json.loads(manifest_path.read_text(encoding="utf-8"))
+    if not isinstance(document, dict) or set(document) != {"version", "contracts"}:
+        raise ValueError("manifest must contain exactly version and contracts")
+    if document["version"] != 1 or not isinstance(document["contracts"], list):
+        raise ValueError("manifest version must be 1 and contracts must be an array")
+
+    contract_ids = set()
+    package_paths = set()
+    matches = []
+    for contract in document["contracts"]:
+        if not isinstance(contract, dict) or set(contract) != {"id", "package", "datasets"}:
+            raise ValueError("each contract declaration must contain exactly id, package, and datasets")
+        contract_id, package_name, datasets = contract["id"], contract["package"], contract["datasets"]
+        if not valid_manifest_id(contract_id):
+            raise ValueError(f"invalid contract ID {contract_id!r}")
+        if contract_id in contract_ids:
+            raise ValueError(f"duplicate contract ID {contract_id!r}")
+        contract_ids.add(contract_id)
+        if (
+            not isinstance(package_name, str)
+            or not package_name
+            or Path(package_name).is_absolute()
+        ):
+            raise ValueError(f"contract {contract_id}: package must be a nonempty relative path")
+        resolved_package = (root / package_name).resolve()
+        ensure_within(resolved_package, root, f"contract {contract_id} package")
+        if resolved_package in package_paths:
+            raise ValueError(f"duplicate package declaration {package_name!r}")
+        package_paths.add(resolved_package)
+        if not isinstance(datasets, list) or not datasets:
+            raise ValueError(f"contract {contract_id}: datasets must be a nonempty ordered array")
+
+        dataset_ids = set()
+        dataset_paths = set()
+        for declaration in datasets:
+            if not isinstance(declaration, dict) or set(declaration) != {"id", "path", "schema"}:
+                raise ValueError(f"contract {contract_id}: each dataset must contain exactly id, path, and schema")
+            dataset_id, dataset_name, schema_name = (
+                declaration["id"], declaration["path"], declaration["schema"]
+            )
+            if not valid_manifest_id(dataset_id):
+                raise ValueError(f"contract {contract_id}: invalid dataset ID {dataset_id!r}")
+            if dataset_id in dataset_ids:
+                raise ValueError(f"contract {contract_id}: duplicate dataset ID {dataset_id!r}")
+            dataset_ids.add(dataset_id)
+            if (
+                not isinstance(dataset_name, str)
+                or not dataset_name
+                or Path(dataset_name).is_absolute()
+            ):
+                raise ValueError(f"contract {contract_id} dataset {dataset_id}: path must be a relative file")
+            if Path(dataset_name).suffix not in {".json", ".yaml", ".yml"}:
+                raise ValueError(
+                    f"contract {contract_id} dataset {dataset_id}: unsupported dataset format {dataset_name!r}"
+                )
+            dataset_file = (resolved_package / dataset_name).resolve()
+            ensure_within(dataset_file, resolved_package, f"contract {contract_id} dataset {dataset_id}")
+            if dataset_file in dataset_paths:
+                raise ValueError(f"contract {contract_id}: duplicate dataset path {dataset_name!r}")
+            dataset_paths.add(dataset_file)
+            if not dataset_file.is_file():
+                raise ValueError(f"contract {contract_id} dataset {dataset_id}: missing file {dataset_name}")
+            if schema_name is not None:
+                if (
+                    not isinstance(schema_name, str)
+                    or not schema_name
+                    or Path(schema_name).is_absolute()
+                ):
+                    raise ValueError(f"contract {contract_id} dataset {dataset_id}: schema must be a relative file or null")
+                if Path(schema_name).suffix != ".json":
+                    raise ValueError(
+                        f"contract {contract_id} dataset {dataset_id}: schema must be a JSON file"
+                    )
+                schema_file = (resolved_package / schema_name).resolve()
+                ensure_within(schema_file, resolved_package, f"contract {contract_id} dataset {dataset_id} schema")
+                if not schema_file.is_file():
+                    raise ValueError(f"contract {contract_id} dataset {dataset_id}: missing schema {schema_name}")
+            else:
+                schema_file = None
+        if resolved_package == package:
+            matches.append((contract_id, datasets))
+    if not matches:
+        raise ValueError(f"no contract declaration for package {package.relative_to(root)}")
+    if len(matches) != 1:
+        raise ValueError(f"multiple contract declarations for package {package.relative_to(root)}")
+    return matches[0]
+
+
+def valid_manifest_id(value: object) -> bool:
+    return isinstance(value, str) and re.fullmatch(r"[a-z0-9][a-z0-9._-]*", value) is not None
+
+
+def ensure_within(path: Path, root: Path, label: str) -> None:
+    try:
+        path.relative_to(root)
+    except ValueError as error:
+        raise ValueError(f"{label} path escapes its declared root: {path}") from error
+
+
+def safe_dataset_tag(dataset_id: str) -> str:
+    return re.sub(r"[^a-zA-Z0-9_.-]", "_", dataset_id)
+
+
+def write_dataset(path: Path, dataset: dict) -> None:
+    if path.suffix == ".json":
+        serialized = json.dumps(dataset, indent=2, ensure_ascii=False) + "\n"
+    else:
+        try:
+            import yaml
+        except ImportError as error:
+            raise ValueError("PyYAML is required to update YAML datasets") from error
+        serialized = yaml.safe_dump(dataset, sort_keys=False, allow_unicode=True)
+    path.write_text(serialized, encoding="utf-8")
 
 
 def coverage_fingerprint(sources: list[dict], package: Path) -> str:

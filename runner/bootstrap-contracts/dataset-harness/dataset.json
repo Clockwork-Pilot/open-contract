@@ -142,7 +142,7 @@
         "extension": "json",
         "document": "{\"version\":1,\"cases\":[{\"id\":\"one\",\"input\":1,\"expected\":1},{\"id\":\"two\",\"input\":2,\"predicate\":\"true\"}]}"
       },
-      "coverage_fingerprint": "4de0ff0cdb00433b8aa502c0fa2a557e",
+      "coverage_fingerprint": "627f8c31bbc474588494d4d87abc7329",
       "expected": {
         "ok": true
       }
@@ -156,7 +156,7 @@
         "document": "{\"version\":2,\"cases\":[{\"id\":\"one\",\"input\":1,\"expected\":1}]}",
         "error": "unsupported bootstrap dataset version 2"
       },
-      "coverage_fingerprint": "caf9349c527666ed8fc65e19ad783a30",
+      "coverage_fingerprint": "6a62fc7b844bc53e88dc1b4696e2f8ec",
       "expected": {
         "ok": true
       }
@@ -170,7 +170,7 @@
         "document": "{\"version\":1,\"cases\":[]}",
         "error": "dataset must contain at least one case"
       },
-      "coverage_fingerprint": "6bc2e8990dfdfe40ea85b1aac2be13aa",
+      "coverage_fingerprint": "01e8b88ae14495163769bcb3e65a22b0",
       "expected": {
         "ok": true
       }
@@ -184,7 +184,7 @@
         "document": "{\"version\":1,\"cases\":[{\"id\":\"no-result\",\"input\":1}]}",
         "error": "expected or predicate is required"
       },
-      "coverage_fingerprint": "b1dae2c8bdfcf1239645bdafc1b9b9a9",
+      "coverage_fingerprint": "bec8fdc41e781be5c3a5b2c755e03034",
       "expected": {
         "ok": true
       }
@@ -197,7 +197,7 @@
         "extension": "json",
         "document": "{\"version\":1,\"cases\":[{\"id\":\"bad\",\"input\":1,\"expected\":1},{\"id\":\"good\",\"input\":2,\"expected\":2}]}"
       },
-      "coverage_fingerprint": "ea29bcb52e028fd066887830d123fd38",
+      "coverage_fingerprint": "464385127fc7c3c07d278fc5f6267523",
       "expected": {
         "ok": true
       }
@@ -211,7 +211,7 @@
         "document": "{",
         "error": "invalid dataset JSON"
       },
-      "coverage_fingerprint": "126bfac6a85739d3eb507f37aed9b2b7",
+      "coverage_fingerprint": "9be60f830beb9c211403db43448dcfab",
       "expected": {
         "ok": true
       }
@@ -308,7 +308,7 @@
       "expected": {
         "ok": true
       },
-      "coverage_fingerprint": "0d2d20b6cae95cdab48ea02db13d9a97"
+      "coverage_fingerprint": "5cf5115e66371d3f8fd706b4aaafd5d7"
     },
     {
       "id": "run-schema-auto",
@@ -321,7 +321,7 @@
       "expected": {
         "ok": true
       },
-      "coverage_fingerprint": "e157fe280ae4f4e6b53e44f251c8510a"
+      "coverage_fingerprint": "3becb82cc3684af271c1cf14b959cdab"
     },
     {
       "id": "run-schema-rejects-input",
@@ -335,7 +335,7 @@
       "expected": {
         "ok": true
       },
-      "coverage_fingerprint": "24b3988453b00b2cac5e41c29138431c"
+      "coverage_fingerprint": "43f45b82a91d19f718972ce403429616"
     },
     {
       "id": "run-schema-rejects-duplicate-ids",
@@ -349,7 +349,7 @@
       "expected": {
         "ok": true
       },
-      "coverage_fingerprint": "0d81367c7c22b9a8c07a170273fe621b"
+      "coverage_fingerprint": "0bba70dcf8b0bfde9e8997fd8d1c8319"
     },
     {
       "id": "schema-invalid-dataset-json",
@@ -440,6 +440,32 @@
         "ok": true
       },
       "coverage_fingerprint": "3b1c101f95c3fb3edd7237003f5d975b"
+    },
+    {
+      "id": "run-schema-explicit-selection",
+      "input": {
+        "operation": "schema-run-selected",
+        "extension": "json",
+        "document": "{\"version\":1,\"cases\":[{\"id\":\"sample\",\"input\":{\"value\":7},\"expected\":7}]}",
+        "schema_document": "{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"required\":[\"version\",\"cases\"],\"properties\":{\"version\":{\"const\":1},\"cases\":{\"type\":\"array\",\"minItems\":1,\"items\":{\"type\":\"object\",\"required\":[\"id\",\"input\",\"expected\"],\"properties\":{\"id\":{\"type\":\"string\",\"minLength\":1},\"input\":{\"type\":\"object\",\"required\":[\"value\"],\"properties\":{\"value\":{\"type\":\"integer\"}},\"additionalProperties\":false},\"expected\":{\"type\":\"integer\"},\"coverage_fingerprint\":{\"type\":\"string\"}},\"additionalProperties\":false}}},\"additionalProperties\":false}"
+      },
+      "expected": {
+        "ok": true
+      },
+      "coverage_fingerprint": "d8e722b702f7e9b2c366108fc52d6b28"
+    },
+    {
+      "id": "run-schema-explicit-no-schema-selection",
+      "input": {
+        "operation": "schema-run-selected-no-schema",
+        "extension": "json",
+        "document": "{\"version\":1,\"cases\":[{\"id\":\"sample\",\"input\":{\"value\":7},\"expected\":7}]}",
+        "schema_document": "{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"required\":[\"version\",\"cases\"],\"properties\":{\"version\":{\"const\":1},\"cases\":{\"type\":\"array\",\"minItems\":1,\"items\":{\"type\":\"object\",\"required\":[\"id\",\"input\",\"expected\"],\"properties\":{\"id\":{\"type\":\"string\",\"minLength\":1},\"input\":{\"type\":\"object\",\"required\":[\"value\"],\"properties\":{\"value\":{\"type\":\"integer\"}},\"additionalProperties\":false},\"expected\":{\"type\":\"integer\"},\"coverage_fingerprint\":{\"type\":\"string\"}},\"additionalProperties\":false}}},\"additionalProperties\":false}"
+      },
+      "expected": {
+        "ok": true
+      },
+      "coverage_fingerprint": "fca01e74d7b00d6198d6389f254d71f4"
     }
   ]
 }
