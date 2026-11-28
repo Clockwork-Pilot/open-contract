@@ -22,7 +22,7 @@
       },
       "expected": {},
       "predicate": "exists(.results)",
-      "coverage_fingerprint": "7fcfcf36cf2d33fa719cf350ffeaa440"
+      "coverage_fingerprint": "042b7a5960c253f59e1312aab79d69ae"
     },
     {
       "id": "per-dataset-yaml-schema-rejects-invalid-input-before-adapter",

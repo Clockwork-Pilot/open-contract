@@ -27,7 +27,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "3e544025164f40c3b83f2121530f78d7"
+      "coverage_fingerprint": "e8258e3415e9b79f26aead0c11ff097a"
     },
     {
       "id": "dataset-adapter-unexpected-error",
@@ -56,7 +56,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "298ff42212d6d3d5b7835cde77e8b4d6",
+      "coverage_fingerprint": "b36d3dd2b3c7c01609855e9d1a557868",
       "predicate": "contains(.results.0.error, 'output did not match expected subset')"
     },
     {
@@ -86,7 +86,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "ce1c59459c3709e6bac87733ed632b80",
+      "coverage_fingerprint": "799e130fa00d4bdcc241a49e2634bb2a",
       "predicate": "contains(.results.0.error, 'neither output nor error')"
     },
     {
@@ -110,7 +110,7 @@
         }
       },
       "expected": {},
-      "coverage_fingerprint": "725f33a324733197f785d09e30aff1cf",
+      "coverage_fingerprint": "3221841ad28f611221206f47a75d910e",
       "predicate": "contains(.error, 'adapter omitted result')"
     },
     {
@@ -140,7 +140,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "38c58405bc4fe3327b9e1a85ea4db8bb",
+      "coverage_fingerprint": "5b24c782a1736a9afd22adfed73c2017",
       "predicate": "contains(.results.0.error, 'coverage fingerprint unavailable')"
     },
     {
@@ -164,7 +164,7 @@
         }
       },
       "expected": {},
-      "coverage_fingerprint": "04cd38e96bb6f8294ea7750df14ba42e",
+      "coverage_fingerprint": "d00e05c0521efee99c97ec9f603723d8",
       "predicate": "contains(.error, 'duplicate result keys')"
     },
     {
@@ -188,7 +188,7 @@
         }
       },
       "expected": {},
-      "coverage_fingerprint": "0d88fb564b87df6112b41cdcaba27944",
+      "coverage_fingerprint": "dd8ce0e5fcd1da2e5fc53b6b329500ea",
       "predicate": "contains(.error, 'results that were not requested')"
     },
     {
@@ -212,7 +212,7 @@
         }
       },
       "expected": {},
-      "coverage_fingerprint": "f00320a8f03231110700dca6b78da2cd",
+      "coverage_fingerprint": "7ca9a4cabb2ede7a2c74402097c999c4",
       "predicate": "contains(.error, 'must stay within the package')"
     },
     {
@@ -236,7 +236,7 @@
         }
       },
       "expected": {},
-      "coverage_fingerprint": "4de4f9a7e15104aa86793087e3e928d3",
+      "coverage_fingerprint": "254dbe5782ae48de4f3e6a5289b8bf5d",
       "predicate": "contains(.error, 'unrequested execution key')"
     },
     {
@@ -260,7 +260,7 @@
         }
       },
       "expected": {},
-      "coverage_fingerprint": "ae624ec11996b2842e130d7de24f6353",
+      "coverage_fingerprint": "48afd4d0047e0b944f8cf2d7100c81ad",
       "predicate": "contains(.error, 'duplicate coverage scope')"
     },
     {
@@ -284,7 +284,7 @@
         }
       },
       "expected": {},
-      "coverage_fingerprint": "8a59754e87589e7b3348c6704dbf6793",
+      "coverage_fingerprint": "e300e9e69f89c7c1b6cfe768da647dd1",
       "predicate": "contains(.error, 'line numbers must be positive')"
     },
     {
@@ -313,7 +313,7 @@
         }
       },
       "expected": {},
-      "coverage_fingerprint": "16b207ad68b397f26b1d1a3cfeeb4690",
+      "coverage_fingerprint": "0661c24c113b218195bcbecfb45617e8",
       "predicate": "contains(.error, 'adapter omitted result')"
     },
     {
@@ -386,7 +386,7 @@
       },
       "expected": {},
       "predicate": "contains(.error, 'every covered line must be executable')",
-      "coverage_fingerprint": "0b89c970eca751cafed00677b63a100c"
+      "coverage_fingerprint": "6ce7dac1dc90febeec19ce3e22be101d"
     },
     {
       "id": "dataset-adapter-no-line-coverage",
@@ -415,7 +415,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "4cf80732d2aa5b6390a84e2eb0a533d7"
+      "coverage_fingerprint": "9d9b5b3116b51fa8c44c33a428cb86ee"
     },
     {
       "id": "dataset-adapter-empty-coverage-scope",
@@ -444,7 +444,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "6b98ad62bbed9483764ecf892c04ca3a",
+      "coverage_fingerprint": "4edef21541ae79f157cae901fedb1801",
       "predicate": "contains(.results.0.error, 'zero covered lines')"
     },
     {
@@ -475,7 +475,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "298ff42212d6d3d5b7835cde77e8b4d6",
+      "coverage_fingerprint": "b36d3dd2b3c7c01609855e9d1a557868",
       "predicate": "contains(.results.0.error, 'output did not match expected subset')"
     },
     {
@@ -510,7 +510,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "b1f5d56019f852a62b8f2f34a4b3dbd4",
+      "coverage_fingerprint": "4a026a3d78bdefee43f83202aeff6bf9",
       "predicate": "contains(.results.0.error, 'coverage fingerprint unavailable')"
     },
     {
@@ -547,7 +547,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "76cf021dcc1e6672a0bab8c906b201fb"
+      "coverage_fingerprint": "4d3281a3411863c562f3e90a85df86e1"
     },
     {
       "id": "dataset-adapter-empty-coverage-files",
@@ -576,7 +576,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "b87ecd6eeda53c82f710f9fd9d4078f9",
+      "coverage_fingerprint": "868645dda4f5ccec6d8daa53d752adaf",
       "predicate": "contains(.results.0.error, 'zero covered lines')"
     },
     {
@@ -600,7 +600,7 @@
         }
       },
       "expected": {},
-      "coverage_fingerprint": "797f0f591e54e29347a783baf2809098",
+      "coverage_fingerprint": "82a773e9328332a9afe2c758acdb0482",
       "predicate": "contains(.error, 'undeclared contract source')"
     },
     {
@@ -630,7 +630,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "c84db2ed91388c654961724d31074c4d"
+      "coverage_fingerprint": "5c1cf9c33026b77529ebd6ed2c543890"
     },
     {
       "id": "dataset-adapter-escaped-coverage-path",
@@ -659,7 +659,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "ca1242004718bdc117198ef30d1a6b62"
+      "coverage_fingerprint": "7268f4a36a7bd7a7a61ac32e3bdd314c"
     },
     {
       "id": "dataset-adapter-native-coverage-no-sources",
@@ -692,7 +692,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "2b6e2caf0efcac6061969edf99806d9b"
+      "coverage_fingerprint": "a6dcd8b7bcb364bccabbae2598b0e8ad"
     },
     {
       "id": "dataset-adapter-native-coverage-non-string-source",
@@ -725,7 +725,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "fea1d15c430e6b343073599a62cfa6bc"
+      "coverage_fingerprint": "37dab83a2c148b6f068577cabea42052"
     },
     {
       "id": "dataset-adapter-native-coverage-undeclared-source",
@@ -749,7 +749,7 @@
         }
       },
       "expected": {},
-      "coverage_fingerprint": "309b2f05202da3e09f616299aa7def19",
+      "coverage_fingerprint": "7a8e6dec02dcf6678667e640d1d805c9",
       "predicate": "contains(.error, 'outside coverage_sources')"
     },
     {
@@ -780,7 +780,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "c84db2ed91388c654961724d31074c4d"
+      "coverage_fingerprint": "5c1cf9c33026b77529ebd6ed2c543890"
     },
     {
       "id": "dataset-adapter-preserves-input-and-context",
@@ -877,7 +877,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "ccfaf600e952908f341e66ce5c5809e7"
+      "coverage_fingerprint": "5ae8b148d15d1cdf1ca633b0a0d25ca7"
     },
     {
       "id": "dataset-adapter-union-coverage",
@@ -947,7 +947,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "eb0be258c2f7e8d5fa8f079fb9fe0a63"
+      "coverage_fingerprint": "49006deb5b41b727f9d7108e7e1ff13e"
     },
     {
       "id": "dataset-adapter-missing-result-dataset-identity",
@@ -970,7 +970,7 @@
       },
       "expected": {},
       "predicate": "contains(.error, 'adapter result has no dataset identity')",
-      "coverage_fingerprint": "4b9ecff76e39b296dd4de6da54e388fb"
+      "coverage_fingerprint": "3046e806437e582a4bd1196d5367307e"
     },
     {
       "id": "dataset-adapter-missing-scope-dataset-identity",
@@ -993,7 +993,7 @@
       },
       "expected": {},
       "predicate": "contains(.error, 'coverage scope has no dataset identity')",
-      "coverage_fingerprint": "3a61b020e406469d2b2e3c03d43546e5"
+      "coverage_fingerprint": "48fc9aa13301b6aecd99064b9e2c5145"
     },
     {
       "id": "dataset-adapter-invalid-result-dataset-identity",
@@ -1016,7 +1016,7 @@
       },
       "expected": {},
       "predicate": "contains(.error, 'adapter result has invalid dataset identity')",
-      "coverage_fingerprint": "4d0344848954559d0fc6dad2217b858a"
+      "coverage_fingerprint": "da605028c946191372e805ec9c2a8a3c"
     },
     {
       "id": "dataset-adapter-invalid-scope-dataset-identity",
@@ -1039,7 +1039,47 @@
       },
       "expected": {},
       "predicate": "contains(.error, 'coverage scope has invalid dataset identity')",
-      "coverage_fingerprint": "0281941f32c809c43901d21e585c973f"
+      "coverage_fingerprint": "33fabc3cb9f5f6f4c098f62dac1a8f84"
+    },
+    {
+      "id": "dataset-adapter-entity-coverage-source-undeclared",
+      "setup": "dataset-adapter-entity-coverage-source-undeclared",
+      "input": {
+        "dataset": {
+          "version": 1,
+          "cases": [
+            {
+              "id": "public-case",
+              "input": {
+                "value": "actual"
+              },
+              "expected": {
+                "value": "actual"
+              },
+              "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
+            }
+          ]
+        },
+        "coverage_entities": [
+          {
+            "path": "private.py",
+            "metric": "function",
+            "name": "validate",
+            "location": {
+              "precision": "line",
+              "start_line": 1,
+              "start_column": null,
+              "end_line": 1,
+              "end_column": null
+            },
+            "status": "covered",
+            "count": 1
+          }
+        ]
+      },
+      "expected": {},
+      "predicate": "contains(.error, 'entity coverage for source outside coverage_sources')",
+      "coverage_fingerprint": "9613de77d50c9742d822213b74dbc2b5"
     }
   ]
 }

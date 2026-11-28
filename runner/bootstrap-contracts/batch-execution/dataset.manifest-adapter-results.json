@@ -50,7 +50,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "55b961e5d34e144d7197ee53f5bb29c7"
+      "coverage_fingerprint": "667bafa76b2b34f492e0696c1be25d9e"
     },
     {
       "id": "manifest-adapter-missing-execution",
@@ -242,7 +242,7 @@
       },
       "expected": {},
       "predicate": "contains(.error, 'every covered line must be executable')",
-      "coverage_fingerprint": "29d4f96255cb05a467a8fdcdb228604d"
+      "coverage_fingerprint": "4ef75edaf036169c50563e212fc10d77"
     },
     {
       "id": "manifest-adapter-returns-no-results",

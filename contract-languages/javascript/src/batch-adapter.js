@@ -192,7 +192,7 @@ const coverage = {
 	sources: [...new Set(files.map((item) => item.url))].sort(),
 	result: files,
 };
-const coverageMetrics = await normalizedCoverageMetrics(
+const coverageDetails = await normalizedCoverageMetrics(
 	coverageSnapshots, packageRoot, request.coverage_sources ?? [], coverageLines,
 );
 const scopes = request.coverage_fingerprints === false
@@ -206,7 +206,8 @@ return {
 	coverage,
 	coverage_scopes: scopes,
 	coverage_lines: coverageLines,
-	coverage_metrics: coverageMetrics,
+	coverage_metrics: coverageDetails.metrics,
+	coverage_entities: coverageDetails.entities,
 	additional_test_coverage: additionalTestCoverage,
 	additional_coverage_lines: additionalCoverageLines,
 };
@@ -233,6 +234,7 @@ async function normalizedCoverageMetrics(snapshots, sourceRoot, declaredSources,
 		}
 	}
 	const metrics = new Map();
+	const entities = [];
 	const add = (name, file) => {
 		const metric = metrics.get(name) ?? { covered: 0, total: 0, files: [] };
 		metric.covered += file.covered;
@@ -241,6 +243,12 @@ async function normalizedCoverageMetrics(snapshots, sourceRoot, declaredSources,
 		metrics.set(name, metric);
 	};
 	for (const file of coverageLines) {
+		const coveredLines = new Set(file.covered_lines);
+		for (const line of file.executable_lines) {
+			entities.push(entity(file.path, 'line', null, {
+				precision: 'line', start_line: line, start_column: null, end_line: line, end_column: null,
+			}, coveredLines.has(line) ? 'covered' : 'uncovered', null));
+		}
 		add('line', {
 			path: file.path,
 			covered: file.covered_lines.length,
@@ -251,6 +259,7 @@ async function normalizedCoverageMetrics(snapshots, sourceRoot, declaredSources,
 		const statements = new Map();
 		const functions = new Map();
 		const branches = new Map();
+		const branchEntities = new Map();
 		for (const profile of profiles.get(filename) ?? []) {
 			const converter = v8ToIstanbul(filename);
 			await converter.load();
@@ -260,18 +269,43 @@ async function normalizedCoverageMetrics(snapshots, sourceRoot, declaredSources,
 			if (!record) continue;
 			for (const [id, location] of Object.entries(record.statementMap ?? {})) {
 				const key = JSON.stringify(location);
-				statements.set(key, { location, covered: (statements.get(key)?.covered ?? false) || Number(record.s?.[id] ?? 0) > 0 });
+				const count = Number(record.s?.[id] ?? 0);
+				const previous = statements.get(key);
+				statements.set(key, {
+					location,
+					covered: (previous?.covered ?? false) || count > 0,
+					count: Math.max(previous?.count ?? 0, count),
+				});
 			}
 			for (const [id, location] of Object.entries(record.fnMap ?? {})) {
 				const key = JSON.stringify(location);
-				functions.set(key, (functions.get(key) ?? false) || Number(record.f?.[id] ?? 0) > 0);
+				const count = Number(record.f?.[id] ?? 0);
+				const previous = functions.get(key);
+				functions.set(key, {
+					location: location.loc ?? location.decl ?? location,
+					name: location.name ?? null,
+					covered: (previous?.covered ?? false) || count > 0,
+					count: Math.max(previous?.count ?? 0, count),
+				});
 			}
 			for (const [id, branch] of Object.entries(record.branchMap ?? {})) {
 				const counts = record.b?.[id] ?? [];
 				for (let index = 0; index < branch.locations.length; index += 1) {
 					const location = branch.locations[index];
 					const key = JSON.stringify(location);
-					branches.set(key, { location, covered: (branches.get(key)?.covered ?? false) || Number(counts[index] ?? 0) > 0 });
+					const count = Number(counts[index] ?? 0);
+					branches.set(key, {
+						location,
+						covered: (branches.get(key)?.covered ?? false) || count > 0,
+					});
+					const entityKey = `${id}:${index}:${key}`;
+					const previous = branchEntities.get(entityKey);
+					branchEntities.set(entityKey, {
+						location,
+						name: `branch ${id}.${index + 1}`,
+						covered: (previous?.covered ?? false) || count > 0,
+						count: Math.max(previous?.count ?? 0, count),
+					});
 				}
 			}
 		}
@@ -286,6 +320,20 @@ async function normalizedCoverageMetrics(snapshots, sourceRoot, declaredSources,
 			branches.set(key, { ...branch, covered: coveredInRange });
 		}
 		const relative = path.relative(sourceRoot, filename).split(path.sep).join('/');
+		let statementIndex = 0;
+		for (const value of statements.values()) {
+			statementIndex += 1;
+			entities.push(entity(relative, 'statement', `statement ${statementIndex}`, value.location,
+				value.covered ? 'covered' : 'uncovered', value.count));
+		}
+		for (const value of functions.values()) {
+			entities.push(entity(relative, 'function', value.name, value.location,
+				value.covered ? 'covered' : 'uncovered', value.count));
+		}
+		for (const value of branchEntities.values()) {
+			entities.push(entity(relative, 'branch', value.name, value.location,
+				value.covered ? 'covered' : 'uncovered', value.count));
+		}
 		for (const [name, values] of [
 			['statement', statements],
 			['function', functions],
@@ -299,10 +347,41 @@ async function normalizedCoverageMetrics(snapshots, sourceRoot, declaredSources,
 			});
 		}
 	}
-	return Object.fromEntries([...metrics.entries()].map(([name, metric]) => [
+	return {
+		metrics: Object.fromEntries([...metrics.entries()].map(([name, metric]) => [
+			name,
+			{ ...metric, files: metric.files.sort((left, right) => left.path.localeCompare(right.path)) },
+		])),
+		entities: entities.sort((left, right) => left.path.localeCompare(right.path)
+			|| left.metric.localeCompare(right.metric)
+			|| (left.location.start_line ?? 0) - (right.location.start_line ?? 0)
+			|| (left.name ?? '').localeCompare(right.name ?? '')),
+	};
+}
+
+function entity(pathname, metric, name, location, status, count) {
+	const start = location?.start ?? {};
+	const end = location?.end ?? {};
+	const startLine = Number(location?.start_line ?? start.line);
+	const endLine = Number(location?.end_line ?? end.line);
+	const startColumn = Number(location?.start_column ?? start.column);
+	const endColumn = Number(location?.end_column ?? end.column);
+	const valid = Number.isInteger(startLine) && startLine > 0;
+	return {
+		path: pathname,
+		metric,
 		name,
-		{ ...metric, files: metric.files.sort((left, right) => left.path.localeCompare(right.path)) },
-	]));
+		location: {
+			precision: location?.precision ?? (valid && Number.isInteger(startColumn) && startColumn >= 0
+				&& Number.isInteger(endColumn) && endColumn >= 0 ? 'column' : valid ? 'line' : 'unavailable'),
+			start_line: valid ? startLine : null,
+			start_column: valid && Number.isInteger(startColumn) && startColumn >= 0 ? startColumn : null,
+			end_line: Number.isInteger(endLine) && endLine > 0 ? endLine : null,
+			end_column: Number.isInteger(endColumn) && endColumn >= 0 ? endColumn : null,
+		},
+		status,
+		count: Number.isFinite(count) && count >= 0 ? count : null,
+	};
 }
 
 async function normalizedLineCoverage(snapshots, sourceRoot, declaredSources) {

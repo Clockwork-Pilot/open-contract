@@ -27,7 +27,7 @@ cases:
       2)
 
       '
-  coverage_fingerprint: d13839645f947be03fe57cbde4a58845
+  coverage_fingerprint: 95c5e265e01287347694f03c8f8ce7a0
 - id: run-manifest-accepts-qualified-open-contract-yaml
   input:
     args:
@@ -44,7 +44,7 @@ cases:
       2)
 
       '
-  coverage_fingerprint: d13839645f947be03fe57cbde4a58845
+  coverage_fingerprint: 95c5e265e01287347694f03c8f8ce7a0
 - id: run-manifest-accepts-prefixed-open-contract-yml
   input:
     args:
@@ -61,7 +61,7 @@ cases:
       2)
 
       '
-  coverage_fingerprint: d13839645f947be03fe57cbde4a58845
+  coverage_fingerprint: 95c5e265e01287347694f03c8f8ce7a0
 - id: run-manifest-rejects-unmarked-root-filename
   input:
     args:
@@ -208,7 +208,7 @@ cases:
           expected:
             value: 2
           coverage_fingerprint: 867714e81b27e269f9a7f3b13bdc37ae
-  coverage_fingerprint: 193756e6a759d30cc500a5e4bc3fc467
+  coverage_fingerprint: ffaa1af6359a9bbe5d34535ee600f156
 - id: lists-contracts-executed-through-recursive-nesting
   setup: lists-contracts-executed-through-recursive-nesting
   input:
@@ -284,7 +284,7 @@ cases:
         status: passed
       - contract: nested-grandchild
         status: passed
-  coverage_fingerprint: 1577e5d98e543cf6d595ff75ed29f91c
+  coverage_fingerprint: ed5e7e8239c3a9862fea42e57ecc1b2e
 - id: run-manifest-rejects-missing-manifest-with-bwrap
   input:
     args:
@@ -301,4 +301,4 @@ cases:
       2)
 
       '
-  coverage_fingerprint: 6badc0551f0936b78f84459d0e25f675
+  coverage_fingerprint: 23fb46dae15f20ce632e64dddee1183a

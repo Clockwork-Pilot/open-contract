@@ -10,6 +10,8 @@ cases:
     - none
     - --coverage-report
     - coverage.json
+    - --coverage-html
+    - coverage-html
     environment:
       OPEN_CONTRACT_DISABLE_FINGERPRINTS: '1'
     files:
@@ -25,10 +27,26 @@ cases:
         key\": item[\"key\"], \"files\": [{\"path\": \"validator.py\", \"lines\":\
         \ [1]}]})\nprint(json.dumps({\n    \"results\": results,\n    \"coverage\"\
         : {\"sources\": []},\n    \"coverage_scopes\": scopes,\n    \"coverage_lines\"\
-        : [{\"path\": \"validator.py\", \"executable_lines\": [1], \"covered_lines\"\
-        : [1]}],\n}))\n"
+        : [],\n    \"coverage_entities\": [{\"path\": \"validator.py\", \"metric\"\
+        : \"function\", \"name\": \"validate\", \"location\": {\"precision\": \"line\"\
+        , \"start_line\": 1, \"start_column\": None, \"end_line\": 1, \"end_column\"\
+        : None}, \"status\": \"covered\", \"count\": None}, {\"path\": \"validator.py\"\
+        , \"metric\": \"branch\", \"name\": \"branch 1.1\", \"location\": {\"precision\"\
+        : \"column\", \"start_line\": 1, \"start_column\": 0, \"end_line\": 2, \"\
+        end_column\": 3}, \"status\": \"uncovered\", \"count\": 1}, {\"path\": \"\
+        validator.py\", \"metric\": \"region\", \"name\": None, \"location\": {\"\
+        precision\": \"unavailable\", \"start_line\": None, \"start_column\": None,\
+        \ \"end_line\": None, \"end_column\": None}, \"status\": \"unavailable\",\
+        \ \"count\": None}, {\"path\": \"validator.py\", \"metric\": \"instantiation\"\
+        , \"name\": None, \"location\": {\"precision\": \"region\", \"start_line\"\
+        : None, \"start_column\": None, \"end_line\": None, \"end_column\": None},\
+        \ \"status\": \"unavailable\", \"count\": None}],\n}))\n"
   expected:
     exit_code: 1
+    coverage_html_index_contains:
+    - cli-incomplete-coverage-fixture
+    - dataset.json
+    - contract-000.html
     coverage_report:
       version: 1
       contracts:
@@ -48,7 +66,7 @@ cases:
       report
 
       '
-  coverage_fingerprint: fdf6b8b7d50cf42f2221ada4bb97416c
+  coverage_fingerprint: 9523c2229dd2d412dd848223d0a29631
 - id: reports-coverage-write-failure
   setup: reports-coverage-write-failure
   input:
@@ -89,7 +107,7 @@ cases:
       (os error 21)
 
       '
-  coverage_fingerprint: 13f6510e7a18d29a4a50216472b70b50
+  coverage_fingerprint: 3e10234d902164e00df3edb7aa899998
 - id: reports-contract-execution-failure
   setup: reports-contract-execution-failure
   input:
@@ -129,7 +147,7 @@ cases:
       cli-command-that-does-not-exist: No such file or directory (os error 2)
 
       '
-  coverage_fingerprint: a44fdd73e38f3c9ee09ae5845989ea1a
+  coverage_fingerprint: 567a1de566fc27d0eebe356e3872b536
 - id: reports-dataset-case-failure
   setup: reports-dataset-case-failure
   input:
@@ -140,6 +158,8 @@ cases:
     - none
     - --coverage-report
     - coverage.json
+    - --coverage-html
+    - coverage-html
     files:
       open-contract.yaml: "version: '1'\nname: cli-smoke-fixture\nminimum_coverage_percent:\
         \ 0\nfilesystem:\n  read:\n  - dataset.json\n  - validator.py\n  - adapter.py\n\
@@ -162,13 +182,17 @@ cases:
       tests/check.py: "def run():\n    return True\n"
   expected:
     exit_code: 1
+    coverage_html_index_contains:
+    - cli-smoke-fixture
+    - dataset.json
+    - contract-000.html
     stdout: "Isolation mode: none\nContracts executed:\n  cli-smoke-fixture: 2/3 cases\
       \ passed\nDataset cases: 2/3 passed across 1 contract(s)\n  FAIL cli-smoke-fixture/echo:\
       \ output did not match expected subset\n    actual: 7\nCoverage report: coverage.json\n"
     stderr: 'contract-runner: 2/3 dataset cases passed across 1 contract(s)
 
       '
-  coverage_fingerprint: 5adc1aafb1d2b3b4a412fa84c01aa714
+  coverage_fingerprint: 43025d2b2b0ad39205f38598d7cd4f70
 - id: reports-supplemental-test-failure
   setup: reports-supplemental-test-failure
   input:
@@ -208,7 +232,7 @@ cases:
       report
 
       '
-  coverage_fingerprint: e4e5028f90c965db59e8825259c0c167
+  coverage_fingerprint: fb2dd0f81e4e3b4ab82207b5d148c907
 - id: reports-coverage-directory-creation-failure
   setup: reports-coverage-directory-creation-failure
   input:
@@ -249,7 +273,7 @@ cases:
       exists (os error 17)
 
       '
-  coverage_fingerprint: a650dfbcc60a9238185efc1b8af66e12
+  coverage_fingerprint: 4053dbc370c99769ac34cc04cb68e0e0
 - id: reports-validator-error-without-actual-output
   setup: reports-validator-error-without-actual-output
   input:
@@ -283,7 +307,7 @@ cases:
     stderr: 'contract-runner: 0/1 dataset cases passed across 1 contract(s)
 
       '
-  coverage_fingerprint: 5adc1aafb1d2b3b4a412fa84c01aa714
+  coverage_fingerprint: 86e3d4baf9a0b8e5a337b4ebd1695d32
 - id: reports-result-fingerprint-mismatch
   setup: reports-result-fingerprint-mismatch
   input:
@@ -324,7 +348,7 @@ cases:
     stderr: 'contract-runner: 0/1 dataset cases passed across 1 contract(s)
 
       '
-  coverage_fingerprint: 5adc1aafb1d2b3b4a412fa84c01aa714
+  coverage_fingerprint: 86e3d4baf9a0b8e5a337b4ebd1695d32
 - id: reports-step-fingerprint-mismatch
   setup: reports-step-fingerprint-mismatch
   input:
@@ -365,7 +389,7 @@ cases:
     stderr: 'contract-runner: 0/1 dataset cases passed across 1 contract(s)
 
       '
-  coverage_fingerprint: 5adc1aafb1d2b3b4a412fa84c01aa714
+  coverage_fingerprint: 86e3d4baf9a0b8e5a337b4ebd1695d32
 - id: reports-missing-coverage-scope
   setup: reports-missing-coverage-scope
   input:
@@ -410,7 +434,7 @@ cases:
     stderr: 'contract-runner: 0/3 dataset cases passed across 1 contract(s)
 
       '
-  coverage_fingerprint: 5adc1aafb1d2b3b4a412fa84c01aa714
+  coverage_fingerprint: 86e3d4baf9a0b8e5a337b4ebd1695d32
 - id: reports-below-target-coverage-threshold
   setup: reports-below-target-coverage-threshold
   input:
@@ -421,6 +445,8 @@ cases:
     - none
     - --coverage-report
     - coverage.json
+    - --coverage-html
+    - coverage-html
     files:
       open-contract.yaml: "version: '1'\nname: cli-smoke-fixture\nminimum_coverage_percent:\
         \ 100\nfilesystem:\n  read:\n  - dataset.json\n  - validator.py\n  - adapter.py\n\
@@ -438,6 +464,10 @@ cases:
         : [1, 2], \"covered_lines\": [1]}]\n}))\n"
   expected:
     exit_code: 1
+    coverage_html_index_contains:
+    - cli-smoke-fixture
+    - dataset.json
+    - contract-000.html
     coverage_report:
       version: 1
       contracts:
@@ -469,7 +499,7 @@ cases:
       report
 
       '
-  coverage_fingerprint: 275f0ec0d4a6f6d3fa1cd4c81243aa00
+  coverage_fingerprint: 1ca3042537fd1fab7ca3a7e64b976202
 - id: resolves-relative-coverage-scope-path
   setup: resolves-relative-coverage-scope-path
   input:
@@ -503,7 +533,7 @@ cases:
       \ unavailable\nDataset cases: 3/3 passed across 1 contract(s)\nCoverage report:\
       \ coverage.json\n"
     stderr: ''
-  coverage_fingerprint: 4bd28cde854f2bcb9616cbf62204af47
+  coverage_fingerprint: 5e27d911645ece7aa0fe503be7629a17
 - id: reports-invalid-coverage-schema-json
   input:
     invalid_coverage_schema: '{'
@@ -571,4 +601,4 @@ cases:
           percent: 0.0
           threshold_met: false
   predicate: contains(.stderr, 'coverage requirements not met')
-  coverage_fingerprint: a63172207cd55f012f68153f94ca69be
+  coverage_fingerprint: f899c055dcd6c32fa1ff7f3a957f8995

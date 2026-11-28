@@ -41,7 +41,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "24ee52ea6d21f8d2fc7af2de01cf9faa"
+      "coverage_fingerprint": "772eec08a3b1ab148481d2c36d438db9"
     },
     {
       "id": "sequence-aggregate-mismatch",
@@ -74,7 +74,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "ccfaf600e952908f341e66ce5c5809e7",
+      "coverage_fingerprint": "5ae8b148d15d1cdf1ca633b0a0d25ca7",
       "predicate": ".results.0.passed == true"
     },
     {
@@ -158,7 +158,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "ccfaf600e952908f341e66ce5c5809e7"
+      "coverage_fingerprint": "5ae8b148d15d1cdf1ca633b0a0d25ca7"
     },
     {
       "id": "sequence-aggregate-predicate",
@@ -191,7 +191,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "ccfaf600e952908f341e66ce5c5809e7"
+      "coverage_fingerprint": "5ae8b148d15d1cdf1ca633b0a0d25ca7"
     },
     {
       "id": "sequence-aggregate-expected-and-predicate",
@@ -224,7 +224,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "ccfaf600e952908f341e66ce5c5809e7"
+      "coverage_fingerprint": "5ae8b148d15d1cdf1ca633b0a0d25ca7"
     },
     {
       "id": "sequence-case-fingerprint-match",
@@ -257,7 +257,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "ccfaf600e952908f341e66ce5c5809e7"
+      "coverage_fingerprint": "5ae8b148d15d1cdf1ca633b0a0d25ca7"
     },
     {
       "id": "sequence-case-fingerprint-mismatch",
@@ -290,7 +290,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "ccfaf600e952908f341e66ce5c5809e7",
+      "coverage_fingerprint": "5ae8b148d15d1cdf1ca633b0a0d25ca7",
       "predicate": ".results.0.passed == true"
     },
     {
@@ -324,7 +324,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "b813ec7f5e12001a7f7eaf88a1101471",
+      "coverage_fingerprint": "7cdc04344648c8e1057572c99a681d7f",
       "predicate": "contains(.results.0.error, 'coverage fingerprint mismatch')"
     },
     {
@@ -384,7 +384,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "c398f53491b2ea693d82416d3c2179a1"
+      "coverage_fingerprint": "d1871320b11db493235ef859c301ab12"
     },
     {
       "id": "dataset-adapter-step-predicate-mismatch",
@@ -418,7 +418,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "66000b14e03316a33b85198d75a0dc1e",
+      "coverage_fingerprint": "79d28b1fe2f8ce8eff8d6a3348161e47",
       "predicate": "contains(.results.0.error, 'output did not satisfy predicate')"
     },
     {
@@ -479,7 +479,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "d69862c73cd970c9fa51a5f340a9f627",
+      "coverage_fingerprint": "c79181e947cbedff8d7bce6675149a50",
       "predicate": "contains(.results.0.error, 'zero covered lines')"
     },
     {
@@ -522,7 +522,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "bdc1bc421e160e6716146bdb3b661234",
+      "coverage_fingerprint": "4abf7792c39b829514d928ce40020d7d",
       "predicate": "contains(.results.0.error, 'output did not satisfy predicate')"
     },
     {

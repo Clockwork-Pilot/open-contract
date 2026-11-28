@@ -15,6 +15,13 @@ the native LLVM export. The crate exposes the `OCOVCASE` raw-profile bundle
 format used by Rust dataset fingerprint tooling. The Rust runner hashes the
 returned case scopes against manifest fingerprints.
 
+The adapter also normalizes supported entity data from the LLVM export: line,
+function, and region locations with hit counts. Branch and individual
+instantiation locations are not available in this adapter's export and are not
+synthesized. The Rust runner's `run-manifest --coverage-html <directory>` option
+renders these entities alongside data supplied by JavaScript and Python
+adapters.
+
 Build the contract executable with the same compiler instrumentation flags
 used by the bootstrap coverage checker:
 

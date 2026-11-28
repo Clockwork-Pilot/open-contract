@@ -18,7 +18,7 @@ cases:
       2)
 
       '
-  coverage_fingerprint: ba51fa9a9fa49381b83fcf1ddee04043
+  coverage_fingerprint: c58e2c5fdbe3b1305aa947671e92b70b
 - id: rejects-invalid-fingerprint-environment
   setup: rejects-invalid-fingerprint-environment
   input:
@@ -37,8 +37,8 @@ cases:
       yes/no, or on/off
 
       '
-  coverage_fingerprint: 49635a96d8945914b3e76efd8e5fc927
-- coverage_fingerprint: 43077868a7e3a862c5706181900b0747
+  coverage_fingerprint: 18afdd2ff36401e2d98993b19d3912ea
+- coverage_fingerprint: 20e8b8d1ef357b2ff0199408335200c3
   expected:
     coverage_report:
       version: 1
@@ -128,7 +128,7 @@ cases:
       tests/check.py: "def run():\n    return True\n"
       validator.py: "def validate(value):\n    return value\n"
   setup: update-fingerprints-already-current
-- coverage_fingerprint: 42c946c6b5661e17295222db1d9cc23a
+- coverage_fingerprint: f89b4f89ba358042d9836382b8df7765
   expected: {}
   id: update-fingerprints-skips-failed-case
   input:
@@ -185,7 +185,7 @@ cases:
     stderr: 'contract-runner: --update-fingerprints cannot be combined with --disable-fingerprints
 
       '
-  coverage_fingerprint: 74416cfa104134b60429001dbd409d48
+  coverage_fingerprint: 9ed6a12d2cede9b2e0423cb1e6948a7e
 - id: rejects-fingerprint-update-disabled-by-environment
   setup: rejects-fingerprint-update-disabled-by-environment
   input:
@@ -205,7 +205,7 @@ cases:
     stderr: 'contract-runner: --update-fingerprints cannot be used when OPEN_CONTRACT_DISABLE_FINGERPRINTS=1
 
       '
-  coverage_fingerprint: 9a5091c9048e4f854bdc6d719f1fcdd5
+  coverage_fingerprint: 201c308824bd02e482570deef06b15f9
 - id: update-fingerprints-requires-readable-dataset
   setup: update-fingerprints-requires-readable-dataset
   input:
@@ -245,7 +245,7 @@ cases:
         :[1],\"covered_lines\":[1]}]}))\n"
   expected: {}
   predicate: .exit_code == 2 AND contains(.stderr, 'cannot read dataset')
-  coverage_fingerprint: 508563fa32932bac574c3dbb41d5c4de
+  coverage_fingerprint: a158c05305f7ad768a0dd8ebb4f27680
 - id: update-fingerprints-requires-valid-dataset
   setup: update-fingerprints-requires-valid-dataset
   input:
@@ -285,7 +285,7 @@ cases:
         :[1],\"covered_lines\":[1]}]}))\n"
   expected: {}
   predicate: .exit_code == 2 AND contains(.stderr, 'YAML dataset error')
-  coverage_fingerprint: 5ab38eb24ae8af6c58ffd1633c658b49
+  coverage_fingerprint: 78ec9ce04127d4c1b7d58ecd771a3e52
 - id: update-fingerprints-requires-cases-list
   setup: update-fingerprints-requires-cases-list
   input:
@@ -325,7 +325,7 @@ cases:
         :[1],\"covered_lines\":[1]}]}))\n"
   expected: {}
   predicate: .exit_code == 2 AND contains(.stderr, 'dataset has no cases array')
-  coverage_fingerprint: 35462a9ff06431f629287791f3e5fe5b
+  coverage_fingerprint: 696e413902055f3129eeea8f2bb9353f
 - id: update-fingerprints-requires-case-id
   setup: update-fingerprints-requires-case-id
   input:
@@ -365,7 +365,7 @@ cases:
         :[1],\"covered_lines\":[1]}]}))\n"
   expected: {}
   predicate: .exit_code == 2 AND contains(.stderr, 'case one not found')
-  coverage_fingerprint: e95100f68b90c456dcda41ccd9469114
+  coverage_fingerprint: d2ad270b51eb28c0126cabdfd386d0d7
 - id: update-fingerprints-requires-step-id
   setup: update-fingerprints-requires-step-id
   input:
@@ -406,7 +406,7 @@ cases:
         :[1],\"covered_lines\":[1]}]}))\n"
   expected: {}
   predicate: .exit_code == 2 AND contains(.stderr, 'step one/step not found')
-  coverage_fingerprint: fc5304e2cff415837d908af53a66dbee
+  coverage_fingerprint: f8bba5fd8008acdbb1e0d2d751033ae5
 - id: update-fingerprints-requires-writable-dataset
   setup: update-fingerprints-requires-writable-dataset
   input:
@@ -446,7 +446,7 @@ cases:
         :[1],\"covered_lines\":[1]}]}))\n"
   expected: {}
   predicate: .exit_code == 2 AND contains(.stderr, 'cannot update dataset')
-  coverage_fingerprint: 988ad136d943dcfe4254df2d9c647c0e
+  coverage_fingerprint: 73a95097f6499ec65191d5c43f972c29
 - id: update-fingerprints-requires-json-serializable-dataset
   setup: update-fingerprints-requires-json-serializable-dataset
   input:
@@ -485,10 +485,10 @@ cases:
         :[1],\"covered_lines\":[1]}]}))\n"
   expected: {}
   predicate: .exit_code == 2 AND contains(.stderr, 'JSON dataset error')
-  coverage_fingerprint: d7a6a7ade3f0c0e9f0717d37fb3b1c8a
+  coverage_fingerprint: a5e6079c710df9504124ad5e9a7d192f
 - id: update-fingerprints-refreshes-json-dataset
   setup: update-fingerprints-refreshes-json-dataset
-  coverage_fingerprint: 193756e6a759d30cc500a5e4bc3fc467
+  coverage_fingerprint: ffaa1af6359a9bbe5d34535ee600f156
   expected:
     coverage_report:
       version: 1
@@ -612,7 +612,7 @@ cases:
         :[{\"path\":\"validator.py\",\"executable_lines\":[1],\"covered_lines\":[1]}]}))\n"
   expected: {}
   predicate: .exit_code == 2 AND contains(.stderr, 'case one not found')
-  coverage_fingerprint: 9fb043fbbccd34412c791f00de0e0c8a
+  coverage_fingerprint: 69c20fb9ead4a99666662aa95bffa126
 - id: update-fingerprints-requires-string-case-id
   setup: update-fingerprints-requires-string-case-id
   input:
@@ -655,9 +655,9 @@ cases:
         :[{\"path\":\"validator.py\",\"executable_lines\":[1],\"covered_lines\":[1]}]}))\n"
   expected: {}
   predicate: .exit_code == 2 AND contains(.stderr, 'case one not found')
-  coverage_fingerprint: 8279f63207c8fcb4fa9700e6ba7729ad
+  coverage_fingerprint: 0870066ebbb2030a3da04c3f020f78cc
 - id: update-fingerprints-requires-case-id-field
-  coverage_fingerprint: 057161cdf7091be28775e40436e551f3
+  coverage_fingerprint: ebbcb95e2230c13b69f1b5fd97154811
   expected: {}
   setup: update-fingerprints-requires-case-id-field
   input:

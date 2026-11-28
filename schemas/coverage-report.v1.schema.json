@@ -13,6 +13,31 @@
   },
   "additionalProperties": false,
   "$defs": {
+    "entity": {
+      "type": "object",
+      "required": ["path", "metric", "location", "status", "count"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "metric": {"enum": ["line", "statement", "function", "branch", "region", "instantiation"]},
+        "name": {"type": ["string", "null"]},
+        "location": {"$ref": "#/$defs/entityLocation"},
+        "status": {"enum": ["covered", "uncovered", "unavailable"]},
+        "count": {"type": ["integer", "null"], "minimum": 0}
+      },
+      "additionalProperties": false
+    },
+    "entityLocation": {
+      "type": "object",
+      "required": ["precision", "start_line", "start_column", "end_line", "end_column"],
+      "properties": {
+        "precision": {"enum": ["line", "column", "region", "unavailable"]},
+        "start_line": {"type": ["integer", "null"], "minimum": 1},
+        "start_column": {"type": ["integer", "null"], "minimum": 0},
+        "end_line": {"type": ["integer", "null"], "minimum": 1},
+        "end_column": {"type": ["integer", "null"], "minimum": 0}
+      },
+      "additionalProperties": false
+    },
     "contract": {
       "type": "object",
       "required": ["contract", "status", "minimum_coverage_percent", "datasets", "sources", "union", "aggregate", "supplemental_tests", "native_report"],
@@ -34,6 +59,7 @@
         },
         "union": {"$ref": "#/$defs/totals"},
         "aggregate": {"$ref": "#/$defs/totals"},
+        "coverage_entities": {"type": "array", "items": {"$ref": "#/$defs/entity"}},
         "supplemental_tests": {"type": ["object", "null"]},
         "native_report": true
       },

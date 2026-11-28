@@ -109,6 +109,9 @@ def run_dataset(request, validator_loader=None):
     coverage_metrics = _normalized_coverage_metrics(
         coverage, package_root, coverage_sources, coverage_lines
     )
+    coverage_entities = _normalized_coverage_entities(
+        coverage, package_root, coverage_sources
+    )
     native = {"format": "coverage.py", "sources": sorted(files), "files": files}
     scopes = []
     if collect_fingerprints:
@@ -151,6 +154,7 @@ def run_dataset(request, validator_loader=None):
         "coverage_scopes": scopes,
         "coverage_lines": sorted(coverage_lines, key=lambda item: item["path"]),
         "coverage_metrics": coverage_metrics,
+        "coverage_entities": coverage_entities,
         "additional_test_coverage": additional_report,
         "additional_coverage_lines": additional_coverage_lines,
     }
@@ -249,6 +253,62 @@ def _normalized_coverage_metrics(coverage: Coverage, package_root: Path, declare
     for metric in metrics.values():
         metric["files"].sort(key=lambda item: item["path"])
     return metrics
+
+
+def _normalized_coverage_entities(coverage: Coverage, package_root: Path, declared_sources: list[str]):
+    data = coverage.get_data()
+    entities = []
+    for source in _declared_source_files(package_root, declared_sources):
+        try:
+            analysis = coverage._analyze(str(source))
+        except Exception as error:
+            raise RuntimeError(f"cannot collect entities for declared source {source}: {error}") from error
+        path = source.relative_to(package_root).as_posix()
+        covered_lines = set(data.lines(str(source)) or [])
+        for line in sorted(analysis.statements):
+            entities.append(_coverage_entity(
+                path, "line", None, line, line,
+                "covered" if line in covered_lines else "uncovered", None,
+            ))
+            entities.append(_coverage_entity(
+                path, "statement", f"statement at line {line}", line, line,
+                "covered" if line in covered_lines else "uncovered", None,
+            ))
+
+        executed_arcs = set(data.arcs(str(source)) or [])
+        branch_lines = analysis.branch_stats()
+        for start, end in sorted(analysis.arc_possibilities):
+            if start not in branch_lines or start <= 0:
+                continue
+            entities.append(_coverage_entity(
+                path,
+                "branch",
+                f"branch {start} → {end}",
+                start,
+                end if end > 0 else None,
+                "covered" if (start, end) in executed_arcs else "uncovered",
+                None,
+            ))
+    return sorted(entities, key=lambda item: (
+        item["path"], item["metric"], item["location"]["start_line"], item["name"] or ""
+    ))
+
+
+def _coverage_entity(path, metric, name, start_line, end_line, status, count):
+    return {
+        "path": path,
+        "metric": metric,
+        "name": name,
+        "location": {
+            "precision": "line",
+            "start_line": start_line,
+            "start_column": None,
+            "end_line": end_line,
+            "end_column": None,
+        },
+        "status": status,
+        "count": count,
+    }
 
 
 def _run_supplemental_tests(test_files, root: Path, package_root: Path, coverage_sources):

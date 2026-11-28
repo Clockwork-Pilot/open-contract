@@ -6,9 +6,9 @@ context contains `case_id`, optional `step_id`, optional `setup` fixture ID,
 and the `parallel` marker. Adapters execute unmarked calls and steps in order;
 adjacent `parallel: true` steps in one case form a concurrent group. They
 return one raw output or error per request, keyed by case and step, plus native
-coverage and normalized `coverage_lines` records. Each normalized file contains
-a relative `path`, sorted unique positive `executable_lines`, and sorted unique
-positive `covered_lines`. The runner validates this payload against
+coverage, normalized `coverage_lines`, and adapter-reported `coverage_entities`.
+Entities carry a relative source path, metric, status, and the location/count
+precision supported by that adapter. The runner validates these payloads against
 `schemas/adapter-coverage.v1.schema.json` before calculating thresholds. They do
 not interpret setup IDs or replace
 public calls with harness operations. The Rust runner checks each result
@@ -25,6 +25,15 @@ Available adapters:
 - [`javascript`](javascript/README.md)
 - [`python`](python/README.md)
 - [`rust`](rust/README.md)
+
+The Rust runner can render an offline HTML report from these adapter-provided
+entities with `run-manifest --coverage-html <directory>`. It reports source
+lines and the line, statement, function, branch, region, and instantiation data
+provided by each adapter. Metrics or entity locations absent from adapter data
+are labeled unavailable; the runner does not derive them from another metric.
+The report includes each declared dataset, while entity data is a contract-wide
+coverage union because adapters currently execute all of a contract's datasets
+in one batch.
 
 Run every language adapter check and end-to-end example with
 `make check-language-contract-examples` from the Open Contract root. These

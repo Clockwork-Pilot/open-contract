@@ -68,3 +68,6 @@ def test_coverage_lines_are_normalized_and_subset_of_executable_lines(tmp_path):
     assert report["coverage_metrics"]["branch"]["total"] > 0
     assert report["coverage_metrics"]["branch"]["covered"] == report["coverage_metrics"]["branch"]["total"]
     assert "function" not in report["coverage_metrics"]
+    assert any(entity["metric"] == "branch" and entity["status"] == "covered"
+               for entity in report["coverage_entities"])
+    assert all(entity["count"] is None for entity in report["coverage_entities"])

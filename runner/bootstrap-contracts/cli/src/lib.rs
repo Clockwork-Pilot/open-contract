@@ -8,6 +8,8 @@ use serde_json::{json, Value};
 use std::fs;
 use std::path::PathBuf;
 
+mod coverage_html;
+
 #[derive(Debug, Eq, PartialEq)]
 pub struct CliOutput {
     pub exit_code: u8,
@@ -40,7 +42,7 @@ fn run(mut args: impl Iterator<Item = String>, stdout: &mut String) -> Result<()
         return Ok(());
     }
     if subcommand.as_deref() != Some("run-manifest") {
-        return Err((2, "usage: contract-runner <run-manifest|show-isolation-plan> <manifest-path> [--isolation <auto|tempdir|none|bwrap|landlock>] [--isolation-runtime <path>] [--coverage-report <path>] [--disable-fingerprints|--update-fingerprints] [--no-nested-contracts]".into()).into());
+        return Err((2, "usage: contract-runner <run-manifest|show-isolation-plan> <manifest-path> [--isolation <auto|tempdir|none|bwrap|landlock>] [--isolation-runtime <path>] [--coverage-report <path>] [--coverage-html <directory>] [--disable-fingerprints|--update-fingerprints] [--no-nested-contracts]".into()).into());
     }
     let manifest = PathBuf::from(args.next().ok_or((2, "missing manifest path".into()))?);
     if !has_open_contract_filename(&manifest) {
@@ -53,6 +55,7 @@ fn run(mut args: impl Iterator<Item = String>, stdout: &mut String) -> Result<()
     let mut backend = None;
     let mut isolation_runtime = None;
     let mut coverage_report = PathBuf::from(".coverage/latest.json");
+    let mut coverage_html = None;
     let mut disable_fingerprints = false;
     let mut update_fingerprints = false;
     let mut include_nested_contracts = true;
@@ -68,6 +71,12 @@ fn run(mut args: impl Iterator<Item = String>, stdout: &mut String) -> Result<()
                     args.next()
                         .ok_or((2, "missing coverage report path".into()))?,
                 );
+            }
+            "--coverage-html" => {
+                coverage_html = Some(PathBuf::from(
+                    args.next()
+                        .ok_or((2, "missing HTML coverage directory".into()))?,
+                ));
             }
             "--isolation-runtime" => {
                 isolation_runtime = Some(PathBuf::from(
@@ -125,6 +134,11 @@ fn run(mut args: impl Iterator<Item = String>, stdout: &mut String) -> Result<()
         )
             .into());
     }
+    let report_root = manifest
+        .parent()
+        .filter(|parent| !parent.as_os_str().is_empty())
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from("."));
     let report = run_contract_tree_with_fingerprint_mode_and_nested_contracts(
         manifest,
         backend,
@@ -135,6 +149,9 @@ fn run(mut args: impl Iterator<Item = String>, stdout: &mut String) -> Result<()
     )
     .map_err(|error| ContractError::from((2, error)).context("contract execution"))?;
     write_adapter_coverage_reports(&coverage_report, &report)?;
+    if let Some(directory) = coverage_html {
+        coverage_html::write_report(&directory, &report_root, &report)?;
+    }
     if update_fingerprints
         && report_passed(&report) == report_total(&report)
         && report_coverage_complete(&report, coverage_fingerprints)
@@ -299,6 +316,7 @@ pub fn write_adapter_coverage_reports(
                 },
                 "union": union_coverage,
                 "aggregate": aggregate_coverage,
+                "coverage_entities": record.coverage_entities,
                 "supplemental_tests": record.additional_test_coverage,
                 "native_report": record.native_report,
             })

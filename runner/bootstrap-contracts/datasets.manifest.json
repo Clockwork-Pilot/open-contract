@@ -15,7 +15,7 @@
           "id": "dataset-adapter-results",
           "path": "dataset.dataset-adapter-results.json",
           "schema": null,
-          "case_ids_sha256": "bf4f0d580f3c6452425e5d50032da6bcab751c0365884cf073333fc3670c4406"
+          "case_ids_sha256": "771d415a0015b3ff48906950866d21766c5e229f1f369ebd398687fa9035507a"
         },
         {
           "id": "dataset-file-validation",
@@ -75,7 +75,7 @@
           "id": "cli-options-and-errors",
           "path": "dataset.cli-options-and-errors.yaml",
           "schema": null,
-          "case_ids_sha256": "e3e1e81feb24bbe336e7db8f69945253ffdf01f9b3c1219190ab8bcb28bdb391"
+          "case_ids_sha256": "f192d2ec426b77632a0a485dcf7bd8242f083eb034d0687f5acc99916f20f6f1"
         },
         {
           "id": "contract-execution",

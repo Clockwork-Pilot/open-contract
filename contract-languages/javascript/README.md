@@ -38,6 +38,11 @@ Run the interface tests with `make -C contract-languages/javascript test` from
 the `open-contract` directory. They exercise the importable adapter protocol
 and do not contribute to contract dataset coverage.
 
+For declared JavaScript sources, the adapter provides line, statement, function,
+and branch entities with locations and hit counts from its V8/Istanbul coverage
+data. The Rust runner's `--coverage-html` option renders those entities in the
+shared report.
+
 Run the end-to-end contract example with `make check-javascript-example` from
 the `open-contract` directory. It installs the JavaScript adapter dependencies,
 then runs a complete contract manifest through the Rust runner.

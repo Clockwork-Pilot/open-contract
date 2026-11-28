@@ -36,7 +36,23 @@
               "coverage_fingerprint": "880ae786fa1c0630fe9158b7962fd8a2"
             }
           ]
-        }
+        },
+        "coverage_entities": [
+          {
+            "path": "validator.py",
+            "metric": "function",
+            "name": "validate",
+            "location": {
+              "precision": "line",
+              "start_line": 1,
+              "start_column": null,
+              "end_line": 1,
+              "end_column": null
+            },
+            "status": "covered",
+            "count": 1
+          }
+        ]
       },
       "expected": {
         "results": [
@@ -46,9 +62,25 @@
           {
             "passed": true
           }
+        ],
+        "coverage": [
+          {
+            "coverage_entities": [
+              {
+                "path": "validator.py"
+              }
+            ]
+          },
+          {
+            "coverage_entities": [
+              {
+                "path": "child/validator.py"
+              }
+            ]
+          }
         ]
       },
-      "coverage_fingerprint": "6d6d2ab5c9080e0538a8421539ec912b"
+      "coverage_fingerprint": "346b4318e9cb2e2f3e094e39afc328ad"
     },
     {
       "id": "dataset-adapter-accepts-yml-nested-manifest",
@@ -67,7 +99,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "57319d2ba1d9952f34019d0d61252a3b"
+      "coverage_fingerprint": "6911aa1bdaf97df6a388bcd85227eea8"
     },
     {
       "id": "dataset-adapter-rejects-unmarked-nested-manifest",
@@ -135,7 +167,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "5095bca439b99a7b6c2d7194020e5fcc"
+      "coverage_fingerprint": "14dcbd34bfd094575fcfbc7099f82f8f"
     },
     {
       "id": "dataset-adapter-duplicate-nested-name",
@@ -273,7 +305,7 @@
           }
         ]
       },
-      "coverage_fingerprint": "8b7c265765c3090333311973343c6816"
+      "coverage_fingerprint": "67283adaeb0fa59c6b87e7fba49e5f2e"
     },
     {
       "id": "run-contract-tree-staging-rejects-symlink-escape",

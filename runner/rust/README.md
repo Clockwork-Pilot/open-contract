@@ -50,6 +50,7 @@ coverage or fingerprint options.
 | `--isolation <auto\|tempdir\|none\|bwrap\|landlock>` | Both | Select the execution boundary. Defaults to `OPEN_CONTRACT_ISOLATION`, then `auto` if unset. |
 | `--isolation-runtime <path>` | Both | Replace the bundled runtime YAML for `bwrap` or `landlock`. Invalid with `none` and `tempdir`. |
 | `--coverage-report <path>` | `run-manifest` | Write the coverage report. Defaults to `.coverage/latest.json`. |
+| `--coverage-html <directory>` | `run-manifest` | Write an offline HTML report using coverage entities supplied by the selected language adapter. |
 | `--no-nested-contracts` | `run-manifest` | Run only the root manifest; nested contracts are not planned or included in results and coverage. Nested execution is the default. |
 | `--disable-fingerprints` | `run-manifest` | Skip per-case fingerprint checks while retaining output and aggregate coverage checks. Equivalent to `OPEN_CONTRACT_DISABLE_FINGERPRINTS=1`. |
 | `--update-fingerprints` | `run-manifest` | Rewrite fingerprints after all cases and coverage requirements pass. Cannot be combined with `--disable-fingerprints` or `OPEN_CONTRACT_DISABLE_FINGERPRINTS=1`. |

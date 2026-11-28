@@ -8,11 +8,11 @@ cases:
     stdout: ''
     stderr: 'contract-runner: usage: contract-runner <run-manifest|show-isolation-plan>
       <manifest-path> [--isolation <auto|tempdir|none|bwrap|landlock>] [--isolation-runtime
-      <path>] [--coverage-report <path>] [--disable-fingerprints|--update-fingerprints]
+      <path>] [--coverage-report <path>] [--coverage-html <directory>] [--disable-fingerprints|--update-fingerprints]
       [--no-nested-contracts]
 
       '
-  coverage_fingerprint: 56c78783f7c7fdfad4f14495d8b51a2b
+  coverage_fingerprint: 4b1c8ee95eef68aa5b067c710ea6f5af
 - id: unknown-subcommand-is-rejected
   input:
     args:
@@ -22,11 +22,11 @@ cases:
     stdout: ''
     stderr: 'contract-runner: usage: contract-runner <run-manifest|show-isolation-plan>
       <manifest-path> [--isolation <auto|tempdir|none|bwrap|landlock>] [--isolation-runtime
-      <path>] [--coverage-report <path>] [--disable-fingerprints|--update-fingerprints]
+      <path>] [--coverage-report <path>] [--coverage-html <directory>] [--disable-fingerprints|--update-fingerprints]
       [--no-nested-contracts]
 
       '
-  coverage_fingerprint: 56c78783f7c7fdfad4f14495d8b51a2b
+  coverage_fingerprint: 4b1c8ee95eef68aa5b067c710ea6f5af
 - id: rejects-unknown-option
   input:
     args:
@@ -41,7 +41,7 @@ cases:
     stderr: 'contract-runner: unknown argument: --unknown
 
       '
-  coverage_fingerprint: 24953803aec3273269b3bd8ea01ad249
+  coverage_fingerprint: 58b326ca788da390c53e391669e5502f
 - id: rejects-invalid-isolation-backend
   input:
     args:
@@ -56,7 +56,7 @@ cases:
       tempdir, none, bwrap, or landlock
 
       '
-  coverage_fingerprint: daa467ca42628882bbdad1a5dc06cd44
+  coverage_fingerprint: 3dc08c6f9045c909d083aec9aab8764d
 - id: rejects-runtime-with-no-isolation
   input:
     args:
@@ -75,7 +75,7 @@ cases:
       none
 
       '
-  coverage_fingerprint: cea66fb32d784ff9bbbb70ee685ab9ba
+  coverage_fingerprint: 353c2b4bc1d52130e2eec1b64fd1bf5e
 - id: rejects-runtime-with-tempdir
   input:
     args:
@@ -94,7 +94,7 @@ cases:
       tempdir
 
       '
-  coverage_fingerprint: 43b32faac1e0557a387c561002a202da
+  coverage_fingerprint: 060a6ea560fc34cca23d0f880fdd5b8e
 - id: isolation-option-requires-value
   input:
     args:
@@ -107,7 +107,7 @@ cases:
     stderr: 'contract-runner: missing isolation backend
 
       '
-  coverage_fingerprint: 85c147aca2675015e35a59de886cc9eb
+  coverage_fingerprint: cd3b46a14692a46d185cb64374054db4
 - id: coverage-option-requires-path
   input:
     args:
@@ -122,7 +122,22 @@ cases:
     stderr: 'contract-runner: missing coverage report path
 
       '
-  coverage_fingerprint: 3ed7f015318e673b06657f6a6f539611
+  coverage_fingerprint: d2c741ba70f3209ab77c68e1522a65ab
+- id: coverage-html-option-requires-directory
+  input:
+    args:
+    - run-manifest
+    - open-contract.yaml
+    - --isolation
+    - none
+    - --coverage-html
+  expected:
+    exit_code: 2
+    stdout: ''
+    stderr: 'contract-runner: missing HTML coverage directory
+
+      '
+  coverage_fingerprint: cdf4d65ff05c1036078859fd51f66cd6
 - id: runtime-option-requires-path
   input:
     args:
@@ -137,4 +152,4 @@ cases:
     stderr: 'contract-runner: missing isolation runtime path
 
       '
-  coverage_fingerprint: b4ec6ebd13ddb0f61d3d481e3b65e6e2
+  coverage_fingerprint: 6aa46ad737da728f2f8101e3a67bc5f1

@@ -20,7 +20,7 @@ cases:
 
       '
   predicate: 'contains(.stdout, ''Isolation auto selected: bwrap'')'
-  coverage_fingerprint: 573787cb42145b9ca18db44e5c35f44e
+  coverage_fingerprint: 64039218e71eea5e1ea0b7d64368ba99
 - id: run-manifest-explicitly-selects-landlock
   input:
     args:
@@ -37,7 +37,7 @@ cases:
       2)
 
       '
-  coverage_fingerprint: 6f6a88f6027f2721a3cf994b14bafe78
+  coverage_fingerprint: a0ec41bebb88aa6f4cee511a2aef0148
 - id: run-manifest-auto-prefers-bwrap
   setup: run-manifest-auto-prefers-bwrap
   input:
@@ -60,7 +60,7 @@ cases:
 
       '
   predicate: 'contains(.stdout, ''Isolation auto selected: bwrap'')'
-  coverage_fingerprint: 07d1e72509bb138c8c56412c6a365462
+  coverage_fingerprint: 5221f70f3ab2f44b9b907a980f3768b3
 - id: run-manifest-auto-falls-back-to-tempdir
   input:
     args:
@@ -77,7 +77,7 @@ cases:
 
       '
   predicate: 'contains(.stdout, ''Isolation auto selected: tempdir'')'
-  coverage_fingerprint: d8428d33e662a65cac2c341c76d95e08
+  coverage_fingerprint: 1c9b0eb1b8f74cc2ee9ae45df5408c45
 - id: run-manifest-auto-falls-back-to-none
   setup: run-manifest-auto-falls-back-to-none
   input:
@@ -98,7 +98,7 @@ cases:
 
       '
   predicate: 'contains(.stdout, ''Isolation auto selected: none'')'
-  coverage_fingerprint: e2e737bb056f30463ddebab261db4502
+  coverage_fingerprint: b880310bf5829ac83f544214a4f5fab1
 - id: run-manifest-uses-isolation-environment
   setup: run-manifest-uses-isolation-environment
   input:
@@ -116,7 +116,7 @@ cases:
       2)
 
       '
-  coverage_fingerprint: 8f1aedc8c9e501f4167a143f1a0b4f39
+  coverage_fingerprint: 5359c756a768f4de71b2943e6538ffe8
 - id: run-manifest-rejects-invalid-isolation-environment
   setup: run-manifest-rejects-invalid-isolation-environment
   input:
@@ -132,7 +132,7 @@ cases:
       tempdir, none, bwrap, or landlock
 
       '
-  coverage_fingerprint: d22032ba77473c69013291b94f80ba7a
+  coverage_fingerprint: 20194351674b9177abdfef14314f7ccd
 - id: run-manifest-skips-nested-contracts
   setup: run-manifest-skips-nested-contracts
   input:
@@ -196,4 +196,4 @@ cases:
       contracts:
       - contract: cli-root-only
         status: passed
-  coverage_fingerprint: 40944d398f198d422f64a345ee091c6a
+  coverage_fingerprint: ef787ed10d3a560799ba9c4b495e5820

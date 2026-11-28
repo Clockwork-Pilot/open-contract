@@ -53,3 +53,9 @@ are installed under this adapter's `.deps/` directory. Adapter checks and
 contract-owned commands can refer to those tools directly. The Rust runner
 loads the runtime manifest named by `language_adapter` and makes its declared
 files available inside isolation.
+
+For declared Python sources, the adapter provides line, statement, and branch
+arc entities with line locations from coverage.py. coverage.py does not provide
+per-entity hit counts through this adapter, so those counts are reported as
+unavailable. Function, region, and instantiation entities are not provided.
+The Rust runner's `--coverage-html` option renders the available data.

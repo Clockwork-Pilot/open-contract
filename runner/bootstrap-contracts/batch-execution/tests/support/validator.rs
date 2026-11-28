@@ -67,6 +67,10 @@ pub(super) fn validate_dataset_entry(entry: &DatasetCase) -> Result<(), String> 
                 &ScenarioDatasetAdapter {
                     id: id.to_owned(),
                     coverage_metrics,
+                    coverage_entities: input["coverage_entities"]
+                        .as_array()
+                        .cloned()
+                        .unwrap_or_default(),
                 },
             );
         }
@@ -544,6 +548,7 @@ fn configure_case_setup(
         | "dataset-adapter-sequence-empty-coverage"
         | "dataset-adapter-empty-coverage-files"
         | "dataset-adapter-undeclared-coverage-source"
+        | "dataset-adapter-entity-coverage-source-undeclared"
         | "dataset-adapter-native-coverage-no-sources"
         | "dataset-adapter-native-coverage-non-string-source"
         | "dataset-adapter-native-coverage-undeclared-source"
@@ -774,6 +779,7 @@ struct IdentityDatasetAdapter;
 struct ScenarioDatasetAdapter {
     id: String,
     coverage_metrics: std::collections::BTreeMap<String, runner_batch::CoverageMetricCounts>,
+    coverage_entities: Vec<Value>,
 }
 
 impl BatchAdapter for ScenarioDatasetAdapter {
@@ -814,6 +820,7 @@ impl BatchAdapter for ScenarioDatasetAdapter {
         }
         for (contract_batch, batch) in batches.iter().zip(&mut outputs) {
             batch.coverage_metrics = self.coverage_metrics.clone();
+            batch.coverage_entities = self.coverage_entities.clone();
             if self.id == "dataset-adapter-union-coverage" {
                 if batches.len() != 1 || contract_batch.requests.len() != 2 {
                     return Err("datasets were not executed together for contract coverage".into());

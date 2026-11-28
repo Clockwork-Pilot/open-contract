@@ -142,6 +142,7 @@ pub fn run_dataset(
         "coverage_scopes": coverage.scopes,
         "coverage_lines": coverage.lines,
         "coverage_metrics": coverage.metrics,
+        "coverage_entities": coverage.entities,
     }))
 }
 
@@ -173,6 +174,7 @@ fn unavailable_coverage(sources: &[String]) -> CoverageReport {
         scopes: Vec::new(),
         lines: Vec::new(),
         metrics: json!({}),
+        entities: Vec::new(),
     }
 }
 
@@ -181,6 +183,7 @@ struct CoverageReport {
     scopes: Vec<Value>,
     lines: Vec<Value>,
     metrics: Value,
+    entities: Vec<Value>,
 }
 
 #[cfg(coverage)]
@@ -279,11 +282,18 @@ mod llvm_coverage {
             declared_sources,
             &lines,
         );
+        let entities = coverage_entities(
+            &aggregate_report,
+            package_root,
+            declared_sources,
+            &lines,
+        );
         Ok(CoverageReport {
             native_report: json!({ "format": "llvm-cov-export", "sources": sources, "report": aggregate_report }),
             scopes: coverage_scopes,
             lines,
             metrics,
+            entities,
         })
     }
 
@@ -373,6 +383,173 @@ mod llvm_coverage {
             }
         }
         Value::Object(metrics)
+    }
+
+    fn coverage_entities(
+        report: &Value,
+        package_root: &Path,
+        declared: &[String],
+        line_files: &[Value],
+    ) -> Vec<Value> {
+        let mut entities = Vec::new();
+        for file in line_files {
+            let Some(path) = file.get("path").and_then(Value::as_str) else {
+                continue;
+            };
+            let executable = file["executable_lines"]
+                .as_array()
+                .into_iter()
+                .flatten()
+                .filter_map(Value::as_u64)
+                .collect::<std::collections::BTreeSet<_>>();
+            let covered = file["covered_lines"]
+                .as_array()
+                .into_iter()
+                .flatten()
+                .filter_map(Value::as_u64)
+                .collect::<std::collections::BTreeSet<_>>();
+            for line in executable {
+                let line_number = u32::try_from(line).ok();
+                entities.push(entity(
+                    path,
+                    "line",
+                    None,
+                    line_number,
+                    None,
+                    line_number,
+                    None,
+                    "line",
+                    covered.contains(&line),
+                    None,
+                ));
+            }
+        }
+
+        let functions = report
+            .get("data")
+            .and_then(Value::as_array)
+            .into_iter()
+            .flatten()
+            .flat_map(|data| data.get("functions").and_then(Value::as_array).into_iter().flatten());
+        for function in functions {
+            let Some(filename) = function
+                .get("filenames")
+                .and_then(Value::as_array)
+                .and_then(|files| files.first())
+                .and_then(Value::as_str)
+            else {
+                continue;
+            };
+            let Some(path) = package_relative(filename, package_root, declared) else {
+                continue;
+            };
+            let Some(count) = function.get("count").and_then(Value::as_u64) else {
+                continue;
+            };
+            let name = function.get("name").and_then(Value::as_str);
+            let first_region = function
+                .get("regions")
+                .and_then(Value::as_array)
+                .and_then(|regions| regions.first())
+                .and_then(Value::as_array);
+            let (start_line, start_column, end_line, end_column, precision) =
+                region_location(first_region);
+            entities.push(entity(
+                &path,
+                "function",
+                name,
+                start_line,
+                start_column,
+                end_line,
+                end_column,
+                precision,
+                count > 0,
+                Some(count),
+            ));
+            for (index, region) in function
+                .get("regions")
+                .and_then(Value::as_array)
+                .into_iter()
+                .flatten()
+                .enumerate()
+            {
+                let Some(values) = region.as_array() else {
+                    continue;
+                };
+                if values.len() < 5 {
+                    continue;
+                }
+                let (start_line, start_column, end_line, end_column, precision) =
+                    region_location(Some(values));
+                let region_count = values[4].as_u64();
+                entities.push(entity(
+                    &path,
+                    "region",
+                    Some(&format!("{} region {}", name.unwrap_or("function"), index + 1)),
+                    start_line,
+                    start_column,
+                    end_line,
+                    end_column,
+                    precision,
+                    region_count.is_some_and(|count| count > 0),
+                    region_count,
+                ));
+            }
+        }
+        entities.sort_by(|left, right| {
+            left["path"]
+                .as_str()
+                .cmp(&right["path"].as_str())
+                .then_with(|| left["metric"].as_str().cmp(&right["metric"].as_str()))
+                .then_with(|| left["location"]["start_line"].as_u64().cmp(&right["location"]["start_line"].as_u64()))
+                .then_with(|| left["name"].as_str().cmp(&right["name"].as_str()))
+        });
+        entities
+    }
+
+    fn region_location(
+        values: Option<&Vec<Value>>,
+    ) -> (Option<u32>, Option<u32>, Option<u32>, Option<u32>, &'static str) {
+        let Some(values) = values.filter(|values| values.len() >= 4) else {
+            return (None, None, None, None, "unavailable");
+        };
+        let start_line = values[0].as_u64().and_then(|value| u32::try_from(value).ok());
+        let start_column = values[1].as_u64().and_then(|value| u32::try_from(value).ok());
+        let end_line = values[2].as_u64().and_then(|value| u32::try_from(value).ok());
+        let end_column = values[3].as_u64().and_then(|value| u32::try_from(value).ok());
+        if start_line.is_some() && start_column.is_some() && end_line.is_some() && end_column.is_some() {
+            (start_line, start_column, end_line, end_column, "region")
+        } else {
+            (start_line, start_column, end_line, end_column, "unavailable")
+        }
+    }
+
+    fn entity(
+        path: &str,
+        metric: &str,
+        name: Option<&str>,
+        start_line: Option<u32>,
+        start_column: Option<u32>,
+        end_line: Option<u32>,
+        end_column: Option<u32>,
+        precision: &str,
+        covered: bool,
+        count: Option<u64>,
+    ) -> Value {
+        json!({
+            "path": path,
+            "metric": metric,
+            "name": name,
+            "location": {
+                "precision": precision,
+                "start_line": start_line,
+                "start_column": start_column,
+                "end_line": end_line,
+                "end_column": end_column,
+            },
+            "status": if covered { "covered" } else { "uncovered" },
+            "count": count,
+        })
     }
 
     fn tool(variable: &str, fallback: &str, package_root: &Path) -> PathBuf {
@@ -784,6 +961,17 @@ mod tests {
         );
         #[cfg(not(coverage))]
         assert_eq!(lines, &Vec::<Value>::new());
+        let entities = report["coverage_entities"]
+            .as_array()
+            .expect("coverage_entities is an array");
+        #[cfg(coverage)]
+        assert!(entities.iter().any(|entity| {
+            entity["metric"] == "function"
+                && entity["path"] == "src/lib.rs"
+                && entity["location"]["start_line"].is_number()
+        }), "LLVM function locations should reach the adapter entity payload");
+        #[cfg(not(coverage))]
+        assert!(entities.is_empty());
         for file in lines {
             assert!(file["path"].as_str().is_some_and(|path| !path.is_empty()));
             #[cfg(coverage)]

@@ -24,15 +24,22 @@ Run the checks from the `open-contract` repository root:
 make check-cli-contract
 ```
 
-Generate the checked HTML coverage view with:
+Generate an offline HTML coverage report from the language adapters' coverage
+entities with:
 
 ```sh
-make check-cli-contract-html
+cargo run --manifest-path runner/rust/Cargo.toml -- run-manifest \
+  runner/bootstrap-contracts/cli/open-contract.yaml \
+  --coverage-html .coverage/cli-html
 ```
 
-The check runs the full dataset and requires 100% function, instantiation, line,
-and LLVM region coverage plus matching 32-character fingerprints. Coverage
-artifacts are written under the root `.coverage/bootstrap-contracts/` directory.
+The report contains an index for contracts and their declared datasets, then
+source pages with line tables and per-entity locations, status, and adapter
+reported counts. Dataset links point to their contract's coverage union because
+the adapter executes all datasets for a contract in one batch. Metric details
+that an adapter does not provide are labeled unavailable. This command does not
+invoke LLVM to generate HTML; it renders the entity data returned by the
+JavaScript, Python, or Rust adapter.
 
 Every manifest loaded for execution by `run-manifest`, including nested
 manifests, must have a filename whose stem contains an exact dot-delimited

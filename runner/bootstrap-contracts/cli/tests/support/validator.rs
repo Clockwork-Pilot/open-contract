@@ -120,6 +120,7 @@ fn validate(case: &DatasetCase) -> Result<(), String> {
                 coverage_threshold_met: false,
                 dataset_metrics: metric_outcomes.clone(),
                 aggregate_metrics: metric_outcomes,
+                coverage_entities: Vec::new(),
                 native_report: Value::Null,
                 declared_sources: Vec::new(),
                 covered_sources: Vec::new(),
@@ -245,6 +246,32 @@ fn validate(case: &DatasetCase) -> Result<(), String> {
         .and_then(|value| value.as_str().map(without_coverage_metric_summary))
     {
         expected["stdout"] = Value::String(stdout);
+    }
+    if let Some(required_text) = expected
+        .as_object_mut()
+        .and_then(|expected| expected.remove("coverage_html_index_contains"))
+    {
+        let html_arg = arguments
+            .windows(2)
+            .find(|pair| pair[0] == "--coverage-html")
+            .map(|pair| pair[1].as_str())
+            .ok_or("coverage_html_index_contains requires --coverage-html")?;
+        let html_path = temporary.as_ref().map_or_else(
+            || PathBuf::from(html_arg),
+            |directory| directory.path().join(html_arg),
+        ).join("index.html");
+        let html = fs::read_to_string(&html_path).map_err(|error| {
+            format!("cannot read HTML coverage index {}: {error}", html_path.display())
+        })?;
+        for required in required_text
+            .as_array()
+            .ok_or("coverage_html_index_contains must be an array")?
+        {
+            let required = required.as_str().ok_or("HTML index checks must be strings")?;
+            if !html.contains(required) {
+                return Err(format!("HTML coverage index does not contain {required:?}"));
+            }
+        }
     }
     if expected.get("coverage_report").is_some() {
         let report_arg = arguments

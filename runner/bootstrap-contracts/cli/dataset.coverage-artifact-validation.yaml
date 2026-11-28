@@ -98,7 +98,7 @@ cases:
   expected:
     written: false
   predicate: contains(.error, 'minimum_coverage_percent')
-  coverage_fingerprint: cd23d9ef7f3c29b412e6431e8ba3837d
+  coverage_fingerprint: 038f2c7bd413e0f7348a928f8d8e72ef
 - id: rejects-invalid-nested-coverage-totals
   input:
     invalid_coverage_report_field: dataset-object

@@ -98,6 +98,9 @@ pub struct AdapterBatch {
     /// Per-metric counts and file totals reported by the language coverage tool.
     #[serde(default)]
     pub coverage_metrics: std::collections::BTreeMap<String, CoverageMetricCounts>,
+    /// Per-entity coverage locations supplied by the language adapter.
+    #[serde(default)]
+    pub coverage_entities: Vec<Value>,
     /// Adapter-owned summary for explicitly declared supplemental tests.
     #[serde(default)]
     pub additional_test_coverage: Option<Value>,
@@ -470,6 +473,7 @@ pub fn validate_adapter_coverage_payload(value: &Value, contract: &str) -> Resul
         "coverage": value.get("coverage").cloned().unwrap_or(Value::Null),
         "coverage_lines": value.get("coverage_lines").cloned().unwrap_or_else(|| json!([])),
         "coverage_metrics": value.get("coverage_metrics").cloned().unwrap_or_else(|| json!({})),
+        "coverage_entities": value.get("coverage_entities").cloned().unwrap_or_else(|| json!([])),
         "additional_test_coverage": value.get("additional_test_coverage").cloned().unwrap_or(Value::Null),
         "additional_coverage_lines": value.get("additional_coverage_lines").cloned().unwrap_or_else(|| json!([])),
     });
@@ -569,6 +573,7 @@ fn adapter_coverage_value(batch: &AdapterBatch) -> Value {
         "coverage": batch.coverage,
         "coverage_lines": batch.coverage_lines,
         "coverage_metrics": batch.coverage_metrics,
+        "coverage_entities": batch.coverage_entities,
         "additional_test_coverage": batch.additional_test_coverage,
         "additional_coverage_lines": batch.additional_coverage_lines,
     })
@@ -633,6 +638,8 @@ pub struct CoverageRecord {
     pub coverage_threshold_met: bool,
     pub dataset_metrics: std::collections::BTreeMap<String, CoverageMetricOutcome>,
     pub aggregate_metrics: std::collections::BTreeMap<String, CoverageMetricOutcome>,
+    #[serde(default)]
+    pub coverage_entities: Vec<Value>,
     pub native_report: Value,
     pub declared_sources: Vec<String>,
     pub covered_sources: Vec<String>,
@@ -841,6 +848,7 @@ pub fn run_contract_tree_with_fingerprint_mode_and_nested_contracts(
             &mut adapter_batch.additional_coverage_lines,
         );
         prefix_coverage_metric_paths(&batch.package_prefix, &mut adapter_batch.coverage_metrics);
+        prefix_coverage_entity_paths(&batch.package_prefix, &mut adapter_batch.coverage_entities);
         prefix_native_coverage_sources(&batch.package_prefix, &mut adapter_batch.coverage);
         let (dataset_covered_lines, dataset_executable_lines) =
             line_coverage_totals(&adapter_batch.coverage_lines);
@@ -958,6 +966,7 @@ pub fn run_contract_tree_with_fingerprint_mode_and_nested_contracts(
             coverage_threshold_met,
             dataset_metrics,
             aggregate_metrics,
+            coverage_entities: adapter_batch.coverage_entities,
             native_report: adapter_batch.coverage.unwrap_or(Value::Null),
             declared_sources,
             covered_sources: {
@@ -1069,6 +1078,14 @@ fn validate_declared_coverage_sources(
             }
         }
     }
+    for entity in &batch.coverage_entities {
+        let path = entity.get("path").and_then(Value::as_str).unwrap_or_default();
+        if !is_allowed(path, declared_sources) {
+            return Err(format!(
+                "contract {contract} adapter reported entity coverage for source outside coverage_sources: {path}"
+            ));
+        }
+    }
     if let Some(sources) = batch
         .coverage
         .as_ref()
@@ -1124,6 +1141,18 @@ fn prefix_coverage_metric_paths(
         for file in &mut metric.files {
             file.path = prefix.join(&file.path).to_string_lossy().replace('\\', "/");
         }
+    }
+}
+
+fn prefix_coverage_entity_paths(prefix: &Path, entities: &mut [Value]) {
+    if prefix.as_os_str().is_empty() || prefix == Path::new(".") {
+        return;
+    }
+    for entity in entities {
+        let path = entity["path"]
+            .as_str()
+            .expect("coverage entities are schema-validated before path prefixing");
+        entity["path"] = Value::String(prefix.join(path).to_string_lossy().replace('\\', "/"));
     }
 }
 

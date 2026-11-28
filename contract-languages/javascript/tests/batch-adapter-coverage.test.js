@@ -31,6 +31,38 @@ test('coverage reports only explicitly declared public source files', async () =
 		assert.ok(report.coverage_metrics.function.total >= 1);
 		assert.equal(report.coverage_metrics.function.covered, 1);
 		assert.equal(report.coverage_metrics.statement.files[0].path, 'validator.mjs');
+		assert.ok(report.coverage_entities.some((item) => item.metric === 'function'
+			&& item.name === 'validate' && item.location.start_line === 2 && item.status === 'covered'));
+	} finally {
+		process.chdir(originalDirectory);
+		await rm(packageRoot, { recursive: true, force: true });
+	}
+});
+
+test('coverage entities preserve native branch locations and uncovered counts', async () => {
+	const packageRoot = await mkdtemp(path.join(os.tmpdir(), 'open-contract-js-coverage-'));
+	const originalDirectory = process.cwd();
+	const validatorPath = path.join(packageRoot, 'validator.mjs');
+	await writeFile(path.join(packageRoot, 'package.json'), '{"type":"module"}');
+	await writeFile(validatorPath, [
+		'export function validate(input) {',
+		'\tif (input.valid) return true;',
+		'\treturn false;',
+		'}',
+	].join('\n'));
+	process.chdir(packageRoot);
+	try {
+		const report = await runDataset({
+			package: '.',
+			coverage_sources: ['validator.mjs'],
+			requests: [{ key: { case_id: 'valid', step_id: null }, input: { valid: true } }],
+		}, () => import(pathToFileURL(validatorPath).href));
+		const branches = report.coverage_entities.filter((item) => item.metric === 'branch');
+		assert.ok(branches.length >= 2);
+		assert.ok(branches.some((item) => item.status === 'covered' && item.count > 0));
+		assert.ok(branches.some((item) => item.status === 'uncovered' && item.count === 0));
+		assert.ok(branches.every((item) => Number.isInteger(item.location.start_line)
+			&& (item.location.start_column === null || item.location.start_column >= 0)));
 	} finally {
 		process.chdir(originalDirectory);
 		await rm(packageRoot, { recursive: true, force: true });
