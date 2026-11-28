@@ -1,4 +1,7 @@
-use bootstrap_dataset_harness::{load_dataset, run_dataset, Dataset, DatasetCase};
+use bootstrap_dataset_harness::{
+    load_dataset, load_dataset_with_schema, run_dataset, run_dataset_with_schema, Dataset,
+    DatasetCase,
+};
 use serde_json::Value;
 use std::path::PathBuf;
 
@@ -8,6 +11,10 @@ mod profile;
 
 fn dataset_path() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("dataset.json")
+}
+
+fn dataset_schema_path() -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("dataset.schema.json")
 }
 
 fn nested_dataset(case: &DatasetCase) -> Result<Dataset, String> {
@@ -46,6 +53,40 @@ fn nested_dataset_file(case: &DatasetCase) -> Result<(tempfile::TempDir, PathBuf
     let path = directory.path().join(format!("nested.{extension}"));
     std::fs::write(&path, document).map_err(|error| error.to_string())?;
     Ok((directory, path))
+}
+
+fn schema_fixture(case: &DatasetCase) -> Result<(tempfile::TempDir, PathBuf, PathBuf), String> {
+    let extension = case.input["extension"].as_str().unwrap_or("json");
+    let document = case.input["document"]
+        .as_str()
+        .ok_or_else(|| "input.document must be a string".to_string())?;
+    let directory = tempfile::tempdir().map_err(|error| error.to_string())?;
+    let dataset_path = if extension.is_empty() {
+        directory.path().join("nested")
+    } else {
+        directory.path().join(format!("nested.{extension}"))
+    };
+    let schema_path = directory.path().join("dataset.schema.json");
+    if case.input["write_dataset"].as_bool() != Some(false) {
+        std::fs::write(&dataset_path, document).map_err(|error| error.to_string())?;
+    }
+    if let Some(schema) = case.input["schema_document"].as_str() {
+        std::fs::write(&schema_path, schema).map_err(|error| error.to_string())?;
+    }
+    Ok((directory, dataset_path, schema_path))
+}
+
+fn schema_error(case: &DatasetCase, error: String) -> Result<(), String> {
+    let expected = case.input["error"]
+        .as_str()
+        .ok_or_else(|| "input.error must be a string".to_string())?;
+    if error.contains(expected) {
+        Ok(())
+    } else {
+        Err(format!(
+            "expected error containing {expected:?}, got {error}"
+        ))
+    }
 }
 
 fn validate_case(_: &Dataset, case: &DatasetCase) -> Result<(), String> {
@@ -142,12 +183,66 @@ fn validate_case(_: &Dataset, case: &DatasetCase) -> Result<(), String> {
                 ))
             }
         }
+        "schema-load" => {
+            let (_directory, dataset_path, schema_path) = schema_fixture(case)?;
+            let dataset = load_dataset_with_schema(&dataset_path, &schema_path)?;
+            if dataset.version == 1 && dataset.cases.len() == 1 {
+                Ok(())
+            } else {
+                Err("schema-validated dataset did not preserve its version and case".into())
+            }
+        }
+        "schema-load-error" => {
+            let (_directory, dataset_path, schema_path) = schema_fixture(case)?;
+            match load_dataset_with_schema(&dataset_path, &schema_path) {
+                Ok(_) => Err("expected schema loading to fail".into()),
+                Err(error) => schema_error(case, error),
+            }
+        }
+        "schema-run" | "schema-run-auto" => {
+            let (_directory, dataset_path, schema_path) = schema_fixture(case)?;
+            let mut visited = Vec::new();
+            let count = if operation == "schema-run-auto" {
+                run_dataset(&dataset_path, |_, nested_case| {
+                    visited.push(nested_case.id.clone());
+                    Ok(())
+                })?
+            } else {
+                run_dataset_with_schema(&dataset_path, &schema_path, |_, nested_case| {
+                    visited.push(nested_case.id.clone());
+                    Ok(())
+                })?
+            };
+            if count == 1 && visited == ["sample"] {
+                Ok(())
+            } else {
+                Err(format!("unexpected schema-validated visits: {visited:?}"))
+            }
+        }
+        "schema-run-error" => {
+            let (_directory, dataset_path, schema_path) = schema_fixture(case)?;
+            let mut called = false;
+            match run_dataset_with_schema(&dataset_path, &schema_path, |_, _| {
+                called = true;
+                Ok(())
+            }) {
+                Ok(_) => Err("expected invalid schema input to fail before validation".into()),
+                Err(error) if called => Err("schema failure invoked the case validator".into()),
+                Err(error) => schema_error(case, error),
+            }
+        }
+        "schema-run-duplicate" => {
+            let (_directory, dataset_path, schema_path) = schema_fixture(case)?;
+            let error = run_dataset_with_schema(&dataset_path, &schema_path, |_, _| Ok(()))
+                .expect_err("duplicate case IDs should fail");
+            schema_error(case, error)
+        }
         other => Err(format!("unknown operation {other:?}")),
     }
 }
 
 fn execute_dataset() -> Result<usize, String> {
-    let dataset = load_dataset(dataset_path())?;
+    let dataset = load_dataset_with_schema(&dataset_path(), &dataset_schema_path())?;
     if dataset.version != 1 || dataset.cases.is_empty() {
         return Err("the dataset harness contract dataset is malformed".into());
     }
@@ -190,5 +285,5 @@ fn execute_dataset() -> Result<usize, String> {
 #[test]
 fn dataset_entries_exercise_public_api() {
     let count = execute_dataset().expect("bootstrap dataset harness cases should pass");
-    assert_eq!(count, 16);
+    assert_eq!(count, 32);
 }

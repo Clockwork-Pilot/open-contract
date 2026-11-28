@@ -1,4 +1,257 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$ref": "../../../schemas/dataset.v1.schema.json"
+  "$id": "https://open-contracts.dev/schemas/bootstrap-dataset-harness.v1.schema.json",
+  "title": "Bootstrap dataset harness test dataset",
+  "$ref": "#/$defs/harnessDataset",
+  "$defs": {
+    "harnessDataset": {
+      "type": "object",
+      "required": [
+        "version",
+        "cases"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "cases": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/harnessCase"
+          }
+        }
+      }
+    },
+    "harnessCase": {
+      "type": "object",
+      "required": [
+        "id",
+        "input",
+        "expected"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "setup": {
+          "type": "string",
+          "minLength": 1
+        },
+        "coverage_fingerprint": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{32}$"
+        },
+        "input": {
+          "$ref": "#/$defs/harnessInput"
+        },
+        "expected": {
+          "const": {
+            "ok": true
+          }
+        }
+      }
+    },
+    "harnessInput": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "operation",
+            "extension",
+            "document"
+          ],
+          "properties": {
+            "operation": {
+              "enum": [
+                "load",
+                "round-trip",
+                "missing-expected",
+                "run",
+                "run-validator-error"
+              ]
+            },
+            "extension": {
+              "enum": [
+                "json",
+                "yaml",
+                "yml"
+              ]
+            },
+            "document": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "operation",
+            "extension",
+            "document",
+            "error"
+          ],
+          "properties": {
+            "operation": {
+              "const": "load-error"
+            },
+            "extension": {
+              "enum": [
+                "json",
+                "yaml",
+                "txt",
+                ""
+              ]
+            },
+            "document": {
+              "type": "string"
+            },
+            "error": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "operation",
+            "error"
+          ],
+          "properties": {
+            "operation": {
+              "const": "missing-file"
+            },
+            "error": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "operation",
+            "extension",
+            "document",
+            "error"
+          ],
+          "properties": {
+            "operation": {
+              "const": "run-error"
+            },
+            "extension": {
+              "enum": [
+                "json",
+                "yaml"
+              ]
+            },
+            "document": {
+              "type": "string"
+            },
+            "error": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "operation",
+            "extension",
+            "document"
+          ],
+          "properties": {
+            "operation": {
+              "enum": [
+                "schema-load",
+                "schema-load-error",
+                "schema-run",
+                "schema-run-auto",
+                "schema-run-error",
+                "schema-run-duplicate"
+              ]
+            },
+            "extension": {
+              "enum": [
+                "json",
+                "yaml",
+                "yml",
+                "txt",
+                ""
+              ]
+            },
+            "document": {
+              "type": "string"
+            },
+            "schema_document": {
+              "type": "string"
+            },
+            "write_dataset": {
+              "type": "boolean"
+            },
+            "error": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "operation": {
+                    "enum": [
+                      "schema-load",
+                      "schema-run",
+                      "schema-run-auto",
+                      "schema-run-error",
+                      "schema-run-duplicate"
+                    ]
+                  }
+                },
+                "required": [
+                  "operation"
+                ]
+              },
+              "then": {
+                "required": [
+                  "schema_document"
+                ]
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "operation": {
+                    "enum": [
+                      "schema-load-error",
+                      "schema-run-error",
+                      "schema-run-duplicate"
+                    ]
+                  }
+                },
+                "required": [
+                  "operation"
+                ]
+              },
+              "then": {
+                "required": [
+                  "error"
+                ]
+              }
+            }
+          ],
+          "additionalProperties": false
+        }
+      ]
+    }
+  }
 }

@@ -22,6 +22,16 @@ expression as an input, that expression belongs inside `input`; the sibling
 case-level `predicate` describes a result assertion. The harness owns loading,
 envelope validation, case order, and case-qualified errors; each bootstrap
 contract owns behavior assertions.
+Bootstrap packages may place a JSON Schema beside their dataset as
+`dataset.schema.json`. When present, `run_dataset` validates the complete JSON
+or YAML document against that package-owned schema before invoking any case
+validator. Packages loading data through another path can use
+`load_dataset_with_schema` or `run_dataset_with_schema` to provide the schema
+explicitly. Schema failures include the dataset path and failing instance path.
+Use the shared envelope schema as a base, then constrain the package's `input`
+and `expected` values to the public operation under test. The harness rejects
+duplicate case IDs before execution so coverage fingerprints and failures map
+to one unambiguous case.
 `setup` is an optional fixture ID. The validator resolves that ID and prepares
 external conditions the real input cannot create, such as environment values,
 temporary filesystem state, a fake executable, or a controlled OS result. It

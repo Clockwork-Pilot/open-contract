@@ -56,6 +56,65 @@ pub fn load_dataset(path: impl AsRef<Path>) -> Result<Dataset, String> {
     load_dataset_path(path.as_ref())
 }
 
+/// Load a JSON or YAML dataset and validate its complete document against a
+/// package-owned JSON Schema before deserializing the shared envelope.
+pub fn load_dataset_with_schema(
+    dataset_path: &Path,
+    schema_path: &Path,
+) -> Result<Dataset, String> {
+    let value = load_dataset_value(dataset_path)?;
+    validate_dataset_schema(&value, dataset_path, schema_path)?;
+    serde_json::from_value(value).map_err(|error| {
+        format!(
+            "invalid dataset {} after schema validation: {error}",
+            dataset_path.display()
+        )
+    })
+}
+
+fn load_dataset_value(path: &Path) -> Result<Value, String> {
+    let bytes = fs::read(path).map_err(|error| format!("cannot read dataset: {error}"))?;
+    match path.extension().and_then(|extension| extension.to_str()) {
+        Some("json") => {
+            serde_json::from_slice(&bytes).map_err(|error| format!("invalid dataset JSON: {error}"))
+        }
+        Some("yaml" | "yml") => {
+            serde_yaml::from_slice(&bytes).map_err(|error| format!("invalid dataset YAML: {error}"))
+        }
+        Some(extension) => Err(format!("unsupported dataset extension: {extension}")),
+        None => Err("dataset path must have a .json, .yaml, or .yml extension".into()),
+    }
+}
+
+fn validate_dataset_schema(
+    value: &Value,
+    dataset_path: &Path,
+    schema_path: &Path,
+) -> Result<(), String> {
+    let schema_bytes = fs::read(schema_path).map_err(|error| {
+        format!(
+            "cannot read dataset schema {}: {error}",
+            schema_path.display()
+        )
+    })?;
+    let schema: Value = serde_json::from_slice(&schema_bytes)
+        .map_err(|error| format!("invalid dataset schema {}: {error}", schema_path.display()))?;
+    let validator = jsonschema::validator_for(&schema).map_err(|error| {
+        format!(
+            "cannot compile dataset schema {}: {error}",
+            schema_path.display()
+        )
+    })?;
+    validator.validate(value).map_err(|error| {
+        format!(
+            "dataset {} does not match schema {} at {}: {error}",
+            dataset_path.display(),
+            schema_path.display(),
+            error.instance_path()
+        )
+    })
+}
+
 fn load_dataset_path(path: &Path) -> Result<Dataset, String> {
     let bytes = fs::read(path).map_err(|error| format!("cannot read dataset: {error}"))?;
     match path.extension().and_then(|extension| extension.to_str()) {
@@ -76,14 +135,34 @@ pub fn run_dataset(
     path: impl AsRef<Path>,
     mut validate: impl FnMut(&Dataset, &DatasetCase) -> Result<(), String>,
 ) -> Result<usize, String> {
-    run_dataset_inner(path.as_ref(), &mut validate)
+    let path = path.as_ref();
+    let schema_path = path.with_file_name("dataset.schema.json");
+    run_dataset_inner(
+        path,
+        schema_path.is_file().then_some(schema_path.as_path()),
+        &mut validate,
+    )
+}
+
+/// Run a dataset after validating its envelope, inputs, and expected values
+/// against an explicit package-owned JSON Schema.
+pub fn run_dataset_with_schema(
+    path: impl AsRef<Path>,
+    schema_path: impl AsRef<Path>,
+    mut validate: impl FnMut(&Dataset, &DatasetCase) -> Result<(), String>,
+) -> Result<usize, String> {
+    run_dataset_inner(path.as_ref(), Some(schema_path.as_ref()), &mut validate)
 }
 
 fn run_dataset_inner(
     path: &Path,
+    schema_path: Option<&Path>,
     validate: &mut dyn FnMut(&Dataset, &DatasetCase) -> Result<(), String>,
 ) -> Result<usize, String> {
-    let dataset = load_dataset(path)?;
+    let dataset = match schema_path {
+        Some(schema_path) => load_dataset_with_schema(path, schema_path)?,
+        None => load_dataset(path)?,
+    };
     if dataset.version != 1 {
         return Err(format!(
             "unsupported bootstrap dataset version {}; expected 1",
@@ -92,6 +171,16 @@ fn run_dataset_inner(
     }
     if dataset.cases.is_empty() {
         return Err("dataset must contain at least one case".into());
+    }
+    let mut case_ids = std::collections::BTreeSet::new();
+    for case in &dataset.cases {
+        if !case_ids.insert(case.id.as_str()) {
+            return Err(format!(
+                "duplicate case ID {:?} in {}",
+                case.id,
+                path.display()
+            ));
+        }
     }
     let mut failures = Vec::new();
     for case in &dataset.cases {

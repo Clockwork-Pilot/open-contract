@@ -142,7 +142,7 @@
         "extension": "json",
         "document": "{\"version\":1,\"cases\":[{\"id\":\"one\",\"input\":1,\"expected\":1},{\"id\":\"two\",\"input\":2,\"predicate\":\"true\"}]}"
       },
-      "coverage_fingerprint": "a11d5b3ecd59239c5651ed0594a62f53",
+      "coverage_fingerprint": "4de0ff0cdb00433b8aa502c0fa2a557e",
       "expected": {
         "ok": true
       }
@@ -156,7 +156,7 @@
         "document": "{\"version\":2,\"cases\":[{\"id\":\"one\",\"input\":1,\"expected\":1}]}",
         "error": "unsupported bootstrap dataset version 2"
       },
-      "coverage_fingerprint": "d76a4d2e9a266adc6fb7ca245f5f2edb",
+      "coverage_fingerprint": "caf9349c527666ed8fc65e19ad783a30",
       "expected": {
         "ok": true
       }
@@ -170,7 +170,7 @@
         "document": "{\"version\":1,\"cases\":[]}",
         "error": "dataset must contain at least one case"
       },
-      "coverage_fingerprint": "049e573e2c46558df76bae3696aec0bd",
+      "coverage_fingerprint": "6bc2e8990dfdfe40ea85b1aac2be13aa",
       "expected": {
         "ok": true
       }
@@ -184,7 +184,7 @@
         "document": "{\"version\":1,\"cases\":[{\"id\":\"no-result\",\"input\":1}]}",
         "error": "expected or predicate is required"
       },
-      "coverage_fingerprint": "cfdf9655635b5598936b60aaf6b08225",
+      "coverage_fingerprint": "b1dae2c8bdfcf1239645bdafc1b9b9a9",
       "expected": {
         "ok": true
       }
@@ -197,7 +197,7 @@
         "extension": "json",
         "document": "{\"version\":1,\"cases\":[{\"id\":\"bad\",\"input\":1,\"expected\":1},{\"id\":\"good\",\"input\":2,\"expected\":2}]}"
       },
-      "coverage_fingerprint": "5d37556a6df5fde2ac274e76ebb9080d",
+      "coverage_fingerprint": "ea29bcb52e028fd066887830d123fd38",
       "expected": {
         "ok": true
       }
@@ -211,10 +211,235 @@
         "document": "{",
         "error": "invalid dataset JSON"
       },
-      "coverage_fingerprint": "7ff001478544ba161e43a46517164023",
+      "coverage_fingerprint": "126bfac6a85739d3eb507f37aed9b2b7",
       "expected": {
         "ok": true
       }
+    },
+    {
+      "id": "schema-load-json",
+      "input": {
+        "operation": "schema-load",
+        "extension": "json",
+        "document": "{\"version\":1,\"cases\":[{\"id\":\"sample\",\"input\":{\"value\":7},\"expected\":7}]}",
+        "schema_document": "{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"required\":[\"version\",\"cases\"],\"properties\":{\"version\":{\"const\":1},\"cases\":{\"type\":\"array\",\"minItems\":1,\"items\":{\"type\":\"object\",\"required\":[\"id\",\"input\",\"expected\"],\"properties\":{\"id\":{\"type\":\"string\",\"minLength\":1},\"input\":{\"type\":\"object\",\"required\":[\"value\"],\"properties\":{\"value\":{\"type\":\"integer\"}},\"additionalProperties\":false},\"expected\":{\"type\":\"integer\"},\"coverage_fingerprint\":{\"type\":\"string\"}},\"additionalProperties\":false}}},\"additionalProperties\":false}"
+      },
+      "expected": {
+        "ok": true
+      },
+      "coverage_fingerprint": "c4a38df9c3f14cc17b9542d6f98014f0"
+    },
+    {
+      "id": "schema-load-yaml",
+      "input": {
+        "operation": "schema-load",
+        "extension": "yaml",
+        "document": "version: 1\ncases:\n  - id: sample\n    input: {value: 7}\n    expected: 7\n",
+        "schema_document": "{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"required\":[\"version\",\"cases\"],\"properties\":{\"version\":{\"const\":1},\"cases\":{\"type\":\"array\",\"minItems\":1,\"items\":{\"type\":\"object\",\"required\":[\"id\",\"input\",\"expected\"],\"properties\":{\"id\":{\"type\":\"string\",\"minLength\":1},\"input\":{\"type\":\"object\",\"required\":[\"value\"],\"properties\":{\"value\":{\"type\":\"integer\"}},\"additionalProperties\":false},\"expected\":{\"type\":\"integer\"},\"coverage_fingerprint\":{\"type\":\"string\"}},\"additionalProperties\":false}}},\"additionalProperties\":false}"
+      },
+      "expected": {
+        "ok": true
+      },
+      "coverage_fingerprint": "7fa857af8fd694061f12218b5c6fe5d0"
+    },
+    {
+      "id": "schema-file-missing",
+      "input": {
+        "operation": "schema-load-error",
+        "extension": "json",
+        "document": "{\"version\":1,\"cases\":[{\"id\":\"sample\",\"input\":{\"value\":7},\"expected\":7}]}",
+        "error": "cannot read dataset schema"
+      },
+      "expected": {
+        "ok": true
+      },
+      "coverage_fingerprint": "7432b836f404afac447ef2a47e0b036a"
+    },
+    {
+      "id": "schema-json-invalid",
+      "input": {
+        "operation": "schema-load-error",
+        "extension": "json",
+        "document": "{\"version\":1,\"cases\":[{\"id\":\"sample\",\"input\":{\"value\":7},\"expected\":7}]}",
+        "schema_document": "{",
+        "error": "invalid dataset schema"
+      },
+      "expected": {
+        "ok": true
+      },
+      "coverage_fingerprint": "e2f378ac60a8923cdc91fe0d8db4848e"
+    },
+    {
+      "id": "schema-definition-invalid",
+      "input": {
+        "operation": "schema-load-error",
+        "extension": "json",
+        "document": "{\"version\":1,\"cases\":[{\"id\":\"sample\",\"input\":{\"value\":7},\"expected\":7}]}",
+        "schema_document": "{\"type\":17}",
+        "error": "cannot compile dataset schema"
+      },
+      "expected": {
+        "ok": true
+      },
+      "coverage_fingerprint": "5da1b25e237526d8be72f7cd72e2ed0d"
+    },
+    {
+      "id": "schema-input-rejected",
+      "input": {
+        "operation": "schema-load-error",
+        "extension": "json",
+        "document": "{\"version\":1,\"cases\":[{\"id\":\"sample\",\"input\":{\"value\":\"seven\"},\"expected\":7}]}",
+        "schema_document": "{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"required\":[\"version\",\"cases\"],\"properties\":{\"version\":{\"const\":1},\"cases\":{\"type\":\"array\",\"minItems\":1,\"items\":{\"type\":\"object\",\"required\":[\"id\",\"input\",\"expected\"],\"properties\":{\"id\":{\"type\":\"string\",\"minLength\":1},\"input\":{\"type\":\"object\",\"required\":[\"value\"],\"properties\":{\"value\":{\"type\":\"integer\"}},\"additionalProperties\":false},\"expected\":{\"type\":\"integer\"},\"coverage_fingerprint\":{\"type\":\"string\"}},\"additionalProperties\":false}}},\"additionalProperties\":false}",
+        "error": "does not match schema"
+      },
+      "expected": {
+        "ok": true
+      },
+      "coverage_fingerprint": "c38bdaee23d4313ba9a002d0628562b9"
+    },
+    {
+      "id": "run-schema-explicit",
+      "input": {
+        "operation": "schema-run",
+        "extension": "json",
+        "document": "{\"version\":1,\"cases\":[{\"id\":\"sample\",\"input\":{\"value\":7},\"expected\":7}]}",
+        "schema_document": "{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"required\":[\"version\",\"cases\"],\"properties\":{\"version\":{\"const\":1},\"cases\":{\"type\":\"array\",\"minItems\":1,\"items\":{\"type\":\"object\",\"required\":[\"id\",\"input\",\"expected\"],\"properties\":{\"id\":{\"type\":\"string\",\"minLength\":1},\"input\":{\"type\":\"object\",\"required\":[\"value\"],\"properties\":{\"value\":{\"type\":\"integer\"}},\"additionalProperties\":false},\"expected\":{\"type\":\"integer\"},\"coverage_fingerprint\":{\"type\":\"string\"}},\"additionalProperties\":false}}},\"additionalProperties\":false}"
+      },
+      "expected": {
+        "ok": true
+      },
+      "coverage_fingerprint": "0d2d20b6cae95cdab48ea02db13d9a97"
+    },
+    {
+      "id": "run-schema-auto",
+      "input": {
+        "operation": "schema-run-auto",
+        "extension": "json",
+        "document": "{\"version\":1,\"cases\":[{\"id\":\"sample\",\"input\":{\"value\":7},\"expected\":7}]}",
+        "schema_document": "{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"required\":[\"version\",\"cases\"],\"properties\":{\"version\":{\"const\":1},\"cases\":{\"type\":\"array\",\"minItems\":1,\"items\":{\"type\":\"object\",\"required\":[\"id\",\"input\",\"expected\"],\"properties\":{\"id\":{\"type\":\"string\",\"minLength\":1},\"input\":{\"type\":\"object\",\"required\":[\"value\"],\"properties\":{\"value\":{\"type\":\"integer\"}},\"additionalProperties\":false},\"expected\":{\"type\":\"integer\"},\"coverage_fingerprint\":{\"type\":\"string\"}},\"additionalProperties\":false}}},\"additionalProperties\":false}"
+      },
+      "expected": {
+        "ok": true
+      },
+      "coverage_fingerprint": "e157fe280ae4f4e6b53e44f251c8510a"
+    },
+    {
+      "id": "run-schema-rejects-input",
+      "input": {
+        "operation": "schema-run-error",
+        "extension": "json",
+        "document": "{\"version\":1,\"cases\":[{\"id\":\"sample\",\"input\":{\"value\":\"seven\"},\"expected\":7}]}",
+        "schema_document": "{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"required\":[\"version\",\"cases\"],\"properties\":{\"version\":{\"const\":1},\"cases\":{\"type\":\"array\",\"minItems\":1,\"items\":{\"type\":\"object\",\"required\":[\"id\",\"input\",\"expected\"],\"properties\":{\"id\":{\"type\":\"string\",\"minLength\":1},\"input\":{\"type\":\"object\",\"required\":[\"value\"],\"properties\":{\"value\":{\"type\":\"integer\"}},\"additionalProperties\":false},\"expected\":{\"type\":\"integer\"},\"coverage_fingerprint\":{\"type\":\"string\"}},\"additionalProperties\":false}}},\"additionalProperties\":false}",
+        "error": "does not match schema"
+      },
+      "expected": {
+        "ok": true
+      },
+      "coverage_fingerprint": "24b3988453b00b2cac5e41c29138431c"
+    },
+    {
+      "id": "run-schema-rejects-duplicate-ids",
+      "input": {
+        "operation": "schema-run-duplicate",
+        "extension": "json",
+        "document": "{\"version\":1,\"cases\":[{\"id\":\"same\",\"input\":{\"value\":7},\"expected\":7},{\"id\":\"same\",\"input\":{\"value\":8},\"expected\":8}]}",
+        "schema_document": "{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"required\":[\"version\",\"cases\"],\"properties\":{\"version\":{\"const\":1},\"cases\":{\"type\":\"array\",\"minItems\":1,\"items\":{\"type\":\"object\",\"required\":[\"id\",\"input\",\"expected\"],\"properties\":{\"id\":{\"type\":\"string\",\"minLength\":1},\"input\":{\"type\":\"object\",\"required\":[\"value\"],\"properties\":{\"value\":{\"type\":\"integer\"}},\"additionalProperties\":false},\"expected\":{\"type\":\"integer\"},\"coverage_fingerprint\":{\"type\":\"string\"}},\"additionalProperties\":false}}},\"additionalProperties\":false}",
+        "error": "duplicate case ID"
+      },
+      "expected": {
+        "ok": true
+      },
+      "coverage_fingerprint": "0d81367c7c22b9a8c07a170273fe621b"
+    },
+    {
+      "id": "schema-invalid-dataset-json",
+      "input": {
+        "operation": "schema-load-error",
+        "extension": "json",
+        "document": "{",
+        "error": "invalid dataset JSON",
+        "write_dataset": true,
+        "schema_document": "{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"required\":[\"version\",\"cases\"],\"properties\":{\"version\":{\"const\":1},\"cases\":{\"type\":\"array\",\"minItems\":1,\"items\":{\"type\":\"object\",\"required\":[\"id\",\"input\",\"expected\"],\"properties\":{\"id\":{\"type\":\"string\",\"minLength\":1},\"input\":{\"type\":\"object\",\"required\":[\"value\"],\"properties\":{\"value\":{\"type\":\"integer\"}},\"additionalProperties\":false},\"expected\":{\"type\":\"integer\"},\"coverage_fingerprint\":{\"type\":\"string\"}},\"additionalProperties\":false}}},\"additionalProperties\":false}"
+      },
+      "expected": {
+        "ok": true
+      },
+      "coverage_fingerprint": "f697f9feabb8448e1885013acd1d45ca"
+    },
+    {
+      "id": "schema-invalid-dataset-yaml",
+      "input": {
+        "operation": "schema-load-error",
+        "extension": "yaml",
+        "document": "version: [",
+        "error": "invalid dataset YAML",
+        "write_dataset": true,
+        "schema_document": "{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"required\":[\"version\",\"cases\"],\"properties\":{\"version\":{\"const\":1},\"cases\":{\"type\":\"array\",\"minItems\":1,\"items\":{\"type\":\"object\",\"required\":[\"id\",\"input\",\"expected\"],\"properties\":{\"id\":{\"type\":\"string\",\"minLength\":1},\"input\":{\"type\":\"object\",\"required\":[\"value\"],\"properties\":{\"value\":{\"type\":\"integer\"}},\"additionalProperties\":false},\"expected\":{\"type\":\"integer\"},\"coverage_fingerprint\":{\"type\":\"string\"}},\"additionalProperties\":false}}},\"additionalProperties\":false}"
+      },
+      "expected": {
+        "ok": true
+      },
+      "coverage_fingerprint": "1f3d7641164be72e79e4d5e3945c1cae"
+    },
+    {
+      "id": "schema-unsupported-extension",
+      "input": {
+        "operation": "schema-load-error",
+        "extension": "txt",
+        "document": "anything",
+        "error": "unsupported dataset extension",
+        "write_dataset": true,
+        "schema_document": "{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"required\":[\"version\",\"cases\"],\"properties\":{\"version\":{\"const\":1},\"cases\":{\"type\":\"array\",\"minItems\":1,\"items\":{\"type\":\"object\",\"required\":[\"id\",\"input\",\"expected\"],\"properties\":{\"id\":{\"type\":\"string\",\"minLength\":1},\"input\":{\"type\":\"object\",\"required\":[\"value\"],\"properties\":{\"value\":{\"type\":\"integer\"}},\"additionalProperties\":false},\"expected\":{\"type\":\"integer\"},\"coverage_fingerprint\":{\"type\":\"string\"}},\"additionalProperties\":false}}},\"additionalProperties\":false}"
+      },
+      "expected": {
+        "ok": true
+      },
+      "coverage_fingerprint": "38be898358c8c7acaeb820535bb78862"
+    },
+    {
+      "id": "schema-extension-required",
+      "input": {
+        "operation": "schema-load-error",
+        "extension": "",
+        "document": "anything",
+        "error": "dataset path must have a .json, .yaml, or .yml extension",
+        "write_dataset": true,
+        "schema_document": "{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"required\":[\"version\",\"cases\"],\"properties\":{\"version\":{\"const\":1},\"cases\":{\"type\":\"array\",\"minItems\":1,\"items\":{\"type\":\"object\",\"required\":[\"id\",\"input\",\"expected\"],\"properties\":{\"id\":{\"type\":\"string\",\"minLength\":1},\"input\":{\"type\":\"object\",\"required\":[\"value\"],\"properties\":{\"value\":{\"type\":\"integer\"}},\"additionalProperties\":false},\"expected\":{\"type\":\"integer\"},\"coverage_fingerprint\":{\"type\":\"string\"}},\"additionalProperties\":false}}},\"additionalProperties\":false}"
+      },
+      "expected": {
+        "ok": true
+      },
+      "coverage_fingerprint": "875836876d926343e9408b0c4a273b64"
+    },
+    {
+      "id": "schema-dataset-missing",
+      "input": {
+        "operation": "schema-load-error",
+        "extension": "json",
+        "document": "",
+        "error": "cannot read dataset",
+        "write_dataset": false,
+        "schema_document": "{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"required\":[\"version\",\"cases\"],\"properties\":{\"version\":{\"const\":1},\"cases\":{\"type\":\"array\",\"minItems\":1,\"items\":{\"type\":\"object\",\"required\":[\"id\",\"input\",\"expected\"],\"properties\":{\"id\":{\"type\":\"string\",\"minLength\":1},\"input\":{\"type\":\"object\",\"required\":[\"value\"],\"properties\":{\"value\":{\"type\":\"integer\"}},\"additionalProperties\":false},\"expected\":{\"type\":\"integer\"},\"coverage_fingerprint\":{\"type\":\"string\"}},\"additionalProperties\":false}}},\"additionalProperties\":false}"
+      },
+      "expected": {
+        "ok": true
+      },
+      "coverage_fingerprint": "bd0fb051f0eed24d8007b244c6eb3500"
+    },
+    {
+      "id": "schema-deserialize-error",
+      "input": {
+        "operation": "schema-load-error",
+        "extension": "json",
+        "document": "{\"version\":\"not-a-number\",\"cases\":[]}",
+        "error": "after schema validation",
+        "write_dataset": true,
+        "schema_document": "{\"type\":\"object\"}"
+      },
+      "expected": {
+        "ok": true
+      },
+      "coverage_fingerprint": "3b1c101f95c3fb3edd7237003f5d975b"
     }
   ]
 }
