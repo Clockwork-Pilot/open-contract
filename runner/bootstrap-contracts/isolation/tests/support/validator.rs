@@ -138,11 +138,20 @@ pub(crate) fn validate_case(
     previous_root: &Option<PathBuf>,
     case: &DatasetCase,
 ) -> Result<PathBuf, String> {
-    if case.input["operation"] == "stage-root-without-nested-contracts" {
+    let operation = case.input.get("operation").and_then(Value::as_str);
+    if operation.is_none() {
+        ensure!(
+            case.expected_value()?["rejected"] == true,
+            "case {:?} has no input.operation and is not expected to be rejected",
+            case.id
+        );
+        return Ok(package.to_path_buf());
+    }
+    if operation == Some("stage-root-without-nested-contracts") {
         check_root_only_staging(case.expected_value()?)?;
         return Ok(package.to_path_buf());
     }
-    if case.input["operation"] == "stage-contract-tree" {
+    if operation == Some("stage-contract-tree") {
         dataset_setup::run_staging_failure(
             case.id.as_str(),
             case.setup.as_deref(),
@@ -153,7 +162,7 @@ pub(crate) fn validate_case(
         )?;
         return Ok(package.to_path_buf());
     }
-    if case.input["operation"] == "stage-backend" {
+    if operation == Some("stage-backend") {
         dataset_setup::run_staging_backend(
             case.id.as_str(),
             case.setup.as_deref(),
@@ -164,7 +173,7 @@ pub(crate) fn validate_case(
         )?;
         return Ok(package.to_path_buf());
     }
-    if case.input["operation"] == "auto-backend" {
+    if operation == Some("auto-backend") {
         dataset_setup::run_with_case_setup(case.id.as_str(), case.setup.as_deref(), package, || {
             let runtime = case.input["isolation_runtime"].as_str().map(Path::new);
             let (backend, attempts) = runner_isolation::auto_backend(runtime);
